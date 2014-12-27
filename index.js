@@ -1,44 +1,44 @@
 'use strict';
 
-var parseCurlCode_ = function(curlCode) {
-  // todo: figure out if requests can automatically gzip content
-  curlCode = curlCode.replace(' --compressed', '');
-  var tokens = curlCode.split(' -H ');
-  var url = tokens[0].replace('curl ', '').substring(1, tokens[0].length - 1);
-  var isPostRequest = false;
-  if (url.indexOf('-X POST') !== -1) {
-    isPostRequest = true;
-    url = url.replace(' -X POST', '');
-  }
-  tokens.shift();
+
+var parseCurlCode_ = function(curlCommand) {
+
+  var cookie = require('cookie');
+  var Getopt = require('node-getopt');
+  var stringArgv = require('string-argv');
+  var args = stringArgv.parseArgsStringToArgv(curlCommand);
+  var getopt = new Getopt([
+    ['H', 'header=ARG+', 'http header'],
+    ['', 'compressed', 'long'],
+    ['X', 'method=ARG', 'request command']
+  ]).parse(args); // parse command line
+
+  var cookieString;
+  var cookies;
+  var url = getopt.argv[1];
   var headers = {};
-  var cookies = {};
-  tokens.forEach(function(header, i) {
-    if (!header.indexOf(':')) {
-      return;
-    }
-    //remove first and last single quote
-    header = header.substring(1, header.length - 1);
-    var colonIndex = header.indexOf(':');
-    var headerName = header.substring(0, colonIndex);
-    var headerValue = header.substring(colonIndex + 2);
-    if (headerName === 'Cookie') {
-      // todo extract this to a real cookie string parser
-      var cookieStrings = headerValue.split('; ');
-      cookieStrings.forEach(function(cookie, i) {
-        var pair = cookieStrings[i].split('=');
-        cookies[pair[0]] = pair[1];
-      });
+  getopt.options.header.forEach(function(header) {
+    if (header.indexOf('Cookie') !== -1) {
+      cookieString = header;
     } else {
+      var colonIndex = header.indexOf(':');
+      var headerName = header.substring(0, colonIndex);
+      var headerValue = header.substring(colonIndex + 2);
       headers[headerName] = headerValue;
     }
   });
-
+  if (cookieString) {
+    var cookieParseOptions = {
+      decode: function(s) {return s;}
+    };
+    cookies = cookie.parse(cookieString.replace('Cookie: ', ''), cookieParseOptions);
+  }
+  var method = getopt.options.method === 'POST' ? 'post' : 'get';
   var request = {
     url: url,
     headers: headers,
     cookies: cookies,
-    method: isPostRequest ? 'post' : 'get'
+    method: method
   };
   return request;
 };
@@ -59,7 +59,7 @@ var toPython = function(curlCode) {
   }
   headerDict += '}\n';
 
-  var requestLine = 'requests.' + request.method + '(\'' + request.url + ', headers=headers, cookies=cookies)';
+  var requestLine = 'requests.' + request.method + '(\'' + request.url + '\', headers=headers, cookies=cookies)';
   var pythonCode = cookieDict + '\n' + headerDict + '\n' + requestLine;
 
   return pythonCode;

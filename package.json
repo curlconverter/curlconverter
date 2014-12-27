@@ -20,7 +20,10 @@
     "requests",
     "python"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "cookie": "^0.1.2",
+    "node-getopt": "^0.2.3"
+  },
   "devDependencies": {
     "grunt-cli": "^0.1.13",
     "grunt-contrib-jshint": "^0.10.0",
