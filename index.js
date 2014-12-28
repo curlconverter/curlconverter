@@ -1,11 +1,12 @@
 'use strict';
 
+var cookie = require('cookie');
+var Getopt = require('node-getopt');
+var stringArgv = require('string-argv');
 
 var parseCurlCode_ = function(curlCommand) {
 
-  var cookie = require('cookie');
-  var Getopt = require('node-getopt');
-  var stringArgv = require('string-argv');
+
   var args = stringArgv.parseArgsStringToArgv(curlCommand);
   var getopt = new Getopt([
     ['H', 'header=ARG+', 'http header'],
