@@ -36,6 +36,6 @@
     "time-grunt": "^1.0.0"
   },
   "scripts": {
-    "test": "node ./test/test.js"
+    "test": "grunt"
   }
 }
