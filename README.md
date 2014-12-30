@@ -1,4 +1,4 @@
-#  [![NPM version][npm-image]][npm-url]
+#  [![NPM version][npm-image]][npm-url][![Build Status](https://travis-ci.org/NickCarneiro/curlconverter.svg)](https://travis-ci.org/NickCarneiro/curlconverter)
 
 > convert curl syntax to native python and javascript http code
 
