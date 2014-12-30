@@ -67,7 +67,7 @@ var toPython = function(curlCode) {
 };
 
 
-var toNode = function(request) {
+var toNode = function() {
   return 'TODO: write this function';
 };
 
