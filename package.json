@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "convert curl syntax to native python and javascript http code",
   "homepage": "https://github.com/NickCarneiro/curlconverter",
   "author": {
@@ -28,15 +28,14 @@
   "devDependencies": {
     "grunt-cli": "^0.1.13",
     "grunt-contrib-jshint": "^0.10.0",
-    "grunt-contrib-nodeunit": "^0.4.1",
     "grunt-contrib-watch": "^0.6.1",
-    "grunt-mocha-cli": "^1.11.0",
+    "grunt-tape": "0.0.2",
     "jshint-stylish": "^1.0.0",
     "load-grunt-tasks": "^1.0.0",
     "tape": "^3.0.3",
     "time-grunt": "^1.0.0"
   },
   "scripts": {
-    "test": "grunt"
+    "test": "node ./test/test.js"
   }
 }

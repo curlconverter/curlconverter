@@ -5,6 +5,7 @@ module.exports = function (grunt) {
   // Load all grunt tasks
   require('load-grunt-tasks')(grunt);
 
+
   grunt.initConfig({
     jshint: {
       options: {
@@ -18,16 +19,10 @@ module.exports = function (grunt) {
         src: ['*.js']
       },
       test: {
-        src: ['test/**/*.js']
+        src: ['test/test.js']
       }
     },
-    mochacli: {
-      options: {
-        reporter: 'nyan',
-        bail: true
-      },
-      all: ['test/*.js']
-    },
+
     watch: {
       gruntfile: {
         files: '<%= jshint.gruntfile.src %>',
@@ -35,14 +30,23 @@ module.exports = function (grunt) {
       },
       js: {
         files: '<%= jshint.js.src %>',
-        tasks: ['jshint:js', 'mochacli']
+        tasks: ['jshint:js']
       },
       test: {
         files: '<%= jshint.test.src %>',
-        tasks: ['jshint:test', 'mochacli']
+        tasks: ['jshint:test']
       }
+    },
+    tape: {
+      options: {
+        pretty: true,
+        output: 'console'
+      },
+      files: ['test/test.js']
     }
   });
 
-  grunt.registerTask('default', ['jshint', 'mochacli']);
+  grunt.loadNpmTasks('grunt-tape');
+  grunt.registerTask('test', ['tape']);
+  grunt.registerTask('default', ['jshint', 'test']);
 };
