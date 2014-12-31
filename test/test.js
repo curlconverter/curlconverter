@@ -20,3 +20,13 @@ test('http post - python', function (t) {
   t.equal(goodPythonCode, pythonCode);
   t.end();
 });
+
+
+test('http post with data - python', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl3.txt', 'utf-8');
+  var pythonCode = curlconverter.toPython(curlHttpGetCommand);
+  console.log(pythonCode);
+  var goodPythonCode = fs.readFileSync(__dirname + '/python_output3.py', 'utf-8');
+  t.equal(goodPythonCode, pythonCode);
+  t.end();
+});

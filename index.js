@@ -11,6 +11,7 @@ var parseCurlCode_ = function(curlCommand) {
   var getopt = new Getopt([
     ['H', 'header=ARG+', 'http header'],
     ['', 'compressed', 'long'],
+    ['', 'data=ARG', 'request payload'],
     ['X', 'method=ARG', 'request command']
   ]).parse(args); // parse command line
 
@@ -39,7 +40,8 @@ var parseCurlCode_ = function(curlCommand) {
     url: url,
     headers: headers,
     cookies: cookies,
-    method: method
+    method: method,
+    data: getopt.options.data
   };
   return request;
 };
@@ -48,20 +50,50 @@ var parseCurlCode_ = function(curlCommand) {
 var toPython = function(curlCode) {
 
   var request = parseCurlCode_(curlCode);
-  var cookieDict = 'cookies = {\n';
-  for (var cookieName in request.cookies) {
-    cookieDict += "    '" + cookieName + "': '" + request.cookies[cookieName] + "',\n";
+  var cookieDict;
+  if (request.cookies) {
+    cookieDict = 'cookies = {\n';
+    for (var cookieName in request.cookies) {
+      cookieDict += "    '" + cookieName + "': '" + request.cookies[cookieName] + "',\n";
+    }
+    cookieDict += '}\n';
   }
-  cookieDict += '}\n';
-
-  var headerDict = 'headers = {\n';
-  for (var headerName in request.headers) {
-    headerDict += "    '" + headerName + "': '" + request.headers[headerName] + "',\n";
+  var headerDict;
+  if (request.headers) {
+    headerDict = 'headers = {\n';
+    for (var headerName in request.headers) {
+      headerDict += "    '" + headerName + "': '" + request.headers[headerName] + "',\n";
+    }
+    headerDict += '}\n';
   }
-  headerDict += '}\n';
 
-  var requestLine = 'requests.' + request.method + '(\'' + request.url + '\', headers=headers, cookies=cookies)';
-  var pythonCode = cookieDict + '\n' + headerDict + '\n' + requestLine;
+  var dataString;
+  if (request.data) {
+    dataString = 'data = \'' + request.data + '\'\n';
+  }
+  var requestLine = 'requests.' + request.method + '(\'' + request.url + '\'';
+  if (request.headers) {
+    requestLine += ', headers=headers';
+  }
+  if (request.cookies) {
+    requestLine += ', cookies=cookies';
+  }
+  if (request.data) {
+    requestLine += ', data=data';
+  }
+  requestLine += ')';
+
+  var pythonCode = '';
+  if (cookieDict) {
+    pythonCode += cookieDict + '\n';
+  }
+  if (headerDict) {
+    pythonCode += headerDict + '\n';
+  }
+  if (dataString) {
+    pythonCode += dataString + '\n';
+  }
+  pythonCode += requestLine;
 
   return pythonCode;
 };
