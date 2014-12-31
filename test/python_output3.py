@@ -12,4 +12,4 @@ headers = {
 
 data = 'msg1=wow&msg2=such'
 
-requests.get('http://fiddle.jshell.net/echo/html/', headers=headers, data=data)
+requests.post('http://fiddle.jshell.net/echo/html/', headers=headers, data=data)

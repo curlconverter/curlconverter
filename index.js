@@ -35,7 +35,7 @@ var parseCurlCode_ = function(curlCommand) {
     };
     cookies = cookie.parse(cookieString.replace('Cookie: ', ''), cookieParseOptions);
   }
-  var method = getopt.options.method === 'POST' ? 'post' : 'get';
+  var method = getopt.options.method === 'POST' || getopt.options.data ? 'post' : 'get';
   var request = {
     url: url,
     headers: headers,
