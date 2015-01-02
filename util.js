@@ -1,21 +1,16 @@
 var cookie = require('cookie');
-var Getopt = require('node-getopt');
 var stringArgv = require('string-argv');
+var parseArgs = require('minimist');
 
 var parseCurlCommand = function(curlCommand) {
-    var args = stringArgv.parseArgsStringToArgv(curlCommand);
-    var getopt = new Getopt([
-        ['H', 'header=ARG+', 'http header'],
-        ['', 'compressed', 'long'],
-        ['', 'data=ARG', 'request payload'],
-        ['X', 'method=ARG', 'request command']
-    ]).parse(args); // parse command line
+    var argumentArray = stringArgv.parseArgsStringToArgv(curlCommand);
+    var parsedArguments = parseArgs(argumentArray);
 
     var cookieString;
     var cookies;
-    var url = getopt.argv[1];
+    var url = parsedArguments._[1];
     var headers = {};
-    getopt.options.header.forEach(function(header) {
+    parsedArguments.H.forEach(function(header) {
         if (header.indexOf('Cookie') !== -1) {
             cookieString = header;
         } else {
@@ -31,7 +26,7 @@ var parseCurlCommand = function(curlCommand) {
         };
         cookies = cookie.parse(cookieString.replace('Cookie: ', ''), cookieParseOptions);
     }
-    var method = getopt.options.method === 'POST' || getopt.options.data ? 'post' : 'get';
+    var method = parsedArguments.X === 'POST' || parsedArguments.data ? 'post' : 'get';
     var request = {
         url: url,
         method: method
@@ -42,8 +37,8 @@ var parseCurlCommand = function(curlCommand) {
     if (cookies) {
         request.cookies = cookies;
     }
-    if (getopt.options.data) {
-        request.data = getopt.options.data;
+    if (parsedArguments.data) {
+        request.data = parsedArguments.data;
     }
     return request;
 };
