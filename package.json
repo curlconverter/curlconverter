@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "convert curl syntax to native python and javascript http code",
   "homepage": "https://github.com/NickCarneiro/curlconverter",
   "author": {
@@ -11,7 +11,9 @@
   "repository": "NickCarneiro/curlconverter",
   "license": "MIT",
   "files": [
-    "index.js"
+    "index.js",
+    "util.js",
+    "generators"
   ],
   "keywords": [
     "curlconverter",
