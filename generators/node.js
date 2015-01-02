@@ -1,5 +1,4 @@
 var util = require('../util');
-var cookie = require('cookie');
 
 var serializeCookies = function(cookieDict) {
     var cookieString = '';
@@ -61,7 +60,7 @@ var toNode = function(curlCommand) {
 
     nodeCode += 'function callback(error, response, body) {\n';
     nodeCode += '    if (!error && response.statusCode == 200) {\n';
-    nodeCode += '        console.log(body);\n'
+    nodeCode += '        console.log(body);\n';
     nodeCode += '    }\n';
     nodeCode += '}\n\n';
     nodeCode += 'request(options, callback);';
