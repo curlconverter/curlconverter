@@ -1,8 +1,33 @@
 'use strict';
 var test = require('tape');
 var fs = require('fs');
+var utils = require('../util');
 
 var curlconverter = require('../');
+
+test('http get - parser', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl1.txt', 'utf-8');
+  var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
+  var goodParserOutput = require('./parser_output1.js');
+  t.deepEquals(parsedCommand, goodParserOutput);
+  t.end();
+});
+
+test('http post - parser', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl2.txt', 'utf-8');
+  var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
+  var goodParserOutput = require('./parser_output2.js');
+  t.deepEquals(parsedCommand, goodParserOutput);
+  t.end();
+});
+
+test('http post with data - parser', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl3.txt', 'utf-8');
+  var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
+  var goodParserOutput = require('./parser_output3.js');
+  t.deepEquals(parsedCommand, goodParserOutput);
+  t.end();
+});
 
 test('http get - python', function (t) {
   var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl1.txt', 'utf-8');

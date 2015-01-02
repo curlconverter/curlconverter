@@ -34,11 +34,17 @@ var parseCurlCommand = function(curlCommand) {
     var method = getopt.options.method === 'POST' || getopt.options.data ? 'post' : 'get';
     var request = {
         url: url,
-        headers: headers,
-        cookies: cookies,
-        method: method,
-        data: getopt.options.data
+        method: method
     };
+    if (headers) {
+        request.headers = headers;
+    }
+    if (cookies) {
+        request.cookies = cookies;
+    }
+    if (getopt.options.data) {
+        request.data = getopt.options.data;
+    }
     return request;
 };
 
