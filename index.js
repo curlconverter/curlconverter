@@ -1,7 +1,7 @@
 'use strict';
 
-var toPython = require('./generators/python');
-var toNode = require('./generators/node');
+var toPython = require('./generators/python.js');
+var toNode = require('./generators/node.js');
 
 module.exports = {
   toPython: toPython,
