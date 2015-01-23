@@ -55,6 +55,14 @@ test('http post with data - python', function (t) {
   t.end();
 });
 
+test('basic http get with no headers - python', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl4.txt', 'utf-8');
+  var nodeCode = curlconverter.toPython(curlHttpGetCommand);
+  var goodNodeCode = fs.readFileSync(__dirname + '/python_output4.py', 'utf-8');
+  t.equal(nodeCode, goodNodeCode);
+  t.end();
+});
+
 test('http get - node', function (t) {
   var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl1.txt', 'utf-8');
   var nodeCode = curlconverter.toNode(curlHttpGetCommand);
@@ -77,6 +85,15 @@ test('http post with data - node', function (t) {
   var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl3.txt', 'utf-8');
   var nodeCode = curlconverter.toNode(curlHttpGetCommand);
   var goodNodeCode = fs.readFileSync(__dirname + '/node_output3.js', 'utf-8');
+  t.equal(nodeCode, goodNodeCode);
+  t.end();
+});
+
+
+test('basic http get with no headers - node', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl4.txt', 'utf-8');
+  var nodeCode = curlconverter.toNode(curlHttpGetCommand);
+  var goodNodeCode = fs.readFileSync(__dirname + '/node_output4.js', 'utf-8');
   t.equal(nodeCode, goodNodeCode);
   t.end();
 });
