@@ -18,7 +18,7 @@ var parseCurlCommand = function(curlCommand) {
             } else {
                 var colonIndex = header.indexOf(':');
                 var headerName = header.substring(0, colonIndex);
-                var headerValue = header.substring(colonIndex + 2);
+                var headerValue = header.substring(colonIndex + 1).trim();
                 headers[headerName] = headerValue;
             }
         });

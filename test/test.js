@@ -97,3 +97,11 @@ test('basic http get with no headers - node', function (t) {
   t.equal(nodeCode, goodNodeCode);
   t.end();
 });
+
+test('basic http get with no headers - python', function (t) {
+    var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl5.txt', 'utf-8');
+    var pythonCode = curlconverter.toPython(curlHttpGetCommand);
+    var goodPythonCode = fs.readFileSync(__dirname + '/python_output5.py', 'utf-8').trim();
+    t.equal(pythonCode, goodPythonCode);
+    t.end();
+});
