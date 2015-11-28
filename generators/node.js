@@ -52,7 +52,7 @@ var toNode = function(curlCommand) {
         nodeCode += '    headers: headers';
     }
     if (request.data) {
-        nodeCode += ',\n    data: dataString\n';
+        nodeCode += ',\n    body: dataString\n';
     } else {
         nodeCode += '\n';
     }

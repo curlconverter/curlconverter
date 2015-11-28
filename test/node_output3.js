@@ -18,7 +18,7 @@ var options = {
     url: 'http://fiddle.jshell.net/echo/html/',
     method: 'POST',
     headers: headers,
-    data: dataString
+    body: dataString
 };
 
 function callback(error, response, body) {

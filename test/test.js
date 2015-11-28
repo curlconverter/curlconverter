@@ -84,16 +84,31 @@ test('http post - node', function (t) {
 test('http post with data - node', function (t) {
   var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl3.txt', 'utf-8');
   var nodeCode = curlconverter.toNode(curlHttpGetCommand);
-  var goodNodeCode = fs.readFileSync(__dirname + '/node_output3.js', 'utf-8');
+  var goodNodeCode = fs.readFileSync(__dirname + '/node_output3.js', 'utf-8').replace(/\n$/, '');
   t.equal(nodeCode, goodNodeCode);
   t.end();
 });
 
+test('http post with data and headers - node', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl6.txt', 'utf-8');
+  var nodeCode = curlconverter.toNode(curlHttpGetCommand);
+  var goodNodeCode = fs.readFileSync(__dirname + '/node_output5.js', 'utf-8').replace(/\n$/, '');
+  t.equal(nodeCode, goodNodeCode);
+  t.end();
+});
+
+test('http post with data and headers - python', function (t) {
+    var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl6.txt', 'utf-8');
+    var pythonCode = curlconverter.toPython(curlHttpGetCommand);
+    var goodPythonCode = fs.readFileSync(__dirname + '/python_output6.py', 'utf-8').trim();
+    t.equal(pythonCode, goodPythonCode);
+    t.end();
+});
 
 test('basic http get with no headers - node', function (t) {
   var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl4.txt', 'utf-8');
   var nodeCode = curlconverter.toNode(curlHttpGetCommand);
-  var goodNodeCode = fs.readFileSync(__dirname + '/node_output4.js', 'utf-8');
+  var goodNodeCode = fs.readFileSync(__dirname + '/node_output4.js', 'utf-8').replace(/\n$/, '');
   t.equal(nodeCode, goodNodeCode);
   t.end();
 });
