@@ -19,7 +19,7 @@
   ],
   "dependencies": {
     "cookie": "^0.1.2",
-    "minimist": "^1.1.0",
+    "minimist": "^1.2.0",
     "string-argv": "^0.0.1"
   },
   "devDependencies": {

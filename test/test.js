@@ -120,3 +120,19 @@ test('basic http get with no headers - python', function (t) {
     t.equal(pythonCode, goodPythonCode);
     t.end();
 });
+
+test('post with data-binary - node', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl7.txt', 'utf-8');
+  var nodeCode = curlconverter.toNode(curlHttpGetCommand);
+  var goodNodeCode = fs.readFileSync(__dirname + '/node_output7.js', 'utf-8').replace(/\n$/, '');
+  t.equal(nodeCode, goodNodeCode);
+  t.end();
+});
+
+test('post with data-binary - python', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl7.txt', 'utf-8');
+  var pythonCode = curlconverter.toPython(curlHttpGetCommand);
+  var goodPythonCode = fs.readFileSync(__dirname + '/python_output7.py', 'utf-8').trim();
+  t.equal(pythonCode, goodPythonCode);
+  t.end();
+});

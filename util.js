@@ -6,6 +6,16 @@ var parseCurlCommand = function(curlCommand) {
     var argumentArray = stringArgv.parseArgsStringToArgv(curlCommand);
     var parsedArguments = parseArgs(argumentArray);
 
+    // minimist fails to parse double quoted json properly
+    // hack around that
+    if (parsedArguments['data-binary']) {
+        var re = /--data-binary '([{}A-z0-9"\s:]+)'/;
+        var groups = re.exec(curlCommand);
+        if (groups) {
+            parsedArguments['data-binary'] = groups[1];
+        }
+    }
+
     var cookieString;
     var cookies;
     var url = parsedArguments._[1];
@@ -29,7 +39,14 @@ var parseCurlCommand = function(curlCommand) {
         };
         cookies = cookie.parse(cookieString.replace('Cookie: ', ''), cookieParseOptions);
     }
-    var method = parsedArguments.X === 'POST' || parsedArguments.data ? 'post' : 'get';
+    var method;
+    if (parsedArguments.X === 'POST') {
+        method = 'post';
+    } else if (parsedArguments.data || parsedArguments['data-binary']) {
+        method = 'post';
+    } else {
+        method = 'get';
+    }
     var request = {
         url: url,
         method: method
@@ -42,6 +59,8 @@ var parseCurlCommand = function(curlCommand) {
     }
     if (parsedArguments.data) {
         request.data = parsedArguments.data;
+    } else if (parsedArguments['data-binary']) {
+        request.data = parsedArguments['data-binary'];
     }
     return request;
 };
