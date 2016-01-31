@@ -136,3 +136,12 @@ test('post with data-binary - python', function (t) {
   t.equal(pythonCode, goodPythonCode);
   t.end();
 });
+
+
+test('http post with data - php', function (t) {
+  var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl3.txt', 'utf-8');
+  var phpCode = curlconverter.toPhp(curlHttpPostCommand);
+  var goodPhpCode = fs.readFileSync(__dirname + '/php_output1.php', 'utf-8').trim();
+  t.equal(phpCode, goodPhpCode);
+  t.end();
+});
