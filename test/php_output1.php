@@ -2,18 +2,13 @@
 include('vendor/rmccue/requests/library/Requests.php');
 Requests::register_autoloader();
 $headers = array(
-    'Origin' => 'http://fiddle.jshell.net',
-    'Accept-Encoding' => 'gzip, deflate',
+    'Accept-Encoding' => 'gzip, deflate, sdch',
     'Accept-Language' => 'en-US,en;q=0.8',
     'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
-    'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8',
-    'Accept' => '*/*',
-    'Referer' => 'http://fiddle.jshell.net/_display/',
-    'X-Requested-With' => 'XMLHttpRequest',
-    'Connection' => 'keep-alive'
+    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Referer' => 'http://www.wikipedia.org/',
+    'Connection' => 'keep-alive',
+    'Cookie' => 'GeoIP=US:Albuquerque:35.1241:-106.7675:v4; uls-previous-languages=%5B%22en%22%5D; mediaWiki.user.sessionId=VaHaeVW3m0ymvx9kacwshZIDkv8zgF9y; centralnotice_buckets_by_campaign=%7B%22C14_enUS_dsk_lw_FR%22%3A%7B%22val%22%3A%220%22%2C%22start%22%3A1412172000%2C%22end%22%3A1422576000%7D%2C%22C14_en5C_dec_dsk_FR%22%3A%7B%22val%22%3A3%2C%22start%22%3A1417514400%2C%22end%22%3A1425290400%7D%2C%22C14_en5C_bkup_dsk_FR%22%3A%7B%22val%22%3A1%2C%22start%22%3A1417428000%2C%22end%22%3A1425290400%7D%7D; centralnotice_bannercount_fr12=22; centralnotice_bannercount_fr12-wait=14'
 );
-$data = array(
-    'msg1' => 'wow',
-    'msg2' => 'such'
-);
-$response = Requests::post('http://fiddle.jshell.net/echo/html/', $headers, $data);
+$data = array();
+$response = Requests::get('http://en.wikipedia.org/', $headers, $data);

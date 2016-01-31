@@ -17,6 +17,10 @@ var toPython = function(curlCommand) {
             }
             i++;
         }
+        if (request.cookies) {
+            var cookieString = util.serializeCookies(request.cookies);
+            headerDict += ",\n    'Cookie' => '" + cookieString + "'"
+        }
         headerDict += '\n);';
     }
 
@@ -25,7 +29,7 @@ var toPython = function(curlCommand) {
         var parsedQueryString = querystring.parse(request.data);
         dataString = '$data = array(\n';
         var dataCount = Object.keys(parsedQueryString).length;
-        var i = 0;
+        i = 0;
         for (var key in parsedQueryString) {
             var value = parsedQueryString[key];
             dataString += "    '" + key + "' => '" + value + "'";
@@ -34,7 +38,9 @@ var toPython = function(curlCommand) {
             }
             i++;
         }
-        dataString += "\n);"
+        dataString += "\n);";
+    } else {
+        dataString = '$data = array();';
     }
     var requestLine = '$response = Requests::' + request.method + '(\'' + request.url + '\'';
     requestLine += ', $headers';
@@ -54,5 +60,6 @@ var toPython = function(curlCommand) {
 
     return phpCode;
 };
+
 
 module.exports = toPython;

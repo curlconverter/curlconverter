@@ -1,19 +1,6 @@
 var util = require('../util');
 
-var serializeCookies = function(cookieDict) {
-    var cookieString = '';
-    var i = 0;
-    var cookieCount = Object.keys(cookieDict).length;
-    for (var cookieName in cookieDict) {
-        var cookieValue = cookieDict[cookieName];
-        cookieString += cookieName + '=' + cookieValue;
-        if (i < cookieCount - 1) {
-            cookieString += '; ';
-        }
-        i++;
-    }
-    return cookieString;
-};
+
 var toNode = function(curlCommand) {
     var request = util.parseCurlCommand(curlCommand);
     var nodeCode = 'var request = require(\'request\');\n\n';
@@ -31,7 +18,7 @@ var toNode = function(curlCommand) {
             i++;
         }
         if (request.cookies) {
-            var cookieString = serializeCookies(request.cookies);
+            var cookieString = util.serializeCookies(request.cookies);
             nodeCode += '    \'Cookie\': \'' + cookieString + '\'\n';
         }
         nodeCode += '};\n\n';

@@ -138,10 +138,28 @@ test('post with data-binary - python', function (t) {
 });
 
 
+test('http get - php', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl1.txt', 'utf-8');
+  var phpCode = curlconverter.toPhp(curlHttpGetCommand);
+  var goodPhpCode = fs.readFileSync(__dirname + '/php_output1.php', 'utf-8');
+  t.equal(phpCode, goodPhpCode);
+  t.end();
+});
+
+
+test('http post - php', function (t) {
+  var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl2.txt', 'utf-8');
+  var phpCode = curlconverter.toPhp(curlHttpGetCommand);
+  var goodPhpCode = fs.readFileSync(__dirname + '/php_output2.php', 'utf-8');
+  t.equal(phpCode, goodPhpCode);
+  t.end();
+});
+
+
 test('http post with data - php', function (t) {
   var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl3.txt', 'utf-8');
   var phpCode = curlconverter.toPhp(curlHttpPostCommand);
-  var goodPhpCode = fs.readFileSync(__dirname + '/php_output1.php', 'utf-8').trim();
+  var goodPhpCode = fs.readFileSync(__dirname + '/php_output3.php', 'utf-8').trim();
   t.equal(phpCode, goodPhpCode);
   t.end();
 });

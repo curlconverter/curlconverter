@@ -65,6 +65,24 @@ var parseCurlCommand = function(curlCommand) {
     return request;
 };
 
-module.exports = {
-    parseCurlCommand: parseCurlCommand
+var serializeCookies = function(cookieDict) {
+    var cookieString = '';
+    var i = 0;
+    var cookieCount = Object.keys(cookieDict).length;
+    for (var cookieName in cookieDict) {
+        var cookieValue = cookieDict[cookieName];
+        cookieString += cookieName + '=' + cookieValue;
+        if (i < cookieCount - 1) {
+            cookieString += '; ';
+        }
+        i++;
+    }
+    return cookieString;
 };
+
+module.exports = {
+    parseCurlCommand: parseCurlCommand,
+    serializeCookies: serializeCookies
+};
+
+
