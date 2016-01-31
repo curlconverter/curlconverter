@@ -19,7 +19,7 @@ var toPython = function(curlCommand) {
         }
         if (request.cookies) {
             var cookieString = util.serializeCookies(request.cookies);
-            headerDict += ",\n    'Cookie' => '" + cookieString + "'"
+            headerDict += ",\n    'Cookie' => '" + cookieString + "'";
         }
         headerDict += '\n);';
     }
@@ -29,14 +29,14 @@ var toPython = function(curlCommand) {
         var parsedQueryString = querystring.parse(request.data);
         dataString = '$data = array(\n';
         var dataCount = Object.keys(parsedQueryString).length;
-        i = 0;
+        var dataIndex = 0;
         for (var key in parsedQueryString) {
             var value = parsedQueryString[key];
             dataString += "    '" + key + "' => '" + value + "'";
-            if (i < dataCount - 1) {
+            if (dataIndex < dataCount - 1) {
                 dataString += ",\n";
             }
-            i++;
+            dataIndex++;
         }
         dataString += "\n);";
     } else {
