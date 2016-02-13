@@ -163,3 +163,11 @@ test('http post with data - php', function (t) {
   t.equal(phpCode, goodPhpCode);
   t.end();
 });
+
+test('http get with single header - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl8.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output8.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});

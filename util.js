@@ -22,6 +22,9 @@ var parseCurlCommand = function(curlCommand) {
     var headers;
     if (parsedArguments.H) {
         headers = {};
+        if (!Array.isArray(parsedArguments.H)) {
+            parsedArguments.H = [parsedArguments.H];
+        }
         parsedArguments.H.forEach(function (header) {
             if (header.indexOf('Cookie') !== -1) {
                 cookieString = header;
