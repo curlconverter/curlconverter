@@ -7,6 +7,14 @@ var parseCurlCommand = function(curlCommand) {
     var cookieString;
     var cookies;
     var url = parsedArguments._[1];
+    // if url argument wasn't where we expected it, check other places
+    // it shows up
+    if (!url && parsedArguments['L']) {
+        url = parsedArguments['L'];
+    }
+    if (!url && parsedArguments['compressed']) {
+        url = parsedArguments['compressed'];
+    }
     var headers;
     if (parsedArguments.H) {
         headers = {};

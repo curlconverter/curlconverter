@@ -212,3 +212,21 @@ test('http post with escaped double quotes inside double quotes body - node', fu
     t.equal(nodeCode, goodNodeCode);
     t.end();
 });
+
+
+test('http get with -L param - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl14.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output14.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});
+
+
+test('http with charles syntax - python', function (t) {
+    var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl15.txt', 'utf-8');
+    var pythonCode = curlconverter.toPython(curlHttpGetCommand);
+    var goodPythonCode = fs.readFileSync(__dirname + '/python_output8.py', 'utf-8').trim();
+    t.equal(pythonCode, goodPythonCode);
+    t.end();
+});
