@@ -1,21 +1,9 @@
 var cookie = require('cookie');
-var stringArgv = require('string-argv');
-var parseArgs = require('minimist');
+var yargs = require('yargs');
 
 var parseCurlCommand = function(curlCommand) {
-    var argumentArray = stringArgv.parseArgsStringToArgv(curlCommand);
-    var parsedArguments = parseArgs(argumentArray);
-
-    // minimist fails to parse double quoted json properly
-    // hack around that
-    if (parsedArguments['data-binary']) {
-        var re = /--data-binary '([{}A-z0-9"\s:]+)'/;
-        var groups = re.exec(curlCommand);
-        if (groups) {
-            parsedArguments['data-binary'] = groups[1];
-        }
-    }
-
+    var yargObject = yargs(curlCommand.trim());
+    var parsedArguments = yargObject.argv;
     var cookieString;
     var cookies;
     var url = parsedArguments._[1];
@@ -87,5 +75,7 @@ module.exports = {
     parseCurlCommand: parseCurlCommand,
     serializeCookies: serializeCookies
 };
+
+
 
 

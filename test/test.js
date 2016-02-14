@@ -171,3 +171,44 @@ test('http get with single header - node', function (t) {
     t.equal(nodeCode, goodNodeCode);
     t.end();
 });
+
+test('http post with double quotes inside single quotes body - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl9.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output9.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});
+
+test('http post with single quotes inside double quotes body - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl10.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output10.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});
+
+
+test('http post with escaped double quotes inside single quotes body - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl12.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output12.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});
+
+test('http post with escaped single quotes inside double quotes body - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl13.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output13.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});
+
+test('http post with escaped double quotes inside double quotes body - node', function (t) {
+    var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl11.txt', 'utf-8');
+    var nodeCode = curlconverter.toNode(curlHttpPostCommand);
+    var goodNodeCode = fs.readFileSync(__dirname + '/node_output11.js', 'utf-8').trim();
+    t.equal(nodeCode, goodNodeCode);
+    t.end();
+});

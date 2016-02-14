@@ -1,5 +1,5 @@
 var util = require('../util');
-
+var jsesc = require('jsesc');
 
 var toNode = function(curlCommand) {
     var request = util.parseCurlCommand(curlCommand);
@@ -25,6 +25,10 @@ var toNode = function(curlCommand) {
     }
 
     if (request.data) {
+        // escape single quotes if there are any in there
+        if (request.data.indexOf("'") > -1) {
+            request.data = jsesc(request.data);
+        }
         nodeCode += 'var dataString = \'' + request.data + '\';\n\n';
     }
 
