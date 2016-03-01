@@ -230,3 +230,11 @@ test('http with charles syntax - python', function (t) {
     t.equal(pythonCode, goodPythonCode);
     t.end();
 });
+
+test('multiline http post with data - parser', function (t) {
+    var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl16.txt', 'utf-8');
+    var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
+    var goodParserOutput = require('./parser_output4.js');
+    t.deepEquals(parsedCommand, goodParserOutput);
+    t.end();
+});

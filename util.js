@@ -2,6 +2,11 @@ var cookie = require('cookie');
 var yargs = require('yargs');
 
 var parseCurlCommand = function(curlCommand) {
+    var newlineFound = /\r|\n/.exec(curlCommand);
+    if (newlineFound) {
+        // remove newlines
+        curlCommand = curlCommand.replace(/\\\r|\\\n/g, '');
+    }
     var yargObject = yargs(curlCommand.trim());
     var parsedArguments = yargObject.argv;
     var cookieString;
@@ -41,7 +46,7 @@ var parseCurlCommand = function(curlCommand) {
     var method;
     if (parsedArguments.X === 'POST') {
         method = 'post';
-    } else if (parsedArguments.data || parsedArguments['data-binary']) {
+    } else if (parsedArguments.d || parsedArguments.data || parsedArguments['data-binary']) {
         method = 'post';
     } else {
         method = 'get';
@@ -60,8 +65,30 @@ var parseCurlCommand = function(curlCommand) {
         request.data = parsedArguments.data;
     } else if (parsedArguments['data-binary']) {
         request.data = parsedArguments['data-binary'];
+    } else if (parsedArguments['d']) {
+        request.data = parsedArguments['d'];
+    }
+    if (Array.isArray(request.data)) {
+        request.data = joinDataArguments(request.data);
     }
     return request;
+};
+
+/**
+ * given this: [ 'msg1=value1', 'msg2=value2' ]
+ * output this: 'msg1=value1&msg2=value2'
+ * @param dataArguments
+ */
+var joinDataArguments = function(dataArguments) {
+    var data = '';
+    dataArguments.forEach(function(argument, i) {
+        if (i === 0) {
+            data += argument;
+        } else {
+            data += '&' + argument;
+        }
+    });
+    return data;
 };
 
 var serializeCookies = function(cookieDict) {
