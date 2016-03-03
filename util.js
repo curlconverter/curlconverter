@@ -1,6 +1,23 @@
 var cookie = require('cookie');
 var yargs = require('yargs');
 
+/**
+ * given this: [ 'msg1=value1', 'msg2=value2' ]
+ * output this: 'msg1=value1&msg2=value2'
+ * @param dataArguments
+ */
+var joinDataArguments = function(dataArguments) {
+    var data = '';
+    dataArguments.forEach(function(argument, i) {
+        if (i === 0) {
+            data += argument;
+        } else {
+            data += '&' + argument;
+        }
+    });
+    return data;
+};
+
 var parseCurlCommand = function(curlCommand) {
     var newlineFound = /\r|\n/.exec(curlCommand);
     if (newlineFound) {
@@ -74,22 +91,6 @@ var parseCurlCommand = function(curlCommand) {
     return request;
 };
 
-/**
- * given this: [ 'msg1=value1', 'msg2=value2' ]
- * output this: 'msg1=value1&msg2=value2'
- * @param dataArguments
- */
-var joinDataArguments = function(dataArguments) {
-    var data = '';
-    dataArguments.forEach(function(argument, i) {
-        if (i === 0) {
-            data += argument;
-        } else {
-            data += '&' + argument;
-        }
-    });
-    return data;
-};
 
 var serializeCookies = function(cookieDict) {
     var cookieString = '';
