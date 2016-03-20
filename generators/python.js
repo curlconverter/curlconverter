@@ -22,7 +22,12 @@ var toPython = function(curlCommand) {
 
     var dataString;
     if (request.data) {
-        dataString = 'data = \'' + request.data + '\'\n';
+        if (request.data.startsWith('@')) {
+            var filePath = request.data.slice(1);
+            dataString = 'data = open(\'' + filePath + '\')';
+        } else {
+            dataString = 'data = \'' + request.data + '\'\n';
+        }
     }
     var requestLine = 'requests.' + request.method + '(\'' + request.url + '\'';
     if (request.headers) {

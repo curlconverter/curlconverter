@@ -63,6 +63,8 @@ var parseCurlCommand = function(curlCommand) {
     var method;
     if (parsedArguments.X === 'POST') {
         method = 'post';
+    } else if (parsedArguments.X === 'PUT') {
+        method = 'put';
     } else if (parsedArguments.d || parsedArguments.data || parsedArguments['data-binary']) {
         method = 'post';
     } else {

@@ -238,3 +238,11 @@ test('multiline http post with data - parser', function (t) {
     t.deepEquals(parsedCommand, goodParserOutput);
     t.end();
 });
+
+test('http put with file - python', function (t) {
+    var curlHttpGetCommand = fs.readFileSync(__dirname + '/curl17.txt', 'utf-8');
+    var pythonCode = curlconverter.toPython(curlHttpGetCommand);
+    var goodPythonCode = fs.readFileSync(__dirname + '/python_output9.py', 'utf-8');
+    t.equal(pythonCode, goodPythonCode);
+    t.end();
+});
