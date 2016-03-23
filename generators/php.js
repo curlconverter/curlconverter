@@ -1,7 +1,7 @@
 var util = require('../util');
 var querystring = require('querystring');
 
-var toPython = function(curlCommand) {
+var toPhp = function(curlCommand) {
 
     var request = util.parseCurlCommand(curlCommand);
 
@@ -32,7 +32,7 @@ var toPython = function(curlCommand) {
         var dataIndex = 0;
         for (var key in parsedQueryString) {
             var value = parsedQueryString[key];
-            dataString += "    '" + key + "' => '" + value + "'";
+            dataString += "    '" + key + "' => '" + value.replace(/[\\"']/g, '\\$&') + "'";
             if (dataIndex < dataCount - 1) {
                 dataString += ",\n";
             }
@@ -62,4 +62,4 @@ var toPython = function(curlCommand) {
 };
 
 
-module.exports = toPython;
+module.exports = toPhp;

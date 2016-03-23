@@ -164,6 +164,14 @@ test('http post with data - php', function (t) {
   t.end();
 });
 
+test('http post with quotes inside data - php', function (t) {
+  var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl18.txt', 'utf-8');
+  var phpCode = curlconverter.toPhp(curlHttpPostCommand);
+  var goodPhpCode = fs.readFileSync(__dirname + '/php_output18.php', 'utf-8').trim();
+  t.equal(phpCode, goodPhpCode);
+  t.end();
+});
+
 test('http get with single header - node', function (t) {
     var curlHttpPostCommand = fs.readFileSync(__dirname + '/curl8.txt', 'utf-8');
     var nodeCode = curlconverter.toNode(curlHttpPostCommand);
