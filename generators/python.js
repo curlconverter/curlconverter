@@ -1,4 +1,5 @@
 var util = require('../util');
+require('string.prototype.startswith');
 
 var toPython = function(curlCommand) {
 
