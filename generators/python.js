@@ -42,7 +42,7 @@ var toPython = function(curlCommand) {
     }
     requestLine += ')';
 
-    var pythonCode = '';
+    var pythonCode = 'import requests\n';
     if (cookieDict) {
         pythonCode += cookieDict + '\n';
     }
