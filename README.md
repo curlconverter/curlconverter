@@ -49,11 +49,15 @@ requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 
 ## Contributing
 
-If you want to add new functionality, start with a test. Add a file containing the input curl command and a file containing the language output command in `test/`. Then write your test in `test/test.js`.
+If you want to add new functionality, start with a test. 
 
-Run tests with `npm test`.
+- Add a file containing the input curl command and a file containing the language output command in `test/`. 
+- Then write your test in `test/test.js`.
+- Run tests with `npm test`.
 
 Curl command parsing is handled in `utils.js`. The parser generates a generic data structure consumed by code generator functions in `generators/`.
+
+If you get stuck, please reach out via email. I am always willing to hop on a google hangout and pair program.
 
 ## License
 
