@@ -254,3 +254,13 @@ test('http put with file - python', function (t) {
     t.equal(pythonCode, goodPythonCode);
     t.end();
 });
+
+test('http get with -k/--insecure - python', function (t) {
+    var curlHttpGetCommand0 = fs.readFileSync(__dirname + '/curl20.txt', 'utf-8');
+    var curlHttpGetCommand1 = fs.readFileSync(__dirname + '/curl21.txt', 'utf-8');
+    var pythonCode0 = curlconverter.toPython(curlHttpGetCommand0);
+    var pythonCode1 = curlconverter.toPython(curlHttpGetCommand1);
+    var goodPythonCode = fs.readFileSync(__dirname + '/python_output10.py', 'utf-8').trim();
+    t.equal(pythonCode0, pythonCode1, goodPythonCode);
+    t.end();
+});
