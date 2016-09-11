@@ -90,6 +90,9 @@ var parseCurlCommand = function(curlCommand) {
     if (Array.isArray(request.data)) {
         request.data = joinDataArguments(request.data);
     }
+    if (parsedArguments['k'] || parsedArguments['insecure']) {
+      request.insecure = true;
+    }
     return request;
 };
 

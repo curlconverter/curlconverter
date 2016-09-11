@@ -40,6 +40,9 @@ var toPython = function(curlCommand) {
     if (request.data) {
         requestLine += ', data=data';
     }
+    if (request.insecure) {
+      requestLine += ', verify=False';
+    }
     requestLine += ')';
 
     var pythonCode = '';
