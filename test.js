@@ -3,7 +3,7 @@ var test = require('tape');
 var fs = require('fs');
 var utils = require('./util');
 
-var curlconverter = require('.');
+var curlconverter = require('./index.js');
 
 test('http get - parser', function (t) {
   var curlHttpGetCommand = fs.readFileSync('fixtures/curl1.txt', 'utf-8');
