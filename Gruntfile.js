@@ -22,6 +22,19 @@ module.exports = function (grunt) {
         src: ['test/test.js']
       }
     },
+    standard: {
+      options: {
+        // Task-specific options go here.
+      },
+      your_target: {
+        // Target-specific file lists and/or options go here.
+      },
+      app: {
+        src: [
+            'index.js', 'generators/*.js'
+        ]
+      }
+    },
 
     watch: {
       gruntfile: {
@@ -34,7 +47,7 @@ module.exports = function (grunt) {
       },
       test: {
         files: '<%= jshint.test.src %>',
-        tasks: ['jshint:test']
+        tasks: ['jshint:test', 'standard' ]
       }
     },
     tape: {
@@ -47,6 +60,7 @@ module.exports = function (grunt) {
   });
 
   grunt.loadNpmTasks('grunt-tape');
-  grunt.registerTask('test', ['tape']);
+  grunt.loadNpmTasks('grunt-standard');
+  grunt.registerTask('test', ['standard', 'tape']);
   grunt.registerTask('default', ['jshint', 'test']);
 };

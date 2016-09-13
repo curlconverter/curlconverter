@@ -28,6 +28,7 @@
     "grunt-cli": "^0.1.13",
     "grunt-contrib-jshint": "^0.10.0",
     "grunt-contrib-watch": "^0.6.1",
+    "grunt-standard": "^2.0.0",
     "grunt-tape": "^0.0.2",
     "jshint-stylish": "^1.0.0",
     "load-grunt-tasks": "^1.0.0",
