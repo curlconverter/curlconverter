@@ -7,28 +7,7 @@ module.exports = function (grunt) {
 
 
   grunt.initConfig({
-    jshint: {
-      options: {
-        jshintrc: '.jshintrc',
-        reporter: require('jshint-stylish')
-      },
-      gruntfile: {
-        src: ['Gruntfile.js']
-      },
-      js: {
-        src: ['*.js', 'generators/*.js']
-      },
-      test: {
-        src: ['test/test.js']
-      }
-    },
     standard: {
-      options: {
-        // Task-specific options go here.
-      },
-      your_target: {
-        // Target-specific file lists and/or options go here.
-      },
       app: {
         src: [
             'index.js', 'generators/*.js'
@@ -55,12 +34,12 @@ module.exports = function (grunt) {
         pretty: true,
         output: 'console'
       },
-      files: ['test/test.js']
+      files: ['test.js']
     }
   });
 
   grunt.loadNpmTasks('grunt-tape');
   grunt.loadNpmTasks('grunt-standard');
-  grunt.registerTask('test', ['standard', 'tape']);
-  grunt.registerTask('default', ['jshint', 'test']);
+  grunt.registerTask('test', ['tape']);
+  grunt.registerTask('default', ['standard', 'test']);
 };
