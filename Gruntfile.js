@@ -10,7 +10,7 @@ module.exports = function (grunt) {
     standard: {
       app: {
         src: [
-            'index.js', 'generators/*.js'
+          'index.js', 'generators/*.js', 'test.js'
         ]
       }
     },
