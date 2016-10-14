@@ -8,7 +8,7 @@ var curlconverter = require('./index.js');
 test('http get - parser', function (t) {
   var curlHttpGetCommand = fs.readFileSync('fixtures/curl1.txt', 'utf-8');
   var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
-  var goodParserOutput = require('./fixtures/parser_output1.js');
+  var goodParserOutput = require('./fixtures/parser_output/parser_output1.js');
   t.deepEquals(parsedCommand, goodParserOutput);
   t.end();
 });
@@ -16,7 +16,7 @@ test('http get - parser', function (t) {
 test('http post - parser', function (t) {
   var curlHttpGetCommand = fs.readFileSync('fixtures/curl2.txt', 'utf-8');
   var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
-  var goodParserOutput = require('./fixtures/parser_output2.js');
+  var goodParserOutput = require('./fixtures/parser_output/parser_output2.js');
   t.deepEquals(parsedCommand, goodParserOutput);
   t.end();
 });
@@ -24,7 +24,7 @@ test('http post - parser', function (t) {
 test('http post with data - parser', function (t) {
   var curlHttpGetCommand = fs.readFileSync('fixtures/curl3.txt', 'utf-8');
   var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
-  var goodParserOutput = require('./fixtures/parser_output3.js');
+  var goodParserOutput = require('./fixtures/parser_output/parser_output3.js');
   t.deepEquals(parsedCommand, goodParserOutput);
   t.end();
 });
@@ -242,7 +242,7 @@ test('http with charles syntax - python', function (t) {
 test('multiline http post with data - parser', function (t) {
     var curlHttpGetCommand = fs.readFileSync('fixtures/curl16.txt', 'utf-8');
     var parsedCommand = utils.parseCurlCommand(curlHttpGetCommand);
-    var goodParserOutput = require('./fixtures/parser_output4.js');
+    var goodParserOutput = require('./fixtures/parser_output/parser_output4.js');
     t.deepEquals(parsedCommand, goodParserOutput);
     t.end();
 });
