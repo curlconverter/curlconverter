@@ -1,6 +1,6 @@
 var request = require('request');
 
-var dataString = 'foo=\'bar\'';
+var dataString = 'foo=\"bar\"';
 
 var options = {
     url: 'http://example.com/',
