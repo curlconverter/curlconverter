@@ -48,6 +48,12 @@ var toPython = function (curlCommand) {
   if (request.insecure) {
     requestLine += ', verify=False'
   }
+  if (request.auth) {
+    var splitAuth = request.auth.split(':')
+    var user = splitAuth[0] || ''
+    var password = splitAuth[1] || ''
+    requestLine += ", auth=('" + user + "', '" + password + "')"
+  }
   requestLine += ')'
 
   var pythonCode = ''

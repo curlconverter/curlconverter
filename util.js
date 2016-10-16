@@ -87,9 +87,17 @@ var parseCurlCommand = function (curlCommand) {
   } else if (parsedArguments['d']) {
     request.data = parsedArguments['d']
   }
+
+  if (parsedArguments['u']) {
+    request.auth = parsedArguments['u']
+  }
+  if (parsedArguments['user']) {
+    request.auth = parsedArguments['user']
+  }
   if (Array.isArray(request.data)) {
     request.data = joinDataArguments(request.data)
   }
+
   if (parsedArguments['k'] || parsedArguments['insecure']) {
     request.insecure = true
   }
