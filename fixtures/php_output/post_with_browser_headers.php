@@ -12,5 +12,4 @@ $headers = array(
     'Content-Length' => '0',
     'Cookie' => '_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126'
 );
-$data = array();
-$response = Requests::post('http://www.w3schools.com/ajax/demo_post.asp', $headers, $data);
+$response = Requests::post('http://www.w3schools.com/ajax/demo_post.asp', $headers);
