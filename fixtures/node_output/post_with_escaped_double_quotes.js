@@ -1,12 +1,11 @@
 var request = require('request');
 
-var headers = {
-    'foo': 'bar'
-};
+var dataString = 'foo="bar"';
 
 var options = {
     url: 'http://example.com/',
-    headers: headers
+    method: 'POST',
+    body: dataString
 };
 
 function callback(error, response, body) {

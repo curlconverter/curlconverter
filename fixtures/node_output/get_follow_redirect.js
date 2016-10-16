@@ -1,11 +1,7 @@
 var request = require('request');
 
-var dataString = 'foo=\\\'bar\\\'';
-
 var options = {
-    url: 'http://example.com/',
-    method: 'POST',
-    body: dataString
+    url: 'http://www.google.com'
 };
 
 function callback(error, response, body) {

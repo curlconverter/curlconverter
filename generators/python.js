@@ -1,4 +1,6 @@
 var util = require('../util')
+var jsesc = require('jsesc')
+
 require('string.prototype.startswith')
 
 var toPython = function (curlCommand) {
@@ -26,7 +28,11 @@ var toPython = function (curlCommand) {
       var filePath = request.data.slice(1)
       dataString = 'data = open(\'' + filePath + '\')'
     } else {
-      dataString = 'data = \'' + request.data + '\'\n'
+      var escapedData = request.data.replace(/'/g, "\\'")
+      if (escapedData.indexOf("'") > -1) {
+        escapedData = jsesc(request.data)
+      }
+      dataString = 'data = \'' + escapedData + '\'\n'
     }
   }
   var requestLine = 'requests.' + request.method + '(\'' + request.url + '\''
