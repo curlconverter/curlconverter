@@ -49,5 +49,17 @@ inputFiles.forEach(function (fileName) {
       t.end()
     })
   }
+
+  var phpFilePath = './fixtures/php_output/' + fileName.replace('txt', 'php')
+  var phpTestName = 'PHP: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+
+  if (fs.existsSync(phpFilePath)) {
+    var goodPhpCode = fs.readFileSync(phpFilePath, 'utf-8')
+    var phpCode = curlconverter.toPhp(inputFileContents)
+    test(phpTestName, function (t) {
+      t.equal(phpCode, goodPhpCode)
+      t.end()
+    })
+  }
 })
 
