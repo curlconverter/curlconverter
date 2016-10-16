@@ -43,7 +43,18 @@ var toNode = function (curlCommand) {
     nodeCode += '    headers: headers'
   }
   if (request.data) {
-    nodeCode += ',\n    body: dataString\n'
+    nodeCode += ',\n    body: dataString'
+  }
+
+  if (request.auth) {
+    nodeCode += ',\n';
+    var splitAuth = request.auth.split(':')
+    var user = splitAuth[0] || ''
+    var password = splitAuth[1] || ''
+    nodeCode += '    auth: {\n'
+    nodeCode += "        'user': '" + user + "',\n"
+    nodeCode += "        'pass': '" + password + "'\n"
+    nodeCode += '    }\n'
   } else {
     nodeCode += '\n'
   }
