@@ -37,5 +37,17 @@ inputFiles.forEach(function (fileName) {
       t.end()
     })
   }
+
+  var nodeFilePath = './fixtures/node_output/' + fileName.replace('txt', 'js')
+  var nodeTestName = 'Node: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+
+  if (fs.existsSync(nodeFilePath)) {
+    var goodNodeCode = fs.readFileSync(nodeFilePath, 'utf-8')
+    var nodeCode = curlconverter.toNode(inputFileContents)
+    test(nodeTestName, function (t) {
+      t.equal(nodeCode, goodNodeCode)
+      t.end()
+    })
+  }
 })
 
