@@ -51,11 +51,12 @@ requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 
 If you want to add new functionality, start with a test. 
 
-- Add a file containing the input curl command and a file containing the language output command in `test/`. 
-- Then write your test in `test/test.js`.
+- Create a file containing the curl command in `fixtures/curl_commands` with a descriptive filename like `post_with_headers.txt`
+- Create a file containing the output in `fixtures/python_output/` with a matching filename (but different extension) like `post_with_headers.py`
 - Run tests with `npm test`.
+- If your filenames match correctly, you should see one failing test. Fix it by modifying the parser in `util.js` or the generators in `generators/`
 
-Curl command parsing is handled in `utils.js`. The parser generates a generic data structure consumed by code generator functions in `generators/`.
+The parser generates a generic data structure consumed by code generator functions.
 
 If you get stuck, please reach out via email. I am always willing to hop on a google hangout and pair program.
 
