@@ -1,16 +1,15 @@
-'use strict';
+'use strict'
 module.exports = function (grunt) {
   // Show elapsed time at the end
-  require('time-grunt')(grunt);
+  require('time-grunt')(grunt)
   // Load all grunt tasks
-  require('load-grunt-tasks')(grunt);
-
+  require('load-grunt-tasks')(grunt)
 
   grunt.initConfig({
     standard: {
       app: {
         src: [
-          'index.js', 'generators/*.js', 'test.js'
+          'index.js', 'generators/*.js', 'test.js', '*.js'
         ]
       }
     },
@@ -26,7 +25,7 @@ module.exports = function (grunt) {
       },
       test: {
         files: '<%= jshint.test.src %>',
-        tasks: ['jshint:test', 'standard' ]
+        tasks: ['jshint:test', 'standard']
       }
     },
     tape: {
@@ -36,10 +35,10 @@ module.exports = function (grunt) {
       },
       files: ['test.js']
     }
-  });
+  })
 
-  grunt.loadNpmTasks('grunt-tape');
-  grunt.loadNpmTasks('grunt-standard');
-  grunt.registerTask('test', ['tape']);
-  grunt.registerTask('default', ['standard', 'test']);
-};
+  grunt.loadNpmTasks('grunt-tape')
+  grunt.loadNpmTasks('grunt-standard')
+  grunt.registerTask('test', ['tape'])
+  grunt.registerTask('default', ['standard', 'test'])
+}
