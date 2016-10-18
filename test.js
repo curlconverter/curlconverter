@@ -11,8 +11,7 @@ var curlconverter = require('./index.js')
 // language-specific directories: node_output, php_output, python_output, parser_output
 // we get a list of all input files, iterate over it, and if an output file exists, compare the output.
 
-var inputFiles = fs.readdirSync('fixtures/curl_commands/')
-inputFiles.forEach(function (fileName) {
+var testFile = function (fileName) {
   var inputFilePath = 'fixtures/curl_commands/' + fileName
   var parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
   var inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
@@ -61,5 +60,15 @@ inputFiles.forEach(function (fileName) {
       t.end()
     })
   }
-})
+}
 
+// get third parameter, an optional name of the test like get_basic_auth and just run that test on its own
+var testName = process.argv.slice(2)
+if (testName.length === 1) {
+  var fileName = testName[0] + '.txt'
+  testFile(fileName)
+} else {
+  // otherwise, run them all
+  var inputFiles = fs.readdirSync('fixtures/curl_commands/')
+  inputFiles.forEach(testFile)
+}
