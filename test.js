@@ -4,6 +4,7 @@ var fs = require('fs')
 
 var utils = require('./util')
 var curlconverter = require('./index.js')
+var yargs = require('yargs')
 
 // the curl_commands/ directory contains input files
 // The file name is a description of the command.
@@ -61,11 +62,10 @@ var testFile = function (fileName) {
     })
   }
 }
-
-// get third parameter, an optional name of the test like get_basic_auth and just run that test on its own
-var testName = process.argv.slice(2)
-if (testName.length === 1) {
-  var fileName = testName[0] + '.txt'
+// get --test=test_name parameter and just run that test on its own
+var testName = yargs.argv.test
+if (testName) {
+  var fileName = testName + '.txt'
   testFile(fileName)
 } else {
   // otherwise, run them all
