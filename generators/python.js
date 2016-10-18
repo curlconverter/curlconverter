@@ -1,5 +1,6 @@
 var util = require('../util')
 var jsesc = require('jsesc')
+var querystring = require('querystring')
 
 require('string.prototype.startswith')
 
@@ -32,7 +33,23 @@ var toPython = function (curlCommand) {
       if (escapedData.indexOf("'") > -1) {
         escapedData = jsesc(request.data)
       }
-      dataString = 'data = \'' + escapedData + '\'\n'
+      var parsedQueryString = querystring.parse(escapedData)
+      dataString = 'data = {\n'
+      var dataCount = Object.keys(parsedQueryString).length
+      if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
+        dataString = "data = '" + request.data + "'\n"
+      } else {
+        var dataIndex = 0
+        for (var key in parsedQueryString) {
+          var value = parsedQueryString[key]
+          dataString += "  '" + key + "': '" + value + "'"
+          if (dataIndex < dataCount - 1) {
+            dataString += ',\n'
+          }
+          dataIndex++
+        }
+        dataString += '\n}\n'
+      }
     }
   }
   var requestLine = 'requests.' + request.method + '(\'' + request.url + '\''

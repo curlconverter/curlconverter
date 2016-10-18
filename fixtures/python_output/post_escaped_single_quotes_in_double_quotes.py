@@ -1,3 +1,5 @@
-data = 'foo=\\\'bar\\\''
+data = {
+  'foo': '\\\'bar\\\''
+}
 
 requests.post('http://example.com/', data=data)
