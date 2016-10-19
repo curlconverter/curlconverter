@@ -28,6 +28,6 @@
     "tape": "^4.6.2"
   },
   "scripts": {
-    "test": "test.sh"
+    "test": "./test.sh"
   }
 }
