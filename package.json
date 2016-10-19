@@ -24,6 +24,10 @@
     "yargs": "NickCarneiro/yargs"
   },
   "devDependencies": {
+    "eslint": "^3.8.1",
+    "eslint-config-standard": "^6.2.0",
+    "eslint-plugin-promise": "^3.3.0",
+    "eslint-plugin-standard": "^2.0.1",
     "grunt": "^0.4.5",
     "grunt-cli": "^0.1.13",
     "grunt-contrib-jshint": "^0.10.0",

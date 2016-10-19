@@ -74,6 +74,7 @@ var toPython = function (curlCommand) {
   requestLine += ')'
 
   var pythonCode = ''
+  pythonCode += 'import requests\n\n'
   if (cookieDict) {
     pythonCode += cookieDict + '\n'
   }

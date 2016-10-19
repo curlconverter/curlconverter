@@ -1,3 +1,5 @@
+import requests
+
 headers = {
     'Origin': 'http://www.realtor.ca',
     'Accept-Encoding': 'gzip, deflate',

@@ -1,3 +1,5 @@
+import requests
+
 cookies = {
     '_gat': '1',
     'ASPSESSIONIDACCRDTDC': 'MCMDKFMBLLLHGKCGNMKNGPKI',
