@@ -26,6 +26,8 @@ Returns a string of python code like:
 
 ```python
 
+import requests
+
 cookies = {
     'GeoIP': 'US:Albuquerque:35.1241:-106.7675:v4',
     'uls-previous-languages': '%5B%22en%22%5D',
