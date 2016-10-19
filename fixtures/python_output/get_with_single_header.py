@@ -1,3 +1,5 @@
+import requests
+
 headers = {
     'foo': 'bar',
 }

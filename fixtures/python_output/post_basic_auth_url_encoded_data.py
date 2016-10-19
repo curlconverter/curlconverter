@@ -1,3 +1,5 @@
+import requests
+
 data = {
   'grant_type': 'client_credentials'
 }

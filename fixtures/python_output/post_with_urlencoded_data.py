@@ -1,3 +1,5 @@
+import requests
+
 headers = {
     'Origin': 'http://fiddle.jshell.net',
     'Accept-Encoding': 'gzip, deflate',
