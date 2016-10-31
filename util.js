@@ -84,6 +84,7 @@ var parseCurlCommand = function (curlCommand) {
     request.data = parsedArguments.data
   } else if (parsedArguments['data-binary']) {
     request.data = parsedArguments['data-binary']
+    request.isDataBinary = true
   } else if (parsedArguments['d']) {
     request.data = parsedArguments['d']
   }

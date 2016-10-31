@@ -27,7 +27,11 @@ var toPython = function (curlCommand) {
   if (request.data) {
     if (request.data.startsWith('@')) {
       var filePath = request.data.slice(1)
-      dataString = 'data = open(\'' + filePath + '\')'
+      if (request.isDataBinary) {
+        dataString = 'data = open(\'' + filePath + '\', \'rb\').read()'
+      } else {
+        dataString = 'data = open(\'' + filePath + '\')'
+      }
     } else {
       var escapedData = request.data.replace(/'/g, "\\'")
       if (escapedData.indexOf("'") > -1) {
