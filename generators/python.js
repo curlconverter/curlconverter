@@ -1,3 +1,4 @@
+'use strict'
 var util = require('../util')
 var jsesc = require('jsesc')
 var querystring = require('querystring')
@@ -24,6 +25,7 @@ var toPython = function (curlCommand) {
   }
 
   var dataString
+  var filesString
   if (request.data) {
     if (request.data.startsWith('@')) {
       var filePath = request.data.slice(1)
@@ -44,8 +46,8 @@ var toPython = function (curlCommand) {
         dataString = "data = '" + request.data + "'\n"
       } else {
         var dataIndex = 0
-        for (var key in parsedQueryString) {
-          var value = parsedQueryString[key]
+        for (let key in parsedQueryString) {
+          let value = parsedQueryString[key]
           dataString += "  '" + key + "': '" + value + "'"
           if (dataIndex < dataCount - 1) {
             dataString += ',\n'
@@ -55,6 +57,24 @@ var toPython = function (curlCommand) {
         dataString += '\n}\n'
       }
     }
+  } else if (request.multipartUploads) {
+    // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
+    filesString = 'files = {\n'
+    var filesIndex = 0
+    var filesCount = Object.keys(request.multipartUploads).length
+    for (let key in request.multipartUploads) {
+      let value = request.multipartUploads[key]
+      if (value.startsWith('@')) {
+        filesString += "    '" + key + "': open('" + value.slice(1) + "', 'rb')"
+      } else {
+        filesString += "    '" + key + "': '" + value + "'"
+      }
+      if (filesIndex < filesCount - 1) {
+        filesString += ',\n'
+      }
+      filesIndex++
+    }
+    filesString += '\n}\n'
   }
   var requestLine = 'requests.' + request.method + '(\'' + request.url + '\''
   if (request.headers) {
@@ -65,6 +85,8 @@ var toPython = function (curlCommand) {
   }
   if (request.data) {
     requestLine += ', data=data'
+  } else if (request.multipartUploads) {
+    requestLine += ', files=files'
   }
   if (request.insecure) {
     requestLine += ', verify=False'
@@ -87,6 +109,8 @@ var toPython = function (curlCommand) {
   }
   if (dataString) {
     pythonCode += dataString + '\n'
+  } else if (filesString) {
+    pythonCode += filesString + '\n'
   }
   pythonCode += requestLine
 

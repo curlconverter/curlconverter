@@ -54,6 +54,20 @@ var parseCurlCommand = function (curlCommand) {
       }
     })
   }
+  var multipartUploads
+  if (parsedArguments.F) {
+    multipartUploads = {}
+    if (!Array.isArray(parsedArguments.F)) {
+      parsedArguments.F = [parsedArguments.F]
+    }
+    parsedArguments.F.forEach(function (multipartArgument) {
+      // input looks like key=value. value could be json or a file path prepended with an @
+      var splitArguments = multipartArgument.split('=', 2)
+      var key = splitArguments[0]
+      var value = splitArguments[1]
+      multipartUploads[key] = value
+    })
+  }
   if (cookieString) {
     var cookieParseOptions = {
       decode: function (s) { return s }
@@ -79,6 +93,9 @@ var parseCurlCommand = function (curlCommand) {
   }
   if (cookies) {
     request.cookies = cookies
+  }
+  if (multipartUploads) {
+    request.multipartUploads = multipartUploads
   }
   if (parsedArguments.data) {
     request.data = parsedArguments.data
