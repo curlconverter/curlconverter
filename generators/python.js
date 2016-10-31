@@ -1,4 +1,3 @@
-'use strict'
 var util = require('../util')
 var jsesc = require('jsesc')
 var querystring = require('querystring')
@@ -46,8 +45,8 @@ var toPython = function (curlCommand) {
         dataString = "data = '" + request.data + "'\n"
       } else {
         var dataIndex = 0
-        for (let key in parsedQueryString) {
-          let value = parsedQueryString[key]
+        for (var key in parsedQueryString) {
+          var value = parsedQueryString[key]
           dataString += "  '" + key + "': '" + value + "'"
           if (dataIndex < dataCount - 1) {
             dataString += ',\n'
@@ -62,12 +61,12 @@ var toPython = function (curlCommand) {
     filesString = 'files = {\n'
     var filesIndex = 0
     var filesCount = Object.keys(request.multipartUploads).length
-    for (let key in request.multipartUploads) {
-      let value = request.multipartUploads[key]
-      if (value.startsWith('@')) {
-        filesString += "    '" + key + "': open('" + value.slice(1) + "', 'rb')"
+    for (var multipartKey in request.multipartUploads) {
+      var multipartValue = request.multipartUploads[multipartKey]
+      if (multipartValue.startsWith('@')) {
+        filesString += "    '" + multipartKey + "': open('" + multipartValue.slice(1) + "', 'rb')"
       } else {
-        filesString += "    '" + key + "': '" + value + "'"
+        filesString += "    '" + multipartKey + "': '" + multipartValue + "'"
       }
       if (filesIndex < filesCount - 1) {
         filesString += ',\n'
