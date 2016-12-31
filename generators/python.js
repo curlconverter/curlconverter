@@ -39,21 +39,55 @@ var toPython = function (curlCommand) {
         escapedData = jsesc(request.data)
       }
       var parsedQueryString = querystring.parse(escapedData)
-      dataString = 'data = {\n'
-      var dataCount = Object.keys(parsedQueryString).length
-      if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
+      var keyCount = Object.keys(parsedQueryString).length
+      if (keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
         dataString = "data = '" + request.data + "'\n"
       } else {
         var dataIndex = 0
+        var repeatedKey = false
+        var valueCount = 0
         for (var key in parsedQueryString) {
           var value = parsedQueryString[key]
-          dataString += "  '" + key + "': '" + value + "'"
-          if (dataIndex < dataCount - 1) {
-            dataString += ',\n'
+          if (Array.isArray(value)) {
+            repeatedKey = true
+            valueCount += value.length
+          } else {
+            valueCount++
           }
-          dataIndex++
         }
-        dataString += '\n}\n'
+        if (repeatedKey) {
+          dataString = 'data = [\n'
+          for (key in parsedQueryString) {
+            value = parsedQueryString[key]
+            if (Array.isArray(value)) {
+              for (var i = 0; i < value.length; i++) {
+                dataString += "  ('" + key + "', '" + value[i] + "')"
+                if (dataIndex < valueCount - 1) {
+                  dataString += ',\n'
+                }
+                dataIndex++
+              }
+            } else {
+              dataString += "  ('" + key + "', '" + value + "')"
+              if (dataIndex < keyCount - 1) {
+                dataString += ',\n'
+              }
+              dataIndex++
+            }
+          }
+          dataString += '\n]\n'
+        } else {
+          dataString = 'data = {\n'
+          for (key in parsedQueryString) {
+            value = parsedQueryString[key]
+            dataString += "  '" + key + "': '" + value + "'"
+            if (dataIndex < keyCount - 1) {
+              dataString += ',\n'
+            }
+            dataIndex++
+          }
+          dataString += '\n}\n'
+        }
       }
     }
   } else if (request.multipartUploads) {
