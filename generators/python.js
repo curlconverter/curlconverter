@@ -40,7 +40,9 @@ var toPython = function (curlCommand) {
       }
       var parsedQueryString = querystring.parse(escapedData)
       var keyCount = Object.keys(parsedQueryString).length
-      if (keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
+      if (request.isDataBinary) {
+        dataString = "data = '" + request.data + "'\n"
+      } else if (keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
         dataString = "data = '" + request.data + "'\n"
       } else {
         var dataIndex = 0
