@@ -67,6 +67,7 @@ You can run a specific test with this command:
 where "test_name" is a file (without extension) in `fixtures/curl_commands`
 
 I recommend setting this up with a debugger so you can see exactly what the parser is passing to the generator.
+Here's my Intellij run configuration for a single test:
 ![Screenshot of intellij debug configuration](/docs/intellijconfig.png)
 
 If you get stuck, please reach out via email. I am always willing to hop on a google hangout and pair program.
