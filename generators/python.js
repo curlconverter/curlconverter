@@ -4,13 +4,101 @@ var querystring = require('querystring')
 
 require('string.prototype.startswith')
 
-function pythonReprString (value) {
+function repr (value) {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
   } else {
-    return "'" + value.replace('\\', '\\\\').replace("'", "\\'") + "'"
+    return "'" + jsesc(value, { quotes: 'single' }) + "'"
   }
+}
+
+function getQueryDict (request) {
+  var queryDict = 'params = (\n'
+  for (var paramName in request.query) {
+    var rawValue = request.query[paramName]
+    var paramValue
+    if (Array.isArray(rawValue)) {
+      paramValue = rawValue.map(repr).join(', ')
+    } else {
+      paramValue = repr(rawValue)
+    }
+    queryDict += '    (' + repr(paramName) + ', ' + paramValue + '),\n'
+  }
+  queryDict += ')\n'
+  return queryDict
+}
+
+function getDataString (request) {
+  if (request.data.startsWith('@')) {
+    var filePath = request.data.slice(1)
+    if (request.isDataBinary) {
+      return 'data = open(\'' + filePath + '\', \'rb\').read()'
+    } else {
+      return 'data = open(\'' + filePath + '\')'
+    }
+  }
+
+  var parsedQueryString = querystring.parse(request.data)
+  var keyCount = Object.keys(parsedQueryString).length
+  var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
+  var singularData = request.isDataBinary || singleKeyOnly
+  if (singularData) {
+    return 'data = ' + repr(request.data) + '\n'
+  } else {
+    return getMultipleDataString(request, parsedQueryString)
+  }
+}
+
+function getMultipleDataString (request, parsedQueryString) {
+  var repeatedKey = false
+  for (var key in parsedQueryString) {
+    var value = parsedQueryString[key]
+    if (Array.isArray(value)) {
+      repeatedKey = true
+    }
+  }
+
+  var dataString
+  if (repeatedKey) {
+    dataString = 'data = [\n'
+    for (key in parsedQueryString) {
+      value = parsedQueryString[key]
+      if (Array.isArray(value)) {
+        for (var i = 0; i < value.length; i++) {
+          dataString += '  (' + repr(key) + ', ' + repr(value[i]) + '),\n'
+        }
+      } else {
+        dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
+      }
+    }
+    dataString += ']\n'
+  } else {
+    dataString = 'data = [\n'
+    for (key in parsedQueryString) {
+      value = parsedQueryString[key]
+      dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
+    }
+    dataString += ']\n'
+  }
+
+  return dataString
+}
+
+function getFilesString (request) {
+  // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
+  var filesString = 'files = [\n'
+  for (var multipartKey in request.multipartUploads) {
+    var multipartValue = request.multipartUploads[multipartKey]
+    if (multipartValue.startsWith('@')) {
+      filesString += '    (' + repr(multipartKey) + ', open(' + repr(multipartValue.slice(1)) + ", 'rb')),\n"
+    } else {
+      filesString += '    (' + repr(multipartKey) + ', ' + repr(multipartValue) + '),\n'
+    }
+  }
+  filesString += ']\n'
+
+  return filesString
 }
 
 var toPython = function (curlCommand) {
@@ -19,7 +107,7 @@ var toPython = function (curlCommand) {
   if (request.cookies) {
     cookieDict = 'cookies = {\n'
     for (var cookieName in request.cookies) {
-      cookieDict += "    '" + cookieName + "': '" + request.cookies[cookieName] + "',\n"
+      cookieDict += '    ' + repr(cookieName) + ': ' + repr(request.cookies[cookieName]) + ',\n'
     }
     cookieDict += '}\n'
   }
@@ -27,114 +115,22 @@ var toPython = function (curlCommand) {
   if (request.headers) {
     headerDict = 'headers = {\n'
     for (var headerName in request.headers) {
-      headerDict += "    '" + headerName + "': '" + request.headers[headerName] + "',\n"
+      headerDict += '    ' + repr(headerName) + ': ' + repr(request.headers[headerName]) + ',\n'
     }
     headerDict += '}\n'
   }
 
   var queryDict
   if (request.query) {
-    queryDict = 'params = (\n'
-    for (var paramName in request.query) {
-      var rawValue = request.query[paramName]
-      var paramValue
-      if (Array.isArray(rawValue)) {
-        paramValue = rawValue.map(pythonReprString).join(', ')
-      } else {
-        paramValue = pythonReprString(rawValue)
-      }
-      queryDict += '    (' + pythonReprString(paramName) + ', ' + paramValue + '),\n'
-    }
-    queryDict += ')\n'
+    queryDict = getQueryDict(request)
   }
 
   var dataString
   var filesString
   if (request.data) {
-    if (request.data.startsWith('@')) {
-      var filePath = request.data.slice(1)
-      if (request.isDataBinary) {
-        dataString = 'data = open(\'' + filePath + '\', \'rb\').read()'
-      } else {
-        dataString = 'data = open(\'' + filePath + '\')'
-      }
-    } else {
-      var escapedData = request.data.replace(/'/g, "\\'")
-      if (escapedData.indexOf("'") > -1) {
-        escapedData = jsesc(request.data)
-      }
-      var parsedQueryString = querystring.parse(escapedData)
-      var keyCount = Object.keys(parsedQueryString).length
-      if (request.isDataBinary) {
-        dataString = "data = '" + request.data + "'\n"
-      } else if (keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
-        dataString = "data = '" + request.data + "'\n"
-      } else {
-        var dataIndex = 0
-        var repeatedKey = false
-        var valueCount = 0
-        for (var key in parsedQueryString) {
-          var value = parsedQueryString[key]
-          if (Array.isArray(value)) {
-            repeatedKey = true
-            valueCount += value.length
-          } else {
-            valueCount++
-          }
-        }
-        if (repeatedKey) {
-          dataString = 'data = [\n'
-          for (key in parsedQueryString) {
-            value = parsedQueryString[key]
-            if (Array.isArray(value)) {
-              for (var i = 0; i < value.length; i++) {
-                dataString += "  ('" + key + "', '" + value[i] + "')"
-                if (dataIndex < valueCount - 1) {
-                  dataString += ',\n'
-                }
-                dataIndex++
-              }
-            } else {
-              dataString += "  ('" + key + "', '" + value + "')"
-              if (dataIndex < keyCount - 1) {
-                dataString += ',\n'
-              }
-              dataIndex++
-            }
-          }
-          dataString += '\n]\n'
-        } else {
-          dataString = 'data = {\n'
-          for (key in parsedQueryString) {
-            value = parsedQueryString[key]
-            dataString += "  '" + key + "': '" + value + "'"
-            if (dataIndex < keyCount - 1) {
-              dataString += ',\n'
-            }
-            dataIndex++
-          }
-          dataString += '\n}\n'
-        }
-      }
-    }
+    dataString = getDataString(request)
   } else if (request.multipartUploads) {
-    // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
-    filesString = 'files = {\n'
-    var filesIndex = 0
-    var filesCount = Object.keys(request.multipartUploads).length
-    for (var multipartKey in request.multipartUploads) {
-      var multipartValue = request.multipartUploads[multipartKey]
-      if (multipartValue.startsWith('@')) {
-        filesString += "    '" + multipartKey + "': open('" + multipartValue.slice(1) + "', 'rb')"
-      } else {
-        filesString += "    '" + multipartKey + "': '" + multipartValue + "'"
-      }
-      if (filesIndex < filesCount - 1) {
-        filesString += ',\n'
-      }
-      filesIndex++
-    }
-    filesString += '\n}\n'
+    filesString = getFilesString(request)
   }
 
   var requestLineWithUrlParams = 'requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
@@ -162,7 +158,7 @@ var toPython = function (curlCommand) {
     var splitAuth = request.auth.split(':')
     var user = splitAuth[0] || ''
     var password = splitAuth[1] || ''
-    requestLineBody += ", auth=('" + user + "', '" + password + "')"
+    requestLineBody += ', auth=(' + repr(user) + ', ' + repr(password) + ')'
   }
   requestLineBody += ')'
 

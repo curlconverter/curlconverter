@@ -31,8 +31,8 @@ var parseCurlCommand = function (curlCommand) {
   var cookieString
   var cookies
   var url = parsedArguments._[1]
-    // if url argument wasn't where we expected it, check other places
-    // it shows up
+        // if url argument wasn't where we expected it, check other places
+        // it shows up
   if (!url && parsedArguments['L']) {
     url = parsedArguments['L']
   }
@@ -63,7 +63,7 @@ var parseCurlCommand = function (curlCommand) {
       parsedArguments.F = [parsedArguments.F]
     }
     parsedArguments.F.forEach(function (multipartArgument) {
-      // input looks like key=value. value could be json or a file path prepended with an @
+            // input looks like key=value. value could be json or a file path prepended with an @
       var splitArguments = multipartArgument.split('=', 2)
       var key = splitArguments[0]
       var value = splitArguments[1]
