@@ -149,7 +149,7 @@ var toPython = function (curlCommand) {
   }
   pythonCode += requestLine
 
-  return pythonCode
+  return pythonCode + '\n'
 }
 
 module.exports = toPython
