@@ -1,4 +1,5 @@
 module.exports = { url: 'http://en.wikipedia.org/',
+    urlWithoutQuery: 'http://en.wikipedia.org/',
     headers:
     { 'Accept-Encoding': 'gzip, deflate, sdch',
         'Accept-Language': 'en-US,en;q=0.8',

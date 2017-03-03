@@ -4,6 +4,15 @@ var querystring = require('querystring')
 
 require('string.prototype.startswith')
 
+function pythonReprString (value) {
+  // In context of url parameters, don't accept nulls and such.
+  if (!value) {
+    return "''"
+  } else {
+    return "'" + value.replace('\\', '\\\\').replace("'", "\\'") + "'"
+  }
+}
+
 var toPython = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
   var cookieDict
@@ -21,6 +30,22 @@ var toPython = function (curlCommand) {
       headerDict += "    '" + headerName + "': '" + request.headers[headerName] + "',\n"
     }
     headerDict += '}\n'
+  }
+
+  var queryDict
+  if (request.query) {
+    queryDict = 'params = (\n'
+    for (var paramName in request.query) {
+      var rawValue = request.query[paramName]
+      var paramValue
+      if (Array.isArray(rawValue)) {
+        paramValue = rawValue.map(pythonReprString).join(', ')
+      } else {
+        paramValue = pythonReprString(rawValue)
+      }
+      queryDict += '    (' + pythonReprString(paramName) + ', ' + paramValue + '),\n'
+    }
+    queryDict += ')\n'
   }
 
   var dataString
@@ -111,28 +136,38 @@ var toPython = function (curlCommand) {
     }
     filesString += '\n}\n'
   }
-  var requestLine = 'requests.' + request.method + '(\'' + request.url + '\''
+
+  var requestLineWithUrlParams = 'requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
+  var requestLineWithOriginalUrl = 'requests.' + request.method + '(\'' + request.url + '\''
+
+  var requestLineBody = ''
   if (request.headers) {
-    requestLine += ', headers=headers'
+    requestLineBody += ', headers=headers'
+  }
+  if (request.query) {
+    requestLineBody += ', params=params'
   }
   if (request.cookies) {
-    requestLine += ', cookies=cookies'
+    requestLineBody += ', cookies=cookies'
   }
   if (request.data) {
-    requestLine += ', data=data'
+    requestLineBody += ', data=data'
   } else if (request.multipartUploads) {
-    requestLine += ', files=files'
+    requestLineBody += ', files=files'
   }
   if (request.insecure) {
-    requestLine += ', verify=False'
+    requestLineBody += ', verify=False'
   }
   if (request.auth) {
     var splitAuth = request.auth.split(':')
     var user = splitAuth[0] || ''
     var password = splitAuth[1] || ''
-    requestLine += ", auth=('" + user + "', '" + password + "')"
+    requestLineBody += ", auth=('" + user + "', '" + password + "')"
   }
-  requestLine += ')'
+  requestLineBody += ')'
+
+  requestLineWithOriginalUrl += requestLineBody.replace(', params=params', '')
+  requestLineWithUrlParams += requestLineBody
 
   var pythonCode = ''
   pythonCode += 'import requests\n\n'
@@ -142,12 +177,23 @@ var toPython = function (curlCommand) {
   if (headerDict) {
     pythonCode += headerDict + '\n'
   }
+  if (queryDict) {
+    pythonCode += queryDict + '\n'
+  }
   if (dataString) {
     pythonCode += dataString + '\n'
   } else if (filesString) {
     pythonCode += filesString + '\n'
   }
-  pythonCode += requestLine
+  pythonCode += requestLineWithUrlParams
+
+  if (request.query) {
+    pythonCode += '\n\n' +
+            '#NB. Original query string below. It seems impossible to parse and\n' +
+            'reproduce query strings 100% accurately so the one below is given\n' +
+            'in case the reproduced version is not "correct".\n'
+    pythonCode += '# ' + requestLineWithOriginalUrl
+  }
 
   return pythonCode + '\n'
 }

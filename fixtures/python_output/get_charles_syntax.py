@@ -7,4 +7,14 @@ headers = {
     'Accept-Language': 'en-CN;q=1, zh-Hans-CN;q=0.9',
 }
 
-requests.get('http://api.ipify.org/?format=json&', headers=headers)
+params = (
+    ('format', 'json'),
+    ('', ''),
+)
+
+requests.get('http://api.ipify.org/', headers=headers, params=params)
+
+#NB. Original query string below. It seems impossible to parse and
+reproduce query strings 100% accurately so the one below is given
+in case the reproduced version is not "correct".
+# requests.get('http://api.ipify.org/?format=json&', headers=headers)

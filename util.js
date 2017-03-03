@@ -1,5 +1,7 @@
 var cookie = require('cookie')
 var yargs = require('yargs')
+var URL = require('url')
+var querystring = require('querystring')
 
 /**
  * given this: [ 'msg1=value1', 'msg2=value2' ]
@@ -86,9 +88,19 @@ var parseCurlCommand = function (curlCommand) {
   } else {
     method = 'get'
   }
+
+  var urlObject = URL.parse(url)
+  var query = querystring.parse(urlObject.query, null, null, { maxKeys: 10000 })
+
+  urlObject.search = null // Clean out the search/query portion.
   var request = {
     url: url,
+    urlWithoutQuery: URL.format(urlObject),
     method: method
+  }
+
+  if (Object.keys(query).length > 0) {
+    request.query = query
   }
   if (headers) {
     request.headers = headers
@@ -143,4 +155,3 @@ module.exports = {
   parseCurlCommand: parseCurlCommand,
   serializeCookies: serializeCookies
 }
-
