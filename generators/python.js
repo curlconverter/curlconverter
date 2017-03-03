@@ -186,8 +186,8 @@ var toPython = function (curlCommand) {
   if (request.query) {
     pythonCode += '\n\n' +
             '#NB. Original query string below. It seems impossible to parse and\n' +
-            'reproduce query strings 100% accurately so the one below is given\n' +
-            'in case the reproduced version is not "correct".\n'
+            '#reproduce query strings 100% accurately so the one below is given\n' +
+            '#in case the reproduced version is not "correct".\n'
     pythonCode += '# ' + requestLineWithOriginalUrl
   }
 

@@ -49,6 +49,6 @@ data = '{"__type":"CreateItemJsonRequest:#Exchange","Header":{"__type":"JsonRequ
 requests.post('https://localhost/api/service.svc', headers=headers, params=params, cookies=cookies, data=data)
 
 #NB. Original query string below. It seems impossible to parse and
-reproduce query strings 100% accurately so the one below is given
-in case the reproduced version is not "correct".
+#reproduce query strings 100% accurately so the one below is given
+#in case the reproduced version is not "correct".
 # requests.post('https://localhost/api/service.svc?action=CreateItem&ID=-37&AC=1', headers=headers, cookies=cookies, data=data)
