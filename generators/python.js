@@ -19,7 +19,7 @@ function getQueryDict (request) {
     var rawValue = request.query[paramName]
     var paramValue
     if (Array.isArray(rawValue)) {
-      paramValue = rawValue.map(repr).join(', ')
+      paramValue = '[' + rawValue.map(repr).join(', ') + ']'
     } else {
       paramValue = repr(rawValue)
     }
