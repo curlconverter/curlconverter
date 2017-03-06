@@ -9,7 +9,6 @@ headers = {
 
 params = (
     ('format', 'json'),
-    ('', ''),
 )
 
 requests.get('http://api.ipify.org/', headers=headers, params=params)
