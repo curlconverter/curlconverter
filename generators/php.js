@@ -76,7 +76,7 @@ var toPhp = function (curlCommand) {
 
   phpCode += requestLine
 
-  return phpCode
+  return phpCode + '\n'
 }
 
 module.exports = toPhp

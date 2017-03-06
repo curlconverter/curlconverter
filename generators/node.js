@@ -67,7 +67,7 @@ var toNode = function (curlCommand) {
   nodeCode += '}\n\n'
   nodeCode += 'request(options, callback);'
 
-  return nodeCode
+  return nodeCode + '\n'
 }
 
 module.exports = toNode
