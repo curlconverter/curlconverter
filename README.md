@@ -51,6 +51,8 @@ requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 
 ## Contributing
 
+Make sure you're node 6 or greater. The test suite will fail on older versions of node.
+
 If you want to add new functionality, start with a test. 
 
 - Create a file containing the curl command in `fixtures/curl_commands` with a descriptive filename like `post_with_headers.txt`
