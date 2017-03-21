@@ -56,6 +56,9 @@ var parseCurlCommand = function (curlCommand) {
       }
     })
   }
+  if (parsedArguments.b) {
+    cookieString = parsedArguments.b
+  }
   var multipartUploads
   if (parsedArguments.F) {
     multipartUploads = {}
