@@ -20,6 +20,7 @@ var joinDataArguments = function (dataArguments) {
   return data
 }
 
+
 var parseCurlCommand = function (curlCommand) {
   var newlineFound = /\r|\n/.exec(curlCommand)
   if (newlineFound) {
@@ -40,22 +41,32 @@ var parseCurlCommand = function (curlCommand) {
     url = parsedArguments['compressed']
   }
   var headers
-  if (parsedArguments.H) {
-    headers = {}
-    if (!Array.isArray(parsedArguments.H)) {
-      parsedArguments.H = [parsedArguments.H]
-    }
-    parsedArguments.H.forEach(function (header) {
-      if (header.indexOf('Cookie') !== -1) {
-        cookieString = header
-      } else {
-        var colonIndex = header.indexOf(':')
-        var headerName = header.substring(0, colonIndex)
-        var headerValue = header.substring(colonIndex + 1).trim()
-        headers[headerName] = headerValue
+
+  var parseHeaders = function (headerFieldName) {
+    if (parsedArguments[headerFieldName]) {
+      if (!headers) {
+        headers = []
       }
-    })
+      if (!Array.isArray(parsedArguments[headerFieldName])) {
+        parsedArguments[headerFieldName] = [parsedArguments[headerFieldName]]
+      }
+      parsedArguments[headerFieldName].forEach(function (header) {
+        if (header.indexOf('Cookie') !== -1) {
+          // stupid javascript tricks: closure
+          cookieString = header
+        } else {
+          var colonIndex = header.indexOf(':')
+          var headerName = header.substring(0, colonIndex)
+          var headerValue = header.substring(colonIndex + 1).trim()
+          headers[headerName] = headerValue
+        }
+      })
+    }
   }
+
+  parseHeaders('H')
+  parseHeaders('header')
+
   if (parsedArguments.b) {
     cookieString = parsedArguments.b
   }
