@@ -20,7 +20,6 @@ var joinDataArguments = function (dataArguments) {
   return data
 }
 
-
 var parseCurlCommand = function (curlCommand) {
   var newlineFound = /\r|\n/.exec(curlCommand)
   if (newlineFound) {
