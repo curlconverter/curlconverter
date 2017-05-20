@@ -39,6 +39,9 @@ var parseCurlCommand = function (curlCommand) {
   if (!url && parsedArguments['compressed']) {
     url = parsedArguments['compressed']
   }
+  if (!url && parsedArguments['s']) {
+    url = parsedArguments['s']
+  }
   var headers
 
   var parseHeaders = function (headerFieldName) {
