@@ -144,8 +144,8 @@ var toPython = function (curlCommand) {
   if (request.urlWithoutQuery.indexOf('http') !== 0) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  var requestLineWithUrlParams = 'requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
-  var requestLineWithOriginalUrl = 'requests.' + request.method + '(\'' + request.url + '\''
+  var requestLineWithUrlParams = 'response = requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
+  var requestLineWithOriginalUrl = 'response = requests.' + request.method + '(\'' + request.url + '\''
 
   var requestLineBody = ''
   if (request.headers) {
