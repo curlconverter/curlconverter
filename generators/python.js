@@ -133,8 +133,8 @@ var toPython = function (curlCommand) {
     filesString = getFilesString(request)
   }
 
-  var requestLineWithUrlParams = 'requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
-  var requestLineWithOriginalUrl = 'requests.' + request.method + '(\'' + request.url + '\''
+  var requestLineWithUrlParams = 'response = requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
+  var requestLineWithOriginalUrl = 'response = requests.' + request.method + '(\'' + request.url + '\''
 
   var requestLineBody = ''
   if (request.headers) {
