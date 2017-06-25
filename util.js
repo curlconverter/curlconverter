@@ -38,7 +38,7 @@ var parseCurlCommand = function (curlCommand) {
         // if url argument wasn't where we expected it, try to find it in the other arguments
   if (!url) {
     for (var argName in parsedArguments) {
-      if (parsedArguments[argName].indexOf('http') === 0) {
+      if (parsedArguments[argName].indexOf('http') === 0 || parsedArguments[argName].indexOf('www.') === 0) {
         url = parsedArguments[argName]
       }
     }
