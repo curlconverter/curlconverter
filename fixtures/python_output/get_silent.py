@@ -1,3 +1,3 @@
 import requests
 
-requests.get('www.google.com')
+requests.get('http://www.google.com')

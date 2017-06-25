@@ -132,7 +132,14 @@ var toPython = function (curlCommand) {
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
   }
-
+  // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
+  // we tack it on here to mimic curl
+  if (request.url.indexOf('http') !== 0) {
+    request.url = 'http://' + request.url
+  }
+  if (request.urlWithoutQuery.indexOf('http') !== 0) {
+    request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
+  }
   var requestLineWithUrlParams = 'requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
   var requestLineWithOriginalUrl = 'requests.' + request.method + '(\'' + request.url + '\''
 
