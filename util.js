@@ -26,7 +26,11 @@ var parseCurlCommand = function (curlCommand) {
         // remove newlines
     curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
   }
-  var yargObject = yargs(curlCommand.trim())
+  // yargs parses -XPOST as separate arguments. just prescreen for it.
+  curlCommand = curlCommand.replace(/ -XPOST/, ' -X POST')
+  curlCommand = curlCommand.replace(/ -XGET/, ' -X GET')
+  curlCommand = curlCommand.trim()
+  var yargObject = yargs(curlCommand)
   var parsedArguments = yargObject.argv
   var cookieString
   var cookies
