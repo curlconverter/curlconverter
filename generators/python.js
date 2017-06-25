@@ -127,7 +127,7 @@ var toPython = function (curlCommand) {
 
   var dataString
   var filesString
-  if (request.data) {
+  if (typeof request.data === 'string') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
@@ -146,7 +146,7 @@ var toPython = function (curlCommand) {
   if (request.cookies) {
     requestLineBody += ', cookies=cookies'
   }
-  if (request.data) {
+  if (typeof request.data === 'string') {
     requestLineBody += ', data=data'
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'

@@ -1,1 +1,1 @@
-curl --data-binary "" google.com
+curl --data-binary "" http://google.com
