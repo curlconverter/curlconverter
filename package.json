@@ -24,7 +24,7 @@
     "yargs": "NickCarneiro/yargs"
   },
   "devDependencies": {
-    "standard": "^8.4.0",
+    "standard": "^10.0.3",
     "tape": "^4.6.2"
   },
   "scripts": {
