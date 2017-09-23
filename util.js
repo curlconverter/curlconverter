@@ -35,11 +35,13 @@ var parseCurlCommand = function (curlCommand) {
   var cookieString
   var cookies
   var url = parsedArguments._[1]
-        // if url argument wasn't where we expected it, try to find it in the other arguments
+  // if url argument wasn't where we expected it, try to find it in the other arguments
   if (!url) {
     for (var argName in parsedArguments) {
-      if (parsedArguments[argName].indexOf('http') === 0 || parsedArguments[argName].indexOf('www.') === 0) {
-        url = parsedArguments[argName]
+      if (typeof parsedArguments[argName] === 'string') {
+        if (parsedArguments[argName].indexOf('http') === 0 || parsedArguments[argName].indexOf('www.') === 0) {
+          url = parsedArguments[argName]
+        }
       }
     }
   }
