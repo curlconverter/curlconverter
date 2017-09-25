@@ -72,6 +72,17 @@ var parseCurlCommand = function (curlCommand) {
 
   parseHeaders('H')
   parseHeaders('header')
+  if (parsedArguments.A) {
+    if (!headers) {
+      headers = []
+    }
+    headers['User-Agent'] = parsedArguments.A
+  } else if (parsedArguments['user-agent']) {
+    if (!headers) {
+      headers = []
+    }
+    headers['User-Agent'] = parsedArguments['user-agent']
+  }
 
   if (parsedArguments.b) {
     cookieString = parsedArguments.b
