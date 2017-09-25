@@ -51,7 +51,7 @@ requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 
 ## Contributing
 
-Make sure you're node 6 or greater. The test suite will fail on older versions of node.
+Make sure you're running node 6 or greater. The test suite will fail on older versions of node.
 
 If you want to add new functionality, start with a test. 
 
