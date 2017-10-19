@@ -30,6 +30,9 @@ function getQueryDict (request) {
 }
 
 function getDataString (request) {
+  if (typeof request.data === 'number') {
+    request.data = request.data.toString()
+  }
   if (request.data.startsWith('@')) {
     var filePath = request.data.slice(1)
     if (request.isDataBinary) {
@@ -127,7 +130,7 @@ var toPython = function (curlCommand) {
 
   var dataString
   var filesString
-  if (typeof request.data === 'string') {
+  if (typeof request.data === 'string' || typeof request.data === 'number') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
