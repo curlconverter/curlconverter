@@ -104,6 +104,8 @@ var parseCurlCommand = function (curlCommand) {
     method = 'put'
   } else if (parsedArguments.X === 'DELETE') {
     method = 'delete'
+  } else if (parsedArguments.X === 'OPTIONS') {
+    method = 'options'
   } else if (parsedArguments.d || parsedArguments.data || parsedArguments['data-binary']) {
     method = 'post'
   } else {
