@@ -90,16 +90,17 @@ function getMultipleDataString (request, parsedQueryString) {
 
 function getFilesString (request) {
   // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
-  var filesString = 'files = [\n'
+  var filesString = 'files = {\n'
   for (var multipartKey in request.multipartUploads) {
     var multipartValue = request.multipartUploads[multipartKey]
     if (multipartValue.startsWith('@')) {
-      filesString += '    (' + repr(multipartKey) + ', open(' + repr(multipartValue.slice(1)) + ", 'rb')),\n"
+      var fileName = multipartValue.slice(1)
+      filesString += '    ' + repr(multipartKey) + ': (' + repr(fileName) + ', open(' + repr(fileName) + ", 'rb')),\n"
     } else {
-      filesString += '    (' + repr(multipartKey) + ', ' + repr(multipartValue) + '),\n'
+      filesString += '    ' + repr(multipartKey) + ': (None, ' + repr(multipartValue) + '),\n'
     }
   }
-  filesString += ']\n'
+  filesString += '}\n'
 
   return filesString
 }
