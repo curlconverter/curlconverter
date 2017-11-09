@@ -115,6 +115,8 @@ var parseCurlCommand = function (curlCommand) {
     method = 'post'
   } else if (parsedArguments.X === 'PUT') {
     method = 'put'
+  } else if (parsedArguments.X === 'PATCH') {
+    method = 'patch'
   } else if (parsedArguments.X === 'DELETE') {
     method = 'delete'
   } else if (parsedArguments.X === 'OPTIONS') {
