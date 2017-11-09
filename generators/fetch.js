@@ -1,9 +1,9 @@
 const util = require('../util')
 const jsesc = require('jsesc')
 
-function toFetch(curlCommand) {
+function toFetch (curlCommand) {
   const request = util.parseCurlCommand(curlCommand)
-  let code = "// Remove if using browsers fetch\n"
+  let code = '// Remove if using browsers fetch\n'
   let options = {}
   code += "const fetch = require('node-fetch');\n"
 
@@ -25,7 +25,7 @@ function toFetch(curlCommand) {
    */
   if (request.multipartUploads) {
     code += "const FormData = require('form-data');\n\n"
-    code += "const fd = new FormData();\n\n"
+    code += 'const fd = new FormData();\n\n'
 
     for (let [name, value] of request.multipartUploads) {
       code += `fd.append(${JSON.stringify(name)}, ${JSON.stringify(value)});\n`
@@ -58,12 +58,12 @@ function toFetch(curlCommand) {
   }
 
   if (request.auth) {
-    const [user='', password=''] = request.auth.split(':')
+    const [username = '', password = ''] = request.auth.split(':')
 
     options.headers.push([
       'Authorization',
-      `Basic ${Buffer.from(username + ":" + password).toString('base64')}`
-    ]);
+      `Basic ${Buffer.from(username + ':' + password).toString('base64')}`
+    ])
   }
 
   options = Object.keys(options).length
