@@ -1,11 +1,13 @@
 'use strict'
 
-var toPython = require('./generators/python.js')
-var toNode = require('./generators/node.js')
-var toPhp = require('./generators/php.js')
+const toPython = require('./generators/python')
+const toNode = require('./generators/node')
+const toFetch = require('./generators/fetch')
+const toPhp = require('./generators/php')
 
 module.exports = {
-  toPhp: toPhp,
-  toPython: toPython,
-  toNode: toNode
+  toPhp,
+  toPython,
+  toNode,
+  toFetch
 }
