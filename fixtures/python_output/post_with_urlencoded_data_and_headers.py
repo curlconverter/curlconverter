@@ -35,4 +35,4 @@ data = [
   ('CurrentPage', '1'),
 ]
 
-requests.post('http://www.realtor.ca/api/Listing.svc/PropertySearch_Post', headers=headers, data=data)
+response = requests.post('http://www.realtor.ca/api/Listing.svc/PropertySearch_Post', headers=headers, data=data)

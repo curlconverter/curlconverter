@@ -1,3 +1,3 @@
 import requests
 
-requests.post('http://google.com/')
+response = requests.post('http://google.com/')

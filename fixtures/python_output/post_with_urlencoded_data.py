@@ -17,4 +17,4 @@ data = [
   ('msg2', 'such'),
 ]
 
-requests.post('http://fiddle.jshell.net/echo/html/', headers=headers, data=data)
+response = requests.post('http://fiddle.jshell.net/echo/html/', headers=headers, data=data)

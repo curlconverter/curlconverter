@@ -1,3 +1,3 @@
 import requests
 
-requests.get('http://indeed.com/')
+response = requests.get('http://indeed.com/')

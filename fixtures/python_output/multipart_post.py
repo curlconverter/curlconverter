@@ -9,4 +9,4 @@ files = {
     'file': ('myfile.jpg', open('myfile.jpg', 'rb')),
 }
 
-requests.post('https://upload.box.com/api/2.0/files/content', headers=headers, files=files)
+response = requests.post('https://upload.box.com/api/2.0/files/content', headers=headers, files=files)

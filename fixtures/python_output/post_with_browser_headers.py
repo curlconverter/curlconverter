@@ -17,4 +17,4 @@ headers = {
     'Content-Length': '0',
 }
 
-requests.post('http://www.w3schools.com/ajax/demo_post.asp', headers=headers, cookies=cookies)
+response = requests.post('http://www.w3schools.com/ajax/demo_post.asp', headers=headers, cookies=cookies)

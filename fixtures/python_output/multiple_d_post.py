@@ -7,4 +7,4 @@ data = [
   ('json_data', '{ "operation": "core/get", "class": "Software", "key": "key" }'),
 ]
 
-requests.post('https://cmdb.litop.local/webservices/rest.php', data=data)
+response = requests.post('https://cmdb.litop.local/webservices/rest.php', data=data)

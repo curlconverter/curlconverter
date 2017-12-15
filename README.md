@@ -46,14 +46,14 @@ headers = {
     'Connection': 'keep-alive',
 }
 
-requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
+response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 ```
 
 ## Contributing
 
 Make sure you're running node 6 or greater. The test suite will fail on older versions of node.
 
-If you want to add new functionality, start with a test. 
+If you want to add new functionality, start with a test.
 
 - Create a file containing the curl command in `fixtures/curl_commands` with a descriptive filename like `post_with_headers.txt`
 - Create a file containing the output in `fixtures/python_output/` with a matching filename (but different extension) like `post_with_headers.py`
