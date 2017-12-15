@@ -18,4 +18,4 @@ headers = {
     'Connection': 'keep-alive',
 }
 
-requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
+response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)

@@ -5,4 +5,4 @@ headers = {
     'key': 'abcdefg',
 }
 
-requests.post('http://1.2.3.4/endpoint', headers=headers)
+response = requests.post('http://1.2.3.4/endpoint', headers=headers)

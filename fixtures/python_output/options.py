@@ -24,9 +24,9 @@ params = (
     ('mediaOwnerCustomerId', 'xxx'),
 )
 
-requests.options('https://layla.amazon.de/api/tunein/queue-and-play', headers=headers, params=params)
+response = requests.options('https://layla.amazon.de/api/tunein/queue-and-play', headers=headers, params=params)
 
 #NB. Original query string below. It seems impossible to parse and
 #reproduce query strings 100% accurately so the one below is given
 #in case the reproduced version is not "correct".
-# requests.options('https://layla.amazon.de/api/tunein/queue-and-play?deviceSerialNumber=xxx^&deviceType=xxx^&guideId=s56876^&contentType=station^&callSign=^&mediaOwnerCustomerId=xxx', headers=headers)
+# response = requests.options('https://layla.amazon.de/api/tunein/queue-and-play?deviceSerialNumber=xxx^&deviceType=xxx^&guideId=s56876^&contentType=station^&callSign=^&mediaOwnerCustomerId=xxx', headers=headers)

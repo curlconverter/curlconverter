@@ -4,4 +4,4 @@ headers = {
     'foo': 'bar',
 }
 
-requests.get('http://example.com/', headers=headers)
+response = requests.get('http://example.com/', headers=headers)

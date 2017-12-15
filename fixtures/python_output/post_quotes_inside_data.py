@@ -4,4 +4,4 @@ data = [
   ('field', 'don\'t you like quotes'),
 ]
 
-requests.post('http://google.com', data=data)
+response = requests.post('http://google.com', data=data)
