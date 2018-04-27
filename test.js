@@ -12,11 +12,29 @@ var yargs = require('yargs')
 // language-specific directories: node_output, php_output, python_output, parser_output
 // we get a list of all input files, iterate over it, and if an output file exists, compare the output.
 
+const outputs = [
+  {
+    name: 'Python',
+    extension: 'py',
+    command: curlconverter.toPython
+  },
+  {
+    name: 'Node',
+    extension: 'js',
+    command: curlconverter.toNode
+  },
+  {
+    name: 'PHP',
+    extension: 'php',
+    command: curlconverter.toPhp
+  }
+]
+
 var testFile = function (fileName) {
   var inputFilePath = 'fixtures/curl_commands/' + fileName
-  var parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
   var inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
 
+  var parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
   var parserFilePath = './fixtures/parser_output/' + fileName.replace('txt', 'js')
   if (fs.existsSync(parserFilePath)) {
     var goodParserOutput = require(parserFilePath)
@@ -26,41 +44,22 @@ var testFile = function (fileName) {
       t.end()
     })
   }
-  var pythonFilePath = './fixtures/python_output/' + fileName.replace('txt', 'py')
-  var pythonTestName = 'Python: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
 
-  if (fs.existsSync(pythonFilePath)) {
-    var goodPythonCode = fs.readFileSync(pythonFilePath, 'utf-8')
-    var pythonCode = curlconverter.toPython(inputFileContents)
-    test(pythonTestName, function (t) {
-      t.equal(pythonCode, goodPythonCode)
-      t.end()
-    })
-  }
+  outputs.forEach(function (output) {
+    var directory = './fixtures/' + output.name.toLowerCase() + '_output/'
 
-  var nodeFilePath = './fixtures/node_output/' + fileName.replace('txt', 'js')
-  var nodeTestName = 'Node: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+    var filePath = directory + fileName.replace('txt', output.extension)
+    var testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
 
-  if (fs.existsSync(nodeFilePath)) {
-    var goodNodeCode = fs.readFileSync(nodeFilePath, 'utf-8')
-    var nodeCode = curlconverter.toNode(inputFileContents)
-    test(nodeTestName, function (t) {
-      t.equal(nodeCode, goodNodeCode)
-      t.end()
-    })
-  }
-
-  var phpFilePath = './fixtures/php_output/' + fileName.replace('txt', 'php')
-  var phpTestName = 'PHP: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
-
-  if (fs.existsSync(phpFilePath)) {
-    var goodPhpCode = fs.readFileSync(phpFilePath, 'utf-8')
-    var phpCode = curlconverter.toPhp(inputFileContents)
-    test(phpTestName, function (t) {
-      t.equal(phpCode, goodPhpCode)
-      t.end()
-    })
-  }
+    if (fs.existsSync(filePath)) {
+      var goodCode = fs.readFileSync(filePath, 'utf-8')
+      var code = output.command(inputFileContents)
+      test(testName, function (t) {
+        t.equal(code, goodCode)
+        t.end()
+      })
+    }
+  })
 }
 // get --test=test_name parameter and just run that test on its own
 var testName = yargs.argv.test
