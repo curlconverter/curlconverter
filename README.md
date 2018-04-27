@@ -1,6 +1,6 @@
 #  [![NPM version][npm-image]][npm-url][![Build Status](https://travis-ci.org/NickCarneiro/curlconverter.svg)](https://travis-ci.org/NickCarneiro/curlconverter)
 
-Convert curl syntax to native python and javascript http code
+Convert cURL syntax to native Python, PHP, and JavaScript HTTP code
 
 ## Live Demo
 
@@ -22,7 +22,7 @@ curlconverter.toPython("curl 'http://en.wikipedia.org/' -H 'Accept-Encoding: gzi
 
 ```
 
-Returns a string of python code like:
+Returns a string of Python code like:
 
 ```python
 
