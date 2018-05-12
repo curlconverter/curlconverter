@@ -121,7 +121,11 @@ var parseCurlCommand = function (curlCommand) {
     method = 'delete'
   } else if (parsedArguments.X === 'OPTIONS') {
     method = 'options'
-  } else if (parsedArguments.d || parsedArguments.data || parsedArguments['data-binary']) {
+  } else if (parsedArguments['d'] ||
+      parsedArguments['data'] ||
+      parsedArguments['data-binary'] ||
+      parsedArguments['F'] ||
+      parsedArguments['form']) {
     method = 'post'
   } else {
     method = 'get'
