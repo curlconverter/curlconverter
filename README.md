@@ -79,6 +79,18 @@ Here's my Intellij run configuration for a single test:
 
 If you get stuck, please reach out via email. I am always willing to hop on a google hangout and pair program.
 
+## Contributors
+
+- hrbrmstr (R support!)
+- eliask
+- trdarr
+- nashe
+- bfontaine
+- seadog007
+- nicktimko
+- wkalt
+- nico202
+- r3m0t
 
 ## License
 
