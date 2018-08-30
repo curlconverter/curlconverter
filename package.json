@@ -18,6 +18,7 @@
     "python"
   ],
   "dependencies": {
+    "cmd": "^0.1.0",
     "cookie": "^0.1.2",
     "jsesc": "^0.5.0",
     "string.prototype.startswith": "^0.2.0",
@@ -25,7 +26,7 @@
   },
   "devDependencies": {
     "standard": "^10.0.3",
-    "tape": "^4.6.2"
+    "tape": "^4.9.1"
   },
   "scripts": {
     "test": "./test.sh"

@@ -14,6 +14,11 @@ var yargs = require('yargs')
 
 const outputs = [
   {
+    name: 'R',
+    extension: 'R',
+    command: curlconverter.toR
+  },
+  {
     name: 'Python',
     extension: 'py',
     command: curlconverter.toPython
