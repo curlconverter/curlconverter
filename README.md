@@ -1,6 +1,6 @@
 #  [![NPM version][npm-image]][npm-url][![Build Status](https://travis-ci.org/NickCarneiro/curlconverter.svg)](https://travis-ci.org/NickCarneiro/curlconverter)
 
-Convert cURL syntax to native Python, PHP, and JavaScript HTTP code
+Convert cURL syntax to native Python, PHP, JavaScript, and R HTTP code
 
 ## Live Demo
 
