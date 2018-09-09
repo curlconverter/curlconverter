@@ -79,7 +79,7 @@ function getMultipleDataString (request, parsedQueryString) {
   } else {
     dataString = 'data = {\n'
     var elementCount = Object.keys(parsedQueryString).length
-    var i = 0
+    i = 0
     for (key in parsedQueryString) {
       value = parsedQueryString[key]
       dataString += '  ' + repr(key) + ': ' + repr(value)
