@@ -11,28 +11,28 @@ headers = {
     'Connection': 'keep-alive',
 }
 
-data = [
-  ('CultureId', '1'),
-  ('ApplicationId', '1'),
-  ('RecordsPerPage', '200'),
-  ('MaximumResults', '200'),
-  ('PropertyTypeId', '300'),
-  ('TransactionTypeId', '2'),
-  ('StoreyRange', '0-0'),
-  ('BuildingTypeId', '1'),
-  ('BedRange', '0-0'),
-  ('BathRange', '0-0'),
-  ('LongitudeMin', '-79.3676805496215'),
-  ('LongitudeMax', '-79.27300930023185'),
-  ('LatitudeMin', '43.660358732823845'),
-  ('LatitudeMax', '43.692390574029936'),
-  ('SortOrder', 'A'),
-  ('SortBy', '1'),
-  ('viewState', 'm'),
-  ('Longitude', '-79.4107246398925'),
-  ('Latitude', '43.6552047278685'),
-  ('ZoomLevel', '13'),
-  ('CurrentPage', '1'),
-]
+data = {
+  'CultureId': '1',
+  'ApplicationId': '1',
+  'RecordsPerPage': '200',
+  'MaximumResults': '200',
+  'PropertyTypeId': '300',
+  'TransactionTypeId': '2',
+  'StoreyRange': '0-0',
+  'BuildingTypeId': '1',
+  'BedRange': '0-0',
+  'BathRange': '0-0',
+  'LongitudeMin': '-79.3676805496215',
+  'LongitudeMax': '-79.27300930023185',
+  'LatitudeMin': '43.660358732823845',
+  'LatitudeMax': '43.692390574029936',
+  'SortOrder': 'A',
+  'SortBy': '1',
+  'viewState': 'm',
+  'Longitude': '-79.4107246398925',
+  'Latitude': '43.6552047278685',
+  'ZoomLevel': '13',
+  'CurrentPage': '1'
+}
 
 response = requests.post('http://www.realtor.ca/api/Listing.svc/PropertySearch_Post', headers=headers, data=data)
