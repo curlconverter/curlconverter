@@ -77,12 +77,20 @@ function getMultipleDataString (request, parsedQueryString) {
     }
     dataString += ']\n'
   } else {
-    dataString = 'data = [\n'
+    dataString = 'data = {\n'
+    var elementCount = Object.keys(parsedQueryString).length
+    var i = 0
     for (key in parsedQueryString) {
       value = parsedQueryString[key]
-      dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
+      dataString += '  ' + repr(key) + ': ' + repr(value)
+      if (i === elementCount - 1) {
+        dataString += '\n'
+      } else {
+        dataString += ',\n'
+      }
+      i++
     }
-    dataString += ']\n'
+    dataString += '}\n'
   }
 
   return dataString
