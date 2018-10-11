@@ -32,7 +32,13 @@ const outputs = [
     name: 'PHP',
     extension: 'php',
     command: curlconverter.toPhp
+  },
+  {
+    name: 'Go',
+    extension: 'go',
+    command: curlconverter.toGo
   }
+
 ]
 
 var testFile = function (fileName) {
