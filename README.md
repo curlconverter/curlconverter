@@ -1,6 +1,6 @@
 #  [![NPM version][npm-image]][npm-url][![Build Status](https://travis-ci.org/NickCarneiro/curlconverter.svg)](https://travis-ci.org/NickCarneiro/curlconverter)
 
-Convert cURL syntax to native Python, PHP, JavaScript, and R HTTP code
+Convert cURL syntax to native Python, Go, PHP, JavaScript, and R HTTP code
 
 ## Live Demo
 
@@ -81,11 +81,12 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 
 ## Contributors
 
-- hrbrmstr (R support!)
-- eliask
-- trdarr
-- nashe
-- bfontaine
+- hrbrmstr (R support)
+- daniellockard (Go support)
+- eliask (improve python output)
+- trdarr (devops and code style)
+- nashe (fix PHP output)
+- bfontaine (reduce code duplication in test suite)
 - seadog007
 - nicktimko
 - wkalt
