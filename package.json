@@ -20,6 +20,8 @@
   "dependencies": {
     "cmd": "^0.1.0",
     "cookie": "^0.1.2",
+    "handlebars": "^4.0.12",
+    "yamljs": "^0.3.0",
     "jsesc": "^0.5.0",
     "string.prototype.startswith": "^0.2.0",
     "yargs": "NickCarneiro/yargs"

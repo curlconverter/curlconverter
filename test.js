@@ -37,8 +37,12 @@ const outputs = [
     name: 'Go',
     extension: 'go',
     command: curlconverter.toGo
+  },
+  {
+    name: 'Strest',
+    extension: 'strest.yml',
+    command: curlconverter.toStrest
   }
-
 ]
 
 var testFile = function (fileName) {

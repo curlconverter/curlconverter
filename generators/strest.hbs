@@ -1,0 +1,24 @@
+version: 1
+{{#if insecure}}
+allowInsecure: true
+{{/if}}
+requests:
+  curl_converter:
+    url: {{urlWithoutQuery}}
+    method: {{toUpperCase method}}
+{{#if auth}}
+    auth:
+      basic:
+  {{#if (getAuthUsername auth)}}
+        username: {{getAuthUsername auth}}
+  {{/if}}
+        password: {{getAuthPassword auth}}
+{{/if}}
+{{#if data}}
+    data:
+      json:
+        {{toYaml data 8}}
+{{~/if}}
+{{#headers headers}}
+      {{property}}: {{value}}
+{{/headers}}
