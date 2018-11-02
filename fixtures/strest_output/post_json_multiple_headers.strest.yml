@@ -2,7 +2,7 @@ version: 1
 allowInsecure: true
 requests:
   curl_converter:
-    url: https://0.0.0.0/rest/login-sessions
+    url: 'https://0.0.0.0/rest/login-sessions'
     method: POST
     data:
       json:
@@ -11,4 +11,4 @@ requests:
         authLoginDomain: local
     headers:
       Content-Type: application/json
-      X-API-Version: 200
+      X-API-Version: '200'

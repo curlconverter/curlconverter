@@ -2,42 +2,6 @@ var cookie = require('cookie')
 var yargs = require('yargs')
 var URL = require('url')
 var querystring = require('querystring')
-var YAML = require('yamljs')
-var Handlebars = require('handlebars')
-
-Handlebars.registerHelper('toUpperCase', function (str) {
-  return str.toUpperCase()
-})
-Handlebars.registerHelper('getAuthUsername', function (title) {
-  var t = title.split(':')
-  return t[0]
-})
-Handlebars.registerHelper('getAuthPassword', function (title) {
-  var t = title.split(':')
-  return t[1]
-})
-Handlebars.registerHelper('toYaml', function (object, indent) {
-  console.log(object)
-  object = JSON.parse(object)
-  var yamlString = YAML.stringify(object, 1)
-  var lines = yamlString.split('\n')
-  var space = ' '
-  var response = lines[0] + '\n'
-  for (var i = 1; i < lines.length - 1; i++) {
-    response = response + space.repeat(indent) + lines[i] + '\n'
-  }
-  return response
-})
-Handlebars.registerHelper('headers', function (context, options) {
-  var ret = ''
-  if (context) {
-    ret = '    headers:\n'
-  }
-  for (var prop in context) {
-    ret = ret + options.fn({property: prop, value: context[prop]})
-  }
-  return ret
-})
 
 /**
  * given this: [ 'msg1=value1', 'msg2=value2' ]
@@ -234,6 +198,5 @@ var serializeCookies = function (cookieDict) {
 
 module.exports = {
   parseCurlCommand: parseCurlCommand,
-  serializeCookies: serializeCookies,
-  handlebars: Handlebars
+  serializeCookies: serializeCookies
 }
