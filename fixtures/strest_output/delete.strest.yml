@@ -1,0 +1,5 @@
+version: 1
+requests:
+  curl_converter:
+    url: 'http://www.url.com/page'
+    method: DELETE

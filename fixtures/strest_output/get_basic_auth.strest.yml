@@ -1,0 +1,9 @@
+version: 1
+requests:
+  curl_converter:
+    url: 'https://api.test.com/'
+    method: GET
+    auth:
+      basic:
+        username: some_username
+        password: some_password

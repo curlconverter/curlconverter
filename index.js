@@ -5,11 +5,13 @@ var toPython = require('./generators/python.js')
 var toNode = require('./generators/node.js')
 var toPhp = require('./generators/php.js')
 var toGo = require('./generators/go.js')
+var toStrest = require('./generators/strest.js')
 
 module.exports = {
   toR: toR,
   toPhp: toPhp,
   toPython: toPython,
   toNode: toNode,
-  toGo: toGo
+  toGo: toGo,
+  toStrest: toStrest
 }
