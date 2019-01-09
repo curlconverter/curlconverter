@@ -1,0 +1,27 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'https://ci.example.com/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da'
+      method: PATCH
+      postData:
+        mimeType: application/json
+        text:
+          hostname: agent02.example.com
+          agent_config_state: Enabled
+          resources:
+            - Java
+            - Linux
+          environments:
+            - Dev
+      headers:
+        -
+          name: Accept
+          value: application/vnd.go.cd.v4+json
+        -
+          name: Content-Type
+          value: application/json
+    auth:
+      basic:
+        username: username
+        password: password
