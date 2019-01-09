@@ -15,11 +15,11 @@ function getDataString (request) {
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-      return {
-        'mimeType': 'application/json',
-        'text': JSON.parse(request.data)
-      }
-    }  else {
+    return {
+      'mimeType': 'application/json',
+      'text': JSON.parse(request.data)
+    }
+  } else {
     return {
       'mimeType': 'NOT YET HANDLED',
       'text': 'NOT YET HANDLED'
