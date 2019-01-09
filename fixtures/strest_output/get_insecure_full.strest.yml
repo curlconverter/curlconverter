@@ -1,0 +1,7 @@
+version: 2
+allowInsecure: true
+requests:
+  curl_converter:
+    request:
+      url: 'https://example.com/'
+      method: GET

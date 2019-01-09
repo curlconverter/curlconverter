@@ -1,0 +1,6 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://google.com/'
+      method: POST
