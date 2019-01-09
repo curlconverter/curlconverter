@@ -1,0 +1,10 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://example.com/'
+      method: GET
+      headers:
+        -
+          name: foo
+          value: bar

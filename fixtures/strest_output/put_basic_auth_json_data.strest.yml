@@ -1,0 +1,20 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://localhost:5984/test/_security'
+      method: PUT
+      postData:
+        mimeType: application/json
+        text:
+          admins:
+            names: []
+            roles: []
+          readers:
+            names:
+              - joe
+            roles: []
+    auth:
+      basic:
+        username: admin
+        password: '123'
