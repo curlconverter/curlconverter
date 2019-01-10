@@ -1,0 +1,12 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://us.jooble.org/api/xxxxxxxxxxxxxxxx'
+      method: POST
+      postData:
+        mimeType: application/json
+        text:
+          keywords: php
+          page: 1
+          searchMode: 1

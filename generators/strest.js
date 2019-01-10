@@ -4,8 +4,10 @@ var jsesc = require('jsesc')
 var querystring = require('querystring')
 
 function getDataString (request) {
+  let mimeType = 'application/json'
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
+    mimeType = 'text/plain'
   }
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
@@ -16,15 +18,31 @@ function getDataString (request) {
   var singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
     return {
-      'mimeType': 'application/json',
+      'mimeType': mimeType,
       'text': JSON.parse(request.data)
     }
   } else {
+    for (var paramName in request.headers) {
+      console.log(paramName)
+      if (paramName === 'Content-Type') {
+        mimeType = request.headers[paramName]
+      }
+    }
     return {
-      'mimeType': 'NOT YET HANDLED',
-      'text': 'NOT YET HANDLED'
+      'mimeType': mimeType,
+      'text': request.data
     }
   }
+}
+
+function getQueryList (request) {
+  var queryList = []
+  for (var paramName in request.query) {
+    var rawValue = request.query[paramName]
+    queryList.push({'name': paramName, 'value': rawValue})
+  }
+  console.log(JSON.stringify(queryList))
+  return queryList
 }
 
 var toStrest = function (curlCommand) {
@@ -67,6 +85,13 @@ var toStrest = function (curlCommand) {
     }
     response.requests.curl_converter.auth.basic.password = request.auth.split(':')[1]
   }
+
+  var queryList
+  if (request.query) {
+    queryList = getQueryList(request)
+    response.requests.curl_converter.request.queryString = queryList
+  }
+
   var yamlString = yaml.stringify(response, 100, 2)
   console.log(yamlString)
   return yamlString
