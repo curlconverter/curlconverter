@@ -1,0 +1,129 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'https://www.nomador.com/house-sitting/'
+      method: GET
+      queryString:
+        -
+          name: page
+          value: '1'
+        -
+          name: available
+          value:
+            - ""
+            - '1'
+        -
+          name: location
+          value: '0'
+        -
+          name: 'city[id]'
+          value: '0'
+        -
+          name: 'city[locality]'
+          value: ""
+        -
+          name: 'city[locality_text]'
+          value: ""
+        -
+          name: 'city[administrative_area_level_2]'
+          value: ""
+        -
+          name: 'city[administrative_area_level_2_text]'
+          value: ""
+        -
+          name: 'city[administrative_area_level_1]'
+          value: ""
+        -
+          name: 'city[administrative_area_level_1_text]'
+          value: ""
+        -
+          name: 'city[country]'
+          value: ""
+        -
+          name: 'city[country_text]'
+          value: ""
+        -
+          name: 'city[latitude]'
+          value: ""
+        -
+          name: 'city[longitude]'
+          value: ""
+        -
+          name: 'city[zoom]'
+          value: ""
+        -
+          name: 'city[name]'
+          value: ""
+        -
+          name: 'region[id]'
+          value: '0'
+        -
+          name: 'region[locality]'
+          value: ""
+        -
+          name: 'region[locality_text]'
+          value: ""
+        -
+          name: 'region[administrative_area_level_2]'
+          value: ""
+        -
+          name: 'region[administrative_area_level_2_text]'
+          value: ""
+        -
+          name: 'region[administrative_area_level_1]'
+          value: ""
+        -
+          name: 'region[administrative_area_level_1_text]'
+          value: ""
+        -
+          name: 'region[country]'
+          value: ""
+        -
+          name: 'region[country_text]'
+          value: ""
+        -
+          name: 'region[latitude]'
+          value: ""
+        -
+          name: 'region[longitude]'
+          value: ""
+        -
+          name: 'region[zoom]'
+          value: ""
+        -
+          name: 'region[name]'
+          value: ""
+        -
+          name: country
+          value: ""
+        -
+          name: environment
+          value: ""
+        -
+          name: population
+          value: ""
+        -
+          name: period
+          value: '0'
+        -
+          name: date
+          value: '2017-03-03'
+        -
+          name: datestart
+          value: '2017-03-03'
+        -
+          name: dateend
+          value: '2017-06-24'
+        -
+          name: season
+          value: ""
+        -
+          name: duration
+          value: ""
+        -
+          name: isfd
+          value: ""
+        -
+          name: stopover
+          value: ""
