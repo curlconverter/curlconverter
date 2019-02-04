@@ -38,6 +38,12 @@ const outputs = [
     extension: 'go',
     command: curlconverter.toGo
   },
+
+  {
+    name: 'Rust',
+    extension: 'rs',
+    command: curlconverter.toRust
+  },
   {
     name: 'Strest',
     extension: 'strest.yml',
