@@ -23,7 +23,6 @@ function getDataString (request) {
     }
   } else {
     for (var paramName in request.headers) {
-      console.log(paramName)
       if (paramName === 'Content-Type') {
         mimeType = request.headers[paramName]
       }
@@ -41,7 +40,6 @@ function getQueryList (request) {
     var rawValue = request.query[paramName]
     queryList.push({'name': paramName, 'value': rawValue})
   }
-  console.log(JSON.stringify(queryList))
   return queryList
 }
 
@@ -54,7 +52,6 @@ var toStrest = function (curlCommand) {
   if (request.urlWithoutQuery.indexOf('http') !== 0) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  console.log(request.urlWithoutQuery.toString())
   response.requests = {
     'curl_converter': {
       'request': {
@@ -93,7 +90,6 @@ var toStrest = function (curlCommand) {
   }
 
   var yamlString = yaml.stringify(response, 100, 2)
-  console.log(yamlString)
   return yamlString
 }
 

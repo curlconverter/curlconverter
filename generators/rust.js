@@ -2,8 +2,6 @@ var util = require('../util')
 
 var toRust = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
-  console.log(request)
-
   var rustCode = 'extern crate reqwest;\n'
 
   if (request.headers || request.cookies) {
