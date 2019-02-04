@@ -1,6 +1,7 @@
 extern crate reqwest;
 
 fn main() -> Result<(), reqwest::Error> {
+
     let res = reqwest::Client::new()
         .get("https://api.test.com/")
         .basic_auth("some_username", Some("some_password"))
