@@ -1,0 +1,1 @@
+{"url":"https://cmdb.litop.local/webservices/rest.php","raw_url":"https://cmdb.litop.local/webservices/rest.php","method":"post","data":{"version":"1.2","auth_user":"fdgxf","auth_pwd":"oxfdscds","json_data":"{ \"operation\": \"core/get\", \"class\": \"Software\", \"key\": \"key\" }"}}

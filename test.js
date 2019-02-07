@@ -48,6 +48,11 @@ const outputs = [
     name: 'Strest',
     extension: 'strest.yml',
     command: curlconverter.toStrest
+  },
+  {
+    name: 'Json',
+    extension: 'json',
+    command: curlconverter.toJsonString
   }
 ]
 
