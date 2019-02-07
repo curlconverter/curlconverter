@@ -14,7 +14,7 @@ function repr (value, isKey) {
    } else {
    return "'" + jsesc(value, { quotes: 'single' }) + "'"
    } */
-  return isKey ? "'" + jsesc(value, { quotes: 'single' }) + "'" : value;
+  return isKey ? "'" + jsesc(value, { quotes: 'single' }) + "'" : value
 }
 
 function getQueries (request) {
