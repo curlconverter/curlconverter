@@ -50,7 +50,7 @@ function getDataString (request) {
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    var data = {};
+    var data = {}
     data[repr(request.data)] = ''
     return {data: data}
   } else {
@@ -59,7 +59,6 @@ function getDataString (request) {
 }
 
 function getMultipleDataString (request, parsedQueryString) {
-  var y = 0
   var data = {}
 
   for (var key in parsedQueryString) {
@@ -69,7 +68,6 @@ function getMultipleDataString (request, parsedQueryString) {
     } else {
       data[repr(key)] = repr(value)
     }
-    ++y
   }
 
   return { data: data }
@@ -164,7 +162,7 @@ var toJsonString = function (curlCommand) {
     }
   }
 
-  return JSON.stringify(requestJson ? requestJson : '{}') + '\n'
+  return JSON.stringify(Object.keys(requestJson).length ? requestJson : '{}') + '\n'
 }
 
 module.exports = toJsonString
