@@ -209,7 +209,7 @@ var toPython = function (curlCommand) {
             '#in case the reproduced version is not "correct".\n'
     pythonCode += '# ' + requestLineWithOriginalUrl
   }
-
+  pythonCode += '\nprint(response.text)'
   return pythonCode + '\n'
 }
 
