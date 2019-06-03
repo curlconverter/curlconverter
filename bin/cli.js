@@ -4,7 +4,7 @@ const curlconverter = require('../index.js')
 const argv = require('yargs').argv
 const fs = require('fs')
 
-// se a default incase -l/--langauge isn't passed
+// sets a default incase -l/--langauge isn't passed
 const defaultLanguage = 'python'
 
 // used to map languages to functions
