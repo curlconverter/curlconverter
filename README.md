@@ -52,11 +52,13 @@ response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=coo
 ## Contributing
 
 > I'd rather write programs to write programs than write programs.
-> 
-> 
+>
+>
 > Dick Sites, Digital Equipment Corporation, September 1985
 
 Make sure you're running node 6 or greater. The test suite will fail on older versions of node.
+
+If you add a new generator, make sure to update the list of supported languages in [cli.js](bin/cli.js) or else it won't be accessible from the command line
 
 If you want to add new functionality, start with a test.
 
