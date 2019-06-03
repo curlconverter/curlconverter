@@ -83,6 +83,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 
 ## Contributors
 
+- NoahCardoza (Command line interface)
 - ssi-anik (JSON support)
 - hrbrmstr (R support)
 - daniellockard (Go support)
