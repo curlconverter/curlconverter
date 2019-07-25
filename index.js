@@ -8,6 +8,7 @@ var toGo = require('./generators/go.js')
 var toStrest = require('./generators/strest.js')
 var toRust = require('./generators/rust')
 var toJsonString = require('./generators/json')
+var toDart = require('./generators/dart.js')
 
 module.exports = {
   toR: toR,
@@ -17,5 +18,6 @@ module.exports = {
   toGo: toGo,
   toStrest: toStrest,
   toRust: toRust,
-  toJsonString: toJsonString
+  toJsonString: toJsonString,
+  toDart: toDart
 }

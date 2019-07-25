@@ -53,6 +53,11 @@ const outputs = [
     name: 'Json',
     extension: 'json',
     command: curlconverter.toJsonString
+  },
+  {
+    name: 'Dart',
+    extension: 'dart',
+    command: curlconverter.toDart
   }
 ]
 
@@ -78,7 +83,8 @@ var testFile = function (fileName) {
     var testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
 
     if (fs.existsSync(filePath)) {
-      var goodCode = fs.readFileSync(filePath, 'utf-8')
+      // normalize code for just \n line endings (aka fix input under Windows)
+      var goodCode = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
       var code = output.command(inputFileContents)
       test(testName, function (t) {
         t.equal(code, goodCode)
