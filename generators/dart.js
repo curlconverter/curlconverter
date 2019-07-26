@@ -3,14 +3,16 @@ var jsesc = require('jsesc')
 
 var toDart = function (curlCommand) {
   var r = util.parseCurlCommand(curlCommand)
-  var s =
-    "import 'package:http/http.dart' as http;\n\n" +
-    "void main() async {\n" +
-    "  var res = await http.delete('" + r.url + "');\n" +
-    "  if (res.statusCode != 200) throw Exception('" + r.method + " error: statusCode= ${res.statusCode}');\n" +
-    "}";
+  var s = "";
 
-  // var dartCode = 'var request = require(\'request\');\n\n'
+  s +=
+    "import 'package:http/http.dart' as http;\n" +
+    "\n" +
+    "void main() async {\n";
+
+  var hasHeaders = r.auth;
+  if (hasHeaders) s += "  var headers = Map<String, String>();\n";
+
   // if (request.headers || request.cookies) {
   //   dartCode += 'var headers = {\n'
   //   var headerCount = Object.keys(request.headers).length
@@ -53,26 +55,27 @@ var toDart = function (curlCommand) {
   //   dartCode += ',\n    body: dataString'
   // }
 
-  // if (request.auth) {
-  //   dartCode += ',\n'
-  //   var splitAuth = request.auth.split(':')
-  //   var user = splitAuth[0] || ''
-  //   var password = splitAuth[1] || ''
-  //   dartCode += '    auth: {\n'
-  //   dartCode += "        'user': '" + user + "',\n"
-  //   dartCode += "        'pass': '" + password + "'\n"
-  //   dartCode += '    }\n'
-  // } else {
-  //   dartCode += '\n'
-  // }
-  // dartCode += '};\n\n'
+  if (r.auth) {
+    s = "import 'dart:convert' as convert;\n" + s;
 
-  // dartCode += 'function callback(error, response, body) {\n'
-  // dartCode += '    if (!error && response.statusCode == 200) {\n'
-  // dartCode += '        console.log(body);\n'
-  // dartCode += '    }\n'
-  // dartCode += '}\n\n'
-  // dartCode += 'request(options, callback);'
+    var splitAuth = r.auth.split(':');
+    var uname = splitAuth[0] || '';
+    var pword = splitAuth[1] || '';
+
+    s +=
+      "  var uname = '" + uname + "';\n" +
+      "  var pword = '" + pword + "';\n" +
+      "  headers['Authentication'] = 'Basic ' + convert.base64Encode(convert.utf8.encode('$uname:$pword'));\n" +
+      "\n";
+  }
+
+  s += "  var res = await http." + r.method + "('" + r.url + "'"
+  if (hasHeaders) s += ", headers: headers";
+
+  s +=
+    ");\n" +
+    "  if (res.statusCode != 200) throw Exception('" + r.method + " error: statusCode= ${res.statusCode}');\n" +
+    "}";
 
   return s + "\n";
 }
