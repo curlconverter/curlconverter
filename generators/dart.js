@@ -1,5 +1,4 @@
 var util = require('../util')
-var jsesc = require('jsesc')
 
 var toDart = function (curlCommand) {
   var r = util.parseCurlCommand(curlCommand)
@@ -38,25 +37,6 @@ var toDart = function (curlCommand) {
     s += "  };\n";
     s += "\n";
   }
-
-  // if (request.data) {
-  //   // escape single quotes if there are any in there
-  //   if (request.data.indexOf("'") > -1) {
-  //     request.data = jsesc(request.data)
-  //   }
-  //   dartCode += 'var dataString = \'' + request.data + '\';\n\n'
-  // }
-
-  // dartCode += 'var options = {\n'
-  // dartCode += '    url: \'' + request.url + '\''
-  // if (request.method !== 'get') {
-  //   dartCode += ',\n    method: \'' + request.method.toUpperCase() + '\''
-  // }
-
-  // if (request.data) {
-  //   dartCode += ',\n    body: dataString'
-  // }
-
 
   s += "  var res = await http." + r.method + "('" + r.url + "'"
   if (hasHeaders) s += ", headers: headers";
