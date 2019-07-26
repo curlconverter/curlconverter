@@ -17,7 +17,8 @@ const translate = {
   go: 'toGo',
   strest: 'toStrest',
   rust: 'toRust',
-  json: 'toJsonString'
+  json: 'toJsonString',
+  dart: 'toDart'
 }
 
 // outputs the help menu
@@ -31,7 +32,7 @@ stdin:
 \tif no <curl> is passes, the script will read from stdin
 
 languages:
-\t${ Object.keys(translate).join('\n\t') }`);
+\t${ Object.keys(translate).join('\n\t')}`);
 }
 
 (async () => {

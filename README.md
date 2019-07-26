@@ -1,6 +1,6 @@
 #  [![NPM version][npm-image]][npm-url][![Build Status](https://travis-ci.org/NickCarneiro/curlconverter.svg)](https://travis-ci.org/NickCarneiro/curlconverter)
 
-Convert cURL syntax to native Python, Go, PHP, JavaScript, and R HTTP code
+Convert cURL syntax to native Python, Go, PHP, JavaScript, R and Dart HTTP code
 
 ## Live Demo
 
@@ -58,7 +58,7 @@ response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=coo
 
 Make sure you're running node 6 or greater. The test suite will fail on older versions of node.
 
-If you add a new generator, make sure to update the list of supported languages in [cli.js](bin/cli.js) or else it won't be accessible from the command line
+If you add a new generator, make sure to update the list of supported languages in [cli.js](bin/cli.js) or else it won't be accessible from the command line. Further, you'll want to update test.js and index.js for your new generator to make it part of the testing.
 
 If you want to add new functionality, start with a test.
 
@@ -79,6 +79,12 @@ I recommend setting this up with a debugger so you can see exactly what the pars
 Here's my Intellij run configuration for a single test:
 ![Screenshot of intellij debug configuration](/docs/intellijconfig.png)
 
+Before submitting a PR, please check that your JS code comforms to the code style enforced by [standardjs](https://standardjs.com). Use the following to fix your code if it doesn't:
+
+```sh
+$ standard --fix my_file.js
+```
+
 If you get stuck, please reach out via email. I am always willing to hop on a google hangout and pair program.
 
 ## Contributors
@@ -96,6 +102,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - wkalt
 - nico202
 - r3m0t
+- csells (Dart support)
 
 ## License
 
