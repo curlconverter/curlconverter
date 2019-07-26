@@ -31,7 +31,7 @@ var toDart = function (curlCommand) {
 
     if (r.cookies) {
       var cookiestr = util.serializeCookies(r.cookies)
-      s += "    'Cookie': '" + cookiestr + "'\n";
+      s += "    'Cookie': '" + cookiestr + "',\n";
     }
 
     if (r.auth) s += "    'Authentication': authn,\n";
