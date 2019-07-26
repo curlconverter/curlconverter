@@ -79,6 +79,12 @@ I recommend setting this up with a debugger so you can see exactly what the pars
 Here's my Intellij run configuration for a single test:
 ![Screenshot of intellij debug configuration](/docs/intellijconfig.png)
 
+Before submitting a PR, please check that your JS code comforms to the code style enforced by [standardjs](https://standardjs.com). Use the following to fix your code if it doesn't:
+
+```sh
+$ standard --fix my_file.js
+```
+
 If you get stuck, please reach out via email. I am always willing to hop on a google hangout and pair program.
 
 ## Contributors
@@ -96,7 +102,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - wkalt
 - nico202
 - r3m0t
-- csells (Dart)
+- csells (Dart support)
 
 ## License
 
