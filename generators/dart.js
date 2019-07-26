@@ -2,9 +2,13 @@ var util = require('../util')
 var jsesc = require('jsesc')
 
 var toDart = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
-
-  var dartCode = '';
+  var r = util.parseCurlCommand(curlCommand)
+  var s =
+    "import 'package:http/http.dart' as http;\n\n" +
+    "void main() async {\n" +
+    "  var res = await http.delete('" + r.url + "');\n" +
+    "  if (res.statusCode != 200) throw Exception('" + r.method + " error: statusCode= ${res.statusCode}');\n" +
+    "}";
 
   // var dartCode = 'var request = require(\'request\');\n\n'
   // if (request.headers || request.cookies) {
@@ -70,7 +74,7 @@ var toDart = function (curlCommand) {
   // dartCode += '}\n\n'
   // dartCode += 'request(options, callback);'
 
-  return dartCode + '\n'
+  return s + "\n";
 }
 
-module.exports = toDart
+module.exports = toDart;
