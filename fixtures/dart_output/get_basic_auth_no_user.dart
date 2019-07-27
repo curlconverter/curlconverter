@@ -6,6 +6,7 @@ void main() async {
   var pword = 'some_password';
   var authn = 'Basic ' + convert.base64Encode(convert.utf8.encode('$uname:$pword'));
 
-  var res = await http.get('https://api.test.com/', headers: {'Authentication': authn});
+  var res = await http.get('https://api.test.com/', headers: {'authorization': authn});
   if (res.statusCode != 200) throw Exception('get error: statusCode= ${res.statusCode}');
+  print(res.body);
 }
