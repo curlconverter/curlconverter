@@ -178,9 +178,6 @@ var parseCurlCommand = function (curlCommand) {
     request.dataArray = request.data
     request.data = joinDataArguments(request.data)
   }
-  else if (request.data && !request.isDataBinary) {
-    request.dataArray = [request.data]
-  }
 
   if (parsedArguments['k'] || parsedArguments['insecure']) {
     request.insecure = true

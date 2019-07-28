@@ -43,10 +43,7 @@ var toDart = function (curlCommand) {
 
   var hasData = r.data;
   if (hasData) {
-    if (r.isDataBinary) {
-      s += `  var data = utf8.encode('${r.data}');\n\n`
-    }
-    else {
+    if (r.dataArray) {
       s += '  var data = {\n'
       for (var i = 0; i != r.dataArray.length; ++i) {
         var kv = r.dataArray[i];
@@ -57,6 +54,12 @@ var toDart = function (curlCommand) {
       };
       s += '  };\n'
       s += '\n';
+    }
+    else if(r.isDataBinary) {
+      s += `  var data = utf8.encode('${r.data}');\n\n`
+    }
+    else {
+      s += `  var data = '${r.data}';\n\n`
     }
   }
 
