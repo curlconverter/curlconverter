@@ -24,7 +24,7 @@ var toDart = function (curlCommand) {
       '\n'
   }
 
-  var hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method == 'put'
+  var hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method === 'put'
   if (hasHeaders) {
     s += '  var headers = {\n'
     for (var hname in r.headers) s += "    '" + hname + "': '" + r.headers[hname] + "',\n"
@@ -36,33 +36,31 @@ var toDart = function (curlCommand) {
 
     if (r.auth) s += "    'authorization': authn,\n"
     if (r.compressed) s += "    'accept-encoding': 'gzip',\n"
-    if (r.isDataBinary || r.method == 'put') s += "    'content-type': 'application/x-www-form-urlencoded',\n"
+    if (r.isDataBinary || r.method === 'put') s += "    'content-type': 'application/x-www-form-urlencoded',\n"
 
     s += '  };\n'
     s += '\n'
   }
 
-  var hasData = r.data;
+  var hasData = r.data
   if (hasData) {
     // escape single quotes if there're not already escaped
-    if (r.data.indexOf("'") != -1 && r.data.indexOf("\\'") == -1) r.data = jsesc(r.data)
+    if (r.data.indexOf("'") !== -1 && r.data.indexOf("\\'") === -1) r.data = jsesc(r.data)
 
     if (r.dataArray) {
       s += '  var data = {\n'
-      for (var i = 0; i != r.dataArray.length; ++i) {
-        var kv = r.dataArray[i];
+      for (var i = 0; i !== r.dataArray.length; ++i) {
+        var kv = r.dataArray[i]
         var splitKv = kv.replace(/\\"/g, '"').split('=')
         var key = splitKv[0] || ''
         var val = splitKv[1] || ''
         s += "    '" + key + "': '" + val + "',\n"
       };
       s += '  };\n'
-      s += '\n';
-    }
-    else if (r.isDataBinary) {
+      s += '\n'
+    } else if (r.isDataBinary) {
       s += `  var data = utf8.encode('${r.data}');\n\n`
-    }
-    else {
+    } else {
       s += `  var data = '${r.data}';\n\n`
     }
   }
