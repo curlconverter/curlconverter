@@ -1,4 +1,5 @@
 var util = require('../util')
+var jsesc = require('jsesc')
 
 var toDart = function (curlCommand) {
   var r = util.parseCurlCommand(curlCommand)
@@ -23,7 +24,7 @@ var toDart = function (curlCommand) {
       '\n'
   }
 
-  var hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary
+  var hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method == 'put'
   if (hasHeaders) {
     s += '  var headers = {\n'
     for (var hname in r.headers) s += "    '" + hname + "': '" + r.headers[hname] + "',\n"
@@ -35,7 +36,7 @@ var toDart = function (curlCommand) {
 
     if (r.auth) s += "    'authorization': authn,\n"
     if (r.compressed) s += "    'accept-encoding': 'gzip',\n"
-    if (r.isDataBinary) s += "    'content-type': 'application/x-www-form-urlencoded',\n"
+    if (r.isDataBinary || r.method == 'put') s += "    'content-type': 'application/x-www-form-urlencoded',\n"
 
     s += '  };\n'
     s += '\n'
@@ -43,6 +44,9 @@ var toDart = function (curlCommand) {
 
   var hasData = r.data;
   if (hasData) {
+    // escape single quotes if there're not already escaped
+    if (r.data.indexOf("'") != -1 && r.data.indexOf("\\'") == -1) r.data = jsesc(r.data)
+
     if (r.dataArray) {
       s += '  var data = {\n'
       for (var i = 0; i != r.dataArray.length; ++i) {
@@ -55,7 +59,7 @@ var toDart = function (curlCommand) {
       s += '  };\n'
       s += '\n';
     }
-    else if(r.isDataBinary) {
+    else if (r.isDataBinary) {
       s += `  var data = utf8.encode('${r.data}');\n\n`
     }
     else {

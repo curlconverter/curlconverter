@@ -11,7 +11,7 @@ void main() async {
     'Connection': 'keep-alive',
     'Content-Length': '0',
     'Cookie': '_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126',
-    'Accept-Encoding': 'gzip',
+    'accept-encoding': 'gzip',
   };
 
   var res = await http.post('http://www.w3schools.com/ajax/demo_post.asp', headers: headers);
