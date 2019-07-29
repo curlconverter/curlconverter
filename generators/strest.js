@@ -18,8 +18,8 @@ function getDataString (request) {
   var singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
     return {
-      'mimeType': mimeType,
-      'text': JSON.parse(request.data)
+      mimeType: mimeType,
+      text: JSON.parse(request.data)
     }
   } else {
     for (var paramName in request.headers) {
@@ -28,8 +28,8 @@ function getDataString (request) {
       }
     }
     return {
-      'mimeType': mimeType,
-      'text': request.data
+      mimeType: mimeType,
+      text: request.data
     }
   }
 }
@@ -38,14 +38,14 @@ function getQueryList (request) {
   var queryList = []
   for (var paramName in request.query) {
     var rawValue = request.query[paramName]
-    queryList.push({'name': paramName, 'value': rawValue})
+    queryList.push({ name: paramName, value: rawValue })
   }
   return queryList
 }
 
 var toStrest = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
-  var response = {'version': 2}
+  var response = { version: 2 }
   if (request.insecure) {
     response.allowInsecure = true
   }
@@ -53,10 +53,10 @@ var toStrest = function (curlCommand) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
   response.requests = {
-    'curl_converter': {
-      'request': {
-        'url': request.urlWithoutQuery.toString(),
-        'method': request.method.toUpperCase()
+    curl_converter: {
+      request: {
+        url: request.urlWithoutQuery.toString(),
+        method: request.method.toUpperCase()
       }
     }
   }
@@ -68,14 +68,14 @@ var toStrest = function (curlCommand) {
     response.requests.curl_converter.request.headers = []
     for (var prop in request.headers) {
       response.requests.curl_converter.request.headers.push({
-        'name': prop,
-        'value': request.headers[prop]
+        name: prop,
+        value: request.headers[prop]
       })
     }
   }
   if (request.auth) {
     response.requests.curl_converter.auth = {
-      'basic': {}
+      basic: {}
     }
     if (request.auth.split(':')[0]) {
       response.requests.curl_converter.auth.basic.username = request.auth.split(':')[0]

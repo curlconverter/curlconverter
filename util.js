@@ -135,8 +135,7 @@ var parseCurlCommand = function (curlCommand) {
   }
 
   var compressed = !!parsedArguments.compressed
-
-  var urlObject = URL.parse(url)
+  var urlObject = URL.parse(url) // eslint-disable-line
   var query = querystring.parse(urlObject.query, null, null, { maxKeys: 10000 })
 
   urlObject.search = null // Clean out the search/query portion.

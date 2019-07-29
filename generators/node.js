@@ -25,7 +25,7 @@ var toNode = function (curlCommand) {
   }
 
   if (request.data) {
-        // escape single quotes if there are any in there
+    // escape single quotes if there are any in there
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
