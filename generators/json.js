@@ -52,7 +52,7 @@ function getDataString (request) {
   if (singularData) {
     var data = {}
     data[repr(request.data)] = ''
-    return {data: data}
+    return { data: data }
   } else {
     return getMultipleDataString(request, parsedQueryString)
   }
@@ -157,8 +157,8 @@ var toJsonString = function (curlCommand) {
     var password = splitAuth[1] || ''
 
     requestJson['auth'] = {
-      'user': repr(user),
-      'password': repr(password)
+      user: repr(user),
+      password: repr(password)
     }
   }
 

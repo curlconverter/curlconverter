@@ -23,7 +23,7 @@ var joinDataArguments = function (dataArguments) {
 var parseCurlCommand = function (curlCommand) {
   var newlineFound = /\r|\n/.exec(curlCommand)
   if (newlineFound) {
-        // remove newlines
+    // remove newlines
     curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
   }
   // yargs parses -XPOST as separate arguments. just prescreen for it.
@@ -100,7 +100,7 @@ var parseCurlCommand = function (curlCommand) {
       parsedArguments.F = [parsedArguments.F]
     }
     parsedArguments.F.forEach(function (multipartArgument) {
-            // input looks like key=value. value could be json or a file path prepended with an @
+      // input looks like key=value. value could be json or a file path prepended with an @
       var splitArguments = multipartArgument.split('=', 2)
       var key = splitArguments[0]
       var value = splitArguments[1]
@@ -134,7 +134,7 @@ var parseCurlCommand = function (curlCommand) {
     method = 'get'
   }
 
-  var urlObject = URL.parse(url)
+  var urlObject = URL.parse(url) // eslint-disable-line
   var query = querystring.parse(urlObject.query, null, null, { maxKeys: 10000 })
 
   urlObject.search = null // Clean out the search/query portion.
