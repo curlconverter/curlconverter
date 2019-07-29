@@ -125,15 +125,16 @@ var parseCurlCommand = function (curlCommand) {
   } else if (parsedArguments.X === 'OPTIONS') {
     method = 'options'
   } else if (parsedArguments['d'] ||
-      parsedArguments['data'] ||
-      parsedArguments['data-binary'] ||
-      parsedArguments['F'] ||
-      parsedArguments['form']) {
+    parsedArguments['data'] ||
+    parsedArguments['data-binary'] ||
+    parsedArguments['F'] ||
+    parsedArguments['form']) {
     method = 'post'
   } else {
     method = 'get'
   }
 
+  var compressed = !!parsedArguments.compressed
   var urlObject = URL.parse(url) // eslint-disable-line
   var query = querystring.parse(urlObject.query, null, null, { maxKeys: 10000 })
 
@@ -141,7 +142,8 @@ var parseCurlCommand = function (curlCommand) {
   var request = {
     url: url,
     urlWithoutQuery: URL.format(urlObject),
-    method: method
+    method: method,
+    compressed
   }
 
   if (Object.keys(query).length > 0) {
@@ -172,6 +174,7 @@ var parseCurlCommand = function (curlCommand) {
     request.auth = parsedArguments['user']
   }
   if (Array.isArray(request.data)) {
+    request.dataArray = request.data
     request.data = joinDataArguments(request.data)
   }
 
