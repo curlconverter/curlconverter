@@ -54,7 +54,7 @@ var parseCurlCommand = function (curlCommand) {
   var parseHeaders = function (headerFieldName) {
     if (parsedArguments[headerFieldName]) {
       if (!headers) {
-        headers = []
+        headers = {}
       }
       if (!Array.isArray(parsedArguments[headerFieldName])) {
         parsedArguments[headerFieldName] = [parsedArguments[headerFieldName]]
@@ -141,9 +141,10 @@ var parseCurlCommand = function (curlCommand) {
   urlObject.search = null // Clean out the search/query portion.
   var request = {
     url: url,
-    urlWithoutQuery: URL.format(urlObject),
-    method: method,
-    compressed
+    urlWithoutQuery: URL.format(urlObject)
+  }
+  if (compressed) {
+    request['compressed'] = true
   }
 
   if (Object.keys(query).length > 0) {
@@ -152,6 +153,8 @@ var parseCurlCommand = function (curlCommand) {
   if (headers) {
     request.headers = headers
   }
+  request['method'] = method
+
   if (cookies) {
     request.cookies = cookies
   }

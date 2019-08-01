@@ -5,5 +5,6 @@ module.exports = {
         Origin: 'http://fiddle.jshell.net'
     },
     method: 'post',
-    data: 'msg1=value1&msg2=value2'
+    data: 'msg1=value1&msg2=value2',
+    dataArray: ['msg1=value1', 'msg2=value2']
 };

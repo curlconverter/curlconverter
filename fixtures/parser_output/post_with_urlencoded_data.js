@@ -1,6 +1,7 @@
 module.exports = {
     url: 'http://fiddle.jshell.net/echo/html/',
     urlWithoutQuery: 'http://fiddle.jshell.net/echo/html/',
+    compressed: true,
     headers: {
         Origin: 'http://fiddle.jshell.net',
         'Accept-Encoding': 'gzip, deflate',
