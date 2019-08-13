@@ -17,7 +17,7 @@ const outputs = [
     name: 'Ansible',
     extension: 'yml',
     command: curlconverter.toAnsible
-  },  {
+  }, {
     name: 'R',
     extension: 'R',
     command: curlconverter.toR
@@ -88,7 +88,7 @@ var testFile = function (fileName) {
 
       var filePath = directory + fileName.replace('txt', output.extension)
       var testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
-  
+
       if (fs.existsSync(filePath)) {
         // normalize code for just \n line endings (aka fix input under Windows)
         var goodCode = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')

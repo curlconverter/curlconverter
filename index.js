@@ -21,5 +21,5 @@ module.exports = {
   toPython: toPython,
   toR: toR,
   toRust: toRust,
-  toStrest: toStrest,
+  toStrest: toStrest
 }

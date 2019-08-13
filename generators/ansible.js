@@ -17,21 +17,21 @@ function getDataString (request) {
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return {"body": JSON.parse(request.data), "body_format": mimeType}
+    return { body: JSON.parse(request.data), body_format: mimeType }
   } else {
     for (var paramName in request.headers) {
       if (paramName === 'Content-Type') {
         mimeType = request.headers[paramName]
       }
     }
-    return {"body": request.data, "body_format": mimeType}
+    return { body: request.data, body_format: mimeType }
   }
 }
 
 var toAnsible = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
   var responses = []
-  response = { "name": request.urlWithoutQuery }
+  response = { name: request.urlWithoutQuery }
   if (request.url.indexOf('http') !== 0) {
     request.url = 'http://' + request.url
   }
@@ -39,9 +39,9 @@ var toAnsible = function (curlCommand) {
     url: request.url.toString(),
     method: request.method.toUpperCase()
   }
-  response.register = "result"
+  response.register = 'result'
   if (request.insecure) {
-    response.uri.validate_certs = "no"
+    response.uri.validate_certs = 'no'
   }
   if (typeof request.data === 'string' || typeof request.data === 'number') {
     converted_data = getDataString(request)
