@@ -15,7 +15,8 @@
     "curl",
     "http",
     "requests",
-    "python"
+    "python",
+    "converter"
   ],
   "dependencies": {
     "cmd": "^0.1.0",
