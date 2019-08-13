@@ -29,7 +29,7 @@ var toNode = function (curlCommand) {
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
-    nodeCode += 'var dataString = \'' + request.data + '\';\n\n'
+    nodeCode += 'var dataString = \'' + request.data.replace(/\^\&/g,"&") + '\';\n\n'
   }
 
   nodeCode += 'var options = {\n'
