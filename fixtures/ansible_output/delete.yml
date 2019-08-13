@@ -1,0 +1,6 @@
+-
+  name: 'http://www.url.com/page'
+  uri:
+    url: 'http://www.url.com/page'
+    method: DELETE
+  register: result

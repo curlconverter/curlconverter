@@ -1,0 +1,8 @@
+-
+  name: 'https://api.test.com/'
+  uri:
+    url: 'https://api.test.com/'
+    method: GET
+    url_username: some_username
+    url_password: some_password
+  register: result

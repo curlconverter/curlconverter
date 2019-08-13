@@ -10,15 +10,16 @@ const defaultLanguage = 'python'
 // used to map languages to functions
 // NOTE: make sure to update this when adding langauge support
 const translate = {
-  r: 'toR',
+  ansible: 'toAnsible',
+  dart: 'toDart',
+  go: 'toGo',
+  json: 'toJsonString',
+  node: 'toNode',
   php: 'toPhp',
   python: 'toPython',
-  node: 'toNode',
-  go: 'toGo',
-  strest: 'toStrest',
+  r: 'toR',
   rust: 'toRust',
-  json: 'toJsonString',
-  dart: 'toDart'
+  strest: 'toStrest',
 }
 
 // outputs the help menu
