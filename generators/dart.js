@@ -61,7 +61,7 @@ var toDart = function (curlCommand) {
     } else if (r.isDataBinary) {
       s += `  var data = utf8.encode('${r.data}');\n\n`
     } else {
-      s += `  var data = '${r.data}';\n\n`
+      s += `  var data = '${r.data.replace(/\^\&/g,"&")}';\n\n`
     }
   }
 
