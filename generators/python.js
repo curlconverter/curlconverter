@@ -69,10 +69,10 @@ function getMultipleDataString (request, parsedQueryString) {
       value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (var i = 0; i < value.length; i++) {
-          dataString += '  (' + repr(key) + ', ' + repr(value[i]) + '),\n'
+          dataString += '  (' + repr(key) + ', ' + repr(value[i].replace(/\^$/,"")) + '),\n'
         }
       } else {
-        dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
+        dataString += '  (' + repr(key) + ', ' + repr(value.replace(/\^$/,"")) + '),\n'
       }
     }
     dataString += ']\n'
@@ -82,7 +82,7 @@ function getMultipleDataString (request, parsedQueryString) {
     i = 0
     for (key in parsedQueryString) {
       value = parsedQueryString[key]
-      dataString += '  ' + repr(key) + ': ' + repr(value)
+      dataString += '  ' + repr(key) + ': ' + repr(value.replace(/\^$/,""))
       if (i === elementCount - 1) {
         dataString += '\n'
       } else {
