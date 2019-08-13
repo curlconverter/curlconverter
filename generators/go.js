@@ -11,7 +11,7 @@ var toGo = function (curlCommand) {
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
-    goCode += '\tvar data = []byte(`{' + request.data + '}`)\n'
+    goCode += '\tvar data = []byte(`{' + request.data.replace(/\^\&/g,"&") + '}`)\n'
     goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", data)\n'
   } else {
     goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", nil)\n'
