@@ -7,7 +7,7 @@
       properties:
         email:
           type: keyword
-    body_format: application/json
+    body_format: json
     headers:
       Content-Type: application/json
   register: result

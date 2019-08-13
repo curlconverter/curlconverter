@@ -4,7 +4,7 @@ var jsesc = require('jsesc')
 var querystring = require('querystring')
 
 function getDataString (request) {
-  let mimeType = 'application/json'
+  let mimeType = 'json'
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
     mimeType = 'text/plain'
@@ -31,7 +31,7 @@ function getDataString (request) {
 var toAnsible = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
   var responses = []
-  response = { name: request.urlWithoutQuery }
+  var response = { name: request.urlWithoutQuery }
   if (request.url.indexOf('http') !== 0) {
     request.url = 'http://' + request.url
   }
@@ -44,9 +44,9 @@ var toAnsible = function (curlCommand) {
     response.uri.validate_certs = 'no'
   }
   if (typeof request.data === 'string' || typeof request.data === 'number') {
-    converted_data = getDataString(request)
-    response.uri.body = converted_data.body
-    response.uri.body_format = converted_data.body_format
+    var convertedData = getDataString(request)
+    response.uri.body = convertedData.body
+    response.uri.body_format = convertedData.body_format
   }
   if (request.headers) {
     response.uri.headers = {}

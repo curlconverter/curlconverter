@@ -7,5 +7,5 @@
       keywords: php
       page: 1
       searchMode: 1
-    body_format: application/json
+    body_format: json
   register: result

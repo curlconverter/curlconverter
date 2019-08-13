@@ -11,7 +11,7 @@
         - Linux
       environments:
         - Dev
-    body_format: application/json
+    body_format: json
     headers:
       Accept: application/vnd.go.cd.v4+json
       Content-Type: application/json

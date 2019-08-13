@@ -81,7 +81,7 @@ var testFile = function (fileName) {
   }
 
   outputs.forEach(function (output) {
-    if (language && language != output.name) {
+    if (language && language !== output.name) {
       console.log(`skipping language: ${output.name}`)
     } else {
       var directory = './fixtures/' + output.name.toLowerCase() + '_output/'

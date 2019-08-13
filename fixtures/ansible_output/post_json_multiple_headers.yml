@@ -8,7 +8,7 @@
       userName: username123
       password: password123
       authLoginDomain: local
-    body_format: application/json
+    body_format: json
     headers:
       Content-Type: application/json
       X-API-Version: '200'

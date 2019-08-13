@@ -11,7 +11,7 @@
         names:
           - joe
         roles: []
-    body_format: application/json
+    body_format: json
     url_username: admin
     url_password: '123'
   register: result
