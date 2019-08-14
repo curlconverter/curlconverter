@@ -4,10 +4,10 @@ var jsesc = require('jsesc')
 var querystring = require('querystring')
 
 function getDataString (request) {
-  let mimeType = 'json'
+  let bodyFormat = 'json'
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
-    mimeType = 'text/plain'
+    bodyFormat = 'raw'
   }
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
@@ -17,14 +17,9 @@ function getDataString (request) {
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return { body: JSON.parse(request.data), body_format: mimeType }
+    return { body: JSON.parse(request.data), body_format: bodyFormat }
   } else {
-    for (var paramName in request.headers) {
-      if (paramName === 'Content-Type') {
-        mimeType = request.headers[paramName]
-      }
-    }
-    return { body: request.data, body_format: mimeType }
+    return { body: request.data, body_format: bodyFormat }
   }
 }
 
@@ -54,7 +49,9 @@ var toAnsible = function (curlCommand) {
       response.uri.headers[prop] = request.headers[prop]
     }
   }
-
+  if (request.cookieString) {
+    response.uri.headers['Cookie'] = request.cookieString
+  }
   if (request.auth) {
     if (request.auth.split(':')[0]) {
       response.uri.url_username = request.auth.split(':')[0]

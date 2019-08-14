@@ -14,4 +14,5 @@ module.exports = { url: 'http://www.w3schools.com/ajax/demo_post.asp',
     { _gat: '1',
         ASPSESSIONIDACCRDTDC: 'MCMDKFMBLLLHGKCGNMKNGPKI',
         _ga: 'GA1.2.1424920226.1419478126' },
-    method: 'post' };
+    method: 'post',
+    cookieString: '_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126' };

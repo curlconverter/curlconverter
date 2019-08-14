@@ -4,5 +4,5 @@
     url: 'http://a.com'
     method: POST
     body: 123
-    body_format: text/plain
+    body_format: raw
   register: result
