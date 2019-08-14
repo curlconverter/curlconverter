@@ -116,7 +116,8 @@ var parseCurlCommand = function (curlCommand) {
   var method
   if (parsedArguments.X === 'POST') {
     method = 'post'
-  } else if (parsedArguments.X === 'PUT') {
+  } else if (parsedArguments.X === 'PUT' ||
+    parsedArguments['T']) {
     method = 'put'
   } else if (parsedArguments.X === 'PATCH') {
     method = 'patch'
@@ -124,18 +125,42 @@ var parseCurlCommand = function (curlCommand) {
     method = 'delete'
   } else if (parsedArguments.X === 'OPTIONS') {
     method = 'options'
-  } else if (parsedArguments['d'] ||
+  } else if ((parsedArguments['d'] ||
     parsedArguments['data'] ||
     parsedArguments['data-binary'] ||
     parsedArguments['F'] ||
-    parsedArguments['form']) {
+    parsedArguments['form']) && !((parsedArguments['G'] || parsedArguments['get']))) {
     method = 'post'
+  } else if (parsedArguments['I'] ||
+    parsedArguments['head']) {
+    method = 'head'
   } else {
     method = 'get'
   }
 
   var compressed = !!parsedArguments.compressed
   var urlObject = URL.parse(url) // eslint-disable-line
+
+  // if GET request with data, convert data to query string
+  if (parsedArguments['G'] || parsedArguments['get']) {
+    urlObject.query = urlObject.query ? urlObject.query : ''
+    var option = 'd' in parsedArguments ? 'd' : 'data' in parsedArguments ? 'data' : null
+    if (option) {
+      var urlQueryString = ''
+
+      if (url.indexOf('?') < 0) url += '?'
+      else urlQueryString += '&'
+
+      if (typeof (parsedArguments[option]) === 'object') {
+        urlQueryString += parsedArguments[option].join('&')
+      } else {
+        urlQueryString += parsedArguments[option]
+      }
+      urlObject.query += urlQueryString
+      url += urlQueryString
+      delete parsedArguments[option]
+    }
+  }
   var query = querystring.parse(urlObject.query, null, null, { maxKeys: 10000 })
 
   urlObject.search = null // Clean out the search/query portion.
