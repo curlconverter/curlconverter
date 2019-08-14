@@ -75,6 +75,10 @@ You can run a specific test with this command:
 
 where "test_name" is a file (without extension) in `fixtures/curl_commands`
 
+You can run a specific test with this command:
+
+`node test.js --language=R`
+
 I recommend setting this up with a debugger so you can see exactly what the parser is passing to the generator.
 Here's my Intellij run configuration for a single test:
 ![Screenshot of intellij debug configuration](/docs/intellijconfig.png)

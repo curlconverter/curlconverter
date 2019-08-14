@@ -1,0 +1,8 @@
+-
+  name: 'http://a.com/'
+  uri:
+    url: 'http://a.com'
+    method: POST
+    body: 123
+    body_format: raw
+  register: result

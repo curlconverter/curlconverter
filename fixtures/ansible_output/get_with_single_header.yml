@@ -1,0 +1,8 @@
+-
+  name: 'http://example.com/'
+  uri:
+    url: 'http://example.com/'
+    method: GET
+    headers:
+      foo: bar
+  register: result

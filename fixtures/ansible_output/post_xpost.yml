@@ -1,0 +1,11 @@
+-
+  name: 'http://us.jooble.org/api/xxxxxxxxxxxxxxxx'
+  uri:
+    url: 'http://us.jooble.org/api/xxxxxxxxxxxxxxxx'
+    method: POST
+    body:
+      keywords: php
+      page: 1
+      searchMode: 1
+    body_format: json
+  register: result

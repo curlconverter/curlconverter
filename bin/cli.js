@@ -10,19 +10,20 @@ const defaultLanguage = 'python'
 // used to map languages to functions
 // NOTE: make sure to update this when adding langauge support
 const translate = {
-  r: 'toR',
+  ansible: 'toAnsible',
+  dart: 'toDart',
+  go: 'toGo',
+  json: 'toJsonString',
+  node: 'toNode',
   php: 'toPhp',
   python: 'toPython',
-  node: 'toNode',
-  go: 'toGo',
-  strest: 'toStrest',
+  r: 'toR',
   rust: 'toRust',
-  json: 'toJsonString',
-  dart: 'toDart'
+  strest: 'toStrest'
 }
 
 // outputs the help menu
-function help() {
+function help () {
   console.log(`usage: curlconverter [-l <language>] [<curl>]
 
 options:
@@ -32,12 +33,11 @@ stdin:
 \tif no <curl> is passes, the script will read from stdin
 
 languages:
-\t${ Object.keys(translate).join('\n\t')}`);
+\t${Object.keys(translate).join('\n\t')}`)
 }
 
 (async () => {
-  if (argv.h || argv.help)
-    return help()
+  if (argv.h || argv.help) { return help() }
 
   const language = argv.l || argv.language
 
@@ -45,8 +45,7 @@ languages:
   const fnName = language ? translate[language] : translate[defaultLanguage]
 
   // if true, the used passed in an unsuppored langauge
-  if (!fnName)
-    return console.error('error: language not supported'), help()
+  if (!fnName) { return console.error('error: language not supported'), help() }
 
   // either use the unnamed argument or read from stdin
   const curl = argv._.length ? argv._[0] : fs.readFileSync(0, 'utf8')

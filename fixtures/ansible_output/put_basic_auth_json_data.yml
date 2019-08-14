@@ -1,0 +1,17 @@
+-
+  name: 'http://localhost:5984/test/_security'
+  uri:
+    url: 'http://localhost:5984/test/_security'
+    method: PUT
+    body:
+      admins:
+        names: []
+        roles: []
+      readers:
+        names:
+          - joe
+        roles: []
+    body_format: json
+    url_username: admin
+    url_password: '123'
+  register: result

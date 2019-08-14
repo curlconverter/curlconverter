@@ -1,0 +1,13 @@
+-
+  name: 'http://localhost:9200/twitter/_mapping/user'
+  uri:
+    url: 'http://localhost:9200/twitter/_mapping/user?pretty'
+    method: PUT
+    body:
+      properties:
+        email:
+          type: keyword
+    body_format: json
+    headers:
+      Content-Type: application/json
+  register: result

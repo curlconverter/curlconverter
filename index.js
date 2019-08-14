@@ -1,23 +1,25 @@
 'use strict'
 
-var toR = require('./generators/r.js')
-var toPython = require('./generators/python.js')
+var toAnsible = require('./generators/ansible.js')
+var toDart = require('./generators/dart.js')
+var toGo = require('./generators/go.js')
+var toJsonString = require('./generators/json')
 var toNode = require('./generators/node.js')
 var toPhp = require('./generators/php.js')
-var toGo = require('./generators/go.js')
-var toStrest = require('./generators/strest.js')
+var toPython = require('./generators/python.js')
+var toR = require('./generators/r.js')
 var toRust = require('./generators/rust')
-var toJsonString = require('./generators/json')
-var toDart = require('./generators/dart.js')
+var toStrest = require('./generators/strest.js')
 
 module.exports = {
-  toR: toR,
+  toAnsible: toAnsible,
+  toDart: toDart,
+  toGo: toGo,
+  toJsonString: toJsonString,
+  toNode: toNode,
   toPhp: toPhp,
   toPython: toPython,
-  toNode: toNode,
-  toGo: toGo,
-  toStrest: toStrest,
+  toR: toR,
   toRust: toRust,
-  toJsonString: toJsonString,
-  toDart: toDart
+  toStrest: toStrest
 }

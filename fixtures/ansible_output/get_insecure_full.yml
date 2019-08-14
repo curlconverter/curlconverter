@@ -1,0 +1,7 @@
+-
+  name: 'https://example.com/'
+  uri:
+    url: 'https://example.com'
+    method: GET
+    validate_certs: no
+  register: result

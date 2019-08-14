@@ -157,6 +157,7 @@ var parseCurlCommand = function (curlCommand) {
 
   if (cookies) {
     request.cookies = cookies
+    request.cookieString = cookieString.replace('Cookie: ', '')
   }
   if (multipartUploads) {
     request.multipartUploads = multipartUploads

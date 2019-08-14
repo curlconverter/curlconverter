@@ -14,6 +14,10 @@ var yargs = require('yargs')
 
 const outputs = [
   {
+    name: 'Ansible',
+    extension: 'yml',
+    command: curlconverter.toAnsible
+  }, {
     name: 'R',
     extension: 'R',
     command: curlconverter.toR
@@ -77,24 +81,29 @@ var testFile = function (fileName) {
   }
 
   outputs.forEach(function (output) {
-    var directory = './fixtures/' + output.name.toLowerCase() + '_output/'
+    if (language && language !== output.name) {
+      console.log(`skipping language: ${output.name}`)
+    } else {
+      var directory = './fixtures/' + output.name.toLowerCase() + '_output/'
 
-    var filePath = directory + fileName.replace('txt', output.extension)
-    var testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+      var filePath = directory + fileName.replace('txt', output.extension)
+      var testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
 
-    if (fs.existsSync(filePath)) {
-      // normalize code for just \n line endings (aka fix input under Windows)
-      var goodCode = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
-      var code = output.command(inputFileContents)
-      test(testName, function (t) {
-        t.equal(code, goodCode)
-        t.end()
-      })
+      if (fs.existsSync(filePath)) {
+        // normalize code for just \n line endings (aka fix input under Windows)
+        var goodCode = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
+        var code = output.command(inputFileContents)
+        test(testName, function (t) {
+          t.equal(code, goodCode)
+          t.end()
+        })
+      }
     }
   })
 }
 // get --test=test_name parameter and just run that test on its own
 var testName = yargs.argv.test
+var language = yargs.argv.language
 if (testName) {
   var fileName = testName + '.txt'
   testFile(fileName)
