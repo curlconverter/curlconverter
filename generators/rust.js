@@ -77,6 +77,7 @@ var toRust = function (curlCommand) {
   }
 
   if (request.data) {
+    request.data = request.data.replace(/\^\&/g,"&")
     if (typeof request.data === 'string') {
       rustCode += '        .body("' + request.data.replace(/\s/g, '') + '")\n'
     } else {
