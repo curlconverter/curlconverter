@@ -1,0 +1,9 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://www.url.com/page'
+      method: POST
+      postData:
+        mimeType: application/json
+        text: 'a=b&c=d&e=f&h=i&j=k&l=m'

@@ -29,7 +29,7 @@ function getDataString (request) {
     }
     return {
       mimeType: mimeType,
-      text: request.data
+      text: request.data.replace(/\^\&/g,"&")
     }
   }
 }
