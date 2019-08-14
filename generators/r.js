@@ -73,7 +73,7 @@ function getMultipleDataString (request, parsedQueryString) {
     var els = []
     dataString = 'data = list(\n'
     for (key in parsedQueryString) {
-      value = parsedQueryString[key].replace(/\^$/,"")
+      value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (var i = 0; i < value.length; i++) {
           els.push('  ' + reprn(key) + ' = ' + repr(value[i]))
@@ -87,8 +87,8 @@ function getMultipleDataString (request, parsedQueryString) {
   } else {
     dataString = 'data = list(\n'
     dataString += Object.keys(parsedQueryString).map((key) => {
-      value = parsedQueryString[key].replace(/\^$/,"")
-      return ('  ' + reprn(key) + ' = ' + repr(value))
+      value = parsedQueryString[key]
+      return ('  ' + reprn(key) + ' = ' + repr(value.replace(/\^$/,"")))
     }).join(',\n')
     dataString += '\n)\n'
   }

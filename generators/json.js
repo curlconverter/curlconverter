@@ -62,11 +62,11 @@ function getMultipleDataString (request, parsedQueryString) {
   var data = {}
 
   for (var key in parsedQueryString) {
-    var value = parsedQueryString[key].replace(/\^$/,"")
+    var value = parsedQueryString[key]
     if (Array.isArray(value)) {
       data[repr(key)] = value
     } else {
-      data[repr(key)] = repr(value)
+      data[repr(key)] = repr(value.replace(/\^$/,""))
     }
   }
 
