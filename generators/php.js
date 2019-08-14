@@ -43,7 +43,7 @@ var toPhp = function (curlCommand) {
     } else {
       var dataIndex = 0
       for (var key in parsedQueryString) {
-        var value = parsedQueryString[key]
+        var value = parsedQueryString[key].replace(/\^$/,"")
         dataString += "    '" + key + "' => '" + value.replace(/[\\"']/g, '\\$&') + "'"
         if (dataIndex < dataCount - 1) {
           dataString += ',\n'
