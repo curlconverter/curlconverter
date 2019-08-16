@@ -111,7 +111,9 @@ var parseCurlCommand = function (curlCommand) {
     var cookieParseOptions = {
       decode: function (s) { return s }
     }
-    cookies = cookie.parse(cookieString.replace('Cookie: ', ''), cookieParseOptions)
+    // separate out cookie headers into separate data structure
+    // note: cookie is case insensitive
+    cookies = cookie.parse(cookieString.replace(/^Cookie: /gi, ''), cookieParseOptions)
   }
   var method
   if (parsedArguments.X === 'POST') {
