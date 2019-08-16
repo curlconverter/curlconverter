@@ -142,14 +142,18 @@ var parseCurlCommand = function (curlCommand) {
   var urlObject = URL.parse(url) // eslint-disable-line
 
   // if GET request with data, convert data to query string
+  // NB: the -G flag does not change the http verb. It just moves the data into the url.
   if (parsedArguments['G'] || parsedArguments['get']) {
     urlObject.query = urlObject.query ? urlObject.query : ''
     var option = 'd' in parsedArguments ? 'd' : 'data' in parsedArguments ? 'data' : null
     if (option) {
       var urlQueryString = ''
 
-      if (url.indexOf('?') < 0) url += '?'
-      else urlQueryString += '&'
+      if (url.indexOf('?') < 0) {
+        url += '?'
+      } else {
+        urlQueryString += '&'
+      }
 
       if (typeof (parsedArguments[option]) === 'object') {
         urlQueryString += parsedArguments[option].join('&')
