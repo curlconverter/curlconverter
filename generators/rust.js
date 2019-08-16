@@ -50,6 +50,9 @@ var toRust = function (curlCommand) {
     case 'put':
       rustCode += '        .put("' + request.url + '")'
       break
+    case 'head':
+      rustCode += '        .head("' + request.url + '")'
+      break
     case 'patch':
       rustCode += '        .patch("' + request.url + '")'
       break

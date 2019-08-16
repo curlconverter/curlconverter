@@ -11,7 +11,7 @@ void main() async {
     'Referer': 'http://fiddle.jshell.net/_display/',
     'X-Requested-With': 'XMLHttpRequest',
     'Connection': 'keep-alive',
-    'accept-encoding': 'gzip',
+    'Accept-Encoding': 'gzip',
   };
 
   var data = 'msg1=wow&msg2=such';

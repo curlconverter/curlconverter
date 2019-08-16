@@ -34,9 +34,11 @@ var toDart = function (curlCommand) {
       s += "    'Cookie': '" + cookiestr + "',\n"
     }
 
-    if (r.auth) s += "    'authorization': authn,\n"
-    if (r.compressed) s += "    'accept-encoding': 'gzip',\n"
-    if (r.isDataBinary || r.method === 'put') s += "    'content-type': 'application/x-www-form-urlencoded',\n"
+    if (r.auth) s += "    'Authorization': authn,\n"
+    if (r.compressed) s += "    'Accept-Encoding': 'gzip',\n"
+    if (!hasHeaders['Content-Type'] && (r.isDataBinary || r.method === 'put')) {
+      s += "    'Content-Type': 'application/x-www-form-urlencoded',\n"
+    }
 
     s += '  };\n'
     s += '\n'
@@ -67,7 +69,7 @@ var toDart = function (curlCommand) {
 
   s += '  var res = await http.' + r.method + "('" + r.url + "'"
   if (hasHeaders) s += ', headers: headers'
-  else if (r.auth) s += ", headers: {'authorization': authn}"
+  else if (r.auth) s += ", headers: {'Authorization': authn}"
   if (hasData) s += ', body: data'
 
   /* eslint-disable no-template-curly-in-string */

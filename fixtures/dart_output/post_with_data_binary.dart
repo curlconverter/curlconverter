@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 void main() async {
   var headers = {
-    'content-type': 'application/x-www-form-urlencoded',
+    'Content-Type': 'application/x-www-form-urlencoded',
   };
 
   var data = utf8.encode('{"title":"china1"}');
