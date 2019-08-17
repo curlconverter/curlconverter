@@ -6,7 +6,7 @@ function repr (value) {
   if (!value) {
     return "''"
   } else {
-    return "'" + jsesc(value, { quotes: 'single' }) + "'"
+    return "'" + jsesc(value, { quotes: 'single' }).replace(/\\'/g, `''`) + "'"
   }
 }
 
