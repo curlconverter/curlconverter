@@ -118,22 +118,28 @@ const parseWebOptions = function (request) {
 }
 
 function prepareRequest (request, func, options) {
-  let response = `\nresponse = ${func}(url`
+  let response = `\nresponse = ${func}(`
   let fullResponse = `\nfullUrl = '${request.url}';`
   fullResponse += `\nresponse = ${func}(fullUrl`
 
-  if (request.query) {
-    response += `, params{:}`
-    // fullResponse: it is already in the fullUrl
-  }
-
+  const query = `\nquery = char(join(join(reshape(params,[],2)','='),'&'));`
   if (request.data) {
+    if (request.query) {
+      response = query + response + `[url '?' query]`
+    } else response += 'url'
     response += `, body`
     fullResponse += `, body`
   } else if (request.multipartUploads) {
+    if (request.query) {
+      response = query + response + `[url '?' query]`
+    } else response += 'url'
     response += `, files{:}`
     fullResponse += `, files{:}`
-  }
+    if (request.query) response = query + response
+  } else if (request.query) {
+    response += `url, params{:}`
+    // fullResponse: it is already in the fullUrl
+  } else response += 'url'
 
   if (Object.keys(options).length > 0) {
     response += `, options`

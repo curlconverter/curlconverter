@@ -5,7 +5,8 @@ options = weboptions(...
     'RequestMethod', 'put',...
     'MediaType', 'application/json'...
 );
-response = webwrite(url, params{:}, body, options);
+query = char(join(join(reshape(params,[],2)','='),'&'));
+response = webwrite([url '?' query], body, options);
 
 % NB. Original query string below. It seems impossible to parse and
 % reproduce query strings 100% accurately so the one below is given
