@@ -112,6 +112,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - clintonc (Code quality / brevity, test suite consistency)
 - MarkReeder (JSON formatting)
 - cf512 (bugfixes and feature requests)
+- DainisGorbunovs (MATLAB support)
 
 ## License
 
