@@ -122,24 +122,21 @@ function prepareRequest (request, func, options) {
   let fullResponse = `\nfullUrl = '${request.url}';`
   fullResponse += `\nresponse = ${func}(fullUrl`
 
-  const query = `\nquery = char(join(join(reshape(params,[],2)','='),'&'));`
+  if (request.putQueryInUrl) {
+    const query = `\nquery = char(join(join(params,'='),'&'));`
+    response = query + response + `[url '?' query]`
+  } else response += 'url'
+
   if (request.data) {
-    if (request.query) {
-      response = query + response + `[url '?' query]`
-    } else response += 'url'
     response += `, body`
     fullResponse += `, body`
   } else if (request.multipartUploads) {
-    if (request.query) {
-      response = query + response + `[url '?' query]`
-    } else response += 'url'
     response += `, files{:}`
     fullResponse += `, files{:}`
-    if (request.query) response = query + response
   } else if (request.query) {
-    response += `url, params{:}`
+    response += `, params{:}`
     // fullResponse: it is already in the fullUrl
-  } else response += 'url'
+  }
 
   if (Object.keys(options).length > 0) {
     response += `, options`
@@ -159,6 +156,7 @@ function prepareRequest (request, func, options) {
 
 function parseCommand (curlCommand) {
   const request = util.parseCurlCommand(curlCommand)
+  request.putQueryInUrl = !!(request.query && (request.data || request.multipartUploads))
 
   // Check whether to use `webread` or `webwrite`
   const func = chooseRequestFunction(request)
@@ -210,7 +208,8 @@ function prepareQueryString (request) {
   let response = ''
   if (request.query) {
     response += '\nparams = '
-    response += addCellArray(request.query, [], ';', 1)
+    const keyValSeparator = request.putQueryInUrl ? '' : ';'
+    response += addCellArray(request.query, [], keyValSeparator, 1)
     response += ';'
   }
   return response

@@ -1,11 +1,11 @@
 url = 'http://localhost:9200/twitter/_mapping/user';
-params = {'pretty'; ''};
+params = {'pretty' ''};
 body = '{"properties": {"email": {"type": "keyword"}}}';
 options = weboptions(...
     'RequestMethod', 'put',...
     'MediaType', 'application/json'...
 );
-query = char(join(join(reshape(params,[],2)','='),'&'));
+query = char(join(join(params,'='),'&'));
 response = webwrite([url '?' query], body, options);
 
 % NB. Original query string below. It seems impossible to parse and
