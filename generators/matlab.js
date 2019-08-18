@@ -272,6 +272,56 @@ function prepareB64FileFunc (request) {
       `\nend`
 }
 
+function structify (obj, indentLevel) {
+  let response = ''
+  indentLevel = !indentLevel ? 1 : ++indentLevel
+  const indent = ' '.repeat(4 * indentLevel)
+  const prevIndent = ' '.repeat(4 * (indentLevel - 1))
+
+  if (obj instanceof Array) {
+    const list = []
+    let listContainsNumbers = true
+    for (const k in obj) {
+      if (listContainsNumbers && typeof obj[k] !== 'number') {
+        listContainsNumbers = false
+      }
+      const value = structify(obj[k], indentLevel)
+      list.push(`${value}`)
+    }
+    if (listContainsNumbers) {
+      const listString = list.join(' ')
+      response += `[${listString}]`
+    } else {
+      list.unshift('{{')
+      const listString = list.join(`\n${indent}`)
+      response += `${listString}\n${prevIndent}}}`
+    }
+  } else if (obj instanceof Object) {
+    response += 'struct(...'
+    let first = true
+    for (const k in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        // recursive call to scan property
+        if (first) { first = false } else {
+          response += `, ...`
+        }
+        response += `\n${indent}`
+        response += `'${k}', `
+        response += structify(obj[k], indentLevel)
+      }
+    }
+    response += ` ...`
+    response += `\n${prevIndent})`
+  } else if (typeof obj === 'number') {
+    // not an Object so obj[k] here is a value
+    response += `${obj}`
+  } else {
+    response += `'${obj}'`
+  }
+
+  return response
+}
+
 function prepareResponse (request, func, options) {
   // Set URL of the request
   let response = `url = '${request.urlWithoutQuery}';`
