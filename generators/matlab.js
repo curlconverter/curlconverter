@@ -319,14 +319,14 @@ function structify (obj, indentLevel) {
         }
         // recursive call to scan property
         if (first) { first = false } else {
-          response += `, ...`
+          response += `,...`
         }
         response += `\n${indent}`
         response += `'${k}', `
         response += structify(obj[k], indentLevel)
       }
     }
-    response += ` ...`
+    response += `...`
     response += `\n${prevIndent})`
   } else if (typeof obj === 'number') {
     // not an Object so obj[k] here is a value
