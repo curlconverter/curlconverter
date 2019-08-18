@@ -224,7 +224,20 @@ function prepareBody (request) {
       request.b64fileupload = true
       response += `\nbody = getB64File(${repr(request.data.slice(1))});`
     } else {
-      response += `\nbody = ${repr(request.data)};`
+      // if the data is in JSON, store it as struct in MATLAB
+      // otherwise just keep it as a char vector
+      try {
+        const jsonData = JSON.parse(request.data)
+        if (typeof jsonData === 'object') {
+          let jsonText = structify(jsonData)
+          if (!jsonText.startsWith('struct')) jsonText = repr(jsonText)
+          response += `\nbody = ${jsonText};`
+        } else {
+          response += `\nbody = ${repr(request.data)};`
+        }
+      } catch (e) {
+        response += `\nbody = ${repr(request.data)};`
+      }
     }
   }
   return response
@@ -301,6 +314,9 @@ function structify (obj, indentLevel) {
     let first = true
     for (const k in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        if (!k[0].match(/[a-z]/i)) {
+          throw Error('MATLAB structs do not support keys starting with non-alphabet symbols')
+        }
         // recursive call to scan property
         if (first) { first = false } else {
           response += `, ...`
@@ -316,7 +332,7 @@ function structify (obj, indentLevel) {
     // not an Object so obj[k] here is a value
     response += `${obj}`
   } else {
-    response += `'${obj}'`
+    response += `${repr(obj)}`
   }
 
   return response
