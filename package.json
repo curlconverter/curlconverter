@@ -24,10 +24,10 @@
     "jsesc": "^2.5.2",
     "string.prototype.startswith": "^0.2.0",
     "yamljs": "^0.3.0",
-    "yargs": "NickCarneiro/yargs"
+    "yargs": "github:NickCarneiro/yargs"
   },
   "devDependencies": {
-    "standard": "^13.1.0",
+    "standard": "^14.0.0",
     "tape": "^4.11.0"
   },
   "scripts": {
