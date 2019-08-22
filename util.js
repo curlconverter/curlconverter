@@ -17,7 +17,9 @@ var joinDataArguments = function (dataArguments) {
       data += '&' + argument
     }
   })
+  // console.log("data: \n" + data)
   return data
+  // return data.replace(/^&/g, "&")
 }
 
 var parseCurlCommand = function (curlCommand) {
@@ -86,6 +88,24 @@ var parseCurlCommand = function (curlCommand) {
     }
     headers['User-Agent'] = parsedArguments['user-agent']
   }
+
+  //
+  // ** Notes: **
+  //
+  // Per https://ss64.com/nt/syntax-esc.html:
+  //
+  // ^  Escape character.
+  // Adding the escape character before a command 
+  // symbol allows it to be treated as ordinary text. 
+  // When piping or redirecting any of these characters 
+  // you should prefix with the escape character: & \ < > ^ |
+  // e.g.  ^\  ^&  ^|  ^>  ^<  ^^
+  //
+  // The following appears to replace all those characters
+  // properly (except \ -- still in progress)
+  // var testString = "a=b^\c=d^&e=f^<h=i^>j=k^&l=m"; 
+  // console.log(testString.replace(/\^([&\<>^|])/gi, "$1"));
+  //
 
   if (parsedArguments.b) {
     cookieString = parsedArguments.b
