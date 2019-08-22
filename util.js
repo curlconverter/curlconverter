@@ -17,9 +17,7 @@ var joinDataArguments = function (dataArguments) {
       data += '&' + argument
     }
   })
-  // console.log("data: \n" + data)
   return data
-  // return data.replace(/^&/g, "&")
 }
 
 var parseCurlCommand = function (curlCommand) {
