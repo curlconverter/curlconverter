@@ -1,0 +1,1 @@
+curl -v --windows --data "a=b^&c=d^&e=f^&h=i^&j=k^&l=m" http://www.url.com/page
