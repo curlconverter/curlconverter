@@ -72,6 +72,10 @@ var toStrest = function (curlCommand) {
         value: request.headers[prop]
       })
     }
+    response.requests.curl_converter.request.headers.push({
+      name: 'Cookie',
+      value: request.cookieString
+    })
   }
   if (request.auth) {
     response.requests.curl_converter.auth = {
