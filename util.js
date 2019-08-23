@@ -26,6 +26,12 @@ var parseCurlCommand = function (curlCommand) {
     // remove newlines
     curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
   }
+  // windows curl cmd support for escaped characters
+  // per https://ss64.com/nt/syntax-esc.html 
+  if (curlCommand.includes("--windows")) {
+    curlCommand = curlCommand.replace(/\^([&\\<>^|])/gi, "$1")
+    curlCommand = curlCommand.replace(/--windows/gi, "")
+  }
   // yargs parses -XPOST as separate arguments. just prescreen for it.
   curlCommand = curlCommand.replace(/ -XPOST/, ' -X POST')
   curlCommand = curlCommand.replace(/ -XGET/, ' -X GET')
@@ -86,24 +92,6 @@ var parseCurlCommand = function (curlCommand) {
     }
     headers['User-Agent'] = parsedArguments['user-agent']
   }
-
-  //
-  // ** Notes: **
-  //
-  // Per https://ss64.com/nt/syntax-esc.html:
-  //
-  // ^  Escape character.
-  // Adding the escape character before a command 
-  // symbol allows it to be treated as ordinary text. 
-  // When piping or redirecting any of these characters 
-  // you should prefix with the escape character: & \ < > ^ |
-  // e.g.  ^\  ^&  ^|  ^>  ^<  ^^
-  //
-  // The following appears to replace all those characters
-  // properly (except \ -- still in progress)
-  // var testString = "a=b^\c=d^&e=f^<h=i^>j=k^&l=m"; 
-  // console.log(testString.replace(/\^([&\<>^|])/gi, "$1"));
-  //
 
   if (parsedArguments.b) {
     cookieString = parsedArguments.b
