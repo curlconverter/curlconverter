@@ -26,7 +26,7 @@ var toRust = function (curlCommand) {
   }
 
   if (request.multipartUploads) {
-    rustCode += '    let form = multipart::From::new()'
+    rustCode += '    let form = multipart::Form::new()'
 
     for (var part in request.multipartUploads) {
       if (part === 'image' || part === 'file') {
