@@ -35,6 +35,9 @@ var toPhp = function (curlCommand) {
 
   var dataString = false
   if (request.data) {
+    if (typeof request.data === 'number') {
+      request.data = request.data.toString()
+    }
     var parsedQueryString = querystring.parse(request.data)
     dataString = '$data = array(\n'
     var dataCount = Object.keys(parsedQueryString).length
