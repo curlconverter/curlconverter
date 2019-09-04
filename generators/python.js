@@ -4,7 +4,7 @@ var querystring = require('querystring')
 
 require('string.prototype.startswith')
 
-function repr (value) {
+function repr(value) {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
@@ -13,7 +13,7 @@ function repr (value) {
   }
 }
 
-function getQueryDict (request) {
+function getQueryDict(request) {
   var queryDict = 'params = (\n'
   for (var paramName in request.query) {
     var rawValue = request.query[paramName]
@@ -29,7 +29,7 @@ function getQueryDict (request) {
   return queryDict
 }
 
-function getDataString (request) {
+function getDataString(request) {
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
   }
@@ -42,7 +42,11 @@ function getDataString (request) {
     }
   }
 
-  var parsedQueryString = querystring.parse(request.data)
+  function noDecode(x) {
+    return x;
+  }
+
+  var parsedQueryString = querystring.parse(request.data, '&', '=', { decodeURIComponent: noDecode }) // otherwise querystring.parse defaults to UTF-8 decoding which can result in parsing failure due to malformed URI errors
   var keyCount = Object.keys(parsedQueryString).length
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
@@ -53,7 +57,7 @@ function getDataString (request) {
   }
 }
 
-function getMultipleDataString (request, parsedQueryString) {
+function getMultipleDataString(request, parsedQueryString) {
   var repeatedKey = false
   for (var key in parsedQueryString) {
     var value = parsedQueryString[key]
@@ -96,7 +100,7 @@ function getMultipleDataString (request, parsedQueryString) {
   return dataString
 }
 
-function getFilesString (request) {
+function getFilesString(request) {
   // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
   var filesString = 'files = {\n'
   for (var multipartKey in request.multipartUploads) {
@@ -204,9 +208,9 @@ var toPython = function (curlCommand) {
 
   if (request.query) {
     pythonCode += '\n\n' +
-            '#NB. Original query string below. It seems impossible to parse and\n' +
-            '#reproduce query strings 100% accurately so the one below is given\n' +
-            '#in case the reproduced version is not "correct".\n'
+      '#NB. Original query string below. It seems impossible to parse and\n' +
+      '#reproduce query strings 100% accurately so the one below is given\n' +
+      '#in case the reproduced version is not "correct".\n'
     pythonCode += '# ' + requestLineWithOriginalUrl
   }
 
