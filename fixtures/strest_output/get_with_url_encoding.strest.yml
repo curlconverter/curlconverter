@@ -1,0 +1,9 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://example.com/'
+      method: POST
+      postData:
+        mimeType: application/json
+        text: 'data=1&text=%D2%D4'

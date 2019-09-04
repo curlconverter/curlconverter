@@ -1,0 +1,8 @@
+-
+  name: 'http://example.com/'
+  uri:
+    url: 'http://example.com'
+    method: POST
+    body: 'data=1&text=%D2%D4'
+    body_format: json
+  register: result
