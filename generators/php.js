@@ -35,6 +35,9 @@ var toPhp = function (curlCommand) {
 
   var dataString = false
   if (request.data) {
+    if (typeof request.data === 'number') {
+      request.data = request.data.toString()
+    }
     function noDecode(x) {
       return x;
     }

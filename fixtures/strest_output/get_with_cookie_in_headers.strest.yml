@@ -1,0 +1,37 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'https://httpbin.org/cookies'
+      method: GET
+      headers:
+        -
+          name: Pragma
+          value: no-cache
+        -
+          name: Accept-Encoding
+          value: 'gzip, deflate, br'
+        -
+          name: Accept-Language
+          value: 'en-US,en;q=0.9'
+        -
+          name: User-Agent
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36'
+        -
+          name: accept
+          value: application/json
+        -
+          name: Referer
+          value: 'https://httpbin.org/'
+        -
+          name: Connection
+          value: keep-alive
+        -
+          name: Cache-Control
+          value: no-cache
+        -
+          name: Sec-Metadata
+          value: 'destination=empty, site=same-origin'
+        -
+          name: Cookie
+          value: authCookie=123

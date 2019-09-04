@@ -129,6 +129,7 @@ var parseCurlCommand = function (curlCommand) {
     method = 'options'
   } else if ((parsedArguments['d'] ||
     parsedArguments['data'] ||
+    parsedArguments['data-ascii'] ||
     parsedArguments['data-binary'] ||
     parsedArguments['F'] ||
     parsedArguments['form']) && !((parsedArguments['G'] || parsedArguments['get']))) {
@@ -200,6 +201,8 @@ var parseCurlCommand = function (curlCommand) {
     request.isDataBinary = true
   } else if (parsedArguments['d']) {
     request.data = parsedArguments['d']
+  } else if (parsedArguments['data-ascii']) {
+    request.data = parsedArguments['data-ascii']
   }
 
   if (parsedArguments['u']) {

@@ -8,6 +8,9 @@ var toGo = function (curlCommand) {
   goCode += 'func main() {\n'
   goCode += '\tclient := &http.Client{}\n'
   if (request.data) {
+    if (typeof request.data === 'number') {
+      request.data = request.data.toString()
+    }
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
