@@ -50,7 +50,6 @@ function getDataString(request) {
   }
 
   var parsedQueryString = querystring.parse(request.data, '&', '=', { decodeURIComponent: noDecode })
-  // var parsedQueryString = querystring.parse(request.data)
   var keyCount = Object.keys(parsedQueryString).length
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
