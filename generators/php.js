@@ -35,7 +35,10 @@ var toPhp = function (curlCommand) {
 
   var dataString = false
   if (request.data) {
-    var parsedQueryString = querystring.parse(request.data)
+    function noDecode(x) {
+      return x;
+    }
+    var parsedQueryString = querystring.parse(request.data, '&', '=', { decodeURIComponent: noDecode })
     dataString = '$data = array(\n'
     var dataCount = Object.keys(parsedQueryString).length
     if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {

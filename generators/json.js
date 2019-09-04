@@ -6,7 +6,7 @@ var jsesc = require('jsesc')
 
 require('string.prototype.startswith')
 
-function repr (value, isKey) {
+function repr(value, isKey) {
   // In context of url parameters, don't accept nulls and such.
   /*
     if ( !value ) {
@@ -17,7 +17,7 @@ function repr (value, isKey) {
   return isKey ? "'" + jsesc(value, { quotes: 'single' }) + "'" : value
 }
 
-function getQueries (request) {
+function getQueries(request) {
   var queries = {}
   for (var paramName in request.query) {
     var rawValue = request.query[paramName]
@@ -33,7 +33,7 @@ function getQueries (request) {
   return queries
 }
 
-function getDataString (request) {
+function getDataString(request) {
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
   }
@@ -45,7 +45,12 @@ function getDataString (request) {
    }
    */
 
-  var parsedQueryString = querystring.parse(request.data)
+  function noDecode(x) {
+    return x;
+  }
+
+  var parsedQueryString = querystring.parse(request.data, '&', '=', { decodeURIComponent: noDecode })
+  // var parsedQueryString = querystring.parse(request.data)
   var keyCount = Object.keys(parsedQueryString).length
   var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   var singularData = request.isDataBinary || singleKeyOnly
@@ -58,7 +63,7 @@ function getDataString (request) {
   }
 }
 
-function getMultipleDataString (request, parsedQueryString) {
+function getMultipleDataString(request, parsedQueryString) {
   var data = {}
 
   for (var key in parsedQueryString) {
@@ -73,7 +78,7 @@ function getMultipleDataString (request, parsedQueryString) {
   return { data: data }
 }
 
-function getFilesString (request) {
+function getFilesString(request) {
   var data = {}
 
   data['files'] = {}
