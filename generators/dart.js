@@ -45,6 +45,9 @@ var toDart = function (curlCommand) {
   }
 
   var hasData = r.data
+  if (typeof r.data === 'number') {
+    r.data = r.data.toString()
+  }
   if (hasData) {
     // escape single quotes if there're not already escaped
     if (r.data.indexOf("'") !== -1 && r.data.indexOf("\\'") === -1) r.data = jsesc(r.data)
