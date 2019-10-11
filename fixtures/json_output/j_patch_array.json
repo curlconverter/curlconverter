@@ -1,1 +1,12 @@
-{"url":"http://httpbin.org/patch","raw_url":"http://httpbin.org/patch","method":"patch","data":{"item[]":["1","2","3"]}}
+{
+    "url": "http://httpbin.org/patch",
+    "raw_url": "http://httpbin.org/patch",
+    "method": "patch",
+    "data": {
+        "item[]": [
+            "1",
+            "2",
+            "3"
+        ]
+    }
+}

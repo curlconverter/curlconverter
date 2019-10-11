@@ -1,1 +1,8 @@
-{"url":"http://httpbin.org/patch","raw_url":"http://httpbin.org/patch","method":"patch","files":{"file1":"./fixtures/curl_commands/delete.txt"}}
+{
+    "url": "http://httpbin.org/patch",
+    "raw_url": "http://httpbin.org/patch",
+    "method": "patch",
+    "files": {
+        "file1": "./fixtures/curl_commands/delete.txt"
+    }
+}
