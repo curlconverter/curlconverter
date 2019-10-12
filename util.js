@@ -3,23 +3,6 @@ var yargs = require('yargs')
 var URL = require('url')
 var querystring = require('querystring')
 
-/**
- * given this: [ 'msg1=value1', 'msg2=value2' ]
- * output this: 'msg1=value1&msg2=value2'
- * @param dataArguments
- */
-var joinDataArguments = function (dataArguments) {
-  var data = ''
-  dataArguments.forEach(function (argument, i) {
-    if (i === 0) {
-      data += argument
-    } else {
-      data += '&' + argument
-    }
-  })
-  return data
-}
-
 var parseCurlCommand = function (curlCommand) {
   var newlineFound = /\r|\n/.exec(curlCommand)
   if (newlineFound) {
@@ -213,7 +196,7 @@ var parseCurlCommand = function (curlCommand) {
   }
   if (Array.isArray(request.data)) {
     request.dataArray = request.data
-    request.data = joinDataArguments(request.data)
+    request.data = request.data.join('&')
   }
 
   if (parsedArguments['k'] || parsedArguments['insecure']) {
