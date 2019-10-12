@@ -33,8 +33,16 @@ var parseCurlCommand = function (curlCommand) {
   curlCommand = curlCommand.replace(/ -XPATCH/, ' -X PATCH')
   curlCommand = curlCommand.replace(/ -XDELETE/, ' -X DELETE')
   curlCommand = curlCommand.trim()
-  var yargObject = yargs(curlCommand)
-  var parsedArguments = yargObject.argv
+
+  // Parse with some understanding of the meanings of flags.  In particular,
+  // boolean flags can be trouble if the URL to fetch follows immediately
+  // after, since it will be taken as an argument to the flag rather than
+  // interpreted as a positional argument.  Someone should add all the flags
+  // likely to cause trouble here.
+  var parsedArguments = yargs
+      .boolean(['I', 'head', 'compressed', 'L', 'k', 'silent', 's'])
+      .parse(curlCommand)
+
   var cookieString
   var cookies
   var url = parsedArguments._[1]
