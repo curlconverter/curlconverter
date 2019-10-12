@@ -9,7 +9,7 @@ fn main() -> Result<(), reqwest::Error> {
         .text("text", "Testing the converter!");
 
     let res = reqwest::Client::new()
-        .post("\")
+        .post("https://api.net/v3")
         .basic_auth("test", Some(""))
         .multipart(form)
         .send()?
