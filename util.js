@@ -4,11 +4,9 @@ var URL = require('url')
 var querystring = require('querystring')
 
 var parseCurlCommand = function (curlCommand) {
-  var newlineFound = /\r|\n/.exec(curlCommand)
-  if (newlineFound) {
-    // remove newlines
-    curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
-  }
+  // Remove newlines (and from continuations)
+  curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
+
   // yargs parses -XPOST as separate arguments. just prescreen for it.
   curlCommand = curlCommand.replace(/ -XPOST/, ' -X POST')
   curlCommand = curlCommand.replace(/ -XGET/, ' -X GET')
