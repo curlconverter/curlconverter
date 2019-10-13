@@ -16,6 +16,7 @@ var parseCurlCommand = function (curlCommand) {
   curlCommand = curlCommand.trim()
   var parsedArguments = yargs
     .alias('H', 'header')
+    .alias('A', 'user-agent')
     .parse(curlCommand)
   var cookieString
   var cookies
@@ -50,14 +51,9 @@ var parseCurlCommand = function (curlCommand) {
     })
   }
 
-  if (parsedArguments.A) {
+  if (parsedArguments['user-agent']) {
     if (!headers) {
-      headers = []
-    }
-    headers['User-Agent'] = parsedArguments.A
-  } else if (parsedArguments['user-agent']) {
-    if (!headers) {
-      headers = []
+      headers = {}
     }
     headers['User-Agent'] = parsedArguments['user-agent']
   }
