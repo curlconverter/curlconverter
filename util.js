@@ -14,8 +14,9 @@ var parseCurlCommand = function (curlCommand) {
   curlCommand = curlCommand.replace(/ -XPATCH/, ' -X PATCH')
   curlCommand = curlCommand.replace(/ -XDELETE/, ' -X DELETE')
   curlCommand = curlCommand.trim()
-  var yargObject = yargs(curlCommand)
-  var parsedArguments = yargObject.argv
+  var parsedArguments = yargs
+    .alias('H', 'header')
+    .parse(curlCommand)
   var cookieString
   var cookies
   var url = parsedArguments._[1]
@@ -32,30 +33,26 @@ var parseCurlCommand = function (curlCommand) {
 
   var headers
 
-  var parseHeaders = function (headerFieldName) {
-    if (parsedArguments[headerFieldName]) {
-      if (!headers) {
-        headers = {}
-      }
-      if (!Array.isArray(parsedArguments[headerFieldName])) {
-        parsedArguments[headerFieldName] = [parsedArguments[headerFieldName]]
-      }
-      parsedArguments[headerFieldName].forEach(function (header) {
-        if (header.indexOf('Cookie') !== -1) {
-          // stupid javascript tricks: closure
-          cookieString = header
-        } else {
-          var colonIndex = header.indexOf(':')
-          var headerName = header.substring(0, colonIndex)
-          var headerValue = header.substring(colonIndex + 1).trim()
-          headers[headerName] = headerValue
-        }
-      })
+  if (parsedArguments['header']) {
+    if (!headers) {
+      headers = {}
     }
+    if (!Array.isArray(parsedArguments['header'])) {
+      parsedArguments['header'] = [parsedArguments['header']]
+    }
+    parsedArguments['header'].forEach(function (header) {
+      if (header.indexOf('Cookie') !== -1) {
+        // stupid javascript tricks: closure
+        cookieString = header
+      } else {
+        var colonIndex = header.indexOf(':')
+        var headerName = header.substring(0, colonIndex)
+        var headerValue = header.substring(colonIndex + 1).trim()
+        headers[headerName] = headerValue
+      }
+    })
   }
 
-  parseHeaders('H')
-  parseHeaders('header')
   if (parsedArguments.A) {
     if (!headers) {
       headers = []
