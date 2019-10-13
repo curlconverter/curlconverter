@@ -42,13 +42,10 @@ var parseCurlCommand = function (curlCommand) {
     }
     parsedArguments['header'].forEach(function (header) {
       if (header.indexOf('Cookie') !== -1) {
-        // stupid javascript tricks: closure
         cookieString = header
       } else {
-        var colonIndex = header.indexOf(':')
-        var headerName = header.substring(0, colonIndex)
-        var headerValue = header.substring(colonIndex + 1).trim()
-        headers[headerName] = headerValue
+        var components = header.split(/:(.*)/);
+        headers[components[0]] = components[1].trim();
       }
     })
   }
