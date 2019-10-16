@@ -49,6 +49,11 @@ const outputs = [
     command: curlconverter.toRust
   },
   {
+    name: 'Scrapy',
+    extension: 'py',
+    command: curlconverter.toScrapy
+  },
+  {
     name: 'Strest',
     extension: 'strest.yml',
     command: curlconverter.toStrest

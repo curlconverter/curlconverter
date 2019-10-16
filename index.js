@@ -9,6 +9,7 @@ var toPhp = require('./generators/php.js')
 var toPython = require('./generators/python.js')
 var toR = require('./generators/r.js')
 var toRust = require('./generators/rust')
+var toScrapy = require('./generators/scrapy.js')
 var toStrest = require('./generators/strest.js')
 
 module.exports = {
@@ -21,5 +22,6 @@ module.exports = {
   toPython: toPython,
   toR: toR,
   toRust: toRust,
+  toScrapy: toScrapy,
   toStrest: toStrest
 }

@@ -19,6 +19,7 @@ const translate = {
   python: 'toPython',
   r: 'toR',
   rust: 'toRust',
+  scrapy: 'toScrapy',
   strest: 'toStrest'
 }
 
