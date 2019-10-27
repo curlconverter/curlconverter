@@ -1,7 +1,6 @@
 extern crate reqwest;
 
-fn main() -> Result<(), reqwest::Error> {
-
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let res = reqwest::Client::new()
         .head("http://www.url.com/page")
         .send()?

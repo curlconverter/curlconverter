@@ -1,12 +1,11 @@
 extern crate reqwest;
-use reqwest::headers::*;
+use reqwest::header;
 
-fn main() -> Result<(), reqwest::Error> {
-    let mut headers = HeaderMap::new();
-    headers.insert(A, "''a'".parse().unwrap());
-    headers.insert(B, "\"".parse().unwrap());
-    headers.insert(COOKIE, "x".parse().unwrap());
-    headers.insert(COOKIE, "y".parse().unwrap());
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut headers = header::HeaderMap::new();
+    headers.insert("A", "''a'".parse().unwrap());
+    headers.insert("B", "\"".parse().unwrap());
+    headers.insert(header::COOKIE, "x=1'; y=2\"".parse().unwrap());
 
     let res = reqwest::Client::new()
         .post("https://example.com")
