@@ -1,5 +1,5 @@
 const util = require('../util')
-const jsesc = require('jsesc');
+const jsesc = require('jsesc')
 
 const INDENTATION = ' '.repeat(4)
 const indent = (line, level = 1) => INDENTATION.repeat(level) + line
@@ -16,7 +16,7 @@ function toRust (curlCommand) {
     const imports = [
       { want: 'header', condition: hasHeaders },
       { want: 'multipart', condition: !!request.multipartUploads }
-    ].filter(i => i.condition).map (i => i.want)
+    ].filter(i => i.condition).map(i => i.want)
 
     if (imports.length > 1) {
       lines.push(`use reqwest::{${imports.join(', ')}};`)
@@ -30,13 +30,13 @@ function toRust (curlCommand) {
   if (request.headers || request.cookies) {
     lines.push(indent('let mut headers = header::HeaderMap::new();'))
 
-    for (let headerName in request.headers) {
+    for (const headerName in request.headers) {
       const headerValue = quote(request.headers[headerName])
       lines.push(indent(`headers.insert("${headerName}", "${headerValue}".parse().unwrap());`))
     }
 
     if (request.cookies) {
-      let cookies = Object.keys(request.cookies)
+      const cookies = Object.keys(request.cookies)
         .map(key => `${key}=${request.cookies[key]}`)
         .join('; ')
       lines.push(indent(`headers.insert(header::COOKIE, "${quote(cookies)}".parse().unwrap());`))
@@ -50,11 +50,13 @@ function toRust (curlCommand) {
     const parts = Object.keys(request.multipartUploads).map(partType => {
       const partValue = request.multipartUploads[partType]
       switch (partType) {
-      case 'image', 'file':
-        const path = partValue.split('@')[1]
-        return indent(`.file("${partType}", "${quote(path)}")?`, 2)
-      default:
-        return indent(`.text("${partType}", "${quote(partValue)}")`, 2)
+        case 'image':
+        case 'file': {
+          const path = partValue.split('@')[1]
+          return indent(`.file("${partType}", "${quote(path)}")?`, 2)
+        }
+        default:
+          return indent(`.text("${partType}", "${quote(partValue)}")`, 2)
       }
     })
     parts[parts.length - 1] += ';'
@@ -65,7 +67,7 @@ function toRust (curlCommand) {
   lines.push(indent(`.${request.method}("${quote(request.url)}")`, 2))
 
   if (request.auth) {
-    const [ user, password ] = request.auth.split(':', 2).map(quote)
+    const [user, password] = request.auth.split(':', 2).map(quote)
     lines.push(indent(`.basic_auth("${user || ''}", Some("${password || ''}"))`, 2))
   }
 
@@ -78,7 +80,7 @@ function toRust (curlCommand) {
   }
 
   if (request.data) {
-    if (typeof request.data === 'string' && request.data.indexOf("\n") !== -1) {
+    if (typeof request.data === 'string' && request.data.indexOf('\n') !== -1) {
       // Use raw strings for multiline content
       lines.push(
         indent('.body(r#"', 2),
@@ -100,7 +102,7 @@ function toRust (curlCommand) {
     '}'
   )
 
-  return lines.join("\n") + "\n"
+  return lines.join('\n') + '\n'
 }
 
 module.exports = toRust
