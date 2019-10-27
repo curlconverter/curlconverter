@@ -61,8 +61,8 @@ function getDataString (request) {
 
 function getMultipleDataString (request, parsedQueryString) {
   let repeatedKey = false
-  for (let key in parsedQueryString) {
-    let value = parsedQueryString[key]
+  for (const key in parsedQueryString) {
+    const value = parsedQueryString[key]
     if (Array.isArray(value)) {
       repeatedKey = true
     }
@@ -72,8 +72,8 @@ function getMultipleDataString (request, parsedQueryString) {
   if (repeatedKey) {
     const els = []
     dataString = 'data = list(\n'
-    for (key in parsedQueryString) {
-      value = parsedQueryString[key]
+    for (const key in parsedQueryString) {
+      const value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
           els.push('  ' + reprn(key) + ' = ' + repr(value[i]))
@@ -87,7 +87,7 @@ function getMultipleDataString (request, parsedQueryString) {
   } else {
     dataString = 'data = list(\n'
     dataString += Object.keys(parsedQueryString).map((key) => {
-      value = parsedQueryString[key]
+      const value = parsedQueryString[key]
       return ('  ' + reprn(key) + ' = ' + repr(value))
     }).join(',\n')
     dataString += '\n)\n'
