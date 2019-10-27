@@ -1,8 +1,8 @@
-var util = require('../util')
+const util = require('../util')
 
-var toRust = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
-  var rustCode = 'extern crate reqwest;\n'
+const toRust = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  let rustCode = 'extern crate reqwest;\n'
 
   if (request.headers || request.cookies) {
     rustCode += 'use reqwest::headers::*;\n'
@@ -16,11 +16,11 @@ var toRust = function (curlCommand) {
   if (request.headers || request.cookies) {
     rustCode += '    let mut headers = HeaderMap::new();\n'
 
-    for (var header in request.headers) {
+    for (const header in request.headers) {
       rustCode += '    headers.insert(' + header.replace(/-/g, '_').toUpperCase() + ', "' + request.headers[header] + '".parse().unwrap());\n'
     }
 
-    for (var cookie in request.cookies) {
+    for (const cookie in request.cookies) {
       rustCode += '    headers.insert(COOKIE, "' + cookie + '".parse().unwrap());\n'
     }
   }
@@ -28,7 +28,7 @@ var toRust = function (curlCommand) {
   if (request.multipartUploads) {
     rustCode += '    let form = multipart::Form::new()'
 
-    for (var part in request.multipartUploads) {
+    for (const part in request.multipartUploads) {
       if (part === 'image' || part === 'file') {
         rustCode += '\n        .file("' + part + '", "' + request.multipartUploads[part].split('@')[1] + '")?'
       } else {
@@ -65,9 +65,9 @@ var toRust = function (curlCommand) {
   rustCode += '\n'
 
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
-    var user = splitAuth[0] || ''
-    var password = splitAuth[1] || ''
+    const splitAuth = request.auth.split(':')
+    const user = splitAuth[0] || ''
+    const password = splitAuth[1] || ''
     rustCode += '        .basic_auth("' + user + '", Some("' + password + '"))\n'
   }
 

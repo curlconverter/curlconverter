@@ -1,8 +1,8 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
-var util = require('../util')
-var querystring = require('querystring')
-var jsesc = require('jsesc')
+const util = require('../util')
+const querystring = require('querystring')
+const jsesc = require('jsesc')
 
 require('string.prototype.startswith')
 
@@ -18,10 +18,10 @@ function repr (value, isKey) {
 }
 
 function getQueries (request) {
-  var queries = {}
-  for (var paramName in request.query) {
-    var rawValue = request.query[paramName]
-    var paramValue
+  const queries = {}
+  for (const paramName in request.query) {
+    const rawValue = request.query[paramName]
+    let paramValue
     if (Array.isArray(rawValue)) {
       paramValue = rawValue.map(repr)
     } else {
@@ -45,12 +45,12 @@ function getDataString (request) {
    }
    */
 
-  var parsedQueryString = querystring.parse(request.data)
-  var keyCount = Object.keys(parsedQueryString).length
-  var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  var singularData = request.isDataBinary || singleKeyOnly
+  const parsedQueryString = querystring.parse(request.data)
+  const keyCount = Object.keys(parsedQueryString).length
+  const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
+  const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    var data = {}
+    const data = {}
     data[repr(request.data)] = ''
     return { data: data }
   } else {
@@ -59,10 +59,10 @@ function getDataString (request) {
 }
 
 function getMultipleDataString (request, parsedQueryString) {
-  var data = {}
+  const data = {}
 
-  for (var key in parsedQueryString) {
-    var value = parsedQueryString[key]
+  for (const key in parsedQueryString) {
+    const value = parsedQueryString[key]
     if (Array.isArray(value)) {
       data[repr(key)] = value
     } else {
@@ -74,36 +74,36 @@ function getMultipleDataString (request, parsedQueryString) {
 }
 
 function getFilesString (request) {
-  var data = {}
+  const data = {}
 
-  data['files'] = {}
-  data['data'] = {}
+  data.files = {}
+  data.data = {}
 
-  for (var multipartKey in request.multipartUploads) {
-    var multipartValue = request.multipartUploads[multipartKey]
+  for (const multipartKey in request.multipartUploads) {
+    const multipartValue = request.multipartUploads[multipartKey]
     if (multipartValue.startsWith('@')) {
-      var fileName = multipartValue.slice(1)
-      data['files'][repr(multipartKey)] = repr(fileName)
+      const fileName = multipartValue.slice(1)
+      data.files[repr(multipartKey)] = repr(fileName)
     } else {
-      data['data'][repr(multipartKey)] = repr(multipartValue)
+      data.data[repr(multipartKey)] = repr(multipartValue)
     }
   }
 
-  if (Object.keys(data['files']).length === 0) {
-    delete data['files']
+  if (Object.keys(data.files).length === 0) {
+    delete data.files
   }
 
-  if (Object.keys(data['data']).length === 0) {
-    delete data['data']
+  if (Object.keys(data.data).length === 0) {
+    delete data.data
   }
 
   return data
 }
 
-var toJsonString = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
+const toJsonString = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
 
-  var requestJson = {}
+  const requestJson = {}
 
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
@@ -115,30 +115,30 @@ var toJsonString = function (curlCommand) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
 
-  requestJson['url'] = request.urlWithoutQuery.replace(/\/$/, '')
-  requestJson['raw_url'] = request.url
-  requestJson['method'] = request.method
+  requestJson.url = request.urlWithoutQuery.replace(/\/$/, '')
+  requestJson.raw_url = request.url
+  requestJson.method = request.method
 
   if (request.cookies) {
-    var cookies = {}
-    for (var cookieName in request.cookies) {
+    const cookies = {}
+    for (const cookieName in request.cookies) {
       cookies[repr(cookieName)] = repr(request.cookies[cookieName])
     }
 
-    requestJson['cookies'] = cookies
+    requestJson.cookies = cookies
   }
 
   if (request.headers) {
-    var headers = {}
-    for (var headerName in request.headers) {
+    const headers = {}
+    for (const headerName in request.headers) {
       headers[repr(headerName)] = repr(request.headers[headerName])
     }
 
-    requestJson['headers'] = headers
+    requestJson.headers = headers
   }
 
   if (request.query) {
-    requestJson['queries'] = getQueries(request)
+    requestJson.queries = getQueries(request)
   }
 
   if (typeof request.data === 'string' || typeof request.data === 'number') {
@@ -148,15 +148,15 @@ var toJsonString = function (curlCommand) {
   }
 
   if (request.insecure) {
-    requestJson['insecure'] = false
+    requestJson.insecure = false
   }
 
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
-    var user = splitAuth[0] || ''
-    var password = splitAuth[1] || ''
+    const splitAuth = request.auth.split(':')
+    const user = splitAuth[0] || ''
+    const password = splitAuth[1] || ''
 
-    requestJson['auth'] = {
+    requestJson.auth = {
       user: repr(user),
       password: repr(password)
     }

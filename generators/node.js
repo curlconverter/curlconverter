@@ -1,14 +1,14 @@
-var util = require('../util')
-var jsesc = require('jsesc')
+const util = require('../util')
+const jsesc = require('jsesc')
 
-var toNode = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
-  var nodeCode = 'var request = require(\'request\');\n\n'
+const toNode = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  let nodeCode = 'var request = require(\'request\');\n\n'
   if (request.headers || request.cookies) {
     nodeCode += 'var headers = {\n'
-    var headerCount = Object.keys(request.headers).length
-    var i = 0
-    for (var headerName in request.headers) {
+    const headerCount = Object.keys(request.headers).length
+    let i = 0
+    for (const headerName in request.headers) {
       nodeCode += '    \'' + headerName + '\': \'' + request.headers[headerName] + '\''
       if (i < headerCount - 1 || request.cookies) {
         nodeCode += ',\n'
@@ -18,7 +18,7 @@ var toNode = function (curlCommand) {
       i++
     }
     if (request.cookies) {
-      var cookieString = util.serializeCookies(request.cookies)
+      const cookieString = util.serializeCookies(request.cookies)
       nodeCode += '    \'Cookie\': \'' + cookieString + '\'\n'
     }
     nodeCode += '};\n\n'
@@ -51,9 +51,9 @@ var toNode = function (curlCommand) {
 
   if (request.auth) {
     nodeCode += ',\n'
-    var splitAuth = request.auth.split(':')
-    var user = splitAuth[0] || ''
-    var password = splitAuth[1] || ''
+    const splitAuth = request.auth.split(':')
+    const user = splitAuth[0] || ''
+    const password = splitAuth[1] || ''
     nodeCode += '    auth: {\n'
     nodeCode += "        'user': '" + user + "',\n"
     nodeCode += "        'pass': '" + password + "'\n"

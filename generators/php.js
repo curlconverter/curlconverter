@@ -1,15 +1,15 @@
-var util = require('../util')
-var querystring = require('querystring')
+const util = require('../util')
+const querystring = require('querystring')
 
-var toPhp = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
+const toPhp = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
 
-  var headerString = false
+  let headerString = false
   if (request.headers) {
     headerString = '$headers = array(\n'
-    var i = 0
-    var headerCount = Object.keys(request.headers).length
-    for (var headerName in request.headers) {
+    let i = 0
+    const headerCount = Object.keys(request.headers).length
+    for (const headerName in request.headers) {
       headerString += "    '" + headerName + "' => '" + request.headers[headerName] + "'"
       if (i < headerCount - 1) {
         headerString += ',\n'
@@ -17,7 +17,7 @@ var toPhp = function (curlCommand) {
       i++
     }
     if (request.cookies) {
-      var cookieString = util.serializeCookies(request.cookies)
+      const cookieString = util.serializeCookies(request.cookies)
       headerString += ",\n    'Cookie' => '" + cookieString + "'"
     }
     headerString += '\n);'
@@ -25,28 +25,28 @@ var toPhp = function (curlCommand) {
     headerString = '$headers = array();'
   }
 
-  var optionsString = false
+  let optionsString = false
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
-    var user = splitAuth[0] || ''
-    var password = splitAuth[1] || ''
+    const splitAuth = request.auth.split(':')
+    const user = splitAuth[0] || ''
+    const password = splitAuth[1] || ''
     optionsString = "$options = array('auth' => array('" + user + "', '" + password + "'));"
   }
 
-  var dataString = false
+  let dataString = false
   if (request.data) {
     if (typeof request.data === 'number') {
       request.data = request.data.toString()
     }
-    var parsedQueryString = querystring.parse(request.data)
+    const parsedQueryString = querystring.parse(request.data)
     dataString = '$data = array(\n'
-    var dataCount = Object.keys(parsedQueryString).length
+    const dataCount = Object.keys(parsedQueryString).length
     if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
       dataString = "$data = '" + request.data + "';"
     } else {
-      var dataIndex = 0
-      for (var key in parsedQueryString) {
-        var value = parsedQueryString[key]
+      let dataIndex = 0
+      for (const key in parsedQueryString) {
+        const value = parsedQueryString[key]
         dataString += "    '" + key + "' => '" + value.replace(/[\\"']/g, '\\$&') + "'"
         if (dataIndex < dataCount - 1) {
           dataString += ',\n'
@@ -56,7 +56,7 @@ var toPhp = function (curlCommand) {
       dataString += '\n);'
     }
   }
-  var requestLine = '$response = Requests::' + request.method + '(\'' + request.url + '\''
+  let requestLine = '$response = Requests::' + request.method + '(\'' + request.url + '\''
   requestLine += ', $headers'
   if (dataString) {
     requestLine += ', $data'
@@ -66,7 +66,7 @@ var toPhp = function (curlCommand) {
   }
   requestLine += ');'
 
-  var phpCode = '<?php\n'
+  let phpCode = '<?php\n'
   phpCode += 'include(\'vendor/rmccue/requests/library/Requests.php\');\n'
   phpCode += 'Requests::register_autoloader();\n'
   phpCode += headerString + '\n'

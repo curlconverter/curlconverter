@@ -1,8 +1,8 @@
 // Author: Bob Rudis (bob@rud.is)
 
-var util = require('../util')
-var jsesc = require('jsesc')
-var querystring = require('querystring')
+const util = require('../util')
+const jsesc = require('jsesc')
+const querystring = require('querystring')
 
 require('string.prototype.startswith')
 
@@ -24,10 +24,10 @@ function repr (value) {
 }
 
 function getQueryDict (request) {
-  var queryDict = 'params = list(\n'
+  let queryDict = 'params = list(\n'
   queryDict += Object.keys(request.query).map((paramName) => {
-    var rawValue = request.query[paramName]
-    var paramValue
+    const rawValue = request.query[paramName]
+    let paramValue
     if (Array.isArray(rawValue)) {
       paramValue = 'c(' + rawValue.map(repr).join(', ') + ')'
     } else {
@@ -44,14 +44,14 @@ function getDataString (request) {
     request.data = request.data.toString()
   }
   if (request.data.startsWith('@')) {
-    var filePath = request.data.slice(1)
+    const filePath = request.data.slice(1)
     return 'data = upload_file(\'' + filePath + '\')'
   }
 
-  var parsedQueryString = querystring.parse(request.data)
-  var keyCount = Object.keys(parsedQueryString).length
-  var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  var singularData = request.isDataBinary || singleKeyOnly
+  const parsedQueryString = querystring.parse(request.data)
+  const keyCount = Object.keys(parsedQueryString).length
+  const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
+  const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
     return 'data = ' + repr(request.data) + '\n'
   } else {
@@ -60,22 +60,22 @@ function getDataString (request) {
 }
 
 function getMultipleDataString (request, parsedQueryString) {
-  var repeatedKey = false
-  for (var key in parsedQueryString) {
-    var value = parsedQueryString[key]
+  let repeatedKey = false
+  for (let key in parsedQueryString) {
+    let value = parsedQueryString[key]
     if (Array.isArray(value)) {
       repeatedKey = true
     }
   }
 
-  var dataString
+  let dataString
   if (repeatedKey) {
-    var els = []
+    const els = []
     dataString = 'data = list(\n'
     for (key in parsedQueryString) {
       value = parsedQueryString[key]
       if (Array.isArray(value)) {
-        for (var i = 0; i < value.length; i++) {
+        for (let i = 0; i < value.length; i++) {
           els.push('  ' + reprn(key) + ' = ' + repr(value[i]))
         }
       } else {
@@ -98,12 +98,12 @@ function getMultipleDataString (request, parsedQueryString) {
 
 function getFilesString (request) {
   // http://docs.rstats-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
-  var filesString = 'files = list(\n'
+  let filesString = 'files = list(\n'
   filesString += Object.keys(request.multipartUploads).map((multipartKey) => {
-    var multipartValue = request.multipartUploads[multipartKey]
-    var fileParam
+    const multipartValue = request.multipartUploads[multipartKey]
+    let fileParam
     if (multipartValue.startsWith('@')) {
-      var fileName = multipartValue.slice(1)
+      const fileName = multipartValue.slice(1)
       // filesString += '    ' + reprn(multipartKey) + ' (' + repr(fileName) + ', upload_file(' + repr(fileName) + '))'
       fileParam = '  ' + reprn(multipartKey) + ' = upload_file(' + repr(fileName) + ')'
     } else {
@@ -116,34 +116,32 @@ function getFilesString (request) {
   return filesString
 }
 
-var torstats = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
-  var cookieDict
+const torstats = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  let cookieDict
   if (request.cookies) {
     cookieDict = 'cookies = c(\n'
-    cookieDict += Object.keys(request.cookies).map((cookieName) => {
-      return ('  ' + repr(cookieName) + ' = ' + repr(request.cookies[cookieName]))
-    }).join(',\n')
+    cookieDict += Object.keys(request.cookies).map(cookieName => '  ' + repr(cookieName) + ' = ' + repr(request.cookies[cookieName])).join(',\n')
     cookieDict += '\n)\n'
   }
-  var headerDict
+  let headerDict
   if (request.headers) {
-    var hels = []
+    const hels = []
     headerDict = 'headers = c(\n'
-    for (var headerName in request.headers) {
+    for (const headerName in request.headers) {
       hels.push('  ' + reprn(headerName) + ' = ' + repr(request.headers[headerName]))
     }
     headerDict += hels.join(',\n')
     headerDict += '\n)\n'
   }
 
-  var queryDict
+  let queryDict
   if (request.query) {
     queryDict = getQueryDict(request)
   }
 
-  var dataString
-  var filesString
+  let dataString
+  let filesString
   if (typeof request.data === 'string' || typeof request.data === 'number') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
@@ -157,10 +155,10 @@ var torstats = function (curlCommand) {
   if (request.urlWithoutQuery.indexOf('http') !== 0) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  var requestLineWithUrlParams = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.urlWithoutQuery + '\''
-  var requestLineWithOriginalUrl = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.url + '\''
+  let requestLineWithUrlParams = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.urlWithoutQuery + '\''
+  let requestLineWithOriginalUrl = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.url + '\''
 
-  var requestLineBody = ''
+  let requestLineBody = ''
   if (request.headers) {
     requestLineBody += ', httr::add_headers(.headers=headers)'
   }
@@ -179,9 +177,9 @@ var torstats = function (curlCommand) {
     requestLineBody += ', config = httr::config(ssl_verifypeer = FALSE)'
   }
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
-    var user = splitAuth[0] || ''
-    var password = splitAuth[1] || ''
+    const splitAuth = request.auth.split(':')
+    const user = splitAuth[0] || ''
+    const password = splitAuth[1] || ''
     requestLineBody += ', httr::authenticate(' + repr(user) + ', ' + repr(password) + ')'
   }
   requestLineBody += ')'
@@ -189,7 +187,7 @@ var torstats = function (curlCommand) {
   requestLineWithOriginalUrl += requestLineBody.replace(', query = params', '')
   requestLineWithUrlParams += requestLineBody
 
-  var rstatsCode = ''
+  let rstatsCode = ''
   rstatsCode += 'require(httr)\n\n'
   if (cookieDict) {
     rstatsCode += cookieDict + '\n'

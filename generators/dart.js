@@ -1,9 +1,9 @@
-var util = require('../util')
-var jsesc = require('jsesc')
+const util = require('../util')
+const jsesc = require('jsesc')
 
-var toDart = function (curlCommand) {
-  var r = util.parseCurlCommand(curlCommand)
-  var s = ''
+const toDart = curlCommand => {
+  const r = util.parseCurlCommand(curlCommand)
+  let s = ''
 
   if (r.auth || r.isDataBinary) s += "import 'dart:convert';\n"
 
@@ -13,9 +13,9 @@ var toDart = function (curlCommand) {
     'void main() async {\n'
 
   if (r.auth) {
-    var splitAuth = r.auth.split(':')
-    var uname = splitAuth[0] || ''
-    var pword = splitAuth[1] || ''
+    const splitAuth = r.auth.split(':')
+    const uname = splitAuth[0] || ''
+    const pword = splitAuth[1] || ''
 
     s +=
       "  var uname = '" + uname + "';\n" +
@@ -24,13 +24,13 @@ var toDart = function (curlCommand) {
       '\n'
   }
 
-  var hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method === 'put'
+  const hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method === 'put'
   if (hasHeaders) {
     s += '  var headers = {\n'
-    for (var hname in r.headers) s += "    '" + hname + "': '" + r.headers[hname] + "',\n"
+    for (const hname in r.headers) s += "    '" + hname + "': '" + r.headers[hname] + "',\n"
 
     if (r.cookies) {
-      var cookiestr = util.serializeCookies(r.cookies)
+      const cookiestr = util.serializeCookies(r.cookies)
       s += "    'Cookie': '" + cookiestr + "',\n"
     }
 
@@ -44,7 +44,7 @@ var toDart = function (curlCommand) {
     s += '\n'
   }
 
-  var hasData = r.data
+  const hasData = r.data
   if (typeof r.data === 'number') {
     r.data = r.data.toString()
   }
@@ -54,11 +54,11 @@ var toDart = function (curlCommand) {
 
     if (r.dataArray) {
       s += '  var data = {\n'
-      for (var i = 0; i !== r.dataArray.length; ++i) {
-        var kv = r.dataArray[i]
-        var splitKv = kv.replace(/\\"/g, '"').split('=')
-        var key = splitKv[0] || ''
-        var val = splitKv[1] || ''
+      for (let i = 0; i !== r.dataArray.length; ++i) {
+        const kv = r.dataArray[i]
+        const splitKv = kv.replace(/\\"/g, '"').split('=')
+        const key = splitKv[0] || ''
+        const val = splitKv[1] || ''
         s += "    '" + key + "': '" + val + "',\n"
       };
       s += '  };\n'
