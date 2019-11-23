@@ -10,6 +10,7 @@ var toPython = require('./generators/python.js')
 var toR = require('./generators/r.js')
 var toRust = require('./generators/rust')
 var toStrest = require('./generators/strest.js')
+var custom = require('./generators/custom.js')
 
 module.exports = {
   toAnsible: toAnsible,
@@ -21,5 +22,6 @@ module.exports = {
   toPython: toPython,
   toR: toR,
   toRust: toRust,
-  toStrest: toStrest
+  toStrest: toStrest,
+  custom: custom
 }
