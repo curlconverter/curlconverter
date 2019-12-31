@@ -2,6 +2,7 @@
 
 var toAnsible = require('./generators/ansible.js')
 var toDart = require('./generators/dart.js')
+var toElixir = require('./generators/elixir.js')
 var toGo = require('./generators/go.js')
 var toJsonString = require('./generators/json')
 var toNode = require('./generators/node.js')
@@ -19,6 +20,7 @@ module.exports = {
   toNode: toNode,
   toPhp: toPhp,
   toPython: toPython,
+  toElixir: toElixir,
   toR: toR,
   toRust: toRust,
   toStrest: toStrest
