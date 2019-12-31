@@ -1,19 +1,12 @@
-method = :post
-url = "http://example.com/targetservice"
-headers = []
-body = {:multipart, [
-  {:file, ~s|image.jpg|}
-]}
-options = []
-params = []
-
 request = %HTTPoison.Request{
-  method: method,
-  url: url,
-  body: body,
-  headers: headers,
-  options: options,
-  params: params,
+  method: :post,
+  url: "http://example.com/targetservice",
+  options: [],
+  headers: [],
+  params: [],
+  body: {:multipart, [
+    {:file, ~s|image.jpg|}
+]}
 }
 
 response = HTTPoison.request(request)

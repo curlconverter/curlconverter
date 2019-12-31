@@ -75,9 +75,9 @@ function getQueryDict (request) {
     } else {
       paramValue = repr(rawValue)
     }
-    queryDict += `  {${repr(paramName)}, ${paramValue}},\n`
+    queryDict += `    {${repr(paramName)}, ${paramValue}},\n`
   }
-  queryDict += ']'
+  queryDict += '  ]'
   return queryDict
 }
 
@@ -87,9 +87,9 @@ function getHeadersDict (request) {
   }
   var dict = '[\n'
   for (var headerName in request.headers) {
-    dict += `  {${repr(headerName)}, ${repr(request.headers[headerName])}},\n`
+    dict += `    {${repr(headerName)}, ${repr(request.headers[headerName])}},\n`
   }
-  dict += ']'
+  dict += '  ]'
   return dict
 }
 
@@ -100,7 +100,7 @@ function getBody (request) {
     return formData
   }
 
-  return 'nil'
+  return '""'
 }
 
 function getFormDataString (request) {
@@ -118,9 +118,9 @@ function getFormDataString (request) {
     var multipartValue = request.multipartUploads[multipartKey]
     if (multipartValue.startsWith('@')) {
       var fileName = multipartValue.slice(1)
-      fileArgs.push(`  {:file, ~s|${fileName}|}`)
+      fileArgs.push(`    {:file, ~s|${fileName}|}`)
     } else {
-      dataArgs.push(`  {${repr(multipartKey)}, ${repr(multipartValue)}}`)
+      dataArgs.push(`    {${repr(multipartKey)}, ${repr(multipartValue)}}`)
     }
   }
 
@@ -186,24 +186,24 @@ function getMultipleDataString (request, parsedQueryString) {
       value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (var i = 0; i < value.length; i++) {
-          data.push(`  {${repr(key)}, ${repr(value[i])}}`)
+          data.push(`    {${repr(key)}, ${repr(value[i])}}`)
         }
       } else {
-        data.push(`  {${repr(key)}, ${repr(value)}}`)
+        data.push(`    {${repr(key)}, ${repr(value)}}`)
       }
     }
     dataString = `[
 ${data.join(',\n')}
-]`
+  ]`
   } else {
     const data = []
     for (key in parsedQueryString) {
       value = parsedQueryString[key]
-      data.push(`  {${repr(key)}, ${repr(value)}}`)
+      data.push(`    {${repr(key)}, ${repr(value)}}`)
     }
     dataString = `[
 ${data.join(',\n')}
-]`
+  ]`
   }
 
   return dataString
@@ -220,20 +220,13 @@ var toElixir = function (curlCommand) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
 
-  const template = `method = :${request.method}
-url = "${request.urlWithoutQuery}"
-headers = ${getHeadersDict(request)}
-body = ${getBody(request)}
-options = ${getOptions(request)}
-params = ${getQueryDict(request)}
-
-request = %HTTPoison.Request{
-  method: method,
-  url: url,
-  body: body,
-  headers: headers,
-  options: options,
-  params: params,
+  const template = `request = %HTTPoison.Request{
+  method: :${request.method},
+  url: "${request.urlWithoutQuery}",
+  options: ${getOptions(request)},
+  headers: ${getHeadersDict(request)},
+  params: ${getQueryDict(request)},
+  body: ${getBody(request)}
 }
 
 response = HTTPoison.request(request)

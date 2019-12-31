@@ -1,17 +1,10 @@
-method = :post
-url = "http://us.jooble.org/api/xxxxxxxxxxxxxxxx"
-headers = []
-body = ~s|{"keywords":"php","page":1,"searchMode":1}|
-options = []
-params = []
-
 request = %HTTPoison.Request{
-  method: method,
-  url: url,
-  body: body,
-  headers: headers,
-  options: options,
-  params: params,
+  method: :post,
+  url: "http://us.jooble.org/api/xxxxxxxxxxxxxxxx",
+  options: [],
+  headers: [],
+  params: [],
+  body: ~s|{"keywords":"php","page":1,"searchMode":1}|
 }
 
 response = HTTPoison.request(request)

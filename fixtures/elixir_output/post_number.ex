@@ -1,17 +1,10 @@
-method = :post
-url = "http://a.com/"
-headers = []
-body = ~s|123|
-options = []
-params = []
-
 request = %HTTPoison.Request{
-  method: method,
-  url: url,
-  body: body,
-  headers: headers,
-  options: options,
-  params: params,
+  method: :post,
+  url: "http://a.com/",
+  options: [],
+  headers: [],
+  params: [],
+  body: ~s|123|
 }
 
 response = HTTPoison.request(request)

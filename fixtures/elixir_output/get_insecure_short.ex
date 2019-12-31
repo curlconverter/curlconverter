@@ -1,17 +1,10 @@
-method = :get
-url = "https://www.site.com/"
-headers = []
-body = nil
-options = [hackney: [:insecure]]
-params = []
-
 request = %HTTPoison.Request{
-  method: method,
-  url: url,
-  body: body,
-  headers: headers,
-  options: options,
-  params: params,
+  method: :get,
+  url: "https://www.site.com/",
+  options: [hackney: [:insecure]],
+  headers: [],
+  params: [],
+  body: ""
 }
 
 response = HTTPoison.request(request)

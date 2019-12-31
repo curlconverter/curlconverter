@@ -1,19 +1,12 @@
-method = :get
-url = "http://example.com/"
-headers = [
-  {~s|foo|, ~s|bar|},
-]
-body = nil
-options = []
-params = []
-
 request = %HTTPoison.Request{
-  method: method,
-  url: url,
-  body: body,
-  headers: headers,
-  options: options,
-  params: params,
+  method: :get,
+  url: "http://example.com/",
+  options: [],
+  headers: [
+    {~s|foo|, ~s|bar|},
+  ],
+  params: [],
+  body: ""
 }
 
 response = HTTPoison.request(request)
