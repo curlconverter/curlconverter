@@ -162,7 +162,7 @@ const toJsonString = curlCommand => {
     }
   }
 
-  return JSON.stringify(Object.keys(requestJson).length ? requestJson : '{}') + '\n'
+  return JSON.stringify(Object.keys(requestJson).length ? requestJson : '{}', null, 4) + '\n'
 }
 
 module.exports = toJsonString
