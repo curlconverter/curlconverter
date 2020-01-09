@@ -107,6 +107,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - nico202
 - r3m0t
 - csells (Dart support)
+- yanshiyason (Elixir support)
 
 ## License
 
