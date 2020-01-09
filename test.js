@@ -62,6 +62,11 @@ const outputs = [
     name: 'Dart',
     extension: 'dart',
     command: curlconverter.toDart
+  },
+  {
+    name: 'Elixir',
+    extension: 'ex',
+    command: curlconverter.toElixir
   }
 ]
 
