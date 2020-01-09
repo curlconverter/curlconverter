@@ -3,7 +3,7 @@ var yaml = require('yamljs')
 var jsesc = require('jsesc')
 var querystring = require('querystring')
 
-function getDataString(request) {
+function getDataString (request) {
   let mimeType = 'application/json'
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
@@ -34,7 +34,7 @@ function getDataString(request) {
   }
 }
 
-function getQueryList(request) {
+function getQueryList (request) {
   var queryList = []
   for (var paramName in request.query) {
     var rawValue = request.query[paramName]
