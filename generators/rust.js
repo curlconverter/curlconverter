@@ -1,4 +1,7 @@
 var util = require('../util')
+const jsesc = require('jsesc')
+
+const quote = str => jsesc(str, { quotes: 'double' })
 
 var toRust = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
@@ -17,11 +20,11 @@ var toRust = function (curlCommand) {
     rustCode += '    let mut headers = HeaderMap::new();\n'
 
     for (var header in request.headers) {
-      rustCode += '    headers.insert(' + header.replace(/-/g, '_').toUpperCase() + ', "' + request.headers[header] + '".parse().unwrap());\n'
+      rustCode += '    headers.insert(' + header.replace(/-/g, '_').toUpperCase() + ', "' + quote(request.headers[header]) + '".parse().unwrap());\n'
     }
 
     for (var cookie in request.cookies) {
-      rustCode += '    headers.insert(COOKIE, "' + cookie + '".parse().unwrap());\n'
+      rustCode += '    headers.insert(COOKIE, "' + quote(cookie) + '".parse().unwrap());\n'
     }
   }
 
@@ -32,7 +35,7 @@ var toRust = function (curlCommand) {
       if (part === 'image' || part === 'file') {
         rustCode += '\n        .file("' + part + '", "' + request.multipartUploads[part].split('@')[1] + '")?'
       } else {
-        rustCode += '\n        .text("' + part + '", "' + request.multipartUploads[part] + '")'
+        rustCode += '\n        .text("' + quote(part) + '", "' + request.multipartUploads[part] + '")'
       }
     }
     rustCode += ';\n'
@@ -42,22 +45,22 @@ var toRust = function (curlCommand) {
 
   switch (request.method) {
     case 'get':
-      rustCode += '        .get("' + request.url + '")'
+      rustCode += '        .get("' + quote(request.url) + '")'
       break
     case 'post':
-      rustCode += '        .post("' + request.url + '")'
+      rustCode += '        .post("' + quote(request.url) + '")'
       break
     case 'put':
-      rustCode += '        .put("' + request.url + '")'
+      rustCode += '        .put("' + quote(request.url) + '")'
       break
     case 'head':
-      rustCode += '        .head("' + request.url + '")'
+      rustCode += '        .head("' + quote(request.url) + '")'
       break
     case 'patch':
-      rustCode += '        .patch("' + request.url + '")'
+      rustCode += '        .patch("' + quote(request.url) + '")'
       break
     case 'delete':
-      rustCode += '        .delete("' + request.url + '")'
+      rustCode += '        .delete("' + quote(request.url) + '")'
       break
     default:
       break
@@ -65,7 +68,7 @@ var toRust = function (curlCommand) {
   rustCode += '\n'
 
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
+    var splitAuth = request.auth.split(':').map(quote)
     var user = splitAuth[0] || ''
     var password = splitAuth[1] || ''
     rustCode += '        .basic_auth("' + user + '", Some("' + password + '"))\n'
@@ -81,9 +84,9 @@ var toRust = function (curlCommand) {
 
   if (request.data) {
     if (typeof request.data === 'string') {
-      rustCode += '        .body("' + request.data.replace(/\s/g, '') + '")\n'
+      rustCode += '        .body("' + quote(request.data.replace(/\s/g, '')) + '")\n'
     } else {
-      rustCode += '        .body("' + request.data + '")\n'
+      rustCode += '        .body("' + quote(request.data) + '")\n'
     }
   }
 

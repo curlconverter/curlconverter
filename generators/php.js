@@ -1,5 +1,8 @@
 var util = require('../util')
 var querystring = require('querystring')
+const jsesc = require('jsesc')
+
+const quote = str => jsesc(str, { quotes: 'single' })
 
 var toPhp = function (curlCommand) {
   var request = util.parseCurlCommand(curlCommand)
@@ -10,14 +13,14 @@ var toPhp = function (curlCommand) {
     var i = 0
     var headerCount = Object.keys(request.headers).length
     for (var headerName in request.headers) {
-      headerString += "    '" + headerName + "' => '" + request.headers[headerName] + "'"
+      headerString += "    '" + headerName + "' => '" + quote(request.headers[headerName]) + "'"
       if (i < headerCount - 1) {
         headerString += ',\n'
       }
       i++
     }
     if (request.cookies) {
-      var cookieString = util.serializeCookies(request.cookies)
+      var cookieString = quote(util.serializeCookies(request.cookies))
       headerString += ",\n    'Cookie' => '" + cookieString + "'"
     }
     headerString += '\n);'
@@ -27,7 +30,7 @@ var toPhp = function (curlCommand) {
 
   var optionsString = false
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
+    var splitAuth = request.auth.split(':').map(quote)
     var user = splitAuth[0] || ''
     var password = splitAuth[1] || ''
     optionsString = "$options = array('auth' => array('" + user + "', '" + password + "'));"
@@ -42,12 +45,12 @@ var toPhp = function (curlCommand) {
     dataString = '$data = array(\n'
     var dataCount = Object.keys(parsedQueryString).length
     if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
-      dataString = "$data = '" + request.data + "';"
+      dataString = "$data = '" + quote(request.data) + "';"
     } else {
       var dataIndex = 0
       for (var key in parsedQueryString) {
         var value = parsedQueryString[key]
-        dataString += "    '" + key + "' => '" + value.replace(/[\\"']/g, '\\$&') + "'"
+        dataString += "    '" + key + "' => '" + quote(value) + "'"
         if (dataIndex < dataCount - 1) {
           dataString += ',\n'
         }
