@@ -1,7 +1,7 @@
-var util = require('../util')
-var yaml = require('yamljs')
-var jsesc = require('jsesc')
-var querystring = require('querystring')
+const util = require('../util')
+const yaml = require('yamljs')
+const jsesc = require('jsesc')
+const querystring = require('querystring')
 
 function getDataString (request) {
   let mimeType = 'application/json'
@@ -12,17 +12,17 @@ function getDataString (request) {
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
   }
-  var parsedQueryString = querystring.parse(request.data)
-  var keyCount = Object.keys(parsedQueryString).length
-  var singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  var singularData = request.isDataBinary || singleKeyOnly
+  const parsedQueryString = querystring.parse(request.data)
+  const keyCount = Object.keys(parsedQueryString).length
+  const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
+  const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
     return {
       mimeType: mimeType,
       text: JSON.parse(request.data)
     }
   } else {
-    for (var paramName in request.headers) {
+    for (const paramName in request.headers) {
       if (paramName === 'Content-Type') {
         mimeType = request.headers[paramName]
       }
@@ -35,17 +35,17 @@ function getDataString (request) {
 }
 
 function getQueryList (request) {
-  var queryList = []
-  for (var paramName in request.query) {
-    var rawValue = request.query[paramName]
+  const queryList = []
+  for (const paramName in request.query) {
+    const rawValue = request.query[paramName]
     queryList.push({ name: paramName, value: rawValue })
   }
   return queryList
 }
 
-var toStrest = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
-  var response = { version: 2 }
+const toStrest = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  const response = { version: 2 }
   if (request.insecure) {
     response.allowInsecure = true
   }
@@ -66,7 +66,7 @@ var toStrest = function (curlCommand) {
 
   if (request.headers) {
     response.requests.curl_converter.request.headers = []
-    for (var prop in request.headers) {
+    for (const prop in request.headers) {
       response.requests.curl_converter.request.headers.push({
         name: prop,
         value: request.headers[prop]
@@ -89,13 +89,13 @@ var toStrest = function (curlCommand) {
     response.requests.curl_converter.auth.basic.password = request.auth.split(':')[1]
   }
 
-  var queryList
+  let queryList
   if (request.query) {
     queryList = getQueryList(request)
     response.requests.curl_converter.request.queryString = queryList
   }
 
-  var yamlString = yaml.stringify(response, 100, 2)
+  const yamlString = yaml.stringify(response, 100, 2)
   return yamlString
 }
 

@@ -29,7 +29,6 @@ function toRust (curlCommand) {
 
   if (request.headers || request.cookies) {
     lines.push(indent('let mut headers = header::HeaderMap::new();'))
-
     for (const headerName in request.headers) {
       const headerValue = quote(request.headers[headerName])
       lines.push(indent(`headers.insert("${headerName}", "${headerValue}".parse().unwrap());`))
@@ -46,6 +45,7 @@ function toRust (curlCommand) {
   }
 
   if (request.multipartUploads) {
+
     lines.push(indent('let form = multipart::Form::new()'))
     const parts = Object.keys(request.multipartUploads).map(partType => {
       const partValue = request.multipartUploads[partType]
