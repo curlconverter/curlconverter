@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "description": "convert curl syntax to native python and javascript http code",
   "homepage": "https://github.com/NickCarneiro/curlconverter",
   "author": {
@@ -27,7 +27,7 @@
     "yargs": "github:NickCarneiro/yargs"
   },
   "devDependencies": {
-    "standard": "^14.0.0",
+    "standard": "^14.3.1",
     "tape": "^4.11.0"
   },
   "scripts": {

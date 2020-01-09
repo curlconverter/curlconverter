@@ -1,10 +1,10 @@
 extern crate reqwest;
-use reqwest::headers::*;
+use reqwest::header;
 
-fn main() -> Result<(), reqwest::Error> {
-    let mut headers = HeaderMap::new();
-    headers.insert(X_MSISDN, "XXXXXXXXXXXXX".parse().unwrap());
-    headers.insert(USER_AGENT, "Mozilla Android6.1".parse().unwrap());
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut headers = header::HeaderMap::new();
+    headers.insert("x-msisdn", "XXXXXXXXXXXXX".parse().unwrap());
+    headers.insert("User-Agent", "Mozilla Android6.1".parse().unwrap());
 
     let res = reqwest::Client::new()
         .get("http://205.147.98.6/vc/moviesmagic?p=5&pub=testmovie&tkn=817263812")

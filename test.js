@@ -1,10 +1,10 @@
 'use strict'
-var test = require('tape')
-var fs = require('fs')
+const test = require('tape')
+const fs = require('fs')
 
-var utils = require('./util')
-var curlconverter = require('./index.js')
-var yargs = require('yargs')
+const utils = require('./util')
+const curlconverter = require('./index.js')
+const yargs = require('yargs')
 
 // the curl_commands/ directory contains input files
 // The file name is a description of the command.
@@ -62,38 +62,43 @@ const outputs = [
     name: 'Dart',
     extension: 'dart',
     command: curlconverter.toDart
+  },
+  {
+    name: 'Elixir',
+    extension: 'ex',
+    command: curlconverter.toElixir
   }
 ]
 
-var testFile = function (fileName) {
-  var inputFilePath = 'fixtures/curl_commands/' + fileName
-  var inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
+const testFile = fileName => {
+  const inputFilePath = 'fixtures/curl_commands/' + fileName
+  const inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
 
-  var parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
-  var parserFilePath = './fixtures/parser_output/' + fileName.replace('txt', 'js')
+  const parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+  const parserFilePath = './fixtures/parser_output/' + fileName.replace('txt', 'js')
   if (fs.existsSync(parserFilePath)) {
-    var goodParserOutput = require(parserFilePath)
-    var parsedCommand = utils.parseCurlCommand(inputFileContents)
-    test(parserTestName, function (t) {
+    const goodParserOutput = require(parserFilePath)
+    const parsedCommand = utils.parseCurlCommand(inputFileContents)
+    test(parserTestName, t => {
       t.deepEquals(parsedCommand, goodParserOutput)
       t.end()
     })
   }
 
-  outputs.forEach(function (output) {
+  outputs.forEach(output => {
     if (language && language !== output.name) {
       console.log(`skipping language: ${output.name}`)
     } else {
-      var directory = './fixtures/' + output.name.toLowerCase() + '_output/'
+      const directory = './fixtures/' + output.name.toLowerCase() + '_output/'
 
-      var filePath = directory + fileName.replace('txt', output.extension)
-      var testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+      const filePath = directory + fileName.replace('txt', output.extension)
+      const testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
 
       if (fs.existsSync(filePath)) {
         // normalize code for just \n line endings (aka fix input under Windows)
-        var goodCode = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
-        var code = output.command(inputFileContents)
-        test(testName, function (t) {
+        const goodCode = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
+        const code = output.command(inputFileContents)
+        test(testName, t => {
           t.equal(code, goodCode)
           t.end()
         })
@@ -102,13 +107,13 @@ var testFile = function (fileName) {
   })
 }
 // get --test=test_name parameter and just run that test on its own
-var testName = yargs.argv.test
+const testName = yargs.argv.test
 var language = yargs.argv.language
 if (testName) {
-  var fileName = testName + '.txt'
+  const fileName = testName + '.txt'
   testFile(fileName)
 } else {
   // otherwise, run them all
-  var inputFiles = fs.readdirSync('fixtures/curl_commands/')
+  const inputFiles = fs.readdirSync('fixtures/curl_commands/')
   inputFiles.forEach(testFile)
 }

@@ -1,6 +1,6 @@
 #  [![NPM version][npm-image]][npm-url][![Build Status](https://travis-ci.org/NickCarneiro/curlconverter.svg)](https://travis-ci.org/NickCarneiro/curlconverter)
 
-Convert cURL syntax to native Python, Go, PHP, JavaScript, R and Dart HTTP code
+Convert cURL syntax to native Python, Go, PHP, JavaScript, R, Elixir and Dart HTTP code
 
 ## Live Demo
 
@@ -107,6 +107,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - nico202
 - r3m0t
 - csells (Dart support)
+- yanshiyason (Elixir support)
 
 ## License
 

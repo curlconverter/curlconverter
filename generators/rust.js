@@ -1,99 +1,108 @@
-var util = require('../util')
+const util = require('../util')
+const jsesc = require('jsesc')
 
-var toRust = function (curlCommand) {
-  var request = util.parseCurlCommand(curlCommand)
-  var rustCode = 'extern crate reqwest;\n'
+const INDENTATION = ' '.repeat(4)
+const indent = (line, level = 1) => INDENTATION.repeat(level) + line
+const quote = str => jsesc(str, { quotes: 'double' })
+
+function toRust (curlCommand) {
+  const lines = ['extern crate reqwest;']
+  const request = util.parseCurlCommand(curlCommand)
+
+  const hasHeaders = request.headers || request.cookies
+
+  {
+    // Generate imports.
+    const imports = [
+      { want: 'header', condition: hasHeaders },
+      { want: 'multipart', condition: !!request.multipartUploads }
+    ].filter(i => i.condition).map(i => i.want)
+
+    if (imports.length > 1) {
+      lines.push(`use reqwest::{${imports.join(', ')}};`)
+    } else if (imports.length) {
+      lines.push(`use reqwest::${imports[0]};`)
+    }
+  }
+
+  lines.push('', 'fn main() -> Result<(), Box<dyn std::error::Error>> {')
 
   if (request.headers || request.cookies) {
-    rustCode += 'use reqwest::headers::*;\n'
-  }
-  if (request.multipartUploads) {
-    rustCode += 'use reqwest::multipart;\n'
-  }
-
-  rustCode += '\nfn main() -> Result<(), reqwest::Error> {\n'
-
-  if (request.headers || request.cookies) {
-    rustCode += '    let mut headers = HeaderMap::new();\n'
-
-    for (var header in request.headers) {
-      rustCode += '    headers.insert(' + header.replace(/-/g, '_').toUpperCase() + ', "' + request.headers[header] + '".parse().unwrap());\n'
+    lines.push(indent('let mut headers = header::HeaderMap::new();'))
+    for (const headerName in request.headers) {
+      const headerValue = quote(request.headers[headerName])
+      lines.push(indent(`headers.insert("${headerName}", "${headerValue}".parse().unwrap());`))
     }
 
-    for (var cookie in request.cookies) {
-      rustCode += '    headers.insert(COOKIE, "' + cookie + '".parse().unwrap());\n'
+    if (request.cookies) {
+      const cookies = Object.keys(request.cookies)
+        .map(key => `${key}=${request.cookies[key]}`)
+        .join('; ')
+      lines.push(indent(`headers.insert(header::COOKIE, "${quote(cookies)}".parse().unwrap());`))
     }
+
+    lines.push('')
   }
 
   if (request.multipartUploads) {
-    rustCode += '    let form = multipart::Form::new()'
 
-    for (var part in request.multipartUploads) {
-      if (part === 'image' || part === 'file') {
-        rustCode += '\n        .file("' + part + '", "' + request.multipartUploads[part].split('@')[1] + '")?'
-      } else {
-        rustCode += '\n        .text("' + part + '", "' + request.multipartUploads[part] + '")'
+    lines.push(indent('let form = multipart::Form::new()'))
+    const parts = Object.keys(request.multipartUploads).map(partType => {
+      const partValue = request.multipartUploads[partType]
+      switch (partType) {
+        case 'image':
+        case 'file': {
+          const path = partValue.split('@')[1]
+          return indent(`.file("${partType}", "${quote(path)}")?`, 2)
+        }
+        default:
+          return indent(`.text("${partType}", "${quote(partValue)}")`, 2)
       }
-    }
-    rustCode += ';\n'
+    })
+    parts[parts.length - 1] += ';'
+    lines.push(...parts, '')
   }
 
-  rustCode += '\n    let res = reqwest::Client::new()\n'
-
-  switch (request.method) {
-    case 'get':
-      rustCode += '        .get("' + request.url + '")'
-      break
-    case 'post':
-      rustCode += '        .post("' + request.url + '")'
-      break
-    case 'put':
-      rustCode += '        .put("' + request.url + '")'
-      break
-    case 'head':
-      rustCode += '        .head("' + request.url + '")'
-      break
-    case 'patch':
-      rustCode += '        .patch("' + request.url + '")'
-      break
-    case 'delete':
-      rustCode += '        .delete("' + request.url + '")'
-      break
-    default:
-      break
-  }
-  rustCode += '\n'
+  lines.push(indent('let res = reqwest::Client::new()'))
+  lines.push(indent(`.${request.method}("${quote(request.url)}")`, 2))
 
   if (request.auth) {
-    var splitAuth = request.auth.split(':')
-    var user = splitAuth[0] || ''
-    var password = splitAuth[1] || ''
-    rustCode += '        .basic_auth("' + user + '", Some("' + password + '"))\n'
+    const [user, password] = request.auth.split(':', 2).map(quote)
+    lines.push(indent(`.basic_auth("${user || ''}", Some("${password || ''}"))`, 2))
   }
 
-  if (request.headers) {
-    rustCode += '        .headers(headers)\n'
+  if (hasHeaders) {
+    lines.push(indent('.headers(headers)', 2))
   }
 
   if (request.multipartUploads) {
-    rustCode += '        .multipart(form)\n'
+    lines.push(indent('.multipart(form)', 2))
   }
 
   if (request.data) {
-    if (typeof request.data === 'string') {
-      rustCode += '        .body("' + request.data.replace(/\s/g, '') + '")\n'
+    if (typeof request.data === 'string' && request.data.indexOf('\n') !== -1) {
+      // Use raw strings for multiline content
+      lines.push(
+        indent('.body(r#"', 2),
+        request.data,
+        '"#',
+        indent(')', 2)
+      )
     } else {
-      rustCode += '        .body("' + request.data + '")\n'
+      lines.push(indent(`.body("${quote(request.data)}")`, 2))
     }
   }
 
-  // Complete query builder and send
-  // text()? gets the body or response
-  rustCode += '        .send()?\n        .text()?;\n'
-  // Print the result to stdout
-  rustCode += '    println!("{}", res);\n\n    Ok(())\n}'
-  rustCode += '\n'
-  return rustCode
+  lines.push(
+    indent('.send()?', 2),
+    indent('.text()?;', 2),
+    indent('println!("{}", res);'),
+    '',
+    indent('Ok(())'),
+    '}'
+  )
+
+  return lines.join('\n') + '\n'
 }
 
 module.exports = toRust
