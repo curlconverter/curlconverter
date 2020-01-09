@@ -3,29 +3,10 @@ var yargs = require('yargs')
 var URL = require('url')
 var querystring = require('querystring')
 
-/**
- * given this: [ 'msg1=value1', 'msg2=value2' ]
- * output this: 'msg1=value1&msg2=value2'
- * @param dataArguments
- */
-var joinDataArguments = function (dataArguments) {
-  var data = ''
-  dataArguments.forEach(function (argument, i) {
-    if (i === 0) {
-      data += argument
-    } else {
-      data += '&' + argument
-    }
-  })
-  return data
-}
-
 var parseCurlCommand = function (curlCommand) {
-  var newlineFound = /\r|\n/.exec(curlCommand)
-  if (newlineFound) {
-    // remove newlines
-    curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
-  }
+  // Remove newlines (and from continuations)
+  curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
+
   // yargs parses -XPOST as separate arguments. just prescreen for it.
   curlCommand = curlCommand.replace(/ -XPOST/, ' -X POST')
   curlCommand = curlCommand.replace(/ -XGET/, ' -X GET')
@@ -33,8 +14,10 @@ var parseCurlCommand = function (curlCommand) {
   curlCommand = curlCommand.replace(/ -XPATCH/, ' -X PATCH')
   curlCommand = curlCommand.replace(/ -XDELETE/, ' -X DELETE')
   curlCommand = curlCommand.trim()
-  var yargObject = yargs(curlCommand)
-  var parsedArguments = yargObject.argv
+  var parsedArguments = yargs
+    .alias('H', 'header')
+    .alias('A', 'user-agent')
+    .parse(curlCommand)
   var cookieString
   var cookies
   var url = parsedArguments._[1]
@@ -51,38 +34,26 @@ var parseCurlCommand = function (curlCommand) {
 
   var headers
 
-  var parseHeaders = function (headerFieldName) {
-    if (parsedArguments[headerFieldName]) {
-      if (!headers) {
-        headers = {}
-      }
-      if (!Array.isArray(parsedArguments[headerFieldName])) {
-        parsedArguments[headerFieldName] = [parsedArguments[headerFieldName]]
-      }
-      parsedArguments[headerFieldName].forEach(function (header) {
-        if (header.indexOf('Cookie') !== -1) {
-          // stupid javascript tricks: closure
-          cookieString = header
-        } else {
-          var colonIndex = header.indexOf(':')
-          var headerName = header.substring(0, colonIndex)
-          var headerValue = header.substring(colonIndex + 1).trim()
-          headers[headerName] = headerValue
-        }
-      })
+  if (parsedArguments['header']) {
+    if (!headers) {
+      headers = {}
     }
+    if (!Array.isArray(parsedArguments['header'])) {
+      parsedArguments['header'] = [parsedArguments['header']]
+    }
+    parsedArguments['header'].forEach(function (header) {
+      if (header.indexOf('Cookie') !== -1) {
+        cookieString = header
+      } else {
+        var components = header.split(/:(.*)/);
+        headers[components[0]] = components[1].trim();
+      }
+    })
   }
 
-  parseHeaders('H')
-  parseHeaders('header')
-  if (parsedArguments.A) {
+  if (parsedArguments['user-agent']) {
     if (!headers) {
-      headers = []
-    }
-    headers['User-Agent'] = parsedArguments.A
-  } else if (parsedArguments['user-agent']) {
-    if (!headers) {
-      headers = []
+      headers = {}
     }
     headers['User-Agent'] = parsedArguments['user-agent']
   }
@@ -213,7 +184,7 @@ var parseCurlCommand = function (curlCommand) {
   }
   if (Array.isArray(request.data)) {
     request.dataArray = request.data
-    request.data = joinDataArguments(request.data)
+    request.data = request.data.join('&')
   }
 
   if (parsedArguments['k'] || parsedArguments['insecure']) {
