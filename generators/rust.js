@@ -10,7 +10,6 @@ function toRust (curlCommand) {
   const request = util.parseCurlCommand(curlCommand)
 
   const hasHeaders = request.headers || request.cookies
-
   {
     // Generate imports.
     const imports = [
@@ -24,7 +23,6 @@ function toRust (curlCommand) {
       lines.push(`use reqwest::${imports[0]};`)
     }
   }
-
   lines.push('', 'fn main() -> Result<(), Box<dyn std::error::Error>> {')
 
   if (request.headers || request.cookies) {
@@ -45,7 +43,6 @@ function toRust (curlCommand) {
   }
 
   if (request.multipartUploads) {
-
     lines.push(indent('let form = multipart::Form::new()'))
     const parts = Object.keys(request.multipartUploads).map(partType => {
       const partValue = request.multipartUploads[partType]

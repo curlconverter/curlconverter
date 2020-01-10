@@ -12,7 +12,6 @@ const toR = require('./generators/r.js')
 const toRust = require('./generators/rust')
 const toStrest = require('./generators/strest.js')
 
-
 module.exports = {
   toAnsible: toAnsible,
   toDart: toDart,

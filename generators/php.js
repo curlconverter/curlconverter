@@ -3,7 +3,6 @@ const querystring = require('querystring')
 const jsesc = require('jsesc')
 const quote = str => jsesc(str, { quotes: 'single' })
 
-
 const toPhp = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
