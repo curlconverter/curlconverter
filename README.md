@@ -108,6 +108,10 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - r3m0t
 - csells (Dart support)
 - yanshiyason (Elixir support)
+- Robertof (Rust enhancements, correctness, es6)
+- clintonc (Code quality / brevity, test suite consistency)
+- MarkReeder (JSON formatting)
+- cf512 (bugfixes and feature requests)
 
 ## License
 
