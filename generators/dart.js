@@ -1,7 +1,7 @@
 const util = require('../util')
 const jsesc = require('jsesc')
 
-function repr(value) {
+function repr (value) {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
@@ -67,6 +67,7 @@ const toDart = curlCommand => {
       s += '    ' + repr(paramName) + ': ' + paramValue + ',\n'
     }
     s += '  };\n'
+    /* eslint-disable no-template-curly-in-string */
     s += "  var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');\n"
     s += '\n'
   }
@@ -99,8 +100,7 @@ const toDart = curlCommand => {
 
   if (hasQuery) {
     s += '  var res = await http.' + r.method + "('" + r.urlWithoutQuery + "?$query'"
-  }
-  else {
+  } else {
     s += '  var res = await http.' + r.method + "('" + r.url + "'"
   }
 
