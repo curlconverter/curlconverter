@@ -15,6 +15,6 @@ void main() async {
   };
 
   var res = await http.post('http://www.w3schools.com/ajax/demo_post.asp', headers: headers);
-  if (res.statusCode != 200) throw Exception('post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }

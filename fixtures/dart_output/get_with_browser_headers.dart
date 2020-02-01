@@ -13,6 +13,6 @@ void main() async {
   };
 
   var res = await http.get('http://en.wikipedia.org/', headers: headers);
-  if (res.statusCode != 200) throw Exception('get error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

@@ -9,7 +9,12 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var res = await http.get('http://api.ipify.org/?format=json&', headers: headers);
-  if (res.statusCode != 200) throw Exception('get error: statusCode= ${res.statusCode}');
+  var params = {
+    'format': 'json',
+  };
+  var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');
+
+  var res = await http.get('http://api.ipify.org/?$query', headers: headers);
+  if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

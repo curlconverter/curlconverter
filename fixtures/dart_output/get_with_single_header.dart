@@ -6,6 +6,6 @@ void main() async {
   };
 
   var res = await http.get('http://example.com/', headers: headers);
-  if (res.statusCode != 200) throw Exception('get error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

@@ -9,6 +9,6 @@ void main() async {
   var data = '18233982904';
 
   var res = await http.post('http://198.30.191.00:8309/CurlToNode', headers: headers, body: data);
-  if (res.statusCode != 200) throw Exception('post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }

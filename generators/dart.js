@@ -1,6 +1,15 @@
 const util = require('../util')
 const jsesc = require('jsesc')
 
+function repr(value) {
+  // In context of url parameters, don't accept nulls and such.
+  if (!value) {
+    return "''"
+  } else {
+    return "'" + jsesc(value, { quotes: 'single' }) + "'"
+  }
+}
+
 const toDart = curlCommand => {
   const r = util.parseCurlCommand(curlCommand)
   let s = ''
@@ -44,6 +53,24 @@ const toDart = curlCommand => {
     s += '\n'
   }
 
+  const hasQuery = r.query
+  if (hasQuery) {
+    s += '  var params = {\n'
+    for (const paramName in r.query) {
+      const rawValue = r.query[paramName]
+      let paramValue
+      if (Array.isArray(rawValue)) {
+        paramValue = '[' + rawValue.map(repr).join(', ') + ']'
+      } else {
+        paramValue = repr(rawValue)
+      }
+      s += '    ' + repr(paramName) + ': ' + paramValue + ',\n'
+    }
+    s += '  };\n'
+    s += "  var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');\n"
+    s += '\n'
+  }
+
   const hasData = r.data
   if (typeof r.data === 'number') {
     r.data = r.data.toString()
@@ -70,7 +97,13 @@ const toDart = curlCommand => {
     }
   }
 
-  s += '  var res = await http.' + r.method + "('" + r.url + "'"
+  if (hasQuery) {
+    s += '  var res = await http.' + r.method + "('" + r.urlWithoutQuery + "?$query'"
+  }
+  else {
+    s += '  var res = await http.' + r.method + "('" + r.url + "'"
+  }
+
   if (hasHeaders) s += ', headers: headers'
   else if (r.auth) s += ", headers: {'Authorization': authn}"
   if (hasData) s += ', body: data'
@@ -78,7 +111,7 @@ const toDart = curlCommand => {
   /* eslint-disable no-template-curly-in-string */
   s +=
     ');\n' +
-    "  if (res.statusCode != 200) throw Exception('" + r.method + " error: statusCode= ${res.statusCode}');\n" +
+    "  if (res.statusCode != 200) throw Exception('http." + r.method + " error: statusCode= ${res.statusCode}');\n" +
     '  print(res.body);\n' +
     '}'
 
