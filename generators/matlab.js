@@ -154,8 +154,7 @@ function prepareRequest (request, func, options) {
   return response
 }
 
-function parseCommand (curlCommand) {
-  const request = util.parseCurlCommand(curlCommand)
+function parseCommand (request) {
   request.putQueryInUrl = !!(request.query && (request.data || request.multipartUploads))
 
   // Check whether to use `webread` or `webwrite`
@@ -164,7 +163,7 @@ function parseCommand (curlCommand) {
   // Parse request for weboptions
   const options = parseWebOptions(request)
 
-  return [request, func, options]
+  return [func, options]
 }
 
 function addCellArray (mapping, keysNotToQuote, keyValSeparator, indentLevel, pairs) {
@@ -357,9 +356,109 @@ function prepareResponse (request, func, options) {
   return response + '\n'
 }
 
+function toHTTPInterface (request) {
+  let response = '%% HTTP Interface'
+  response += '\nimport matlab.net.*'
+  response += '\nimport matlab.net.http.*'
+  response += '\n'
+  let queryparams = ''
+  queryparams += prepareQueryString(request)
+  response += queryparams
+
+  const cookies = prepareCookies(request)
+  response += cookies
+  let header = ''
+  if (request.headers) {
+    const headerEntries = Object.entries(request.headers)
+    const headerCount = headerEntries.length + (request.cookies ? 1 : 0)
+
+    const headers = []
+    header = '\nheader = ' + (headerCount === 1 ? '' : '[')
+
+    for (const [key, value] of headerEntries) {
+      switch (key) {
+        case 'Accept':
+          const accepts = value.split(',')
+          if (accepts.length === 1) {
+            headers.push(`field.AcceptField(MediaType(${repr(value)}))`)
+          } else {
+            let acceptheader = 'field.AcceptField(['
+            for (const accept of accepts) {
+              acceptheader += `\n        MediaType(${repr(accept.trim())})`
+            }
+            acceptheader += '\n    ])'
+            headers.push(acceptheader)
+          }
+          break
+        default:
+          headers.push(`HeaderField(${repr(key)}, ${repr(value)})`)
+      }
+    }
+
+    if (headerCount === 1) {
+      header += headers.pop() + ';'
+    } else {
+      header += '\n    ' + headers.join('\n    ')
+      if (request.cookies) {
+        header += `\n    field.CookieField(char(join(join(cookies, '='), '; ')))`
+      }
+      header += '\n]\';'
+    }
+  }
+  response += header
+  if (queryparams) {
+    response += `\nuri = URI(${repr(request.urlWithoutQuery)}, QueryParameter(params));`
+  } else {
+    response += `\nuri = URI(${repr(request.urlWithoutQuery)});`
+  }
+  let options = ''
+  let credentials = ''
+  if (request.auth) {
+    const [usr, pass] = request.auth.split(':')
+    const userfield = `'Username', ${repr(usr)}`
+    const passfield = `'Password', ${repr(pass)}`
+    const authparams = (usr ? `${userfield}, ` : '') + passfield
+    credentials += `\ncred = Credentials(${authparams});`
+    response += credentials
+  }
+  if (credentials) {
+    options += '\noptions = HTTPOptions(\'Credentials\', cred);'
+  }
+  response += options
+  // show method unless it is a GET
+  let method = request.method === 'get' ? '' : repr(request.method)
+  let reqMessage = method
+  if (header) {
+    method = repr(request.method)
+    reqMessage = `${method}, header`
+  }
+  // list as many params as necessary
+  const params = 'uri.EncodedURI' + (options ? ', options' : '')
+  response += `\nresponse = RequestMessage(${reqMessage}).send(${params});`
+  if (request.query) {
+    const fullParams = 'fullURI'// + (options ? ', options' : '')
+    response += '\n\n% As there is query, a full URI may be necessary instead.'
+    response += `\nfullURI = ${repr(request.url)};`
+    response += `\nresponse = RequestMessage(${reqMessage}).send(${fullParams});`
+  }
+  return response
+}
+
+function toWebServices (request) {
+  const [func, options] = parseCommand(request)
+  return '%% Web Access using Data Import and Export API \n' + prepareResponse(request, func, options)
+}
+
 const toMATLAB = function (curlCommand) {
-  const [request, func, options] = parseCommand(curlCommand)
-  return prepareResponse(request, func, options)
+  const request = util.parseCurlCommand(curlCommand)
+  const webServices = toWebServices(request)
+  const httpInterface = toHTTPInterface(request)
+  let output = ''
+  if (webServices) {
+    output += webServices + '\n'
+  }
+  output += httpInterface
+  return output
 }
 
 module.exports = toMATLAB
