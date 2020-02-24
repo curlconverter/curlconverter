@@ -10,160 +10,40 @@ function repr (value) {
   }
 }
 
-const prepareOptions = function (options) {
-  let response = '\noptions = weboptions'
-  const pairValues = addCellArray(options, ['HeaderFields'], ',', 1, true)
+function setVariableValue (outputVariable, value, termination) {
+  let result = ''
 
-  if (pairValues === '') return ''
+  if (outputVariable) {
+    result += outputVariable + ' = '
+  }
 
-  response += pairValues
-  response += ';'
-
-  return response
+  result += value
+  result += typeof termination === 'undefined' ? ';' : termination
+  return result
 }
 
-const chooseRequestFunction = function (request) {
-  // Choose `webwrite` if sending a payload body
-  return request.data || request.multipartUploads ? 'webwrite' : 'webread'
-}
-
-const parseWebOptions = function (request) {
-  const options = {}
-
-  // TODO: request.data is a char vector containing JSON data, use struct in MATLAB
-
-  // Not supported by MATLAB:
-  // * request.compressed - compressing the response with gzip
-  // * not following redirects
-  // * disabling SSL verification - workaround is to use
-  //    matlab.net.http.RequestMessage and setting
-  //    the matlab.net.http.HTTPOptions.VerifyServerName to false
-
-  // MATLAB uses GET in `webread` and POST in `webwrite` by default
-  // thus, it is necessary to set the method for other requests
-  if (request.method !== 'get' && request.method !== 'post') {
-    options['RequestMethod'] = request.method
+function callFunction (outputVariable, functionName, params, termination) {
+  // TODO: split key, val pairs into multiple lines
+  let functionCall = functionName + '('
+  if (Array.isArray(params)) {
+    const singleLine = params.map(x => Array.isArray(x) ? x.join(', ') : x).join(', ')
+    const indentLevel = 1
+    const indent = ' '.repeat(4 * indentLevel)
+    const skipToNextLine = '...\n' + indent
+    let multiLine = skipToNextLine
+    multiLine += params.map(x => Array.isArray(x) ? x.join(', ') : x)
+      .join(',' + skipToNextLine)
+    multiLine += '...\n'
+    // Split the params in multiple lines - if one line is not enough
+    const combinedSingleLineLength = [outputVariable, functionName, singleLine]
+      .map(x => x ? x.length : 0).reduce((x, y) => x + y) +
+      (outputVariable ? 3 : 0) + 2 + (termination ? termination.length : 1)
+    functionCall += combinedSingleLineLength < 120 ? singleLine : multiLine
+  } else {
+    functionCall += params
   }
-
-  if (request.auth) {
-    const [username, password] = request.auth.split(':')
-    if (username !== '') options['Username'] = `${username}`
-    options['Password'] = `${password}`
-  }
-
-  if (request.cookies) {
-    request.headers['Cookie'] = `char(join(join(cookies, '='), '; '))`
-  }
-
-  let headerCount = 0
-  if (request.headers) {
-    const headers = {}
-    for (const [key, value] of Object.entries(request.headers)) {
-      switch (key) {
-        case 'User-Agent':
-          options['UserAgent'] = value
-          break
-        case 'Content-Type':
-          options['MediaType'] = value
-          break
-        case 'Cookie':
-          headers['Cookie'] = value
-          ++headerCount
-          break
-        case 'Accept':
-          switch (value) {
-            case 'application/json':
-              options['ContentType'] = 'json'
-              break
-            case 'text/csv':
-              options['ContentType'] = 'table'
-              break
-            case 'text/plain':
-            case 'text/html':
-            case 'application/javascript':
-            case 'application/x-javascript':
-            case 'application/x-www-form-urlencoded':
-              options['ContentType'] = 'text'
-              break
-            case 'text/xml':
-            case 'application/xml':
-              options['ContentType'] = 'xmldom'
-              break
-            case 'application/octet-stream':
-              options['ContentType'] = 'binary'
-              break
-            default:
-              if (value.startsWith('image/')) {
-                options['ContentType'] = 'image'
-              } else if (value.startsWith('audio/')) {
-                options['ContentType'] = 'audio'
-              } else {
-                headers[key] = value
-                ++headerCount
-              }
-          }
-          break
-        default:
-          headers[key] = value
-          ++headerCount
-      }
-    }
-
-    if (headerCount > 0) {
-      options['HeaderFields'] = addCellArray(headers, ['Cookie'], '', 2)
-    }
-  }
-
-  return options
-}
-
-function prepareRequest (request, func, options) {
-  let response = `\nresponse = ${func}(`
-  let fullResponse = `\nfullUrl = '${request.url}';`
-  fullResponse += `\nresponse = ${func}(fullUrl`
-
-  if (request.putQueryInUrl) {
-    const query = `\nquery = char(join(join(params,'='),'&'));`
-    response = query + response + `[url '?' query]`
-  } else response += 'url'
-
-  if (request.data) {
-    response += `, body`
-    fullResponse += `, body`
-  } else if (request.multipartUploads) {
-    response += `, files{:}`
-    fullResponse += `, files{:}`
-  } else if (request.query) {
-    response += `, params{:}`
-    // fullResponse: it is already in the fullUrl
-  }
-
-  if (Object.keys(options).length > 0) {
-    response += `, options`
-    fullResponse += `, options`
-  }
-  response += ');'
-  fullResponse += ');'
-
-  if (request.query) {
-    response += `\n\n% NB. Original query string below. It seems impossible to parse and`
-    response += `\n% reproduce query strings 100% accurately so the one below is given`
-    response += `\n% in case the reproduced version is not "correct".`
-    response += fullResponse
-  }
-  return response
-}
-
-function parseCommand (request) {
-  request.putQueryInUrl = !!(request.query && (request.data || request.multipartUploads))
-
-  // Check whether to use `webread` or `webwrite`
-  const func = chooseRequestFunction(request)
-
-  // Parse request for weboptions
-  const options = parseWebOptions(request)
-
-  return [func, options]
+  functionCall += ')'
+  return setVariableValue(outputVariable, functionCall, termination)
 }
 
 function addCellArray (mapping, keysNotToQuote, keyValSeparator, indentLevel, pairs) {
@@ -203,88 +83,8 @@ function addCellArray (mapping, keysNotToQuote, keyValSeparator, indentLevel, pa
   return response
 }
 
-function prepareQueryString (request) {
-  let response = ''
-  if (request.query) {
-    response += '\nparams = '
-    const keyValSeparator = request.putQueryInUrl ? '' : ';'
-    response += addCellArray(request.query, [], keyValSeparator, 1)
-    response += ';'
-  }
-  return response
-}
-
-function prepareBody (request) {
-  let response = ''
-  if (request.data) {
-    if (typeof request.data === 'boolean') {
-      response += `\nbody = ''`
-    } else if (request.data[0] === '@') {
-      request.b64fileupload = true
-      response += `\nbody = getB64File(${repr(request.data.slice(1))});`
-    } else {
-      // if the data is in JSON, store it as struct in MATLAB
-      // otherwise just keep it as a char vector
-      try {
-        const jsonData = JSON.parse(request.data)
-        if (typeof jsonData === 'object') {
-          let jsonText = structify(jsonData)
-          if (!jsonText.startsWith('struct')) jsonText = repr(jsonText)
-          response += `\nbody = ${jsonText};`
-        } else {
-          response += `\nbody = ${repr(request.data)};`
-        }
-      } catch (e) {
-        response += `\nbody = ${repr(request.data)};`
-      }
-    }
-  }
-  return response
-}
-
-function prepareCookies (request) {
-  let cookies = ''
-  if (request.cookies) {
-    cookies = '\ncookies = '
-    cookies += addCellArray(request.cookies, [], '', 1)
-    cookies += ';'
-  }
-  // cookie string: char(join(join(cookies, '='), '; '))
-  return cookies
-}
-
-function prepareFiles (request) {
-  let files = ''
-
-  if (request.multipartUploads) {
-    const keysNotToQuote = []
-    files += '\nfiles = '
-    for (const [key, value] of Object.entries(request.multipartUploads)) {
-      if (value[0] === '@') {
-        request.b64fileupload = true
-        keysNotToQuote.push(key)
-        request.multipartUploads[key] = `getB64File(${repr(value.slice(1))})`
-      }
-    }
-    files += addCellArray(request.multipartUploads, keysNotToQuote, ';', 1)
-    files += ';'
-  }
-  return files
-}
-
-function prepareB64FileFunc (request) {
-  if (!request.b64fileupload) { return '' }
-
-  return `\n\nfunction b64file = getB64File(filename)` +
-      `\n    fid = fopen(filename, 'rb');` +
-      `\n    bytes = fread(fid);` +
-      `\n    fclose(fid);` +
-      `\n    encoder = org.apache.commons.codec.binary.Base64;` +
-      `\n    b64file = char(encoder.encode(bytes))';` +
-      `\nend`
-}
-
 function structify (obj, indentLevel) {
+  // TODO: make simple ones in one line {"name":"tigers.jpeg", "parent":{"id":"11446498"}}
   let response = ''
   indentLevel = !indentLevel ? 1 : ++indentLevel
   const indent = ' '.repeat(4 * indentLevel)
@@ -337,43 +137,37 @@ function structify (obj, indentLevel) {
   return response
 }
 
-function prepareResponse (request, func, options) {
-  // Set URL of the request
-  let response = `url = '${request.urlWithoutQuery}';`
-
-  response += prepareCookies(request) // add cookies
-  response += prepareQueryString(request) // query string
-  response += prepareFiles(request) // form fields
-  response += prepareBody(request) // payload data
-
-  // Add weboptions if necessary
-  response += prepareOptions(options)
-
-  // Make a request
-  response += prepareRequest(request, func, options)
-
-  response += prepareB64FileFunc(request)
-  return response + '\n'
+function prepareQueryString (request) {
+  let response = null
+  if (request.query) {
+    const keyValSeparator = request.putQueryInUrl ? '' : ';'
+    const params = addCellArray(request.query, [], keyValSeparator, 1)
+    response = setVariableValue('params', params)
+  }
+  return response
 }
 
-function toHTTPInterface (request) {
-  let response = '%% HTTP Interface'
-  response += '\nimport matlab.net.*'
-  response += '\nimport matlab.net.http.*'
-  response += '\n'
-  let queryparams = ''
-  queryparams += prepareQueryString(request)
-  response += queryparams
+function prepareCookies (request) {
+  let response = null
+  if (request.cookies) {
+    const cookies = addCellArray(request.cookies, [], '', 1)
+    response = setVariableValue('cookies', cookies)
+  }
+  // cookie string: char(join(join(cookies, '='), '; '))
+  return response
+}
 
-  const cookies = prepareCookies(request)
-  response += cookies
-  let header = ''
+function prepareHeaders (request) {
+  let response = null
+
   if (request.headers) {
     const headerEntries = Object.entries(request.headers)
+
+    // cookies are part of headers
     const headerCount = headerEntries.length + (request.cookies ? 1 : 0)
 
     const headers = []
-    header = '\nheader = ' + (headerCount === 1 ? '' : '[')
+    let header = headerCount === 1 ? '' : '['
 
     for (const [key, value] of headerEntries) {
       switch (key) {
@@ -396,69 +190,190 @@ function toHTTPInterface (request) {
     }
 
     if (headerCount === 1) {
-      header += headers.pop() + ';'
+      header += headers.pop()
     } else {
       header += '\n    ' + headers.join('\n    ')
       if (request.cookies) {
         header += `\n    field.CookieField(char(join(join(cookies, '='), '; ')))`
       }
-      header += '\n]\';'
+      header += '\n]'
     }
+
+    response = setVariableValue('header', header)
   }
-  response += header
-  if (queryparams) {
-    response += `\nuri = URI(${repr(request.urlWithoutQuery)}, QueryParameter(params));`
-  } else {
-    response += `\nuri = URI(${repr(request.urlWithoutQuery)});`
+
+  return response
+}
+
+function prepareURI (request) {
+  const uriParams = [repr(request.urlWithoutQuery)]
+  if (request.query) {
+    uriParams.push('QueryParameter(params)')
   }
-  let options = ''
-  let credentials = ''
+  return callFunction('uri', 'URI', uriParams)
+}
+
+function prepareAuth (request) {
+  let options = null
   if (request.auth) {
     const [usr, pass] = request.auth.split(':')
     const userfield = `'Username', ${repr(usr)}`
     const passfield = `'Password', ${repr(pass)}`
     const authparams = (usr ? `${userfield}, ` : '') + passfield
-    credentials += `\ncred = Credentials(${authparams});`
-    response += credentials
+    options = [
+      callFunction('cred', 'Credentials', authparams),
+      callFunction('options', 'HTTPOptions', ['\'Credentials\'', 'cred'])
+    ]
   }
-  if (credentials) {
-    options += '\noptions = HTTPOptions(\'Credentials\', cred);'
+
+  return options
+}
+
+function containsBody (request) {
+  return request.data || request.multipartUploads
+}
+
+function isJsonString(str) {
+  // https://stackoverflow.com/a/3710226/5625738
+  try {
+    JSON.parse(str)
+  } catch (e) {
+    return false
   }
-  response += options
-  // show method unless it is a GET
-  let method = request.method === 'get' ? '' : repr(request.method)
-  let reqMessage = method
-  if (header) {
-    method = repr(request.method)
-    reqMessage = `${method}, header`
+  return true
+}
+
+function prepareDataProvider (value, output, termination, indentLevel) {
+  if (typeof indentLevel === 'undefined') indentLevel = 0
+  if (value[0] === '@') {
+    const filename = value.slice(1)
+    // >> imformats % for seeing MATLAB supported image formats
+    const isImageProvider = new Set(['jpeg', 'jpg', 'png', 'tif', 'gif']).has(filename.split('.')[1])
+    const provider = isImageProvider ? 'ImageProvider' : 'FileProvider'
+    return callFunction(output, provider, repr(filename), termination)
   }
-  // list as many params as necessary
-  const params = 'uri.EncodedURI' + (options ? ', options' : '')
-  response += `\nresponse = RequestMessage(${reqMessage}).send(${params});`
-  if (request.query) {
-    const fullParams = 'fullURI'// + (options ? ', options' : '')
-    response += '\n\n% As there is query, a full URI may be necessary instead.'
-    response += `\nfullURI = ${repr(request.url)};`
-    response += `\nresponse = RequestMessage(${reqMessage}).send(${fullParams});`
+
+  if (value === true) {
+    return callFunction(output, 'FileProvider', '', termination)
+  }
+
+  if (typeof value !== 'number' && isJsonString(value)) {
+    const obj = JSON.parse(value)
+    // If fail to create a struct for the JSON, then return a string
+    try {
+      const structure = structify(obj, indentLevel)
+      return callFunction(output, 'JSONProvider', structure, termination)
+    } catch (e) {
+      return callFunction(output, 'StringProvider', repr(value), termination)
+    }
+  }
+
+  if (typeof value === 'number') {
+    return callFunction(output, 'FormProvider', repr(value), termination)
+  }
+  const formValue = value.split('&').map(x => x.split('=').map(x => repr(x)))
+  return callFunction(output, 'FormProvider', formValue, termination)
+}
+
+function prepareMultipartUploads (request) {
+  let response = null
+  if (request.multipartUploads) {
+    const params = []
+    for (const [key, value] of Object.entries(request.multipartUploads)) {
+      const pair = []
+      pair.push(repr(key))
+      const fileProvider = prepareDataProvider(value, null, '', 1)
+      pair.push(fileProvider)
+      params.push(pair)
+    }
+    response = callFunction('body', 'MultipartFormProvider', params)
+  }
+
+  return response
+}
+
+function prepareData (request) {
+  let response = null
+  if (request.dataArray) {
+    const data = request.dataArray.map(x => x.split('=').map(x => repr(x)))
+    response = callFunction('body', 'FormProvider', data)
+  } else if (request.data) {
+    response = prepareDataProvider(request.data, 'body')
+    if (!response) {
+      response = setVariableValue('body', repr(request.data))
+    }
   }
   return response
 }
 
+function prepareRequestMessage (request) {
+  let response
+  let reqMessage = [repr(request.method)]
+  if (request.cookie || request.headers) {
+    reqMessage.push('header')
+  } else if (request.method === 'get') {
+    reqMessage = ''
+  }
+  if (containsBody(request)) {
+    if (reqMessage.length === 1) {
+      reqMessage.push('[]')
+    }
+    reqMessage.push('body')
+  }
+
+  // list as many params as necessary
+  const params = ['uri.EncodedURI']
+  if (request.auth) {
+    params.push('options')
+  }
+
+  response = callFunction('response', 'RequestMessage', reqMessage,
+    callFunction(null, '.send', params)
+  )
+
+  if (request.query) {
+    const fullParams = ['fullURI'].concat(params.slice(1))
+    response += [
+      '\n\n% As there is query, a full URI may be necessary instead.',
+      setVariableValue('fullURI', repr(request.url)),
+      callFunction('response', 'RequestMessage', reqMessage,
+        callFunction(null, '.send', fullParams))
+    ].join('\n')
+  }
+
+  return response
+}
+
 function toWebServices (request) {
-  const [func, options] = parseCommand(request)
-  return '%% Web Access using Data Import and Export API \n' + prepareResponse(request, func, options)
+  let lines = []
+
+  return lines
+}
+
+function toHTTPInterface (request) {
+  const lines = [
+    '%% HTTP Interface',
+    'import matlab.net.*',
+    'import matlab.net.http.*',
+    (containsBody(request) ? 'import matlab.net.http.io.*' : null),
+    '',
+    prepareQueryString(request),
+    prepareCookies(request),
+    prepareHeaders(request),
+    prepareURI(request),
+    prepareAuth(request),
+    prepareMultipartUploads(request),
+    prepareData(request),
+    prepareRequestMessage(request)
+  ]
+
+  return lines
 }
 
 const toMATLAB = function (curlCommand) {
   const request = util.parseCurlCommand(curlCommand)
-  const webServices = toWebServices(request)
-  const httpInterface = toHTTPInterface(request)
-  let output = ''
-  if (webServices) {
-    output += webServices + '\n'
-  }
-  output += httpInterface
-  return output
+  const lines = toWebServices(request).concat(toHTTPInterface(request))
+  return lines.flat().filter(inp => inp !== null).join('\n')
 }
 
 module.exports = toMATLAB
