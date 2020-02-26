@@ -1,7 +1,7 @@
 const util = require('../util')
 const jsesc = require('jsesc')
 
-function repr (value) {
+const repr = (value) => {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
@@ -10,7 +10,7 @@ function repr (value) {
   }
 }
 
-function setVariableValue (outputVariable, value, termination) {
+const setVariableValue = (outputVariable, value, termination) => {
   let result = ''
 
   if (outputVariable) {
@@ -22,7 +22,7 @@ function setVariableValue (outputVariable, value, termination) {
   return result
 }
 
-function callFunction (outputVariable, functionName, params, termination) {
+const callFunction = (outputVariable, functionName, params, termination) => {
   // TODO: split key, val pairs into multiple lines
   let functionCall = functionName + '('
   if (Array.isArray(params)) {
@@ -46,7 +46,7 @@ function callFunction (outputVariable, functionName, params, termination) {
   return setVariableValue(outputVariable, functionCall, termination)
 }
 
-function addCellArray (mapping, keysNotToQuote, keyValSeparator, indentLevel, pairs) {
+const addCellArray = (mapping, keysNotToQuote, keyValSeparator, indentLevel, pairs) => {
   const indentUnit = ' '.repeat(4)
   const indent = indentUnit.repeat(indentLevel)
   const indentPrevLevel = indentUnit.repeat(indentLevel - 1)
@@ -54,7 +54,7 @@ function addCellArray (mapping, keysNotToQuote, keyValSeparator, indentLevel, pa
   const entries = Object.entries(mapping)
   if (entries.length === 0) return ''
 
-  let response = pairs ? '(' : '{'
+  let response = pairs ? '' : '{'
   if (entries.length === 1) {
     let [key, value] = entries.pop()
     if (keysNotToQuote && !keysNotToQuote.includes(key)) value = `${repr(value)}`
@@ -79,11 +79,11 @@ function addCellArray (mapping, keysNotToQuote, keyValSeparator, indentLevel, pa
     }
     response += `\n${indentPrevLevel}`
   }
-  response += pairs ? ')' : '}'
+  response += pairs ? '' : '}'
   return response
 }
 
-function structify (obj, indentLevel) {
+const structify = (obj, indentLevel) => {
   // TODO: make simple ones in one line {"name":"tigers.jpeg", "parent":{"id":"11446498"}}
   let response = ''
   indentLevel = !indentLevel ? 1 : ++indentLevel
@@ -137,17 +137,17 @@ function structify (obj, indentLevel) {
   return response
 }
 
-function prepareQueryString (request) {
+const prepareQueryString = (request) => {
   let response = null
   if (request.query) {
-    const keyValSeparator = request.putQueryInUrl ? '' : ';'
-    const params = addCellArray(request.query, [], keyValSeparator, 1)
+    // const keyValSeparator = containsBody(request) ? '' : ';'
+    const params = addCellArray(request.query, [], '', 1)
     response = setVariableValue('params', params)
   }
   return response
 }
 
-function prepareCookies (request) {
+const prepareCookies = (request) => {
   let response = null
   if (request.cookies) {
     const cookies = addCellArray(request.cookies, [], '', 1)
@@ -157,7 +157,7 @@ function prepareCookies (request) {
   return response
 }
 
-function prepareHeaders (request) {
+const prepareHeaders = (request) => {
   let response = null
 
   if (request.headers) {
@@ -205,15 +205,15 @@ function prepareHeaders (request) {
   return response
 }
 
-function prepareURI (request) {
+const prepareURI = (request) => {
   const uriParams = [repr(request.urlWithoutQuery)]
   if (request.query) {
-    uriParams.push('QueryParameter(params)')
+    uriParams.push('QueryParameter(params\')')
   }
   return callFunction('uri', 'URI', uriParams)
 }
 
-function prepareAuth (request) {
+const prepareAuth = (request) => {
   let options = null
   if (request.auth) {
     const [usr, pass] = request.auth.split(':')
@@ -229,11 +229,11 @@ function prepareAuth (request) {
   return options
 }
 
-function containsBody (request) {
+const containsBody = (request) => {
   return request.data || request.multipartUploads
 }
 
-function isJsonString(str) {
+const isJsonString = (str) => {
   // https://stackoverflow.com/a/3710226/5625738
   try {
     JSON.parse(str)
@@ -243,7 +243,7 @@ function isJsonString(str) {
   return true
 }
 
-function prepareDataProvider (value, output, termination, indentLevel) {
+const prepareDataProvider = (value, output, termination, indentLevel) => {
   if (typeof indentLevel === 'undefined') indentLevel = 0
   if (value[0] === '@') {
     const filename = value.slice(1)
@@ -275,7 +275,7 @@ function prepareDataProvider (value, output, termination, indentLevel) {
   return callFunction(output, 'FormProvider', formValue, termination)
 }
 
-function prepareMultipartUploads (request) {
+const prepareMultipartUploads = (request) => {
   let response = null
   if (request.multipartUploads) {
     const params = []
@@ -292,7 +292,7 @@ function prepareMultipartUploads (request) {
   return response
 }
 
-function prepareData (request) {
+const prepareData = (request) => {
   let response = null
   if (request.dataArray) {
     const data = request.dataArray.map(x => x.split('=').map(x => repr(x)))
@@ -306,8 +306,7 @@ function prepareData (request) {
   return response
 }
 
-function prepareRequestMessage (request) {
-  let response
+const prepareRequestMessage = (request) => {
   let reqMessage = [repr(request.method)]
   if (request.cookie || request.headers) {
     reqMessage.push('header')
@@ -327,30 +326,189 @@ function prepareRequestMessage (request) {
     params.push('options')
   }
 
-  response = callFunction('response', 'RequestMessage', reqMessage,
+  const response = [callFunction('response', 'RequestMessage', reqMessage,
     callFunction(null, '.send', params)
-  )
+  )]
 
   if (request.query) {
     const fullParams = ['fullURI'].concat(params.slice(1))
-    response += [
-      '\n\n% As there is query, a full URI may be necessary instead.',
+    response.push('',
+      '% As there is a query, a full URI may be necessary instead.',
       setVariableValue('fullURI', repr(request.url)),
       callFunction('response', 'RequestMessage', reqMessage,
         callFunction(null, '.send', fullParams))
-    ].join('\n')
+    )
   }
 
-  return response
+  return response.join('\n')
 }
 
-function toWebServices (request) {
-  let lines = []
+const isSupportedByWebServices = (request) => {
+  if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {
+    return false
+  }
+  return !request.multipartUploads
+}
+
+const parseWebOptions = (request) => {
+  const options = {}
+
+  // TODO: request.data is a char vector containing JSON data, use struct in MATLAB
+
+  // Not supported by MATLAB:
+  // * request.compressed - compressing the response with gzip
+  // * not following redirects
+  // * disabling SSL verification - workaround is to use
+  //    matlab.net.http.RequestMessage and setting
+  //    the matlab.net.http.HTTPOptions.VerifyServerName to false
+
+  // MATLAB uses GET in `webread` and POST in `webwrite` by default
+  // thus, it is necessary to set the method for other requests
+  if (request.method !== 'get' && request.method !== 'post') {
+    options['RequestMethod'] = request.method
+  }
+
+  if (request.auth) {
+    const [username, password] = request.auth.split(':')
+    if (username !== '') options['Username'] = `${username}`
+    options['Password'] = `${password}`
+  }
+
+  if (request.cookies) {
+    request.headers['Cookie'] = `char(join(join(cookies, '='), '; '))`
+  }
+
+  let headerCount = 0
+  if (request.headers) {
+    const headers = {}
+    for (const [key, value] of Object.entries(request.headers)) {
+      switch (key) {
+        case 'User-Agent':
+          options['UserAgent'] = value
+          break
+        case 'Content-Type':
+          options['MediaType'] = value
+          break
+        case 'Cookie':
+          headers['Cookie'] = value
+          ++headerCount
+          break
+        case 'Accept':
+          switch (value) {
+            case 'application/json':
+              options['ContentType'] = 'json'
+              break
+            case 'text/csv':
+              options['ContentType'] = 'table'
+              break
+            case 'text/plain':
+            case 'text/html':
+            case 'application/javascript':
+            case 'application/x-javascript':
+            case 'application/x-www-form-urlencoded':
+              options['ContentType'] = 'text'
+              break
+            case 'text/xml':
+            case 'application/xml':
+              options['ContentType'] = 'xmldom'
+              break
+            case 'application/octet-stream':
+              options['ContentType'] = 'binary'
+              break
+            default:
+              if (value.startsWith('image/')) {
+                options['ContentType'] = 'image'
+              } else if (value.startsWith('audio/')) {
+                options['ContentType'] = 'audio'
+              } else {
+                headers[key] = value
+                ++headerCount
+              }
+          }
+          break
+        default:
+          headers[key] = value
+          ++headerCount
+      }
+    }
+
+    if (headerCount > 0) {
+      options['HeaderFields'] = addCellArray(headers, ['Cookie'], '', 2)
+    }
+  }
+
+  return options
+}
+
+const prepareOptions = (request, options) => {
+  const lines = []
+  if (Object.keys(options).length === 0) {
+    return lines
+  }
+  const pairValues = addCellArray(options, ['HeaderFields'], ',', 1, true)
+  lines.push(callFunction('options', 'weboptions', pairValues))
 
   return lines
 }
 
-function toHTTPInterface (request) {
+const prepareBasicURI = (request) => {
+  const response = []
+  if (request.query) {
+    response.push(setVariableValue('baseURI', repr(request.urlWithoutQuery)))
+    response.push(setVariableValue('uri', `[baseURI '?' char(join(join(params,'='),'&'))]`))
+  } else {
+    response.push(setVariableValue('uri', repr(request.url)))
+  }
+  return response
+}
+
+const prepareWebCall = (request, options) => {
+  const lines = []
+  const webFunction = containsBody(request) ? 'webwrite' : 'webread'
+
+  const params = ['uri']
+  if (Object.keys(options).length > 0) {
+    params.push('options')
+  }
+  if (containsBody(request)) {
+    params.push('body')
+  }
+  lines.push(callFunction('response', webFunction, params))
+
+  if (request.query) {
+    params[0] = 'fullURI'
+    lines.push('',
+      '% As there is a query, a full URI may be necessary instead.',
+      setVariableValue('fullURI', repr(request.url)),
+      callFunction('response', webFunction, params)
+    )
+  }
+  return lines
+}
+
+const toWebServices = (request) => {
+  let lines = [
+    '%% Web Access using Data Import and Export API'
+  ]
+
+  if (!isSupportedByWebServices(request)) {
+    lines.push('% This is not possible with the webread/webwrite API')
+    return lines
+  }
+
+  const options = parseWebOptions(request)
+  lines = lines.concat([
+    prepareQueryString(request),
+    prepareCookies(request),
+    prepareBasicURI(request),
+    prepareOptions(request, options),
+    prepareWebCall(request, options)
+  ])
+
+  return lines
+}
+
+const toHTTPInterface = (request) => {
   const lines = [
     '%% HTTP Interface',
     'import matlab.net.*',
@@ -370,10 +528,10 @@ function toHTTPInterface (request) {
   return lines
 }
 
-const toMATLAB = function (curlCommand) {
+const toMATLAB = (curlCommand) => {
   const request = util.parseCurlCommand(curlCommand)
-  const lines = toWebServices(request).concat(toHTTPInterface(request))
-  return lines.flat().filter(inp => inp !== null).join('\n')
+  const lines = toWebServices(request).concat('', toHTTPInterface(request))
+  return lines.flat().filter(line => line !== null).join('\n')
 }
 
 module.exports = toMATLAB
