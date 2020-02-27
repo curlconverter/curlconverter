@@ -1,15 +1,20 @@
-url = 'https://upload.box.com/api/2.0/files/content';
-files = {
-    'attributes'; '{"name":"tigers.jpeg", "parent":{"id":"11446498"}}'
-    'file'; getB64File('myfile.jpg')
-};
-options = weboptions('HeaderFields', {'Authorization' 'Bearer ACCESS_TOKEN'});
-response = webwrite(url, files{:}, options);
+%% Web Access using Data Import and Export API
+% This is not possible with the webread/webwrite API
 
-function b64file = getB64File(filename)
-    fid = fopen(filename, 'rb');
-    bytes = fread(fid);
-    fclose(fid);
-    encoder = org.apache.commons.codec.binary.Base64;
-    b64file = char(encoder.encode(bytes))';
-end
+%% HTTP Interface
+import matlab.net.*
+import matlab.net.http.*
+import matlab.net.http.io.*
+
+header = HeaderField('Authorization', 'Bearer ACCESS_TOKEN');
+uri = URI('https://upload.box.com/api/2.0/files/content');
+body = MultipartFormProvider(...
+    'attributes', JSONProvider(struct(...
+        'name', 'tigers.jpeg',...
+        'parent', struct(...
+            'id', '11446498'...
+        )...
+    )),...
+    'file', ImageProvider('myfile.jpg')...
+);
+response = RequestMessage('post', header, body).send(uri.EncodedURI);

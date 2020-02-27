@@ -1,3 +1,13 @@
-url = 'https://api.test.com/';
+%% Web Access using Data Import and Export API
+uri = 'https://api.test.com/';
 options = weboptions('Password', 'some_password');
-response = webread(url, options);
+response = webread(uri, options);
+
+%% HTTP Interface
+import matlab.net.*
+import matlab.net.http.*
+
+uri = URI('https://api.test.com/');
+cred = Credentials('Password', 'some_password');
+options = HTTPOptions('Credentials', cred);
+response = RequestMessage().send(uri.EncodedURI, options);

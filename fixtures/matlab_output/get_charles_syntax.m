@@ -1,5 +1,7 @@
-url = 'http://api.ipify.org/';
-params = {'format'; 'json'};
+%% Web Access using Data Import and Export API
+params = {'format' 'json'};
+baseURI = 'http://api.ipify.org/';
+uri = [baseURI '?' char(join(join(params,'='),'&'))];
 options = weboptions(...
     'UserAgent', 'GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)',...
     'HeaderFields', {
@@ -8,10 +10,26 @@ options = weboptions(...
         'Accept-Language' 'en-CN;q=1, zh-Hans-CN;q=0.9'
     }...
 );
-response = webread(url, params{:}, options);
+response = webread(uri, options);
 
-% NB. Original query string below. It seems impossible to parse and
-% reproduce query strings 100% accurately so the one below is given
-% in case the reproduced version is not "correct".
-fullUrl = 'http://api.ipify.org/?format=json&';
-response = webread(fullUrl, options);
+% As there is a query, a full URI may be necessary instead.
+fullURI = 'http://api.ipify.org/?format=json&';
+response = webread(fullURI, options);
+
+%% HTTP Interface
+import matlab.net.*
+import matlab.net.http.*
+
+params = {'format' 'json'};
+header = [
+    HeaderField('Host', 'api.ipify.org')
+    field.AcceptField(MediaType('*/*'))
+    HeaderField('User-Agent', 'GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)')
+    HeaderField('Accept-Language', 'en-CN;q=1, zh-Hans-CN;q=0.9')
+];
+uri = URI('http://api.ipify.org/', QueryParameter(params'));
+response = RequestMessage('get', header).send(uri.EncodedURI);
+
+% As there is a query, a full URI may be necessary instead.
+fullURI = 'http://api.ipify.org/?format=json&';
+response = RequestMessage('get', header).send(fullURI);

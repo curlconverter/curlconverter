@@ -347,6 +347,9 @@ const isSupportedByWebServices = (request) => {
   if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {
     return false
   }
+  if (request.data && request.data[0] === '@') {
+    return false
+  }
   return !request.multipartUploads
 }
 
@@ -467,11 +470,11 @@ const prepareWebCall = (request, options) => {
   const webFunction = containsBody(request) ? 'webwrite' : 'webread'
 
   const params = ['uri']
-  if (Object.keys(options).length > 0) {
-    params.push('options')
-  }
   if (containsBody(request)) {
     params.push('body')
+  }
+  if (Object.keys(options).length > 0) {
+    params.push('options')
   }
   lines.push(callFunction('response', webFunction, params))
 
@@ -484,6 +487,31 @@ const prepareWebCall = (request, options) => {
     )
   }
   return lines
+}
+
+const prepareBasicData = (request) => {
+  let response = []
+  if (request.data) {
+    if (typeof request.data === 'boolean') {
+      response = setVariableValue('body', repr())
+    } else {
+      // if the data is in JSON, store it as struct in MATLAB
+      // otherwise just keep it as a char vector
+      try {
+        const jsonData = JSON.parse(request.data)
+        if (typeof jsonData === 'object') {
+          let jsonText = structify(jsonData)
+          if (!jsonText.startsWith('struct')) jsonText = repr(jsonText)
+          response = setVariableValue('body', jsonText)
+        } else {
+          response = setVariableValue('body', repr(request.data))
+        }
+      } catch (e) {
+        response = setVariableValue('body', repr(request.data))
+      }
+    }
+  }
+  return response
 }
 
 const toWebServices = (request) => {
@@ -501,6 +529,7 @@ const toWebServices = (request) => {
     prepareQueryString(request),
     prepareCookies(request),
     prepareBasicURI(request),
+    prepareBasicData(request),
     prepareOptions(request, options),
     prepareWebCall(request, options)
   ])

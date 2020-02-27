@@ -1,12 +1,14 @@
-url = 'http://awesomeurl.com/upload';
-body = getB64File('new_file');
+%% Web Access using Data Import and Export API
+uri = 'http://awesomeurl.com/upload';
+body = fileread('new_file');
 options = weboptions('RequestMethod', 'put');
-response = webwrite(url, body, options);
+response = webwrite(uri, body, options);
 
-function b64file = getB64File(filename)
-    fid = fopen(filename, 'rb');
-    bytes = fread(fid);
-    fclose(fid);
-    encoder = org.apache.commons.codec.binary.Base64;
-    b64file = char(encoder.encode(bytes))';
-end
+%% HTTP Interface
+import matlab.net.*
+import matlab.net.http.*
+import matlab.net.http.io.*
+
+uri = URI('http://awesomeurl.com/upload');
+body = FileProvider('new_file');
+response = RequestMessage('put', [], body).send(uri.EncodedURI);

@@ -1,11 +1,11 @@
-url = 'http://example.com/targetservice';
-files = {'image'; getB64File('image.jpg')};
-response = webwrite(url, files{:});
+%% Web Access using Data Import and Export API
+% This is not possible with the webread/webwrite API
 
-function b64file = getB64File(filename)
-    fid = fopen(filename, 'rb');
-    bytes = fread(fid);
-    fclose(fid);
-    encoder = org.apache.commons.codec.binary.Base64;
-    b64file = char(encoder.encode(bytes))';
-end
+%% HTTP Interface
+import matlab.net.*
+import matlab.net.http.*
+import matlab.net.http.io.*
+
+uri = URI('http://example.com/targetservice');
+body = MultipartFormProvider('image', ImageProvider('image.jpg'));
+response = RequestMessage('post', [], body).send(uri.EncodedURI);
