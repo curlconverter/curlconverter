@@ -171,6 +171,8 @@ const prepareHeaders = (request) => {
 
     for (const [key, value] of headerEntries) {
       switch (key) {
+        case 'Cookie':
+          break
         case 'Accept':
           const accepts = value.split(',')
           if (accepts.length === 1) {
