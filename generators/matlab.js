@@ -352,9 +352,6 @@ const isSupportedByWebServices = (request) => {
   if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {
     return false
   }
-  if (request.data && request.data[0] === '@') {
-    return false
-  }
   return !request.multipartUploads
 }
 
@@ -499,6 +496,8 @@ const prepareBasicData = (request) => {
   if (request.data) {
     if (typeof request.data === 'boolean') {
       response = setVariableValue('body', repr())
+    } else if (request.data[0] === '@') {
+      response = callFunction('body', 'fileread', repr(request.data.slice(1)))
     } else {
       // if the data is in JSON, store it as struct in MATLAB
       // otherwise just keep it as a char vector
