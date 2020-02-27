@@ -220,9 +220,14 @@ const prepareAuth = (request) => {
     const userfield = `'Username', ${repr(usr)}`
     const passfield = `'Password', ${repr(pass)}`
     const authparams = (usr ? `${userfield}, ` : '') + passfield
+    const optionsParams = [`'Credentials'`, 'cred']
+
+    if (request.insecure) {
+      optionsParams.push(`'VerifyServerName'`, 'false')
+    }
     options = [
       callFunction('cred', 'Credentials', authparams),
-      callFunction('options', 'HTTPOptions', ['\'Credentials\'', 'cred'])
+      callFunction('options', 'HTTPOptions', optionsParams)
     ]
   }
 
