@@ -557,7 +557,8 @@ const toHTTPInterface = (request) => {
     prepareAuth(request),
     prepareMultipartUploads(request),
     prepareData(request),
-    prepareRequestMessage(request)
+    prepareRequestMessage(request),
+    ''
   ]
 
   return lines

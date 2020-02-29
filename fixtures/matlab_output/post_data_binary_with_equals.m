@@ -97,7 +97,6 @@ header = [
     HeaderField('DNT', '1')
     HeaderField('X-OWA-ClientBegin', '2016-11-27T07:17:02.513')
     HeaderField('X-OWA-Attempt', '1')
-    HeaderField('Cookie', 'char(join(join(cookies, ''=''), ''; ''))')
     field.CookieField(char(join(join(cookies, '='), '; ')))
 ];
 uri = URI('https://localhost/api/service.svc', QueryParameter(params'));

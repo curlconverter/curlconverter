@@ -46,7 +46,6 @@ header = [
     ])
     HeaderField('Referer', 'http://www.wikipedia.org/')
     HeaderField('Connection', 'keep-alive')
-    HeaderField('Cookie', 'char(join(join(cookies, ''=''), ''; ''))')
     field.CookieField(char(join(join(cookies, '='), '; ')))
 ];
 uri = URI('http://en.wikipedia.org/');
