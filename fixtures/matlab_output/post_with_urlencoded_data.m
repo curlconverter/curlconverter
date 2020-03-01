@@ -31,7 +31,7 @@ header = [
     HeaderField('Referer', 'http://fiddle.jshell.net/_display/')
     HeaderField('X-Requested-With', 'XMLHttpRequest')
     HeaderField('Connection', 'keep-alive')
-];
+]';
 uri = URI('http://fiddle.jshell.net/echo/html/');
 body = FormProvider('msg1', 'wow', 'msg2', 'such');
 response = RequestMessage('post', header, body).send(uri.EncodedURI);

@@ -19,7 +19,7 @@ import matlab.net.http.io.*
 header = [
     HeaderField('Content-Type', 'application/json')
     HeaderField('X-API-Version', '200')
-];
+]';
 uri = URI('https://0.0.0.0/rest/login-sessions');
 body = JSONProvider(struct(...
     'userName', 'username123',...

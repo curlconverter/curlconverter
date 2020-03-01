@@ -199,7 +199,7 @@ const prepareHeaders = (request) => {
       if (request.cookies) {
         header += `\n    field.CookieField(${cookieString})`
       }
-      header += '\n]'
+      header += '\n]\''
     }
 
     response = setVariableValue('header', header)

@@ -47,6 +47,6 @@ header = [
     HeaderField('Referer', 'http://www.wikipedia.org/')
     HeaderField('Connection', 'keep-alive')
     field.CookieField(char(join(join(cookies, '='), '; ')))
-];
+]';
 uri = URI('http://en.wikipedia.org/');
 response = RequestMessage('get', header).send(uri.EncodedURI);

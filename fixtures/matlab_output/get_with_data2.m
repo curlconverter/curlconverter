@@ -27,7 +27,7 @@ params = {
 header = [
     HeaderField('X-Api-Key', '{admin_api_key}')
     HeaderField('Content-Type', 'application/json')
-];
+]';
 uri = URI('https://api.newrelic.com/v2/alerts_policy_channels.json', QueryParameter(params'));
 response = RequestMessage('put', header).send(uri.EncodedURI);
 
