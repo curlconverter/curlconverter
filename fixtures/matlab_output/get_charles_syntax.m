@@ -1,7 +1,7 @@
 %% Web Access using Data Import and Export API
 params = {'format' 'json'};
 baseURI = 'http://api.ipify.org/';
-uri = [baseURI '?' char(join(join(params,'='),'&'))];
+uri = [baseURI '?' char(join(join(params, '='), '&'))];
 options = weboptions(...
     'UserAgent', 'GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)',...
     'HeaderFields', {

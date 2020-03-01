@@ -5,7 +5,7 @@ params = {
     'w' '4'
 };
 baseURI = 'https://synthetics.newrelic.com/synthetics/api/v3/monitors';
-uri = [baseURI '?' char(join(join(params,'='),'&'))];
+uri = [baseURI '?' char(join(join(params, '='), '&'))];
 options = weboptions('HeaderFields', {'X-Api-Key' '123456789'});
 response = webread(uri, options);
 

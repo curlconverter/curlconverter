@@ -42,7 +42,7 @@ params = {
     'stopover' ''
 };
 baseURI = 'https://www.nomador.com/house-sitting/';
-uri = [baseURI '?' char(join(join(params,'='),'&'))];
+uri = [baseURI '?' char(join(join(params, '='), '&'))];
 response = webread(uri);
 
 % As there is a query, a full URI may be necessary instead.

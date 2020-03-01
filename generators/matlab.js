@@ -6,7 +6,7 @@ const repr = (value) => {
   if (!value) {
     return "''"
   } else {
-    return "'" + jsesc(value, { quotes: 'single' }).replace(/\\'/g, `''`) + "'"
+    return "'" + jsesc(value, { quotes: 'single' }).replace(/\\'/g, "''") + "'"
   }
 }
 
@@ -74,7 +74,7 @@ const addCellArray = (mapping, keysNotToQuote, keyValSeparator, indentLevel, pai
       response += `\n${indent}${repr(key)}${keyValSeparator} ${value}`
       if (pairs) {
         if (counter !== 0) response += ','
-        response += `...`
+        response += '...'
       }
     }
     response += `\n${indentPrevLevel}`
@@ -118,14 +118,14 @@ const structify = (obj, indentLevel) => {
         }
         // recursive call to scan property
         if (first) { first = false } else {
-          response += `,...`
+          response += ',...'
         }
         response += `\n${indent}`
         response += `'${k}', `
         response += structify(obj[k], indentLevel)
       }
     }
-    response += `...`
+    response += '...'
     response += `\n${prevIndent})`
   } else if (typeof obj === 'number') {
     // not an Object so obj[k] here is a value
@@ -173,7 +173,7 @@ const prepareHeaders = (request) => {
       switch (key) {
         case 'Cookie':
           break
-        case 'Accept':
+        case 'Accept': {
           const accepts = value.split(',')
           if (accepts.length === 1) {
             headers.push(`field.AcceptField(MediaType(${repr(value)}))`)
@@ -186,6 +186,7 @@ const prepareHeaders = (request) => {
             headers.push(acceptheader)
           }
           break
+        }
         default:
           headers.push(`HeaderField(${repr(key)}, ${repr(value)})`)
       }
@@ -196,7 +197,7 @@ const prepareHeaders = (request) => {
     } else {
       header += '\n    ' + headers.join('\n    ')
       if (request.cookies) {
-        header += `\n    field.CookieField(char(join(join(cookies, '='), '; ')))`
+        header += `\n    field.CookieField(${cookieString})`
       }
       header += '\n]'
     }
@@ -222,10 +223,10 @@ const prepareAuth = (request) => {
     const userfield = `'Username', ${repr(usr)}`
     const passfield = `'Password', ${repr(pass)}`
     const authparams = (usr ? `${userfield}, ` : '') + passfield
-    const optionsParams = [`'Credentials'`, 'cred']
+    const optionsParams = [repr('Credentials'), 'cred']
 
     if (request.insecure) {
-      optionsParams.push(`'VerifyServerName'`, 'false')
+      optionsParams.push(repr('VerifyServerName'), 'false')
     }
     options = [
       callFunction('cred', 'Credentials', authparams),
@@ -372,17 +373,17 @@ const parseWebOptions = (request) => {
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
   // thus, it is necessary to set the method for other requests
   if (request.method !== 'get' && request.method !== 'post') {
-    options['RequestMethod'] = request.method
+    options.RequestMethod = request.method
   }
 
   if (request.auth) {
     const [username, password] = request.auth.split(':')
-    if (username !== '') options['Username'] = `${username}`
-    options['Password'] = `${password}`
+    if (username !== '') options['Username'] = username
+    options.Password = password
   }
 
   if (request.cookies) {
-    request.headers['Cookie'] = `char(join(join(cookies, '='), '; '))`
+    request.headers.Cookie = cookieString
   }
 
   let headerCount = 0
@@ -391,42 +392,42 @@ const parseWebOptions = (request) => {
     for (const [key, value] of Object.entries(request.headers)) {
       switch (key) {
         case 'User-Agent':
-          options['UserAgent'] = value
+          options.UserAgent = value
           break
         case 'Content-Type':
-          options['MediaType'] = value
+          options.MediaType = value
           break
         case 'Cookie':
-          headers['Cookie'] = value
+          headers.Cookie = value
           ++headerCount
           break
         case 'Accept':
           switch (value) {
             case 'application/json':
-              options['ContentType'] = 'json'
+              options.ContentType = 'json'
               break
             case 'text/csv':
-              options['ContentType'] = 'table'
+              options.ContentType = 'table'
               break
             case 'text/plain':
             case 'text/html':
             case 'application/javascript':
             case 'application/x-javascript':
             case 'application/x-www-form-urlencoded':
-              options['ContentType'] = 'text'
+              options.ContentType = 'text'
               break
             case 'text/xml':
             case 'application/xml':
-              options['ContentType'] = 'xmldom'
+              options.ContentType = 'xmldom'
               break
             case 'application/octet-stream':
-              options['ContentType'] = 'binary'
+              options.ContentType = 'binary'
               break
             default:
               if (value.startsWith('image/')) {
-                options['ContentType'] = 'image'
+                options.ContentType = 'image'
               } else if (value.startsWith('audio/')) {
-                options['ContentType'] = 'audio'
+                options.ContentType = 'audio'
               } else {
                 headers[key] = value
                 ++headerCount
@@ -440,7 +441,7 @@ const parseWebOptions = (request) => {
     }
 
     if (headerCount > 0) {
-      options['HeaderFields'] = addCellArray(headers, ['Cookie'], '', 2)
+      options.HeaderFields = addCellArray(headers, ['Cookie'], '', 2)
     }
   }
 
@@ -458,11 +459,13 @@ const prepareOptions = (request, options) => {
   return lines
 }
 
+const cookieString = 'char(join(join(cookies, \'=\'), \'; \'))'
+const paramsString = 'char(join(join(params, \'=\'), \'&\'))'
 const prepareBasicURI = (request) => {
   const response = []
   if (request.query) {
     response.push(setVariableValue('baseURI', repr(request.urlWithoutQuery)))
-    response.push(setVariableValue('uri', `[baseURI '?' char(join(join(params,'='),'&'))]`))
+    response.push(setVariableValue('uri', `[baseURI '?' ${paramsString}]`))
   } else {
     response.push(setVariableValue('uri', repr(request.url)))
   }
