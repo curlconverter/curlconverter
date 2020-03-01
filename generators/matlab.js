@@ -378,7 +378,7 @@ const parseWebOptions = (request) => {
 
   if (request.auth) {
     const [username, password] = request.auth.split(':')
-    if (username !== '') options['Username'] = username
+    if (username !== '') options.Username = username
     options.Password = password
   }
 
