@@ -153,7 +153,6 @@ const prepareCookies = (request) => {
     const cookies = addCellArray(request.cookies, [], '', 1)
     response = setVariableValue('cookies', cookies)
   }
-  // cookie string: char(join(join(cookies, '='), '; '))
   return response
 }
 
@@ -376,19 +375,18 @@ const parseWebOptions = (request) => {
     options.RequestMethod = request.method
   }
 
+  const headers = {}
   if (request.auth) {
     const [username, password] = request.auth.split(':')
-    if (username !== '') options.Username = username
-    options.Password = password
+    if (username !== '') {
+      options.Username = username
+      options.Password = password
+    } else {
+      headers.Authorization = `['Basic ' matlab.net.base64encode(${repr(username + ':' + password)})]`
+    }
   }
 
-  if (request.cookies) {
-    request.headers.Cookie = cookieString
-  }
-
-  let headerCount = 0
   if (request.headers) {
-    const headers = {}
     for (const [key, value] of Object.entries(request.headers)) {
       switch (key) {
         case 'User-Agent':
@@ -399,7 +397,6 @@ const parseWebOptions = (request) => {
           break
         case 'Cookie':
           headers.Cookie = value
-          ++headerCount
           break
         case 'Accept':
           switch (value) {
@@ -430,19 +427,21 @@ const parseWebOptions = (request) => {
                 options.ContentType = 'audio'
               } else {
                 headers[key] = value
-                ++headerCount
               }
           }
           break
         default:
           headers[key] = value
-          ++headerCount
       }
     }
+  }
 
-    if (headerCount > 0) {
-      options.HeaderFields = addCellArray(headers, ['Cookie'], '', 2)
-    }
+  if (request.cookies) {
+    headers.Cookie = cookieString
+  }
+
+  if (Object.entries(headers).length > 0) {
+    options.HeaderFields = addCellArray(headers, ['Authorization', 'Cookie'], '', 2)
   }
 
   return options
@@ -547,7 +546,7 @@ const toWebServices = (request) => {
 }
 
 const toHTTPInterface = (request) => {
-  const lines = [
+  return [
     '%% HTTP Interface',
     'import matlab.net.*',
     'import matlab.net.http.*',
@@ -563,8 +562,6 @@ const toHTTPInterface = (request) => {
     prepareRequestMessage(request),
     ''
   ]
-
-  return lines
 }
 
 const toMATLAB = (curlCommand) => {

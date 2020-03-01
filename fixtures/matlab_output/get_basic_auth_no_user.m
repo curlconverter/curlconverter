@@ -1,6 +1,6 @@
 %% Web Access using Data Import and Export API
 uri = 'https://api.test.com/';
-options = weboptions('Password', 'some_password');
+options = weboptions('HeaderFields', {'Authorization' ['Basic ' matlab.net.base64encode(':some_password')]});
 response = webread(uri, options);
 
 %% HTTP Interface
