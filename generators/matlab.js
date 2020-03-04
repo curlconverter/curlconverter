@@ -18,7 +18,7 @@ const setVariableValue = (outputVariable, value, termination) => {
   }
 
   result += value
-  result += typeof termination === 'undefined' ? ';' : termination
+  result += typeof termination === 'undefined' || termination === null ? ';' : termination
   return result
 }
 
@@ -250,13 +250,20 @@ const isJsonString = (str) => {
   return true
 }
 
-const prepareDataProvider = (value, output, termination, indentLevel) => {
-  if (typeof indentLevel === 'undefined') indentLevel = 0
+const prepareDataProvider = (value, output, termination, indentLevel, isDataBinary) => {
+  if (typeof indentLevel === 'undefined' || indentLevel === null) indentLevel = 0
+  if (typeof isDataBinary === 'undefined') isDataBinary = true
   if (value[0] === '@') {
     const filename = value.slice(1)
     // >> imformats % for seeing MATLAB supported image formats
     const isImageProvider = new Set(['jpeg', 'jpg', 'png', 'tif', 'gif']).has(filename.split('.')[1])
     const provider = isImageProvider ? 'ImageProvider' : 'FileProvider'
+    if (!isDataBinary) {
+      return [
+        callFunction(output, 'fileread', repr(filename)),
+        setVariableValue(`${output}(${output}==13 | ${output}==10)`, '[]')
+      ]
+    }
     return callFunction(output, provider, repr(filename), termination)
   }
 
@@ -302,10 +309,21 @@ const prepareMultipartUploads = (request) => {
 const prepareData = (request) => {
   let response = null
   if (request.dataArray) {
-    const data = request.dataArray.map(x => x.split('=').map(x => repr(x)))
+    const data = request.dataArray.map(x => x.split('=').map(x => {
+      let ans = repr(x)
+      try {
+        const jsonData = JSON.parse(x)
+        if (typeof jsonData === 'object') {
+          ans = callFunction(null, 'JSONProvider', structify(jsonData, 1), '')
+        }
+      } catch (e) {}
+
+      return ans
+    }))
+
     response = callFunction('body', 'FormProvider', data)
   } else if (request.data) {
-    response = prepareDataProvider(request.data, 'body')
+    response = prepareDataProvider(request.data, 'body', ';', 0, !!request.isDataBinary)
     if (!response) {
       response = setVariableValue('body', repr(request.data))
     }
@@ -501,7 +519,11 @@ const prepareBasicData = (request) => {
     if (typeof request.data === 'boolean') {
       response = setVariableValue('body', repr())
     } else if (request.data[0] === '@') {
-      response = callFunction('body', 'fileread', repr(request.data.slice(1)))
+      response.push(callFunction('body', 'fileread', repr(request.data.slice(1))))
+
+      if (!request.isDataBinary) {
+        response.push(setVariableValue('body(body==13 | body==10)', '[]'))
+      }
     } else {
       // if the data is in JSON, store it as struct in MATLAB
       // otherwise just keep it as a char vector
