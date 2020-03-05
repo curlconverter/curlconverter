@@ -11,7 +11,7 @@ const toPython = require('./generators/python.js')
 const toR = require('./generators/r.js')
 const toRust = require('./generators/rust')
 const toStrest = require('./generators/strest.js')
-const toMATLAB = require('./generators/matlab.js')
+const toMATLAB = require('./generators/matlab/matlab.js')
 
 module.exports = {
   toAnsible: toAnsible,
