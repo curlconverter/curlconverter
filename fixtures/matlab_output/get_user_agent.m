@@ -31,7 +31,3 @@ header = [
 ]';
 uri = URI('http://205.147.98.6/vc/moviesmagic', QueryParameter(params'));
 response = RequestMessage('get', header).send(uri.EncodedURI);
-
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'http://205.147.98.6/vc/moviesmagic?p=5&pub=testmovie&tkn=817263812';
-response = RequestMessage('get', header).send(fullURI);

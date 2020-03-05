@@ -29,7 +29,3 @@ header = [
 ]';
 uri = URI('https://layla.amazon.de/api/tunein/queue-and-play', QueryParameter(params'));
 response = RequestMessage('options', header).send(uri.EncodedURI);
-
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'https://layla.amazon.de/api/tunein/queue-and-play?deviceSerialNumber=xxx^&deviceType=xxx^&guideId=s56876^&contentType=station^&callSign=^&mediaOwnerCustomerId=xxx';
-response = RequestMessage('options', header).send(fullURI);

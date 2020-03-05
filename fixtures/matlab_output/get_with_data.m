@@ -25,7 +25,3 @@ params = {
 header = HeaderField('X-Api-Key', '123456789');
 uri = URI('https://synthetics.newrelic.com/synthetics/api/v3/monitors', QueryParameter(params'));
 response = RequestMessage('get', header).send(uri.EncodedURI);
-
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'https://synthetics.newrelic.com/synthetics/api/v3/monitors?test=2&limit=100&w=4';
-response = RequestMessage('get', header).send(fullURI);

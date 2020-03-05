@@ -355,16 +355,6 @@ const prepareRequestMessage = (request) => {
     callFunction(null, '.send', params)
   )]
 
-  if (request.query) {
-    const fullParams = ['fullURI'].concat(params.slice(1))
-    response.push('',
-      '% As there is a query, a full URI may be necessary instead.',
-      setVariableValue('fullURI', repr(request.url)),
-      callFunction('response', 'RequestMessage', reqMessage,
-        callFunction(null, '.send', fullParams))
-    )
-  }
-
   return response.join('\n')
 }
 

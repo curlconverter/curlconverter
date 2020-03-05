@@ -30,7 +30,3 @@ header = [
 ]';
 uri = URI('https://api.newrelic.com/v2/alerts_policy_channels.json', QueryParameter(params'));
 response = RequestMessage('put', header).send(uri.EncodedURI);
-
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'https://api.newrelic.com/v2/alerts_policy_channels.json?policy_id=policy_id&channel_ids=channel_id';
-response = RequestMessage('put', header).send(fullURI);

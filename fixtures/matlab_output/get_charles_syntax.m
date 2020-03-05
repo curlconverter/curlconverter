@@ -29,7 +29,3 @@ header = [
 ]';
 uri = URI('http://api.ipify.org/', QueryParameter(params'));
 response = RequestMessage('get', header).send(uri.EncodedURI);
-
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'http://api.ipify.org/?format=json&';
-response = RequestMessage('get', header).send(fullURI);

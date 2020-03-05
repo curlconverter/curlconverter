@@ -35,7 +35,3 @@ body = JSONProvider(struct(...
     )...
 ));
 response = RequestMessage('put', header, body).send(uri.EncodedURI);
-
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'http://localhost:9200/twitter/_mapping/user?pretty';
-response = RequestMessage('put', header, body).send(fullURI);
