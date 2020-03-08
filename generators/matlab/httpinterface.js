@@ -104,7 +104,7 @@ const prepareMultipartUploads = (request) => {
 }
 
 const isJsonString = (str) => {
-  // https://stackoverflow.com/a/3710226/5625738
+  // Source: https://stackoverflow.com/a/3710226/5625738
   try {
     JSON.parse(str)
   } catch (e) {

@@ -16,15 +16,6 @@ const isSupportedByWebServices = (request) => {
 const parseWebOptions = (request) => {
   const options = {}
 
-  // TODO: request.data is a char vector containing JSON data, use struct in MATLAB
-
-  // Not supported by MATLAB:
-  // * request.compressed - compressing the response with gzip
-  // * not following redirects
-  // * disabling SSL verification - workaround is to use
-  //    matlab.net.http.RequestMessage and setting
-  //    the matlab.net.http.HTTPOptions.VerifyServerName to false
-
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
   // thus, it is necessary to set the method for other requests
   if (request.method !== 'get' && request.method !== 'post') {

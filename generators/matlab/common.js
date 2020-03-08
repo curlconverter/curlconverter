@@ -22,7 +22,6 @@ const setVariableValue = (outputVariable, value, termination) => {
 }
 
 const callFunction = (outputVariable, functionName, params, termination) => {
-  // TODO: split key, val pairs into multiple lines
   let functionCall = functionName + '('
   if (Array.isArray(params)) {
     const singleLine = params.map(x => Array.isArray(x) ? x.join(', ') : x).join(', ')
@@ -33,6 +32,7 @@ const callFunction = (outputVariable, functionName, params, termination) => {
     multiLine += params.map(x => Array.isArray(x) ? x.join(', ') : x)
       .join(',' + skipToNextLine)
     multiLine += '...\n'
+
     // Split the params in multiple lines - if one line is not enough
     const combinedSingleLineLength = [outputVariable, functionName, singleLine]
         .map(x => x ? x.length : 0).reduce((x, y) => x + y) +
@@ -83,7 +83,6 @@ const addCellArray = (mapping, keysNotToQuote, keyValSeparator, indentLevel, pai
 }
 
 const structify = (obj, indentLevel) => {
-  // TODO: make simple ones in one line {"name":"tigers.jpeg", "parent":{"id":"11446498"}}
   let response = ''
   indentLevel = !indentLevel ? 1 : ++indentLevel
   const indent = ' '.repeat(4 * indentLevel)
@@ -143,7 +142,6 @@ const containsBody = (request) => {
 const prepareQueryString = (request) => {
   let response = null
   if (request.query) {
-    // const keyValSeparator = containsBody(request) ? '' : ';'
     const params = addCellArray(request.query, [], '', 1)
     response = setVariableValue('params', params)
   }
