@@ -66,21 +66,23 @@ const prepareURI = (request) => {
 }
 
 const prepareAuth = (request) => {
-  let options = null
+  let options = []
+  let optionsParams = []
   if (request.auth) {
     const [usr, pass] = request.auth.split(':')
     const userfield = `'Username', ${repr(usr)}`
     const passfield = `'Password', ${repr(pass)}`
     const authparams = (usr ? `${userfield}, ` : '') + passfield
-    const optionsParams = [repr('Credentials'), 'cred']
+    optionsParams.push(repr('Credentials'), 'cred')
+    options.push(callFunction('cred', 'Credentials', authparams))
+  }
 
-    if (request.insecure) {
-      optionsParams.push(repr('VerifyServerName'), 'false')
-    }
-    options = [
-      callFunction('cred', 'Credentials', authparams),
-      callFunction('options', 'HTTPOptions', optionsParams)
-    ]
+  if (request.insecure) {
+    optionsParams.push(repr('VerifyServerName'), 'false')
+  }
+
+  if (optionsParams.length > 0) {
+    options.push(callFunction('options', 'HTTPOptions', optionsParams))
   }
 
   return options
@@ -193,7 +195,7 @@ const prepareRequestMessage = (request) => {
 
   // list as many params as necessary
   const params = ['uri.EncodedURI']
-  if (request.auth) {
+  if (request.auth || request.insecure) {
     params.push('options')
   }
 

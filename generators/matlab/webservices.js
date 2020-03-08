@@ -10,7 +10,7 @@ const isSupportedByWebServices = (request) => {
   if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {
     return false
   }
-  return !request.multipartUploads
+  return !request.multipartUploads && !request.insecure
 }
 
 const parseWebOptions = (request) => {
