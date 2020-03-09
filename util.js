@@ -13,6 +13,8 @@ const parseCurlCommand = curlCommand => {
   curlCommand = curlCommand.replace(/ -XPUT/, ' -X PUT')
   curlCommand = curlCommand.replace(/ -XPATCH/, ' -X PATCH')
   curlCommand = curlCommand.replace(/ -XDELETE/, ' -X DELETE')
+  // Safari adds `-Xnull` if is unable to determine the request type, it can be ignored
+  curlCommand = curlCommand.replace(/ -Xnull/, ' ')
   curlCommand = curlCommand.trim()
 
   // Parse with some understanding of the meanings of flags.  In particular,

@@ -8,7 +8,7 @@ const fs = require('fs')
 const defaultLanguage = 'python'
 
 // used to map languages to functions
-// NOTE: make sure to update this when adding langauge support
+// NOTE: make sure to update this when adding language support
 const translate = {
   ansible: 'toAnsible',
   dart: 'toDart',
@@ -20,7 +20,8 @@ const translate = {
   python: 'toPython',
   r: 'toR',
   rust: 'toRust',
-  strest: 'toStrest'
+  strest: 'toStrest',
+  matlab: 'toMATLAB'
 }
 
 // outputs the help menu

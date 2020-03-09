@@ -67,6 +67,11 @@ const outputs = [
     name: 'Elixir',
     extension: 'ex',
     command: curlconverter.toElixir
+  },
+  {
+    name: 'MATLAB',
+    extension: 'm',
+    command: curlconverter.toMATLAB
   }
 ]
 
