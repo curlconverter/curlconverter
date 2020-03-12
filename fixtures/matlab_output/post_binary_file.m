@@ -2,9 +2,9 @@
 uri = 'http://lodstories.isi.edu:3030/american-art/query';
 body = fileread('./sample.sparql');
 options = weboptions('HeaderFields', {
-        'Content-type' 'application/sparql-query'
-        'Accept' 'application/sparql-results+json'
-    });
+    'Content-type' 'application/sparql-query'
+    'Accept' 'application/sparql-results+json'
+});
 response = webwrite(uri, body, options);
 
 %% HTTP Interface
