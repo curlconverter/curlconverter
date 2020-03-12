@@ -46,7 +46,7 @@ header = [
     ])
     HeaderField('Referer', 'http://www.wikipedia.org/')
     HeaderField('Connection', 'keep-alive')
-    field.CookieField(cellfun(@(x) Cookie(x{:}), num2cell(cookies, 2))
+    field.CookieField(cellfun(@(x) Cookie(x{:}), num2cell(cookies, 2)))
 ]';
 uri = URI('http://en.wikipedia.org/');
 response = RequestMessage('get', header).send(uri.EncodedURI);

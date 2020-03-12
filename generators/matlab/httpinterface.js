@@ -46,10 +46,9 @@ const prepareHeaders = (request) => {
     } else {
       header += '\n    ' + headers.join('\n    ')
       if (request.cookies) {
-        const cookieFieldParams = [
-          callFunction(null, 'cellfun', '@(x) Cookie(x{:}', ''),
-          callFunction(null, 'num2cell', ['cookies', '2'], ''),
-        ]
+        const cookieFieldParams = callFunction(null, 'cellfun', [
+          '@(x) Cookie(x{:})', callFunction(null, 'num2cell', ['cookies', '2'], '')
+        ], '')
         header += '\n    ' + callFunction(null, 'field.CookieField', cookieFieldParams, '')
       }
       header += '\n]\''

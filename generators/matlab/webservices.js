@@ -88,7 +88,11 @@ const parseWebOptions = (request) => {
   }
 
   if (Object.entries(headers).length > 0) {
-    options.HeaderFields = addCellArray(headers, ['Authorization', 'Cookie'], '', 2)
+    // If key is on the same line as 'weboptions', there is only one parameter
+    // otherwise keys are indented by one level in the next line.
+    // An extra indentation level is given to the values's new lines in cell array
+    const indentLevel = 1 + (Object.keys(options).length === 0 ? 0 : 1)
+    options.HeaderFields = addCellArray(headers, ['Authorization', 'Cookie'], '', indentLevel)
   }
 
   return options
