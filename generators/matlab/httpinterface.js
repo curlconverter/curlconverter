@@ -46,11 +46,14 @@ const prepareHeaders = (request) => {
     } else {
       header += '\n    ' + headers.join('\n    ')
       if (request.cookies) {
-        header += `\n    field.CookieField(${cookieString})`
+        const cookieFieldParams = [
+          callFunction(null, 'cellfun', '@(x) Cookie(x{:}', ''),
+          callFunction(null, 'num2cell', ['cookies', '2'], ''),
+        ]
+        header += '\n    ' + callFunction(null, 'field.CookieField', cookieFieldParams, '')
       }
       header += '\n]\''
     }
-
     response = setVariableValue('header', header)
   }
 
