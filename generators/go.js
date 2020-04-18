@@ -4,7 +4,7 @@ const jsesc = require('jsesc')
 const toGo = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let goCode = 'package main\n\n'
-  goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n'
+  goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n\t"strings"\n)\n\n'
   goCode += 'func main() {\n'
   goCode += '\tclient := &http.Client{}\n'
   if (request.data) {
