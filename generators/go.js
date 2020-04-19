@@ -14,7 +14,9 @@ const toGo = curlCommand => {
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
-    goCode += '\tvar data = []byte(`{' + request.data + '}`)\n'
+    // import strings
+    goCode = goCode.replace('\n)', '\n\t"strings"\n)')
+    goCode += '\tvar data = strings.NewReader(`' + request.data + '`)\n'
     goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", data)\n'
   } else {
     goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", nil)\n'

@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func main() {
 	client := &http.Client{}
-	var data = []byte(`{18233982904}`)
+	var data = strings.NewReader(`18233982904`)
 	req, err := http.NewRequest("POST", "http://198.30.191.00:8309/CurlToNode", data)
 	if err != nil {
 		log.Fatal(err)
