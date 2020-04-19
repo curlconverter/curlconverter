@@ -19,7 +19,6 @@
     "converter"
   ],
   "dependencies": {
-    "cmd": "^0.1.0",
     "cookie": "^0.4.0",
     "jsesc": "^2.5.2",
     "string.prototype.startswith": "^0.2.0",
