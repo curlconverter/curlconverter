@@ -4,7 +4,7 @@ const jsesc = require('jsesc')
 const toGo = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let goCode = 'package main\n\n'
-  goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n\t"strings"\n)\n\n'
+  goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n'
   goCode += 'func main() {\n'
   goCode += '\tclient := &http.Client{}\n'
   if (request.data) {
@@ -14,6 +14,8 @@ const toGo = curlCommand => {
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
+    // import strings
+    goCode = goCode.replace('\n)', '\n\t"strings"\n)')
     goCode += '\tvar data = strings.NewReader(`' + request.data + '`)\n'
     goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", data)\n'
   } else {
