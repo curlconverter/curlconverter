@@ -113,6 +113,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 - MarkReeder (JSON formatting)
 - cf512 (bugfixes and feature requests)
 - DainisGorbunovs (MATLAB support)
+- TennyZhuang (data-raw support)
 
 ## License
 
