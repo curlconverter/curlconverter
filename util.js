@@ -113,6 +113,7 @@ const parseCurlCommand = curlCommand => {
     parsedArguments.data ||
     parsedArguments['data-ascii'] ||
     parsedArguments['data-binary'] ||
+    parsedArguments['data-raw'] ||
     parsedArguments.F ||
     parsedArguments.form) && !((parsedArguments.G || parsedArguments.get))) {
     method = 'post'
@@ -185,6 +186,9 @@ const parseCurlCommand = curlCommand => {
     request.data = parsedArguments.d
   } else if (parsedArguments['data-ascii']) {
     request.data = parsedArguments['data-ascii']
+  } else if (parsedArguments['data-raw']) {
+    request.data = parsedArguments['data-raw']
+    request.isDataRaw = true
   }
 
   if (parsedArguments.u) {

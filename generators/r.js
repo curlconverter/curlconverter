@@ -43,7 +43,7 @@ function getDataString (request) {
   if (typeof request.data === 'number') {
     request.data = request.data.toString()
   }
-  if (request.data.startsWith('@')) {
+  if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     return 'data = upload_file(\'' + filePath + '\')'
   }
