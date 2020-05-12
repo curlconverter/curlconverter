@@ -117,10 +117,10 @@ const isJsonString = (str) => {
   return true
 }
 
-const prepareDataProvider = (value, output, termination, indentLevel, isDataBinary) => {
+const prepareDataProvider = (value, output, termination, indentLevel, isDataBinary, isDataRaw) => {
   if (typeof indentLevel === 'undefined' || indentLevel === null) indentLevel = 0
   if (typeof isDataBinary === 'undefined') isDataBinary = true
-  if (value[0] === '@') {
+  if (!isDataRaw && value[0] === '@') {
     const filename = value.slice(1)
     // >> imformats % for seeing MATLAB supported image formats
     const isImageProvider = new Set(['jpeg', 'jpg', 'png', 'tif', 'gif']).has(filename.split('.')[1])
@@ -173,7 +173,7 @@ const prepareData = (request) => {
 
     response = callFunction('body', 'FormProvider', data)
   } else if (request.data) {
-    response = prepareDataProvider(request.data, 'body', ';', 0, !!request.isDataBinary)
+    response = prepareDataProvider(request.data, 'body', ';', 0, !!request.isDataBinary, !!request.isDataRaw)
     if (!response) {
       response = setVariableValue('body', repr(request.data))
     }

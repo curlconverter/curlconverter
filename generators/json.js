@@ -39,7 +39,7 @@ function getDataString (request) {
   }
 
   /*
-    if ( request.data.startsWith('@') ) {
+    if ( !request.isDataRaw && request.data.startsWith('@') ) {
    var filePath = request.data.slice(1);
    return filePath;
    }

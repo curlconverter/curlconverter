@@ -1,0 +1,9 @@
+version: 2
+requests:
+  curl_converter:
+    request:
+      url: 'http://example.com/post'
+      method: POST
+      postData:
+        mimeType: application/json
+        text: 'msg1=wow&msg2=such&msg3=@rawmsg'

@@ -1,0 +1,10 @@
+{
+    "url": "http://example.com/post",
+    "raw_url": "http://example.com/post",
+    "method": "post",
+    "data": {
+        "msg1": "wow",
+        "msg2": "such",
+        "msg3": "@rawmsg"
+    }
+}
