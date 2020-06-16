@@ -6,6 +6,7 @@ const toElixir = require('./generators/elixir.js')
 const toGo = require('./generators/go.js')
 const toJsonString = require('./generators/json')
 const toNode = require('./generators/node.js')
+const toBrowser = require('./generators/browser.js')
 const toPhp = require('./generators/php.js')
 const toPython = require('./generators/python.js')
 const toR = require('./generators/r.js')
@@ -18,6 +19,7 @@ module.exports = {
   toDart: toDart,
   toGo: toGo,
   toJsonString: toJsonString,
+  toBrowser: toBrowser,
   toNode: toNode,
   toPhp: toPhp,
   toPython: toPython,
