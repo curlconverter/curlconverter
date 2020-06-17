@@ -28,6 +28,11 @@ const outputs = [
     command: curlconverter.toPython
   },
   {
+    name: 'Browser',
+    extension: 'js',
+    command: curlconverter.toBrowser
+  },
+  {
     name: 'Node',
     extension: 'js',
     command: curlconverter.toNode

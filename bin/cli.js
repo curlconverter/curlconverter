@@ -15,6 +15,7 @@ const translate = {
   elixir: 'toElixir',
   go: 'toGo',
   json: 'toJsonString',
+  browser: 'toBrowser',
   node: 'toNode',
   php: 'toPhp',
   python: 'toPython',
