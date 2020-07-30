@@ -1,5 +1,5 @@
 const util = require('../util')
-const querystring = require('querystring')
+const querystring = require('query-string')
 const jsesc = require('jsesc')
 const quote = str => jsesc(str, { quotes: 'single' })
 
@@ -40,7 +40,7 @@ const toPhp = curlCommand => {
     if (typeof request.data === 'number') {
       request.data = request.data.toString()
     }
-    const parsedQueryString = querystring.parse(request.data)
+    const parsedQueryString = querystring.parse(request.data, { sort: false })
     dataString = '$data = array(\n'
     const dataCount = Object.keys(parsedQueryString).length
     if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {

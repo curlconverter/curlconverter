@@ -1,7 +1,7 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 const util = require('../util')
-const querystring = require('querystring')
+const querystring = require('query-string')
 const jsesc = require('jsesc')
 
 require('string.prototype.startswith')
@@ -45,7 +45,7 @@ function getDataString (request) {
    }
    */
 
-  const parsedQueryString = querystring.parse(request.data)
+  const parsedQueryString = querystring.parse(request.data, { sort: false })
   const keyCount = Object.keys(parsedQueryString).length
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
