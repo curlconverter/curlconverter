@@ -1,7 +1,7 @@
 const cookie = require('cookie')
 const yargs = require('yargs')
 const URL = require('url')
-const querystring = require('querystring')
+const querystring = require('query-string')
 
 const parseCurlCommand = curlCommand => {
   // Remove newlines (and from continuations)
@@ -151,7 +151,15 @@ const parseCurlCommand = curlCommand => {
       delete parsedArguments[option]
     }
   }
-  const query = querystring.parse(urlObject.query, null, null, { maxKeys: 10000 })
+  if (urlObject.query && urlObject.query.endsWith('&')) {
+    urlObject.query = urlObject.query.slice(0, -1)
+  }
+  const query = querystring.parse(urlObject.query, { sort: false })
+  for (const param in query) {
+    if (query[param] === null) {
+      query[param] = ''
+    }
+  }
 
   urlObject.search = null // Clean out the search/query portion.
   const request = {

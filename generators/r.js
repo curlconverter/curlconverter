@@ -2,7 +2,7 @@
 
 const util = require('../util')
 const jsesc = require('jsesc')
-const querystring = require('querystring')
+const querystring = require('query-string')
 
 require('string.prototype.startswith')
 
@@ -48,7 +48,7 @@ function getDataString (request) {
     return 'data = upload_file(\'' + filePath + '\')'
   }
 
-  const parsedQueryString = querystring.parse(request.data)
+  const parsedQueryString = querystring.parse(request.data, { sort: false })
   const keyCount = Object.keys(parsedQueryString).length
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly

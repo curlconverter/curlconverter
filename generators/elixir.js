@@ -1,6 +1,6 @@
 var util = require('../util')
 var jsesc = require('jsesc')
-var querystring = require('querystring')
+var querystring = require('query-string')
 
 require('string.prototype.startswith')
 
@@ -158,7 +158,7 @@ function getDataString (request) {
     }
   }
 
-  var parsedQueryString = querystring.parse(request.data)
+  var parsedQueryString = querystring.parse(request.data, { sort: false })
   var keyCount = Object.keys(parsedQueryString).length
   var singleKeyOnly =
     keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]

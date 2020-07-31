@@ -1,7 +1,7 @@
 const util = require('../util')
 const yaml = require('yamljs')
 const jsesc = require('jsesc')
-const querystring = require('querystring')
+const querystring = require('query-string')
 
 function getDataString (request) {
   let mimeType = 'application/json'
@@ -12,7 +12,7 @@ function getDataString (request) {
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
   }
-  const parsedQueryString = querystring.parse(request.data)
+  const parsedQueryString = querystring.parse(request.data, { sort: false })
   const keyCount = Object.keys(parsedQueryString).length
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
