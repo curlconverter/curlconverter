@@ -156,7 +156,9 @@ const parseCurlCommand = curlCommand => {
   }
   const query = querystring.parse(urlObject.query, { sort: false })
   for (const param in query) {
-    if (query[param] === null) query[param] = ''
+    if (query[param] === null) {
+      query[param] = ''
+    }
   }
 
   urlObject.search = null // Clean out the search/query portion.
