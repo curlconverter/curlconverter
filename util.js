@@ -57,7 +57,9 @@ const parseCurlCommand = curlCommand => {
         cookieString = header
       } else {
         const components = header.split(/:(.*)/)
-        headers[components[0]] = components[1].trim()
+        if (components[1]) {
+          headers[components[0]] = components[1].trim()
+        }
       }
     })
   }
