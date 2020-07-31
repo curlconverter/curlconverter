@@ -3,7 +3,8 @@
   uri:
     url: 'http://fiddle.jshell.net/echo/html/'
     method: POST
-    body: 'msg1=wow&msg2=such'
+    body:
+      "msg1=wow&msg2=such"
     body_format: json
     headers:
       Origin: 'http://fiddle.jshell.net'
@@ -13,6 +14,6 @@
       Content-Type: 'application/x-www-form-urlencoded; charset=UTF-8'
       Accept: '*/*'
       Referer: 'http://fiddle.jshell.net/_display/'
-      X-Requested-With: XMLHttpRequest
-      Connection: keep-alive
+      X-Requested-With: 'XMLHttpRequest'
+      Connection: 'keep-alive'
   register: result
