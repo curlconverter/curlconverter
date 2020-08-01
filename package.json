@@ -21,6 +21,7 @@
   "dependencies": {
     "cookie": "^0.4.0",
     "jsesc": "^2.5.2",
+    "nunjucks": "^3.2.2",
     "query-string": "^6.13.1",
     "string.prototype.startswith": "^0.2.0",
     "yamljs": "^0.3.0",

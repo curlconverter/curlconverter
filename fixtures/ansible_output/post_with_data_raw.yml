@@ -3,6 +3,7 @@
   uri:
     url: 'http://example.com/post'
     method: POST
-    body: 'msg1=wow&msg2=such&msg3=@rawmsg'
+    body:
+      "msg1=wow&msg2=such&msg3=@rawmsg"
     body_format: json
   register: result

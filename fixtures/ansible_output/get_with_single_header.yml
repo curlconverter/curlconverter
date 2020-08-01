@@ -4,5 +4,5 @@
     url: 'http://example.com/'
     method: GET
     headers:
-      foo: bar
+      foo: 'bar'
   register: result
