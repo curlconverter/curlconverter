@@ -4,7 +4,7 @@ const URL = require('url')
 const querystring = require('query-string')
 const nunjucks = require('nunjucks')
 
-env = nunjucks.configure(['templates/'], { // set folders with templates
+const env = nunjucks.configure(['templates/'], { // set folders with templates
   autoescape: false
 })
 env.addFilter('isArr', something => Array.isArray(something))
