@@ -2,6 +2,14 @@ const cookie = require('cookie')
 const yargs = require('yargs')
 const URL = require('url')
 const querystring = require('query-string')
+const nunjucks = require('nunjucks')
+
+const env = nunjucks.configure(['templates/'], { // set folders with templates
+  autoescape: false
+})
+env.addFilter('isArr', something => Array.isArray(something))
+env.addFilter('isString', something => typeof something === 'string')
+env.addFilter('isNumber', something => typeof something === 'number')
 
 const parseCurlCommand = curlCommand => {
   // Remove newlines (and from continuations)
