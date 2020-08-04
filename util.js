@@ -15,6 +15,9 @@ const parseCurlCommand = curlCommand => {
   // Remove newlines (and from continuations)
   curlCommand = curlCommand.replace(/\\\r|\\\n/g, '')
 
+  // Remove extra whitespace
+  curlCommand = curlCommand.replace(/\s+/g, ' ')
+
   // yargs parses -XPOST as separate arguments. just prescreen for it.
   curlCommand = curlCommand.replace(/ -XPOST/, ' -X POST')
   curlCommand = curlCommand.replace(/ -XGET/, ' -X GET')
@@ -135,7 +138,7 @@ const parseCurlCommand = curlCommand => {
   }
 
   const compressed = !!parsedArguments.compressed
-  const urlObject = URL.parse(url); // eslint-disable-line
+  const urlObject = URL.parse(url) // eslint-disable-line
 
   // if GET request with data, convert data to query string
   // NB: the -G flag does not change the http verb. It just moves the data into the url.
