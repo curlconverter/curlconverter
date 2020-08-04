@@ -7,12 +7,7 @@ request = %HTTPoison.Request{
     {~s|Content-Type|, ~s|application/json|},
   ],
   params: [],
-  body: ~s|{
-        "hostname": "agent02.example.com",
-        "agent_config_state": "Enabled",
-        "resources": ["Java","Linux"],
-        "environments": ["Dev"]
-        }|
+  body: ~s|{ "hostname": "agent02.example.com", "agent_config_state": "Enabled", "resources": ["Java","Linux"], "environments": ["Dev"] }|
 }
 
 response = HTTPoison.request(request)
