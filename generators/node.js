@@ -24,6 +24,9 @@ const toNode = curlCommand => {
     nodeCode += '};\n\n'
   }
 
+  if (request.data === true) {
+    request.data = ''
+  }
   if (request.data) {
     if (typeof request.data === 'number') {
       request.data = request.data.toString()

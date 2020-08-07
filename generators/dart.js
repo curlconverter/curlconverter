@@ -72,6 +72,9 @@ const toDart = curlCommand => {
     s += '\n'
   }
 
+  if (r.data === true) {
+    r.data = ''
+  }
   const hasData = r.data
   if (typeof r.data === 'number') {
     r.data = r.data.toString()
@@ -88,7 +91,7 @@ const toDart = curlCommand => {
         const key = splitKv[0] || ''
         const val = splitKv[1] || ''
         s += "    '" + key + "': '" + val + "',\n"
-      };
+      }
       s += '  };\n'
       s += '\n'
     } else if (r.isDataBinary) {
