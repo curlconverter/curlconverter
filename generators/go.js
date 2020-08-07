@@ -7,6 +7,9 @@ const toGo = curlCommand => {
   goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n'
   goCode += 'func main() {\n'
   goCode += '\tclient := &http.Client{}\n'
+  if (request.data === true) {
+    request.data = ''
+  }
   if (request.data) {
     if (typeof request.data === 'number') {
       request.data = request.data.toString()
