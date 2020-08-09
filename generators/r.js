@@ -149,10 +149,10 @@ const torstats = curlCommand => {
   }
   // curl automatically prepends 'http' if the scheme is missing, but rstats fails and returns an error
   // we tack it on here to mimic curl
-  if (request.url.indexOf('http') !== 0) {
+  if (!request.url.match(/https?:/)) {
     request.url = 'http://' + request.url
   }
-  if (request.urlWithoutQuery.indexOf('http') !== 0) {
+  if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
   let requestLineWithUrlParams = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.urlWithoutQuery + '\''
