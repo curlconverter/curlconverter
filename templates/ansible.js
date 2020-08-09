@@ -1,4 +1,4 @@
--
+const ansibleTemplate = `-
   name: '{{ request.urlWithoutQuery }}'
   uri:
     url: '{{ request.url }}'
@@ -35,3 +35,6 @@
     validate_certs: no
 {%- endif %}
   register: result
+`
+
+module.exports = ansibleTemplate
