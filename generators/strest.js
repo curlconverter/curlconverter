@@ -49,7 +49,7 @@ const toStrest = curlCommand => {
   if (request.insecure) {
     response.allowInsecure = true
   }
-  if (request.urlWithoutQuery.indexOf('http') !== 0) {
+  if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
   response.requests = {
