@@ -11,12 +11,13 @@ const defaultLanguage = 'python'
 // NOTE: make sure to update this when adding language support
 const translate = {
   ansible: 'toAnsible',
+  browser: 'toBrowser',
   dart: 'toDart',
   elixir: 'toElixir',
   go: 'toGo',
   json: 'toJsonString',
-  browser: 'toBrowser',
-  node: 'toNode',
+  node: 'toNodeFetch',
+  'node-request': 'toNodeRequest',
   php: 'toPhp',
   python: 'toPython',
   r: 'toR',

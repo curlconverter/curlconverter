@@ -35,7 +35,7 @@ const outputs = [
   {
     name: 'Node',
     extension: 'js',
-    command: curlconverter.toNode
+    command: curlconverter.toNodeRequest
   },
   {
     name: 'PHP',
