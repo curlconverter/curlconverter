@@ -1,10 +1,10 @@
-const util = require('../util')
+const util = require('../../util')
 const jsesc = require('jsesc')
 
-const toBrowser = curlCommand => {
+const toJsFetch = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
-  let browserCode = ''
+  let jsFetchCode = ''
 
   if (request.data === true) {
     request.data = ''
@@ -35,26 +35,26 @@ const toBrowser = curlCommand => {
     }
   }
 
-  browserCode += 'fetch(\'' + request.url + '\''
+  jsFetchCode += 'fetch(\'' + request.url + '\''
 
   if (request.method !== 'get' || request.headers || request.cookies || request.auth || request.body) {
-    browserCode += ', {\n'
+    jsFetchCode += ', {\n'
 
     if (request.method !== 'get') {
-      browserCode += '    method: \'' + request.method.toUpperCase() + '\''
+      jsFetchCode += '    method: \'' + request.method.toUpperCase() + '\''
     }
 
     if (request.headers || request.cookies || request.auth) {
       if (request.method !== 'get') {
-        browserCode += ',\n'
+        jsFetchCode += ',\n'
       }
-      browserCode += '    headers: {\n'
+      jsFetchCode += '    headers: {\n'
       const headerCount = Object.keys(request.headers || {}).length
       let i = 0
       for (const headerName in request.headers) {
-        browserCode += '        \'' + headerName + '\': \'' + request.headers[headerName] + '\''
+        jsFetchCode += '        \'' + headerName + '\': \'' + request.headers[headerName] + '\''
         if (i < headerCount - 1 || request.cookies || request.auth) {
-          browserCode += ',\n'
+          jsFetchCode += ',\n'
         }
         i++
       }
@@ -62,26 +62,26 @@ const toBrowser = curlCommand => {
         const splitAuth = request.auth.split(':')
         const user = splitAuth[0] || ''
         const password = splitAuth[1] || ''
-        browserCode += '        \'Authorization\': \'Basic \' + btoa(\'' + user + ':' + password + '\')'
+        jsFetchCode += '        \'Authorization\': \'Basic \' + btoa(\'' + user + ':' + password + '\')'
       }
       if (request.cookies) {
         const cookieString = util.serializeCookies(request.cookies)
-        browserCode += '        \'Cookie\': \'' + cookieString + '\''
+        jsFetchCode += '        \'Cookie\': \'' + cookieString + '\''
       }
 
-      browserCode += '\n    }'
+      jsFetchCode += '\n    }'
     }
 
     if (request.data) {
-      browserCode += ',\n    body: ' + request.data
+      jsFetchCode += ',\n    body: ' + request.data
     }
 
-    browserCode += '\n}'
+    jsFetchCode += '\n}'
   }
 
-  browserCode += ');'
+  jsFetchCode += ');'
 
-  return browserCode + '\n'
+  return jsFetchCode + '\n'
 }
 
-module.exports = toBrowser
+module.exports = toJsFetch
