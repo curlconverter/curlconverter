@@ -14,7 +14,7 @@ function repr (value) {
 }
 
 function getQueryDict (request) {
-  let queryDict = 'params = (\n'
+  let queryDict = 'params = {\n'
   for (const paramName in request.query) {
     const rawValue = request.query[paramName]
     let paramValue
@@ -23,9 +23,9 @@ function getQueryDict (request) {
     } else {
       paramValue = repr(rawValue)
     }
-    queryDict += '    (' + repr(paramName) + ', ' + paramValue + '),\n'
+    queryDict += '    ' + repr(paramName) + ': ' + paramValue + ',\n'
   }
-  queryDict += ')\n'
+  queryDict += '}\n'
   return queryDict
 }
 
