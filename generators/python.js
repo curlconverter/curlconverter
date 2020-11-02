@@ -4,13 +4,22 @@ const querystring = require('query-string')
 
 require('string.prototype.startswith')
 
+
+function reprWithVariable(value, hasVariable){
+  if (!value) {
+    return "''";
+  }
+
+  if (!hasVariable){
+    return "'" + jsesc(value, { quotes: 'single' }) + "'";
+  }
+
+  return 'f"' + jsesc(value, { quotes: 'double'}) + '"';
+}
+
 function repr (value) {
   // In context of url parameters, don't accept nulls and such.
-  if (!value) {
-    return "''"
-  } else {
-    return "'" + jsesc(value, { quotes: 'single' }) + "'"
-  }
+  return reprWithVariable(value, false);
 }
 
 function getQueryDict (request) {
@@ -113,13 +122,101 @@ function getFilesString (request) {
   return filesString
 }
 
+// convertVarToStringFormat will convert if inputString to f"..." format
+// if inputString has possible variable as its substring
+function detectEnvVar(inputString){
+  // Using state machine to detect environment variable
+  // Each character is an edge, state machine:
+  // IN_ENV_VAR: means that currently we are iterating inside a possible environment variable
+  // IN_STRING: means that currently we are iterating inside a normal string
+  // For example:
+  // "Hi my name is $USER_NAME !"
+  // '$' --> will move state from IN_STRING to IN_ENV_VAR
+  // ' ' --> will move state to IN_STRING, regardless the previous state
+
+  const IN_ENV_VAR = 0, IN_STRING = 1;
+
+  // We only care for the unique element
+  let detectedVariables = new Set();
+  let currState = IN_STRING;
+  let envVarStartIndex = -1;
+
+  const whiteSpaceSet = new Set();
+  whiteSpaceSet.add(' ');
+  whiteSpaceSet.add('\n');
+  whiteSpaceSet.add('\t');
+
+  let modifiedString = [];
+  for(const idx in inputString){
+    const currIdx = +idx;
+    const currChar = inputString[currIdx];
+    if(currState === IN_ENV_VAR && whiteSpaceSet.has(currChar)){
+      const newVariable = inputString.substring(envVarStartIndex, currIdx);
+
+      if (newVariable !== "") {
+        detectedVariables.add(newVariable);
+
+        // Change $ -> {
+        // Add } after the last variable name
+        modifiedString.push("{"+newVariable+"}" + currChar);
+      }
+      else {
+        modifiedString.push("$" + currChar);
+      }
+      currState = IN_STRING;
+      envVarStartIndex = -1;
+      continue
+    }
+
+    if(currState === IN_ENV_VAR){
+      // Skip until we actually have the new variable
+      continue;
+    }
+
+    // currState === IN_STRING
+    if(currChar === '$'){
+      currState = IN_ENV_VAR;
+      envVarStartIndex = currIdx + 1;
+    } else {
+      modifiedString.push(currChar);
+    }
+  }
+
+  if(currState === IN_ENV_VAR){
+    const newVariable = inputString.substring(envVarStartIndex, inputString.length);
+
+    if (newVariable !== "") {
+      detectedVariables.add(newVariable);
+      modifiedString.push("{"+newVariable+"}");
+    }
+    else {
+      modifiedString.push("$");
+    }
+  }
+
+  return [detectedVariables, modifiedString.join('')];
+}
+
 const toPython = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
+
+  // Currently, only assuming that the env-var only used in
+  // the value part of cookies, params, or body
+  let osVariables = new Set()
+
   let cookieDict
   if (request.cookies) {
     cookieDict = 'cookies = {\n'
     for (const cookieName in request.cookies) {
-      cookieDict += '    ' + repr(cookieName) + ': ' + repr(request.cookies[cookieName]) + ',\n'
+      const [detectedVars, modifiedString] = detectEnvVar(request.cookies[cookieName]);
+
+      const hasVariable = detectedVars.size > 0;
+
+      for(const newVar of detectedVars){
+        osVariables.add(newVar)
+      }
+
+      cookieDict += '    ' + repr(cookieName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
     }
     cookieDict += '}\n'
   }
@@ -127,7 +224,15 @@ const toPython = curlCommand => {
   if (request.headers) {
     headerDict = 'headers = {\n'
     for (const headerName in request.headers) {
-      headerDict += '    ' + repr(headerName) + ': ' + repr(request.headers[headerName]) + ',\n'
+      const [detectedVars, modifiedString] = detectEnvVar(request.headers[headerName]);
+
+      const hasVariable = detectedVars.size > 0;
+
+      for(const newVar of detectedVars){
+        osVariables.add(newVar)
+      }
+
+      headerDict += '    ' + repr(headerName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
     }
     headerDict += '}\n'
   }
@@ -185,7 +290,23 @@ const toPython = curlCommand => {
   requestLineWithUrlParams += requestLineBody
 
   let pythonCode = ''
+
+  // Sort import by name
+  if (osVariables.size > 0) {
+    pythonCode += 'import os\n'
+  }
+
   pythonCode += 'import requests\n\n'
+
+  if (osVariables.size > 0) {
+    for(const osVar of osVariables){
+      const line = `${osVar} = os.getenv('${osVar}')\n`;
+      pythonCode += line
+    }
+
+    pythonCode += '\n'
+  }
+
   if (cookieDict) {
     pythonCode += cookieDict + '\n'
   }
