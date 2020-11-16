@@ -5,12 +5,12 @@ const querystring = require('query-string')
 require('string.prototype.startswith')
 
 
-function reprWithVariable(value, hasVariable){
+function reprWithVariable(value, hasEnvironmentVariable){
   if (!value) {
     return "''";
   }
 
-  if (!hasVariable){
+  if (!hasEnvironmentVariable){
     return "'" + jsesc(value, { quotes: 'single' }) + "'";
   }
 
@@ -210,13 +210,13 @@ const toPython = curlCommand => {
     for (const cookieName in request.cookies) {
       const [detectedVars, modifiedString] = detectEnvVar(request.cookies[cookieName]);
 
-      const hasVariable = detectedVars.size > 0;
+      const hasEnvironmentVariable = detectedVars.size > 0;
 
       for(const newVar of detectedVars){
         osVariables.add(newVar)
       }
 
-      cookieDict += '    ' + repr(cookieName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
+      cookieDict += '    ' + repr(cookieName) + ': ' + reprWithVariable(modifiedString, hasEnvironmentVariable) + ',\n'
     }
     cookieDict += '}\n'
   }
