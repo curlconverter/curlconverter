@@ -77,6 +77,10 @@ const outputs = [
     name: 'MATLAB',
     extension: 'm',
     command: curlconverter.toMATLAB
+  }, {
+    name: 'Java',
+    extension: 'java',
+    command: curlconverter.toJava
   }
 ]
 

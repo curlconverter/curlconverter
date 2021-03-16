@@ -24,7 +24,7 @@ const translate = {
   rust: 'toRust',
   strest: 'toStrest',
   matlab: 'toMATLAB',
-  java: 'toJava',
+  java: 'toJava'
 }
 
 // outputs the help menu
