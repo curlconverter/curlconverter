@@ -14,6 +14,7 @@ const toR = require('./generators/r.js')
 const toRust = require('./generators/rust')
 const toStrest = require('./generators/strest.js')
 const toMATLAB = require('./generators/matlab/matlab.js')
+const toJava = require('./generators/java.js')
 
 module.exports = {
   toAnsible: toAnsible,
@@ -29,5 +30,6 @@ module.exports = {
   toR: toR,
   toRust: toRust,
   toStrest: toStrest,
-  toMATLAB: toMATLAB
+  toMATLAB: toMATLAB,
+  toJava: toJava
 }

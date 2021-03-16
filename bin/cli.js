@@ -23,7 +23,8 @@ const translate = {
   r: 'toR',
   rust: 'toRust',
   strest: 'toStrest',
-  matlab: 'toMATLAB'
+  matlab: 'toMATLAB',
+  java: 'toJava',
 }
 
 // outputs the help menu

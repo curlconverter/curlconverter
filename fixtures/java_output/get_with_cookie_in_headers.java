@@ -1,0 +1,33 @@
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
+
+class Main {
+
+	public static void main(String[] args) throws IOException {
+		URL url = new URL("https://httpbin.org/cookies");
+		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+		httpConn.setRequestMethod("GET");
+
+		httpConn.setRequestProperty("Pragma", "no-cache");
+		httpConn.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
+		httpConn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+		httpConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36");
+		httpConn.setRequestProperty("accept", "application/json");
+		httpConn.setRequestProperty("Referer", "https://httpbin.org/");
+		httpConn.setRequestProperty("Connection", "keep-alive");
+		httpConn.setRequestProperty("Cache-Control", "no-cache");
+		httpConn.setRequestProperty("Sec-Metadata", "destination=empty, site=same-origin");
+
+		httpConn.setRequestProperty("Cookie", "authCookie=123");
+
+		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
+				? httpConn.getInputStream()
+				: httpConn.getErrorStream();
+		Scanner s = new Scanner(responseStream).useDelimiter("\\A");
+		String response = s.hasNext() ? s.next() : "";
+		System.out.println(response);
+	}
+}
