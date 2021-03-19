@@ -45,6 +45,7 @@ const toGo = curlCommand => {
   goCode += '\tif err != nil {\n'
   goCode += '\t\tlog.Fatal(err)\n'
   goCode += '\t}\n'
+  goCode += '\tdefer resp.Body.Close()\n'
   goCode += '\tbodyText, err := ioutil.ReadAll(resp.Body)\n'
   goCode += '\tif err != nil {\n'
   goCode += '\t\tlog.Fatal(err)\n'
