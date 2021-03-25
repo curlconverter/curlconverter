@@ -23,16 +23,8 @@ const toJava = curlCommand => {
 
   javaCode += '\nclass Main {\n\n'
 
-  request.url = request.url.replace(/(^\\')|(\\'$)|(')/g, '')
-  if (request.url.indexOf('"') !== 0) {
-    request.url = '"' + request.url
-  }
-  if (request.url.lastIndexOf('"') === 0) {
-    request.url = request.url + '"'
-  }
-
   javaCode += '\tpublic static void main(String[] args) throws IOException {\n'
-  javaCode += '\t\tURL url = new URL(' + request.url + ');\n'
+  javaCode += '\t\tURL url = new URL("' + request.url + '");\n'
   javaCode += '\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n'
   javaCode += '\t\thttpConn.setRequestMethod("' + request.method.toUpperCase() + '");\n\n'
 
@@ -45,12 +37,12 @@ const toJava = curlCommand => {
 
   if (request.cookies) {
     const cookieString = util.serializeCookies(request.cookies)
-    javaCode += '\t\thttpConn.setRequestProperty("Cookie", "' + cookieString + '");\n'
+    javaCode += '\t\thttpConn.setRequestProperty("Cookie", "' + doubleQuotes(cookieString) + '");\n'
     javaCode += '\n'
   }
 
   if (request.auth) {
-    javaCode += '\t\tbyte[] message = ("' + request.auth + '").getBytes("UTF-8");\n'
+    javaCode += '\t\tbyte[] message = ("' + doubleQuotes(request.auth) + '").getBytes("UTF-8");\n'
     javaCode += '\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n'
     javaCode += '\t\thttpConn.setRequestProperty("Authorization", "Basic " + basicAuth);\n'
     javaCode += '\n'
@@ -60,9 +52,7 @@ const toJava = curlCommand => {
     if (typeof request.data === 'number') {
       request.data = request.data.toString()
     }
-    if (request.data.match(/"(?:[^"\\]|\\.)*"/) != null) {
-      request.data = doubleQuotes(request.data)
-    }
+    request.data = doubleQuotes(request.data)
     javaCode += '\t\thttpConn.setDoOutput(true);\n'
     javaCode += '\t\tOutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n'
     javaCode += '\t\twriter.write("' + request.data + '");\n'

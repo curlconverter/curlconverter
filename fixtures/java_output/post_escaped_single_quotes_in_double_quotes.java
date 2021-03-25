@@ -14,7 +14,7 @@ class Main {
 
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-		writer.write("foo=\'bar\'");
+		writer.write("foo=\\'bar\\'");
 		writer.flush();
 		writer.close();
 		httpConn.getOutputStream().close();

@@ -16,7 +16,7 @@ class Main {
 
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-		writer.write("msg1=\"value1\"&msg2=\"value2\"");
+		writer.write("msg1=value1&msg2=value2");
 		writer.flush();
 		writer.close();
 		httpConn.getOutputStream().close();
