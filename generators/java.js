@@ -28,11 +28,11 @@ const toJava = curlCommand => {
   javaCode += '\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n'
   javaCode += '\t\thttpConn.setRequestMethod("' + request.method.toUpperCase() + '");\n\n'
 
-  let gzip = false;
+  let gzip = false
   if (request.headers) {
     for (const headerName in request.headers) {
       javaCode += '\t\thttpConn.setRequestProperty("' + headerName + '", "' + doubleQuotes(request.headers[headerName]) + '");\n'
-      if ('accept-encoding' === headerName.toLowerCase()) {
+      if (headerName.toLowerCase() === 'accept-encoding') {
         gzip = request.headers[headerName].indexOf('gzip') !== -1
       }
     }
