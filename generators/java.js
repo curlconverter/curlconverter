@@ -6,20 +6,21 @@ const doubleQuotes = str => jsesc(str, { quotes: 'double' })
 const toJava = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let javaCode = ''
+  let importCode = ''
 
   if (request.auth) {
-    javaCode += 'import javax.xml.bind.DatatypeConverter;\n'
+    importCode += 'import javax.xml.bind.DatatypeConverter;\n'
   }
-  javaCode += 'import java.io.IOException;\n'
-  javaCode += 'import java.io.InputStream;\n'
+  importCode += 'import java.io.IOException;\n'
+  importCode += 'import java.io.InputStream;\n'
   if (request.data) {
-    javaCode += 'import java.io.OutputStreamWriter;\n'
+    importCode += 'import java.io.OutputStreamWriter;\n'
   }
 
-  javaCode += 'import java.net.HttpURLConnection;\n'
+  importCode += 'import java.net.HttpURLConnection;\n'
 
-  javaCode += 'import java.net.URL;\n'
-  javaCode += 'import java.util.Scanner;\n'
+  importCode += 'import java.net.URL;\n'
+  importCode += 'import java.util.Scanner;\n'
 
   javaCode += '\nclass Main {\n\n'
 
@@ -70,6 +71,7 @@ const toJava = curlCommand => {
   javaCode += '\t\t\t\t? httpConn.getInputStream()\n'
   javaCode += '\t\t\t\t: httpConn.getErrorStream();\n'
   if (gzip) {
+    importCode += 'import java.util.zip.GZIPInputStream;\n'
     javaCode += '\t\tif ("gzip".equals(httpConn.getContentEncoding())) {\n'
     javaCode += '\t\t\tresponseStream = new GZIPInputStream(responseStream);\n'
     javaCode += '\t\t}\n'
@@ -81,7 +83,7 @@ const toJava = curlCommand => {
   javaCode += '\t}\n'
   javaCode += '}'
 
-  return javaCode + '\n'
+  return importCode + javaCode + '\n'
 }
 
 module.exports = toJava
