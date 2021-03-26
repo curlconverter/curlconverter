@@ -28,9 +28,13 @@ const toJava = curlCommand => {
   javaCode += '\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n'
   javaCode += '\t\thttpConn.setRequestMethod("' + request.method.toUpperCase() + '");\n\n'
 
+  let gzip = false;
   if (request.headers) {
     for (const headerName in request.headers) {
       javaCode += '\t\thttpConn.setRequestProperty("' + headerName + '", "' + doubleQuotes(request.headers[headerName]) + '");\n'
+      if ('accept-encoding' === headerName.toLowerCase()) {
+        gzip = request.headers[headerName].indexOf('gzip') !== -1
+      }
     }
     javaCode += '\n'
   }
@@ -65,6 +69,11 @@ const toJava = curlCommand => {
   javaCode += '\t\tInputStream responseStream = httpConn.getResponseCode() / 100 == 2\n'
   javaCode += '\t\t\t\t? httpConn.getInputStream()\n'
   javaCode += '\t\t\t\t: httpConn.getErrorStream();\n'
+  if (gzip) {
+    javaCode += '\t\tif ("gzip".equals(httpConn.getContentEncoding())) {\n'
+    javaCode += '\t\t\tresponseStream = new GZIPInputStream(responseStream);\n'
+    javaCode += '\t\t}\n'
+  }
   javaCode += '\t\tScanner s = new Scanner(responseStream).useDelimiter("\\\\A");\n'
   javaCode += '\t\tString response = s.hasNext() ? s.next() : "";\n'
   javaCode += '\t\tSystem.out.println(response);\n'

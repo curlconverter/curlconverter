@@ -31,6 +31,9 @@ class Main {
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
 				? httpConn.getInputStream()
 				: httpConn.getErrorStream();
+		if ("gzip".equals(httpConn.getContentEncoding())) {
+			responseStream = new GZIPInputStream(responseStream);
+		}
 		Scanner s = new Scanner(responseStream).useDelimiter("\\A");
 		String response = s.hasNext() ? s.next() : "";
 		System.out.println(response);
