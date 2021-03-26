@@ -93,6 +93,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a go
 
 ## Contributors
 
+- jeayu (Java support)
 - Muhammad Reza Irvanda (python env vars)
 - Weslen Nascimento (Node fetch)
 - Roman Druzki (Backlog scrubbing, parsing improvements)
