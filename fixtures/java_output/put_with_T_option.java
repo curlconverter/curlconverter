@@ -16,7 +16,7 @@ class Main {
 
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-		writer.write(" { \"properties\": { \"email\": { \"type\": \"keyword\" } } }");
+		writer.write("{\"properties\": {\"email\": {\"type\": \"keyword\"}}}");
 		writer.flush();
 		writer.close();
 		httpConn.getOutputStream().close();
