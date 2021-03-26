@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"compress/gzip"
 )
 
 func main() {
@@ -25,7 +26,16 @@ func main() {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	bodyText, err := ioutil.ReadAll(resp.Body)
+	reader := resp.Body
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(resp.Body)
+		defer reader.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	bodyText, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}

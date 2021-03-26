@@ -20,7 +20,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	bodyText, err := ioutil.ReadAll(resp.Body)
+	reader := resp.Body
+	bodyText, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}
