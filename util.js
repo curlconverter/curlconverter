@@ -37,7 +37,7 @@ const parseCurlCommand = curlCommand => {
     .boolean(['I', 'head', 'compressed', 'L', 'k', 'silent', 's'])
     .alias('H', 'header')
     .alias('A', 'user-agent')
-    .parse(curlCommand)
+    .parse(curlCommand, {configuration: {'parse-bash-ansi-c-strings': true}})
 
   let cookieString
   let cookies
