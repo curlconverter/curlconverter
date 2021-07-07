@@ -1,6 +1,5 @@
 const util = require('../util')
 const jsesc = require('jsesc')
-const querystring = require('query-string')
 
 require('string.prototype.startswith')
 
@@ -22,19 +21,79 @@ function repr (value) {
 }
 
 function getQueryDict (request) {
-  let queryDict = 'params = (\n'
-  for (const paramName in request.query) {
-    const rawValue = request.query[paramName]
-    let paramValue
-    if (Array.isArray(rawValue)) {
-      paramValue = '[' + rawValue.map(repr).join(', ') + ']'
-    } else {
-      paramValue = repr(rawValue)
-    }
-    queryDict += '    (' + repr(paramName) + ', ' + paramValue + '),\n'
+  const url = new URL(request.url)
+  // This can happen with query params without equals signs
+  // e.g. "?key" gets converted back to "?key="
+  if (url.searchParams.toString() !== url.search.replace(/^\?/, '')) {
+    return null
   }
-  queryDict += ')\n'
-  return queryDict
+
+  return 'params = ' + formatQueryString(url.searchParams)
+}
+
+function formatQueryString (parsedQueryString) {
+  const keyCount = [...parsedQueryString.keys()].length
+  const uniqueKeyCount = (new Set(parsedQueryString.keys())).size
+  const allKeysUnique = keyCount === uniqueKeyCount
+
+  // When the same key appears more than once in a row, we can group them
+  let params = []
+  let prevKey = null
+  let prevValues = []
+  let maxDuplicates = 0
+  for (const [key, value] of parsedQueryString) {
+    if (key !== prevKey) {
+      if (prevKey !== null) {
+        params.push([prevKey, prevValues])
+        maxDuplicates = Math.max(maxDuplicates, prevValues.length)
+      }
+      prevKey = key
+      prevValues = [value]
+    } else {
+      prevValues.push(value)
+    }
+  }
+  if (prevKey !== null) {
+    params.push([prevKey, prevValues])
+  }
+
+  // If there's only at most 2 duplicated keys in a row, it's not worth it to
+  // de-duplicate them because it makes editing the resulting Python code more
+  // tedious.
+  if (maxDuplicates === 2) { // If it's already 1, it's already "duplicated"
+    const reDuplicatedParams = []
+    for (const [key, values] of params) {
+      for (const value of values) {
+        reDuplicatedParams.push([key, [value]])
+      }
+    }
+    params = reDuplicatedParams
+  }
+
+  let dataString = allKeysUnique ? '{' : '['
+  dataString += '\n'
+
+  let i = 0
+  for (const [key, values] of params) {
+    const valueRepr = values.length === 1 ? repr(values[0]) : '[' + values.map(repr).join(', ') + ']'
+    if (allKeysUnique) {
+      dataString += '    ' + repr(key) + ': ' + valueRepr
+    } else {
+      dataString += '    (' + repr(key) + ', ' + valueRepr + ')'
+    }
+
+    i++
+    const lastLine = (i === params.length)
+    if (!lastLine) {
+      dataString += ','
+    }
+    dataString += '\n'
+  }
+
+  dataString += allKeysUnique ? '}' : ']'
+  dataString += '\n'
+
+  return dataString
 }
 
 function getDataString (request) {
@@ -50,58 +109,14 @@ function getDataString (request) {
     }
   }
 
-  const parsedQueryString = querystring.parse(request.data, { sort: false })
-  const keyCount = Object.keys(parsedQueryString).length
-  const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  const singularData = request.isDataBinary || singleKeyOnly
-  if (singularData) {
+  // If we can treat .data as a query string and parse more than one key,
+  // assume .data is in fact a "application/x-www-form-urlencoded" query string.
+  const parsedQueryString = new URLSearchParams(request.data)
+  if (request.isDataBinary || [...parsedQueryString.keys()].length === 1 || parsedQueryString.toString() !== request.data) {
     return 'data = ' + repr(request.data) + '\n'
   } else {
-    return getMultipleDataString(request, parsedQueryString)
+    return 'data = ' + formatQueryString(parsedQueryString)
   }
-}
-
-function getMultipleDataString (request, parsedQueryString) {
-  let repeatedKey = false
-  for (const key in parsedQueryString) {
-    const value = parsedQueryString[key]
-    if (Array.isArray(value)) {
-      repeatedKey = true
-    }
-  }
-
-  let dataString
-  if (repeatedKey) {
-    dataString = 'data = [\n'
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
-      if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) {
-          dataString += '  (' + repr(key) + ', ' + repr(value[i]) + '),\n'
-        }
-      } else {
-        dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
-      }
-    }
-    dataString += ']\n'
-  } else {
-    dataString = 'data = {\n'
-    const elementCount = Object.keys(parsedQueryString).length
-    let i = 0
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
-      dataString += '  ' + repr(key) + ': ' + repr(value)
-      if (i === elementCount - 1) {
-        dataString += '\n'
-      } else {
-        dataString += ',\n'
-      }
-      ++i
-    }
-    dataString += '}\n'
-  }
-
-  return dataString
 }
 
 function getFilesString (request) {
@@ -319,15 +334,8 @@ const toPython = curlCommand => {
   } else if (filesString) {
     pythonCode += filesString + '\n'
   }
-  pythonCode += requestLineWithUrlParams
 
-  if (request.query) {
-    pythonCode += '\n\n' +
-            '#NB. Original query string below. It seems impossible to parse and\n' +
-            '#reproduce query strings 100% accurately so the one below is given\n' +
-            '#in case the reproduced version is not "correct".\n'
-    pythonCode += '# ' + requestLineWithOriginalUrl
-  }
+  pythonCode += (request.query && queryDict) ? requestLineWithUrlParams : requestLineWithOriginalUrl
 
   return pythonCode + '\n'
 }

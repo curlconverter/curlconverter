@@ -1,0 +1,1 @@
+curl -X POST 'http://localhost:8888/' --data 'firstparam=1&secondparam=2&firstparam=1'
