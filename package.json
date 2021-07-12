@@ -25,7 +25,8 @@
     "query-string": "^6.13.1",
     "string.prototype.startswith": "^0.2.0",
     "yamljs": "^0.3.0",
-    "yargs": "git@github.com:NickCarneiro/yargs-ansi.git"
+    "yargs": "git@github.com:NickCarneiro/yargs-ansi.git",
+    "yargs-parser": "git@github.com:NickCarneiro/yargs-parser-ansi.git"
   },
   "devDependencies": {
     "standard": "^14.3.1",
