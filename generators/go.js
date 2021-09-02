@@ -27,7 +27,7 @@ const toGo = curlCommand => {
   goCode += '\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n'
   if (request.headers || request.cookies) {
     for (const headerName in request.headers) {
-      goCode += '\treq.Header.Set("' + headerName + '", "' + request.headers[headerName] + '")\n'
+      goCode += '\treq.Header.Set(`' + headerName + '`, `' + request.headers[headerName] + '`)\n'
     }
     if (request.cookies) {
       const cookieString = util.serializeCookies(request.cookies)
