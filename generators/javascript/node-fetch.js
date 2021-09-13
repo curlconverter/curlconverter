@@ -1,10 +1,8 @@
-const toJsFetch = require('./fetch')
+import { toJsFetch } from "./fetch.js";
 
-const toNodeFetch = curlCommand => {
+export const toNodeFetch = curlCommand => {
   let nodeFetchCode = 'var fetch = require(\'node-fetch\');\n\n'
   nodeFetchCode += toJsFetch(curlCommand)
 
   return nodeFetchCode
 }
-
-module.exports = toNodeFetch

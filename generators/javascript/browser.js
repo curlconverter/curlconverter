@@ -1,9 +1,7 @@
-const toJsFetch = require('./fetch')
+import { toJsFetch } from "./fetch.js";
 
-const toBrowser = curlCommand => {
+export const toBrowser = curlCommand => {
   const browserCode = toJsFetch(curlCommand)
 
   return browserCode
 }
-
-module.exports = toBrowser

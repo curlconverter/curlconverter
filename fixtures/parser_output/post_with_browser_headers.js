@@ -1,4 +1,4 @@
-module.exports = { url: 'http://www.w3schools.com/ajax/demo_post.asp',
+export default { url: 'http://www.w3schools.com/ajax/demo_post.asp',
     urlWithoutQuery: 'http://www.w3schools.com/ajax/demo_post.asp',
     compressed: true,
     headers:

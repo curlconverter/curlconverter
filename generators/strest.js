@@ -1,7 +1,8 @@
-const util = require('../util')
-const yaml = require('yamljs')
-const jsesc = require('jsesc')
-const querystring = require('query-string')
+import * as util from '../util.js'
+
+import yaml from 'yamljs'
+import jsesc from 'jsesc'
+import querystring from 'query-string'
 
 function getDataString (request) {
   let mimeType = 'application/json'
@@ -43,7 +44,7 @@ function getQueryList (request) {
   return queryList
 }
 
-const toStrest = curlCommand => {
+export const toStrest = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   const response = { version: 2 }
   if (request.insecure) {
@@ -98,5 +99,3 @@ const toStrest = curlCommand => {
   const yamlString = yaml.stringify(response, 100, 2)
   return yamlString
 }
-
-module.exports = toStrest

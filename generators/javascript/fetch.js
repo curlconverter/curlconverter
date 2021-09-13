@@ -1,7 +1,7 @@
-const util = require('../../util')
-const jsesc = require('jsesc')
+import * as util from "../../util.js";
+import jsesc from "jsesc";
 
-const toJsFetch = curlCommand => {
+export const toJsFetch = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
   let jsFetchCode = ''
@@ -83,5 +83,3 @@ const toJsFetch = curlCommand => {
 
   return jsFetchCode + '\n'
 }
-
-module.exports = toJsFetch

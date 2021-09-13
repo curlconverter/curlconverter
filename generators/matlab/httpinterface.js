@@ -1,10 +1,8 @@
-const {
-  repr, setVariableValue,
-  callFunction,
-  structify, containsBody,
-  prepareQueryString, prepareCookies,
-  cookieString
-} = require('./common')
+import {
+  repr, setVariableValue, callFunction,
+  structify, containsBody, prepareQueryString,
+  prepareCookies, cookieString
+} from "./common.js";
 
 const prepareHeaders = (request) => {
   let response = null
@@ -208,7 +206,7 @@ const prepareRequestMessage = (request) => {
   return response.join('\n')
 }
 
-const toHTTPInterface = (request) => {
+export const toHTTPInterface = (request) => {
   return [
     '%% HTTP Interface',
     'import matlab.net.*',
@@ -226,5 +224,3 @@ const toHTTPInterface = (request) => {
     ''
   ]
 }
-
-module.exports = toHTTPInterface

@@ -1,4 +1,4 @@
-const jsesc = require('jsesc')
+import jsesc from "jsesc";
 
 const repr = (value) => {
   // In context of url parameters, don't accept nulls and such.
@@ -160,15 +160,15 @@ const prepareCookies = (request) => {
 const cookieString = 'char(join(join(cookies, \'=\'), \'; \'))'
 const paramsString = 'char(join(join(params, \'=\'), \'&\'))'
 
-module.exports = {
-  repr: repr,
-  setVariableValue: setVariableValue,
-  callFunction: callFunction,
-  addCellArray: addCellArray,
-  structify: structify,
-  containsBody: containsBody,
-  prepareQueryString: prepareQueryString,
-  prepareCookies: prepareCookies,
-  cookieString: cookieString,
-  paramsString: paramsString
+export {
+  repr,
+  setVariableValue,
+  callFunction,
+  addCellArray,
+  structify,
+  containsBody,
+  prepareQueryString,
+  prepareCookies,
+  cookieString,
+  paramsString
 }

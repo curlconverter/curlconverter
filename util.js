@@ -1,8 +1,8 @@
-const cookie = require('cookie')
-const yargs = require('yargs')
-const URL = require('url')
-const querystring = require('query-string')
-const nunjucks = require('nunjucks')
+import cookie from 'cookie'
+import URL from 'url'
+import querystring from 'query-string'
+import nunjucks from 'nunjucks'
+import yargs from 'yargs'
 
 const env = nunjucks.configure(['templates/'], { // set folders with templates
   autoescape: false
@@ -33,7 +33,7 @@ const parseCurlCommand = curlCommand => {
   // after, since it will be taken as an argument to the flag rather than
   // interpreted as a positional argument.  Someone should add all the flags
   // likely to cause trouble here.
-  const parsedArguments = yargs
+  const parsedArguments = yargs()
     .boolean(['I', 'head', 'compressed', 'L', 'k', 'silent', 's'])
     .alias('H', 'header')
     .alias('A', 'user-agent')
@@ -244,7 +244,7 @@ const serializeCookies = cookieDict => {
   return cookieString
 }
 
-module.exports = {
-  parseCurlCommand: parseCurlCommand,
-  serializeCookies: serializeCookies
+export {
+  parseCurlCommand,
+  serializeCookies
 }

@@ -1,6 +1,7 @@
-const util = require('../../util')
-const toWebServices = require('./webservices')
-const toHTTPInterface = require('./httpinterface')
+import * as util from "../../util.js";
+
+import { toWebServices } from "./webservices.js";
+import { toHTTPInterface } from "./httpinterface.js";
 
 // We polyfill the flat function for node 10 which is still the default node version on ubuntu 20.04
 if (!Array.prototype.flat) {
@@ -13,10 +14,8 @@ if (!Array.prototype.flat) {
   });
 }
 
-const toMATLAB = (curlCommand) => {
+export const toMATLAB = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   const lines = toWebServices(request).concat('', toHTTPInterface(request))
   return lines.flat().filter(line => line !== null).join('\n')
 }
-
-module.exports = toMATLAB

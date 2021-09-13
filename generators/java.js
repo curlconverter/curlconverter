@@ -1,9 +1,10 @@
-const util = require('../util')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+
+import jsesc from 'jsesc'
 
 const doubleQuotes = str => jsesc(str, { quotes: 'double' })
 
-const toJava = curlCommand => {
+export const toJava = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let javaCode = ''
 
@@ -83,5 +84,3 @@ const toJava = curlCommand => {
 
   return javaCode + '\n'
 }
-
-module.exports = toJava

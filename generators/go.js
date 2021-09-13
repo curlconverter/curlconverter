@@ -1,7 +1,7 @@
-const util = require('../util')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+import jsesc from 'jsesc'
 
-const toGo = curlCommand => {
+export const toGo = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let goCode = 'package main\n\n'
   goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n'
@@ -55,5 +55,3 @@ const toGo = curlCommand => {
 
   return goCode + '\n'
 }
-
-module.exports = toGo

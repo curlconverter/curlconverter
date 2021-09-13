@@ -1,8 +1,8 @@
-const util = require('../util')
-const jsesc = require('jsesc')
-const querystring = require('query-string')
+import * as util from '../util.js'
 
-require('string.prototype.startswith')
+import jsesc from 'jsesc'
+import querystring from 'query-string'
+import 'string.prototype.startswith'
 
 function reprWithVariable (value, hasEnvironmentVariable) {
   if (!value) {
@@ -195,7 +195,7 @@ function detectEnvVar (inputString) {
   return [detectedVariables, modifiedString.join('')]
 }
 
-const toPython = curlCommand => {
+export const toPython = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
   // Currently, only assuming that the env-var only used in
@@ -331,5 +331,3 @@ const toPython = curlCommand => {
 
   return pythonCode + '\n'
 }
-
-module.exports = toPython

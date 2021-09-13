@@ -1,10 +1,10 @@
 // Author: Bob Rudis (bob@rud.is)
 
-const util = require('../util')
-const jsesc = require('jsesc')
-const querystring = require('query-string')
+import * as util from '../util.js'
 
-require('string.prototype.startswith')
+import jsesc from 'jsesc'
+import querystring from 'query-string'
+import 'string.prototype.startswith'
 
 function reprn (value) { // back-tick quote names
   if (!value) {
@@ -116,7 +116,7 @@ function getFilesString (request) {
   return filesString
 }
 
-const torstats = curlCommand => {
+export const toR = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let cookieDict
   if (request.cookies) {
@@ -215,5 +215,3 @@ const torstats = curlCommand => {
 
   return rstatsCode + '\n'
 }
-
-module.exports = torstats

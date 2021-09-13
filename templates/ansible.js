@@ -1,4 +1,4 @@
-const ansibleTemplate = `-
+export const ansibleTemplate = `-
   name: '{{ request.urlWithoutQuery }}'
   uri:
     url: '{{ request.url }}'
@@ -36,5 +36,3 @@ const ansibleTemplate = `-
 {%- endif %}
   register: result
 `
-
-module.exports = ansibleTemplate

@@ -1,9 +1,11 @@
-const util = require('../util')
-const querystring = require('query-string')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+
+import querystring from 'query-string'
+import jsesc from 'jsesc'
+
 const quote = str => jsesc(str, { quotes: 'single' })
 
-const toPhp = curlCommand => {
+export const toPhp = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
   let headerString = false
@@ -83,5 +85,3 @@ const toPhp = curlCommand => {
 
   return phpCode + '\n'
 }
-
-module.exports = toPhp

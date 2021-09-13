@@ -1,7 +1,7 @@
-const util = require('../util')
-const nunjucks = require('nunjucks')
-const querystring = require('query-string')
-const ansibleTemplate = require('../templates/ansible.js')
+import * as util from '../util.js'
+import nunjucks from 'nunjucks'
+import querystring from 'query-string'
+import { ansibleTemplate } from '../templates/ansible.js'
 function getDataString (request) {
   const parsedQueryString = querystring.parse(request.data, { sort: false })
   const keyCount = Object.keys(parsedQueryString).length
@@ -14,7 +14,7 @@ function getDataString (request) {
   }
 }
 
-const toAnsible = curlCommand => {
+export const toAnsible = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   var convertedData
   if (typeof request.data === 'string' || typeof request.data === 'number') {
@@ -23,5 +23,3 @@ const toAnsible = curlCommand => {
   var result = nunjucks.renderString(ansibleTemplate, { request: request, data: convertedData })
   return result
 }
-
-module.exports = toAnsible
