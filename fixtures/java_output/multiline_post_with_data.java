@@ -10,7 +10,7 @@ class Main {
 	public static void main(String[] args) throws IOException {
 		URL url = new URL("http://fiddle.jshell.net/echo/html/");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-		httpConn.setRequestMethod("POST");
+		httpConn.setRequestMethod("GET");
 
 		httpConn.setRequestProperty("Origin", "http://fiddle.jshell.net");
 
