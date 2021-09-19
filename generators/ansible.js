@@ -8,10 +8,12 @@ function getDataString (request) {
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return JSON.parse(request.data)
-  } else {
-    return request.data
+    try {
+      // This doesn't work with --data-binary ''
+      return JSON.parse(request.data)
+    } catch (e) {}
   }
+  return request.data
 }
 
 export const toAnsible = curlCommand => {

@@ -18,20 +18,23 @@ function getDataString (request) {
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return {
-      mimeType: mimeType,
-      text: JSON.parse(request.data)
-    }
-  } else {
-    for (const paramName in request.headers) {
-      if (paramName === 'Content-Type') {
-        mimeType = request.headers[paramName]
+    // This doesn't work with --data-binary ''
+    try {
+      return {
+        mimeType: mimeType,
+        text: JSON.parse(request.data)
       }
+    } catch (e) {}
+  }
+
+  for (const paramName in request.headers) {
+    if (paramName === 'Content-Type') {
+      mimeType = request.headers[paramName]
     }
-    return {
-      mimeType: mimeType,
-      text: request.data
-    }
+  }
+  return {
+    mimeType: mimeType,
+    text: request.data
   }
 }
 
