@@ -54,9 +54,6 @@ export const toJava = curlCommand => {
   }
 
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     request.data = doubleQuotes(request.data)
     javaCode += '\t\thttpConn.setDoOutput(true);\n'
     javaCode += '\t\tOutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n'

@@ -6,10 +6,6 @@ import querystring from 'query-string'
 
 function getDataString (request) {
   let mimeType = 'application/json'
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-    mimeType = 'text/plain'
-  }
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
   }
@@ -64,7 +60,7 @@ export const toStrest = curlCommand => {
       }
     }
   }
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     response.requests.curl_converter.request.postData = getDataString(request)
   }
 

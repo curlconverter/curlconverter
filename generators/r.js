@@ -40,9 +40,6 @@ function getQueryDict (request) {
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     return 'data = upload_file(\'' + filePath + '\')'
@@ -142,7 +139,7 @@ export const toR = curlCommand => {
 
   let dataString
   let filesString
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
@@ -168,7 +165,7 @@ export const toR = curlCommand => {
   if (request.cookies) {
     requestLineBody += ', httr::set_cookies(.cookies = cookies)'
   }
-  if (typeof request.data === 'string') {
+  if (request.data && typeof request.data === 'string') {
     requestLineBody += ', body = data'
   } else if (request.multipartUploads) {
     requestLineBody += ', body = files'

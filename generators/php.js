@@ -39,9 +39,6 @@ export const toPhp = curlCommand => {
 
   let dataString = false
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     const parsedQueryString = querystring.parse(request.data, { sort: false })
     dataString = '$data = array(\n'
     const dataCount = Object.keys(parsedQueryString).length

@@ -38,9 +38,6 @@ function getQueryDict (request) {
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
@@ -141,10 +138,7 @@ function detectEnvVar (inputString) {
   let currState = IN_STRING
   let envVarStartIndex = -1
 
-  const whiteSpaceSet = new Set()
-  whiteSpaceSet.add(' ')
-  whiteSpaceSet.add('\n')
-  whiteSpaceSet.add('\t')
+  const whiteSpaceSet = new Set(' \n\t')
 
   const modifiedString = []
   for (const idx in inputString) {
@@ -242,7 +236,7 @@ export const toPython = curlCommand => {
 
   let dataString
   let filesString
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
@@ -268,7 +262,7 @@ export const toPython = curlCommand => {
   if (request.cookies) {
     requestLineBody += ', cookies=cookies'
   }
-  if (typeof request.data === 'string') {
+  if (request.data && typeof request.data === 'string') {
     requestLineBody += ', data=data'
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'

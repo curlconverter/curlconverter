@@ -6,13 +6,7 @@ export const toJsFetch = curlCommand => {
 
   let jsFetchCode = ''
 
-  if (request.data === true) {
-    request.data = ''
-  }
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     // escape single quotes if there are any in there
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)

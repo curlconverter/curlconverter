@@ -34,10 +34,6 @@ function getQueries (request) {
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
-
   /*
     if ( !request.isDataRaw && request.data.startsWith('@') ) {
    var filePath = request.data.slice(1);
@@ -140,7 +136,7 @@ export const toJsonString = curlCommand => {
     requestJson.queries = getQueries(request)
   }
 
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     Object.assign(requestJson, getDataString(request))
   } else if (request.multipartUploads) {
     Object.assign(requestJson, getFilesString(request))

@@ -136,7 +136,7 @@ const structify = (obj, indentLevel) => {
 }
 
 const containsBody = (request) => {
-  return request.data || request.multipartUploads
+  return Object.prototype.hasOwnProperty.call(request, 'data') || request.multipartUploads
 }
 
 const prepareQueryString = (request) => {

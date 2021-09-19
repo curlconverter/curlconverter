@@ -15,7 +15,6 @@ const env = nunjucks.configure(['templates/'], { // set folders with templates
 })
 env.addFilter('isArr', something => Array.isArray(something))
 env.addFilter('isString', something => typeof something === 'string')
-env.addFilter('isNumber', something => typeof something === 'number')
 
 const has = (obj, prop) => {
   return Object.prototype.hasOwnProperty.call(obj, prop)

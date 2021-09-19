@@ -9,5 +9,5 @@ import matlab.net.http.*
 import matlab.net.http.io.*
 
 uri = URI('http://a.com/');
-body = FormProvider('123');
+body = JSONProvider(123);
 response = RequestMessage('post', [], body).send(uri.EncodedURI);

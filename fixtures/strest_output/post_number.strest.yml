@@ -5,5 +5,5 @@ requests:
       url: 'http://a.com/'
       method: POST
       postData:
-        mimeType: text/plain
+        mimeType: application/json
         text: 123

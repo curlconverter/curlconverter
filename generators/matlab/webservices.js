@@ -121,8 +121,8 @@ const prepareBasicURI = (request) => {
 
 const prepareBasicData = (request) => {
   let response = []
-  if (request.data) {
-    if (typeof request.data === 'boolean') {
+  if (Object.prototype.hasOwnProperty.call(request, 'data')) {
+    if (request.data === '') {
       response = setVariableValue('body', repr())
     } else if (request.data[0] === '@') {
       response.push(callFunction('body', 'fileread', repr(request.data.slice(1))))
