@@ -31,10 +31,24 @@ import subprocess
 from collections import Counter
 
 # Git repo of curl's source code to extract the args from
-# TODO: make this a command line arg?
+# TODO: make this an optional command line arg
 CURL_REPO = Path(__file__).parent.parent / "curl"
-INPUT_FILE = CURL_REPO / "src" / "tool_getparam.c"
-OUTPUT_FILE = Path(__file__).parent / "util.js"
+
+OLD_INPUT_FILE = CURL_REPO / "src" / "main.c"
+NEW_INPUT_FILE = CURL_REPO / "src" / "tool_getparam.c"
+FILE_MOVED_TAG = "curl-7_23_0"  # when the above change happened
+
+# Originally there were only two arg "types": TRUE/FALSE which signified
+# whether the option expected a value or was a boolean (respectively).
+# Then in
+# 5abfdc0140df0977b02506d16796f616158bfe88
+# which was released as
+NO_OPTIONS_TAG = "curl-7_19_0"
+# all boolean (i.e. FALSE "type") options got an implicit --no-OPTION.
+# Then TRUE/FALSE was changed to ARG_STRING/ARG_BOOL.
+# Then it was realized that not all options should have a --no-OPTION
+# counterpart, so a new ARG_NONE type was added for those in
+# 913c3c8f5476bd7bc4d8d00509396bd4b525b8fc
 
 OPTS_START = "struct LongShort aliases[]= {"
 OPTS_END = "};"
@@ -42,9 +56,14 @@ OPTS_END = "};"
 BOOL_TYPES = ["bool", "none"]
 STR_TYPES = ["string", "filename"]
 ALIAS_TYPES = BOOL_TYPES + STR_TYPES
+RAW_ALIAS_TYPES = ALIAS_TYPES + ['true', 'false']
+
+
+OUTPUT_FILE = Path(__file__).parent / "util.js"
 
 JS_PARAMS_START = "BEGIN GENERATED CURL OPTIONS"
 JS_PARAMS_END = "END GENERATED CURL OPTIONS"
+
 
 # These are options with the same `letter`, which are options that were
 # renamed, along with their new name.
@@ -57,6 +76,16 @@ DUPES = {
     "ssl-reqd": "ssl-reqd",
     "proxy-service-name": "proxy-service-name",
     "socks5-gssapi-service": "proxy-service-name",
+    # These argument names have been deleted,
+    # they should appear as deleted options.
+    "request": "request",
+    "http-request": "request",
+    "use-ascii": "use-ascii",
+    "ftp-ascii": "use-ascii",
+    "ftpport": "ftp-port",
+     "ftp-port":  "ftp-port",
+    "socks": "socks5",
+    "socks5": "socks5",
 }
 
 if not OUTPUT_FILE.is_file():
@@ -81,6 +110,15 @@ def git_branch(git_dir=CURL_REPO):
         text=True,
     ).stdout
     return branch.strip()
+
+def is_git_repo(git_dir=CURL_REPO):
+    result = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=git_dir,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0 and result.stdout.strip() == 'true'
 
 
 def parse_aliases(lines):
@@ -112,7 +150,7 @@ def parse_aliases(lines):
 
         if 1 > len(letter) > 2:
             raise ValueError(f"letter form of --{lname} must be 1 or 2 characters long")
-        if type_ not in ALIAS_TYPES:
+        if type_ not in RAW_ALIAS_TYPES:
             raise ValueError(f"unknown desc for --{lname}: {desc!r}")
 
         alias = {"letter": letter, "lname": lname, "type": type_}
@@ -137,9 +175,9 @@ def fill_out_aliases(aliases, add_no_options=True):
     no_aliases = []
 
     for idx, alias in enumerate(aliases):
-        if alias["type"] == "false":
-            alias["type"] = "string"
         if alias["type"] == "true":
+            alias["type"] = "string"
+        if alias["type"] == "false":
             alias["type"] = "bool" if add_no_options else "none"
 
         if alias["type"] in BOOL_TYPES:
@@ -198,8 +236,8 @@ def split(aliases):
     return long_args, short_args
 
 
-def format_as_js(d, var_name, indent=0, indent_type='\t'):
-    yield f"{indent_type * indent}var {var_name} = {{"
+def format_as_js(d, var_name, indent='\t', indent_level=0):
+    yield f"{indent * indent_level}const {var_name} = {{"
     for top_key, opt in d.items():
 
         def quote(key):
@@ -214,11 +252,11 @@ def format_as_js(d, var_name, indent=0, indent_type='\t'):
 
         if isinstance(opt, dict):
             vals = [f"{quote(k)}: {val_to_js(v)}" for k, v in opt.items()]
-            yield f"{indent_type * (indent + 1)}{top_key!r}: {{{', '.join(vals)}}},"
+            yield f"{indent * (indent_level + 1)}{top_key!r}: {{{', '.join(vals)}}},"
         elif isinstance(opt, str):
-            yield f"{indent_type * (indent + 1)}{top_key!r}: {val_to_js(opt)},"
+            yield f"{indent * (indent_level + 1)}{top_key!r}: {val_to_js(opt)},"
 
-    yield (indent_type * indent) + "};"
+    yield (indent * indent_level) + "};"
 
 
 def parse_version(tag):
@@ -254,9 +292,8 @@ def curl_tags(git_dir=CURL_REPO):
         .splitlines()
     )
     for tag in tags:
-        version = parse_version(tag)
-        if version:
-            yield tag, version
+        if parse_version(tag):
+            yield tag
 
 
 def file_at_commit(filename, commit_hash, git_dir=CURL_REPO):
@@ -274,24 +311,109 @@ def file_at_commit(filename, commit_hash, git_dir=CURL_REPO):
 
 
 if __name__ == "__main__":
-    if git_branch(CURL_REPO) != "master":
-        sys.exit("not on curl repo's git master")
+    # TODO: check that repo is up to date
+    if not is_git_repo(CURL_REPO):
+        sys.exit(f"{CURL_REPO} is not a git repo")
 
-    *tags, last_tag = sorted(curl_tags(CURL_REPO), key=lambda x: x[1])
+    tags = sorted(curl_tags(CURL_REPO), key=parse_version)
+
+    old_aliases = {}
+    filename = "src/main.c"
+    add_no_options = False
+    for tag in tags:
+        print(tag)
+        if tag == FILE_MOVED_TAG:
+            filename = "src/tool_getparam.c"
+        if tag == NO_OPTIONS_TAG:
+            add_no_options = True
+        f = file_at_commit(filename, tag)
+        for alias in fill_out_aliases(parse_aliases(f), add_no_options):
+            alias_name = alias.get('name', alias['lname'])
+            alias_uniqueness = (
+                alias['lname'],
+                DUPES.get(alias_name, alias_name),
+                alias['letter'] if len(alias['letter']) == 1 else '',
+                alias['type'],
+                alias.get('expand', True)
+            )
+            old_aliases.setdefault(alias_uniqueness, []).append(tag)
+    import pprint
+    pprint.pprint(old_aliases)
+    missing_aliases= {}
+    for alias, lifespan in old_aliases.items():
+        if lifespan[-1] != tags[-1]:
+            print(lifespan[-1] , tags[-1])
+            missing_aliases[alias] = lifespan[-1]
+    pprint.pprint(missing_aliases)
 
     aliases = fill_out_aliases(
-        parse_aliases(file_at_commit("src/tool_getparam.c", last_tag[0]))
+        parse_aliases(file_at_commit(filename, tags[-1])),
+        add_no_options
     )
     long_args, short_args = split(aliases)
 
-    moved_file = False
-    add_no_options = False
-    # for tag, version in
-    #     old_aliases = fill_out_aliases(parse_aliases(f), add_no_options)
 
-    js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent_type="  "))
+    current_aliases = {a['lname']: a for a in aliases}
+    changed_aliases = []
+    changed_short_args= {}
+    deleted_aliases = {}
+    for missing_alias, removed in missing_aliases.items():
+        missing_alias = {
+            "lname": missing_alias[0],
+            "name": missing_alias[1],
+            "letter": missing_alias[2],
+            "type": missing_alias[3],
+            "expand": missing_alias[4],
+        }
+        if missing_alias['lname'] in current_aliases:
+            current_alias = current_aliases[missing_alias['lname']]
+            current_alias = {
+                "lname": current_alias['lname'],
+                "name": current_alias.get('name', current_alias['lname']),
+                "letter": current_alias['letter'] if len(current_alias['letter']) == 1 else '',
+                "type": current_alias['type'],
+                "expand": current_alias.get('expand', True),
+            }
+            except_letter = missing_alias.keys() - {'letter'}
+            if all(missing_alias[p] == current_alias[p] for p in except_letter):
+                changed_short_args[missing_alias['letter']] = [missing_alias['lname'], removed]
+            else:
+                print(removed)
+                print(missing_alias, '->', )
+                print(current_alias)
+                print()
+                missing_alias['deleted'] = removed
+                deleted_aliases[missing_alias['lname']] = missing_alias
+            # if all(missing_alias.keys(
+        else:
+            missing_alias['deleted'] = removed
+            deleted_aliases[missing_alias['lname']] = missing_alias
+
+    for deleted_alias in deleted_aliases.values():
+        if not deleted_alias['letter']:
+            continue
+        if deleted_alias['letter'] not in short_args:
+            if deleted_alias['letter'] in changed_short_args:
+                raise ValueError(f"duplicate deleted short option: {deleted_alias} {changed_short_args[deleted_alias['letter']]}")
+            changed_short_args[deleted_alias['letter']] = deleted_alias
+            continue
+        existing = short_args[deleted_alias['letter']]
+        existing_arg = long_args[existing]
+        existing_arg_name = existing_arg.get('name') #, existing_arg['lname'])
+        if existing_arg_name == deleted_alias['name']:
+            continue
+
+
+    pprint.pprint(changed_short_args, sort_dicts=False)
+    pprint.pprint(deleted_aliases, sort_dicts=False)
+
+
+    # breakpoint()
+    # exit()
+
+    js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent="  "))
     js_params_lines += [""]  # separate by a newline
-    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent_type="  "))
+    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent="  "))
 
     new_lines = []
     with open(OUTPUT_FILE) as f:
