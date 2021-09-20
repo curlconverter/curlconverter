@@ -1,18 +1,12 @@
-const util = require('../../util')
-const jsesc = require('jsesc')
+import * as util from "../../util.js";
+import jsesc from "jsesc";
 
-const toJsFetch = curlCommand => {
+export const toJsFetch = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
   let jsFetchCode = ''
 
-  if (request.data === true) {
-    request.data = ''
-  }
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     // escape single quotes if there are any in there
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
@@ -83,5 +77,3 @@ const toJsFetch = curlCommand => {
 
   return jsFetchCode + '\n'
 }
-
-module.exports = toJsFetch

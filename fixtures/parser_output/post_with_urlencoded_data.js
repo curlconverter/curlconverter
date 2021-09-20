@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     url: 'http://fiddle.jshell.net/echo/html/',
     urlWithoutQuery: 'http://fiddle.jshell.net/echo/html/',
     compressed: true,

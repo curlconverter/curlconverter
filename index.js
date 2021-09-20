@@ -1,35 +1,33 @@
-'use strict'
+import { toAnsible } from './generators/ansible.js'
+import { toDart } from './generators/dart.js'
+import { toElixir } from './generators/elixir.js'
+import { toBrowser } from './generators/javascript/browser.js'
+import { toGo } from './generators/go.js'
+import { toJsonString } from './generators/json.js'
+import { toNodeFetch } from './generators/javascript/node-fetch.js'
+import { toNodeRequest } from './generators/javascript/node-request.js'
+import { toPhp } from './generators/php.js'
+import { toPython } from './generators/python.js'
+import { toR } from './generators/r.js'
+import { toRust } from './generators/rust.js'
+import { toStrest } from './generators/strest.js'
+import { toMATLAB } from './generators/matlab/matlab.js'
+import { toJava } from './generators/java.js'
 
-const toAnsible = require('./generators/ansible.js')
-const toDart = require('./generators/dart.js')
-const toElixir = require('./generators/elixir.js')
-const toBrowser = require('./generators/javascript/browser.js')
-const toGo = require('./generators/go.js')
-const toJsonString = require('./generators/json.js')
-const toNodeFetch = require('./generators/javascript/node-fetch.js')
-const toNodeRequest = require('./generators/javascript/node-request.js')
-const toPhp = require('./generators/php.js')
-const toPython = require('./generators/python.js')
-const toR = require('./generators/r.js')
-const toRust = require('./generators/rust')
-const toStrest = require('./generators/strest.js')
-const toMATLAB = require('./generators/matlab/matlab.js')
-const toJava = require('./generators/java.js')
-
-module.exports = {
-  toAnsible: toAnsible,
-  toBrowser: toBrowser,
-  toDart: toDart,
-  toGo: toGo,
-  toJsonString: toJsonString,
-  toNodeFetch: toNodeFetch,
-  toNodeRequest: toNodeRequest,
-  toPhp: toPhp,
-  toPython: toPython,
-  toElixir: toElixir,
-  toR: toR,
-  toRust: toRust,
-  toStrest: toStrest,
-  toMATLAB: toMATLAB,
-  toJava: toJava
+export {
+  toAnsible,
+  toBrowser,
+  toDart,
+  toGo,
+  toJsonString,
+  toNodeFetch,
+  toNodeRequest,
+  toPhp,
+  toPython,
+  toElixir,
+  toR,
+  toRust,
+  toStrest,
+  toMATLAB,
+  toJava
 }

@@ -1,8 +1,8 @@
-const util = require('../util')
-const jsesc = require('jsesc')
-const querystring = require('query-string')
+import * as util from '../util.js'
 
-require('string.prototype.startswith')
+import jsesc from 'jsesc'
+import querystring from 'query-string'
+import 'string.prototype.startswith'
 
 function reprWithVariable (value, hasEnvironmentVariable) {
   if (!value) {
@@ -38,9 +38,6 @@ function getQueryDict (request) {
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
@@ -141,10 +138,7 @@ function detectEnvVar (inputString) {
   let currState = IN_STRING
   let envVarStartIndex = -1
 
-  const whiteSpaceSet = new Set()
-  whiteSpaceSet.add(' ')
-  whiteSpaceSet.add('\n')
-  whiteSpaceSet.add('\t')
+  const whiteSpaceSet = new Set(' \n\t')
 
   const modifiedString = []
   for (const idx in inputString) {
@@ -195,7 +189,7 @@ function detectEnvVar (inputString) {
   return [detectedVariables, modifiedString.join('')]
 }
 
-const toPython = curlCommand => {
+export const toPython = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
   // Currently, only assuming that the env-var only used in
@@ -242,7 +236,7 @@ const toPython = curlCommand => {
 
   let dataString
   let filesString
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
@@ -268,7 +262,7 @@ const toPython = curlCommand => {
   if (request.cookies) {
     requestLineBody += ', cookies=cookies'
   }
-  if (typeof request.data === 'string') {
+  if (request.data && typeof request.data === 'string') {
     requestLineBody += ', data=data'
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'
@@ -331,5 +325,3 @@ const toPython = curlCommand => {
 
   return pythonCode + '\n'
 }
-
-module.exports = toPython

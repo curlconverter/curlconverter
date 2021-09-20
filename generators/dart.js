@@ -1,5 +1,5 @@
-const util = require('../util')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+import jsesc from 'jsesc'
 
 function repr (value) {
   // In context of url parameters, don't accept nulls and such.
@@ -10,7 +10,7 @@ function repr (value) {
   }
 }
 
-const toDart = curlCommand => {
+export const toDart = curlCommand => {
   const r = util.parseCurlCommand(curlCommand)
   let s = ''
 
@@ -72,13 +72,7 @@ const toDart = curlCommand => {
     s += '\n'
   }
 
-  if (r.data === true) {
-    r.data = ''
-  }
   const hasData = r.data
-  if (typeof r.data === 'number') {
-    r.data = r.data.toString()
-  }
   if (hasData) {
     // escape single quotes if there're not already escaped
     if (r.data.indexOf("'") !== -1 && r.data.indexOf("\\'") === -1) r.data = jsesc(r.data)
@@ -120,5 +114,3 @@ const toDart = curlCommand => {
 
   return s + '\n'
 }
-
-module.exports = toDart

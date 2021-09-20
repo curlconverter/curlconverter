@@ -5,5 +5,5 @@
     method: POST
     body:
       123
-    body_format: raw
+    body_format: json
   register: result

@@ -1,10 +1,10 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
-const util = require('../util')
-const querystring = require('query-string')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
 
-require('string.prototype.startswith')
+import querystring from 'query-string'
+import jsesc from 'jsesc'
+import 'string.prototype.startswith'
 
 function repr (value, isKey) {
   // In context of url parameters, don't accept nulls and such.
@@ -34,10 +34,6 @@ function getQueries (request) {
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
-
   /*
     if ( !request.isDataRaw && request.data.startsWith('@') ) {
    var filePath = request.data.slice(1);
@@ -100,7 +96,7 @@ function getFilesString (request) {
   return data
 }
 
-const toJsonString = curlCommand => {
+export const toJsonString = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
 
   const requestJson = {}
@@ -140,7 +136,7 @@ const toJsonString = curlCommand => {
     requestJson.queries = getQueries(request)
   }
 
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     Object.assign(requestJson, getDataString(request))
   } else if (request.multipartUploads) {
     Object.assign(requestJson, getFilesString(request))
@@ -163,5 +159,3 @@ const toJsonString = curlCommand => {
 
   return JSON.stringify(Object.keys(requestJson).length ? requestJson : '{}', null, 4) + '\n'
 }
-
-module.exports = toJsonString

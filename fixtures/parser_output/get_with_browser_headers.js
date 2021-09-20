@@ -1,4 +1,4 @@
-module.exports = { url: 'http://en.wikipedia.org/',
+export default { url: 'http://en.wikipedia.org/',
     urlWithoutQuery: 'http://en.wikipedia.org/',
     compressed: true,
     headers:

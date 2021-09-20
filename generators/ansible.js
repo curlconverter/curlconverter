@@ -1,27 +1,27 @@
-const util = require('../util')
-const nunjucks = require('nunjucks')
-const querystring = require('query-string')
-const ansibleTemplate = require('../templates/ansible.js')
+import * as util from '../util.js'
+import nunjucks from 'nunjucks'
+import querystring from 'query-string'
+import { ansibleTemplate } from '../templates/ansible.js'
 function getDataString (request) {
   const parsedQueryString = querystring.parse(request.data, { sort: false })
   const keyCount = Object.keys(parsedQueryString).length
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return JSON.parse(request.data)
-  } else {
-    return request.data
+    try {
+      // This doesn't work with --data-binary ''
+      return JSON.parse(request.data)
+    } catch (e) {}
   }
+  return request.data
 }
 
-const toAnsible = curlCommand => {
+export const toAnsible = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   var convertedData
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     convertedData = getDataString(request)
   }
   var result = nunjucks.renderString(ansibleTemplate, { request: request, data: convertedData })
   return result
 }
-
-module.exports = toAnsible

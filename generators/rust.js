@@ -1,11 +1,12 @@
-const util = require('../util')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+
+import jsesc from 'jsesc'
 
 const INDENTATION = ' '.repeat(4)
 const indent = (line, level = 1) => INDENTATION.repeat(level) + line
 const quote = str => jsesc(str, { quotes: 'double' })
 
-function toRust (curlCommand) {
+export const toRust = curlCommand => {
   const lines = ['extern crate reqwest;']
   const request = util.parseCurlCommand(curlCommand)
 
@@ -101,5 +102,3 @@ function toRust (curlCommand) {
 
   return lines.join('\n') + '\n'
 }
-
-module.exports = toRust

@@ -22,7 +22,7 @@ class Main {
 
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-		writer.write("{ \"hostname\": \"agent02.example.com\", \"agent_config_state\": \"Enabled\", \"resources\": [\"Java\",\"Linux\"], \"environments\": [\"Dev\"] }");
+		writer.write("{\n        \"hostname\": \"agent02.example.com\",\n        \"agent_config_state\": \"Enabled\",\n        \"resources\": [\"Java\",\"Linux\"],\n        \"environments\": [\"Dev\"]\n        }");
 		writer.flush();
 		writer.close();
 		httpConn.getOutputStream().close();

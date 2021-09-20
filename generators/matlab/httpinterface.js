@@ -1,10 +1,8 @@
-const {
-  repr, setVariableValue,
-  callFunction,
-  structify, containsBody,
-  prepareQueryString, prepareCookies,
-  cookieString
-} = require('./common')
+import {
+  repr, setVariableValue, callFunction,
+  structify, containsBody, prepareQueryString,
+  prepareCookies, cookieString
+} from "./common.js";
 
 const prepareHeaders = (request) => {
   let response = null
@@ -134,7 +132,7 @@ const prepareDataProvider = (value, output, termination, indentLevel, isDataBina
     return callFunction(output, provider, repr(filename), termination)
   }
 
-  if (value === true) {
+  if (value === '') {
     return callFunction(output, 'FileProvider', '', termination)
   }
 
@@ -172,7 +170,7 @@ const prepareData = (request) => {
     }))
 
     response = callFunction('body', 'FormProvider', data)
-  } else if (request.data) {
+  } else if (Object.prototype.hasOwnProperty.call(request, 'data')) {
     response = prepareDataProvider(request.data, 'body', ';', 0, !!request.isDataBinary, !!request.isDataRaw)
     if (!response) {
       response = setVariableValue('body', repr(request.data))
@@ -208,7 +206,7 @@ const prepareRequestMessage = (request) => {
   return response.join('\n')
 }
 
-const toHTTPInterface = (request) => {
+export const toHTTPInterface = (request) => {
   return [
     '%% HTTP Interface',
     'import matlab.net.*',
@@ -226,5 +224,3 @@ const toHTTPInterface = (request) => {
     ''
   ]
 }
-
-module.exports = toHTTPInterface

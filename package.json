@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "3.19.0",
+  "version": "4.0.0-alpha.1",
   "description": "convert curl syntax to native python and javascript http code",
   "homepage": "https://github.com/NickCarneiro/curlconverter",
   "author": {
@@ -18,21 +18,28 @@
     "python",
     "converter"
   ],
+  "type": "module",
   "dependencies": {
-    "cookie": "^0.4.0",
-    "jsesc": "^2.5.2",
-    "nunjucks": "^3.2.2",
-    "query-string": "^6.13.1",
-    "string.prototype.startswith": "^0.2.0",
+    "cookie": "^0.4.1",
+    "jsesc": "^3.0.2",
+    "nunjucks": "^3.2.3",
+    "query-string": "^7.0.1",
+    "string.prototype.startswith": "^1.0.0",
+    "tree-sitter": "^0.19.0",
+    "tree-sitter-bash": "^0.19.0",
+    "tree-sitter-cli": "^0.20.0",
+    "web-tree-sitter": "^0.19.4",
     "yamljs": "^0.3.0",
-    "yargs": "git@github.com:NickCarneiro/yargs-ansi.git"
+    "yargs": "^17.1.1"
   },
   "devDependencies": {
-    "standard": "^14.3.1",
-    "tape": "^4.11.0"
+    "standard": "^16.0.3",
+    "tape": "^5.3.1"
   },
   "scripts": {
-    "test": "./test.sh"
+    "test": "./node_modules/tape/bin/tape test.js",
+    "lint": "./node_modules/standard/bin/cmd.js index.js generators/*.js bin/*.js test.js *.js",
+    "lint:fix": "./node_modules/standard/bin/cmd.js --fix index.js generators/*.js bin/*.js test.js *.js"
   },
   "bin": {
     "curlconverter": "bin/cli.js"

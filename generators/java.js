@@ -1,9 +1,10 @@
-const util = require('../util')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+
+import jsesc from 'jsesc'
 
 const doubleQuotes = str => jsesc(str, { quotes: 'double' })
 
-const toJava = curlCommand => {
+export const toJava = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let javaCode = ''
 
@@ -53,9 +54,6 @@ const toJava = curlCommand => {
   }
 
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     request.data = doubleQuotes(request.data)
     javaCode += '\t\thttpConn.setDoOutput(true);\n'
     javaCode += '\t\tOutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n'
@@ -83,5 +81,3 @@ const toJava = curlCommand => {
 
   return javaCode + '\n'
 }
-
-module.exports = toJava

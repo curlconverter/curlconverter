@@ -1,7 +1,7 @@
-const util = require('../../util')
-const jsesc = require('jsesc')
+import * as util from "../../util.js";
+import jsesc from "jsesc";
 
-const toNodeRequest = curlCommand => {
+export const toNodeRequest = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let nodeRequestCode = 'var request = require(\'request\');\n\n'
   if (request.headers || request.cookies) {
@@ -24,13 +24,7 @@ const toNodeRequest = curlCommand => {
     nodeRequestCode += '};\n\n'
   }
 
-  if (request.data === true) {
-    request.data = ''
-  }
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     // escape single quotes if there are any in there
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
@@ -75,5 +69,3 @@ const toNodeRequest = curlCommand => {
 
   return nodeRequestCode + '\n'
 }
-
-module.exports = toNodeRequest

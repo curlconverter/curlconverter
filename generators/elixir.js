@@ -1,8 +1,8 @@
-var util = require('../util')
-var jsesc = require('jsesc')
-var querystring = require('query-string')
+import * as util from '../util.js'
 
-require('string.prototype.startswith')
+import jsesc from 'jsesc'
+import querystring from 'query-string'
+import 'string.prototype.startswith'
 
 function repr (value) {
   // In context of url parameters, don't accept nulls and such.
@@ -104,7 +104,7 @@ function getBody (request) {
 }
 
 function getFormDataString (request) {
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     return getDataString(request)
   }
 
@@ -146,9 +146,6 @@ ${content}
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
   if (!request.isDataRaw && request.data.startsWith('@')) {
     var filePath = request.data.slice(1)
     if (request.isDataBinary) {
@@ -209,7 +206,7 @@ ${data.join(',\n')}
   return dataString
 }
 
-var toElixir = function (curlCommand) {
+export var toElixir = curlCommand => {
   var request = util.parseCurlCommand(curlCommand)
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
@@ -234,5 +231,3 @@ response = HTTPoison.request(request)
 
   return template
 }
-
-module.exports = toElixir

@@ -1,16 +1,12 @@
-const ansibleTemplate = `-
+export const ansibleTemplate = `-
   name: '{{ request.urlWithoutQuery }}'
   uri:
     url: '{{ request.url }}'
     method: {{ request.method | upper }}
-{%- if (request.data | isString) or (request.data | isNumber) %}
+{%- if (request.data | isString) and (request.data) %}
     body:
       {{ data | dump }}
-    {%- if request.data | isNumber %}
-    body_format: raw
-    {%- else %}
     body_format: json
-    {%- endif %}
 {%- endif %}
 {%- if request.headers %}
     headers:
@@ -36,5 +32,3 @@ const ansibleTemplate = `-
 {%- endif %}
   register: result
 `
-
-module.exports = ansibleTemplate

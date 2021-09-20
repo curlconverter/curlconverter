@@ -1,10 +1,9 @@
-'use strict'
-const test = require('tape')
-const fs = require('fs')
+import test from 'tape'
+import fs from 'fs'
+import yargs from 'yargs'
 
-const utils = require('./util')
-const curlconverter = require('./index.js')
-const yargs = require('yargs')
+import * as utils from './util.js'
+import * as curlconverter from './index.js'
 
 // the curl_commands/ directory contains input files
 // The file name is a description of the command.
@@ -84,14 +83,22 @@ const outputs = [
   }
 ]
 
+const expectedParserOutputs = {}
+for (const filename of fs.readdirSync('./fixtures/parser_output/')) {
+  // Import expected parser outputs once. If we try to do this in the tests, tape will produce
+  // "test exited without ending" errors.
+  const { default: expectedOutput } = await import('./fixtures/parser_output/' + filename)
+  expectedParserOutputs[filename.replace(/.js$/, '')] = expectedOutput
+}
+
 const testFile = fileName => {
   const inputFilePath = 'fixtures/curl_commands/' + fileName
   const inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
 
   const parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
-  const parserFilePath = './fixtures/parser_output/' + fileName.replace('txt', 'js')
-  if (fs.existsSync(parserFilePath)) {
-    const goodParserOutput = require(parserFilePath)
+  const parserOutName = fileName.replace(/.txt$/, '')
+  if (Object.prototype.hasOwnProperty.call(expectedParserOutputs, parserOutName)) {
+    const goodParserOutput = expectedParserOutputs[parserOutName]
     const parsedCommand = utils.parseCurlCommand(inputFileContents)
     test(parserTestName, t => {
       t.deepEquals(parsedCommand, goodParserOutput)
@@ -100,7 +107,7 @@ const testFile = fileName => {
   }
 
   outputs.forEach(output => {
-    if (language && language !== output.name) {
+    if (language && language.toLowerCase() !== output.name.toLowerCase()) {
       console.log(`skipping language: ${output.name}`)
     } else {
       const directory = './fixtures/' + output.name.toLowerCase() + '_output/'
@@ -121,13 +128,14 @@ const testFile = fileName => {
   })
 }
 // get --test=test_name parameter and just run that test on its own
-const testName = yargs.argv.test
-var language = yargs.argv.language
+const testArgs = yargs(process.argv).argv
+const testName = testArgs.test
+const language = testArgs.language
 if (testName) {
   const fileName = testName + '.txt'
   testFile(fileName)
 } else {
   // otherwise, run them all
   const inputFiles = fs.readdirSync('fixtures/curl_commands/')
-  inputFiles.forEach(testFile)
+  inputFiles.map(testFile)
 }

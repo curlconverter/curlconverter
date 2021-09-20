@@ -1,14 +1,11 @@
-const util = require('../util')
-const yaml = require('yamljs')
-const jsesc = require('jsesc')
-const querystring = require('query-string')
+import * as util from '../util.js'
+
+import yaml from 'yamljs'
+import jsesc from 'jsesc'
+import querystring from 'query-string'
 
 function getDataString (request) {
   let mimeType = 'application/json'
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-    mimeType = 'text/plain'
-  }
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
   }
@@ -17,20 +14,23 @@ function getDataString (request) {
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return {
-      mimeType: mimeType,
-      text: JSON.parse(request.data)
-    }
-  } else {
-    for (const paramName in request.headers) {
-      if (paramName === 'Content-Type') {
-        mimeType = request.headers[paramName]
+    // This doesn't work with --data-binary ''
+    try {
+      return {
+        mimeType: mimeType,
+        text: JSON.parse(request.data)
       }
+    } catch (e) {}
+  }
+
+  for (const paramName in request.headers) {
+    if (paramName === 'Content-Type') {
+      mimeType = request.headers[paramName]
     }
-    return {
-      mimeType: mimeType,
-      text: request.data
-    }
+  }
+  return {
+    mimeType: mimeType,
+    text: request.data
   }
 }
 
@@ -43,7 +43,7 @@ function getQueryList (request) {
   return queryList
 }
 
-const toStrest = curlCommand => {
+export const toStrest = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   const response = { version: 2 }
   if (request.insecure) {
@@ -60,7 +60,7 @@ const toStrest = curlCommand => {
       }
     }
   }
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     response.requests.curl_converter.request.postData = getDataString(request)
   }
 
@@ -98,5 +98,3 @@ const toStrest = curlCommand => {
   const yamlString = yaml.stringify(response, 100, 2)
   return yamlString
 }
-
-module.exports = toStrest

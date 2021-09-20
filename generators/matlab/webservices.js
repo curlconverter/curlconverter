@@ -1,10 +1,9 @@
-const {
-  repr, setVariableValue,
-  callFunction, addCellArray,
-  structify, containsBody,
+import {
+  repr, setVariableValue, callFunction,
+  addCellArray, structify, containsBody,
   prepareQueryString, prepareCookies,
   cookieString, paramsString
-} = require('./common')
+} from "./common.js";
 
 const isSupportedByWebServices = (request) => {
   if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {
@@ -122,8 +121,8 @@ const prepareBasicURI = (request) => {
 
 const prepareBasicData = (request) => {
   let response = []
-  if (request.data) {
-    if (typeof request.data === 'boolean') {
+  if (Object.prototype.hasOwnProperty.call(request, 'data')) {
+    if (request.data === '') {
       response = setVariableValue('body', repr())
     } else if (request.data[0] === '@') {
       response.push(callFunction('body', 'fileread', repr(request.data.slice(1))))
@@ -175,7 +174,7 @@ const prepareWebCall = (request, options) => {
   return lines
 }
 
-const toWebServices = (request) => {
+export const toWebServices = (request) => {
   let lines = [
     '%% Web Access using Data Import and Export API'
   ]
@@ -197,5 +196,3 @@ const toWebServices = (request) => {
 
   return lines
 }
-
-module.exports = toWebServices

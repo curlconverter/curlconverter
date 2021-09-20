@@ -1,10 +1,10 @@
 // Author: Bob Rudis (bob@rud.is)
 
-const util = require('../util')
-const jsesc = require('jsesc')
-const querystring = require('query-string')
+import * as util from '../util.js'
 
-require('string.prototype.startswith')
+import jsesc from 'jsesc'
+import querystring from 'query-string'
+import 'string.prototype.startswith'
 
 function reprn (value) { // back-tick quote names
   if (!value) {
@@ -40,9 +40,6 @@ function getQueryDict (request) {
 }
 
 function getDataString (request) {
-  if (typeof request.data === 'number') {
-    request.data = request.data.toString()
-  }
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     return 'data = upload_file(\'' + filePath + '\')'
@@ -116,7 +113,7 @@ function getFilesString (request) {
   return filesString
 }
 
-const torstats = curlCommand => {
+export const toR = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let cookieDict
   if (request.cookies) {
@@ -142,7 +139,7 @@ const torstats = curlCommand => {
 
   let dataString
   let filesString
-  if (typeof request.data === 'string' || typeof request.data === 'number') {
+  if (request.data && typeof request.data === 'string') {
     dataString = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
@@ -168,7 +165,7 @@ const torstats = curlCommand => {
   if (request.cookies) {
     requestLineBody += ', httr::set_cookies(.cookies = cookies)'
   }
-  if (typeof request.data === 'string') {
+  if (request.data && typeof request.data === 'string') {
     requestLineBody += ', body = data'
   } else if (request.multipartUploads) {
     requestLineBody += ', body = files'
@@ -215,5 +212,3 @@ const torstats = curlCommand => {
 
   return rstatsCode + '\n'
 }
-
-module.exports = torstats

@@ -1,19 +1,13 @@
-const util = require('../util')
-const jsesc = require('jsesc')
+import * as util from '../util.js'
+import jsesc from 'jsesc'
 
-const toGo = curlCommand => {
+export const toGo = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   let goCode = 'package main\n\n'
   goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n'
   goCode += 'func main() {\n'
   goCode += '\tclient := &http.Client{}\n'
-  if (request.data === true) {
-    request.data = ''
-  }
   if (request.data) {
-    if (typeof request.data === 'number') {
-      request.data = request.data.toString()
-    }
     if (request.data.indexOf("'") > -1) {
       request.data = jsesc(request.data)
     }
@@ -55,5 +49,3 @@ const toGo = curlCommand => {
 
   return goCode + '\n'
 }
-
-module.exports = toGo
