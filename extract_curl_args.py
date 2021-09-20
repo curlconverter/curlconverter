@@ -3,7 +3,7 @@
 # This script assumes ../curl/ is a git repo containing curl's source code
 # and extracts the list of arguments curl accepts and writes the result as
 # two JS objects (one for --long-options and one for -s (short) options)
-# to curl-to-go.js.
+# to util.js.
 #
 # curl defines its arguments in src/tool_getparam.c:
 # https://github.com/curl/curl/blob/master/src/tool_getparam.c#L73
@@ -61,7 +61,7 @@ DUPES = {
 
 if not OUTPUT_FILE.is_file():
     sys.exit(
-        f"{OUTPUT_FILE} doesn't exist. You should run this script from curl-to-go/"
+        f"{OUTPUT_FILE} doesn't exist. You should run this script from curlconverter/"
     )
 if not CURL_REPO.is_dir():
     sys.exit(
@@ -244,7 +244,7 @@ def parse_version(tag):
 def curl_tags(git_dir=CURL_REPO):
     tags = (
         subprocess.run(
-            ["git", "tags"],
+            ["git", "tag"],
             cwd=git_dir,
             check=True,
             capture_output=True,
