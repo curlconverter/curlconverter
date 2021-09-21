@@ -3,7 +3,7 @@ var request = require('request');
 var dataString = '{"title":"china1"}';
 
 var options = {
-    url: 'http://example.com/post',
+    url: 'http://localhost:28139/post',
     method: 'POST',
     body: dataString
 };

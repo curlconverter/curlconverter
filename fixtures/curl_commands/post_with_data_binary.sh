@@ -1,1 +1,1 @@
-curl 'http://example.com/post' --data-binary '{"title":"china1"}'
+curl 'http://localhost:28139/post' --data-binary '{"title":"china1"}'

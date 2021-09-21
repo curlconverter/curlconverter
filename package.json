@@ -30,6 +30,8 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "colors": "^1.4.0",
+    "diff": "^5.0.0",
     "standard": "^17.0.0-2",
     "tape": "^5.5.2",
     "tree-sitter-cli": "^0.20.6",
@@ -40,7 +42,9 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash",
-    "gen-test": "./gen-test.js"
+    "gen-test": "./gen-test.js",
+    "compare-request": "./compare-request.js",
+    "compare-requests": "./compare-request.js"
   },
   "standard": {
     "ignore": [
