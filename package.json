@@ -39,7 +39,8 @@
     "test": "tape test.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash"
+    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash",
+    "gen-test": "./gen-test.js"
   },
   "standard": {
     "ignore": [
