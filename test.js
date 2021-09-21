@@ -1,15 +1,17 @@
 import test from 'tape'
 import fs from 'fs'
 import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
 import * as utils from './util.js'
 import * as curlconverter from './index.js'
 
-// the curl_commands/ directory contains input files
+// The curl_commands/ directory contains input files
 // The file name is a description of the command.
-// for each input file, there may be a corresponding output file in
-// language-specific directories: node_output, php_output, python_output, parser_output
-// we get a list of all input files, iterate over it, and if an output file exists, compare the output.
+// For each input file, there may be a corresponding output file in
+// language-specific directories: node/, php/, python/, parser/
+// we get a list of all input files, iterate over it, and if an
+// output file exists, compare the output.
 
 const outputs = [
   {
@@ -18,7 +20,7 @@ const outputs = [
     command: curlconverter.toAnsible
   }, {
     name: 'R',
-    extension: 'R',
+    extension: 'r',
     command: curlconverter.toR
   },
   {
@@ -83,11 +85,14 @@ const outputs = [
   }
 ]
 
+const languageNames = outputs.map(o => o.name.toLowerCase())
+languageNames.push('parser')
+
 const expectedParserOutputs = {}
-for (const filename of fs.readdirSync('./fixtures/parser_output/')) {
+for (const filename of fs.readdirSync('./fixtures/parser/')) {
   // Import expected parser outputs once. If we try to do this in the tests, tape will produce
   // "test exited without ending" errors.
-  const { default: expectedOutput } = await import('./fixtures/parser_output/' + filename)
+  const { default: expectedOutput } = await import('./fixtures/parser/' + filename)
   expectedParserOutputs[filename.replace(/.js$/, '')] = expectedOutput
 }
 
@@ -95,8 +100,8 @@ const testFile = fileName => {
   const inputFilePath = 'fixtures/curl_commands/' + fileName
   const inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
 
-  const parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace('.txt', '')
-  const parserOutName = fileName.replace(/.txt$/, '')
+  const parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
+  const parserOutName = fileName.replace(/.sh/, '')
   if (Object.prototype.hasOwnProperty.call(expectedParserOutputs, parserOutName)) {
     const goodParserOutput = expectedParserOutputs[parserOutName]
     const parsedCommand = utils.parseCurlCommand(inputFileContents)
@@ -107,13 +112,13 @@ const testFile = fileName => {
   }
 
   outputs.forEach(output => {
-    if (language && language.toLowerCase() !== output.name.toLowerCase()) {
+    if (languages && !languages.includes(output.name.toLowerCase())) {
       console.log(`skipping language: ${output.name}`)
     } else {
-      const directory = './fixtures/' + output.name.toLowerCase() + '_output/'
+      const directory = './fixtures/' + output.name.toLowerCase() + '/'
 
-      const filePath = directory + fileName.replace('txt', output.extension)
-      const testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace('.txt', '')
+      const filePath = directory + fileName.replace(/\.sh$/, '.' + output.extension)
+      const testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
 
       if (fs.existsSync(filePath)) {
         // normalize code for just \n line endings (aka fix input under Windows)
@@ -127,13 +132,43 @@ const testFile = fileName => {
     }
   })
 }
-// get --test=test_name parameter and just run that test on its own
-const testArgs = yargs(process.argv).argv
-const testName = testArgs.test
-const language = testArgs.language
-if (testName) {
-  const fileName = testName + '.txt'
-  testFile(fileName)
+
+const testArgs = yargs(hideBin(process.argv))
+  .scriptName('test.js')
+  .usage('Usage: $0 [--language <language>] [--test <test_name>] [test_name...]')
+  .option('l', {
+    alias: 'language',
+    choices: languageNames,
+    demandOption: false,
+    describe: 'the language to convert the curl command to',
+    type: 'string'
+  })
+  .option('test', {
+    demandOption: false,
+    describe: 'the name of a file in fixtures/curl_commands without the .sh extension',
+    type: 'string'
+  })
+  .alias('h', 'help')
+  .help()
+  .argv
+
+let languages
+if (testArgs.language) {
+  languages = Array.isArray(testArgs.language) ? testArgs.language : [testArgs.language]
+}
+
+let testNames = testArgs._.slice(1)
+if (Array.isArray(testArgs.test)) {
+  testNames = testNames.concat(testArgs.test)
+} else if (typeof testArgs.test === 'string') {
+  testNames.push(testArgs.test)
+}
+
+if (testNames && testNames.length) {
+  for (const testName of testNames) {
+    const fileName = testName.replace(/ /g, '_') + '.sh'
+    testFile(fileName)
+  }
 } else {
   // otherwise, run them all
   const inputFiles = fs.readdirSync('fixtures/curl_commands/')

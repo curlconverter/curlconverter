@@ -3,6 +3,6 @@
     "raw_url": "http://httpbin.org/patch",
     "method": "patch",
     "files": {
-        "file1": "./fixtures/curl_commands/delete.txt"
+        "file1": "./fixtures/curl_commands/delete.sh"
     }
 }
