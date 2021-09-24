@@ -61,8 +61,8 @@ If you add a new generator, make sure to update the list of supported languages 
 
 If you want to add new functionality, start with a test.
 
-- Create a file containing the curl command in `fixtures/curl_commands` with a descriptive filename like `post_with_headers.txt`
-- Create a file containing the output in `fixtures/python_output/` with a matching filename (but different extension) like `post_with_headers.py`
+- Create a file containing the curl command in `fixtures/curl_commands` with a descriptive filename like `post_with_headers.sh`
+- Create a file containing the output in `fixtures/python/` with a matching filename (but different extension) like `post_with_headers.py`
 - Run tests with `npm test`.
 - If your filenames match correctly, you should see one failing test. Fix it by modifying the parser in `util.js` or the generators in `generators/`
 
@@ -71,13 +71,13 @@ The parser generates a generic data structure consumed by code generator functio
 You can run a specific test with:
 
 ``` sh
-npm test -- --test=test_name
+npm test -- test_name
 # or
-node test.js --test=test_name
+node test.js test_name
 
 ```
 
-where `test_name` is a file (without the extension) in `fixtures/curl_commands/`
+where `test_name` is a file (without the `.sh` extension) in `fixtures/curl_commands/`
 
 You can run only the tests for a specific language generator with:
 
