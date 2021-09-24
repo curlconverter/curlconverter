@@ -6,6 +6,8 @@ Standard.xml
 .github/*
 .gitattributes
 
+docs/*
+
 extract_curl_args.py
 
 fixtures/*
