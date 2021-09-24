@@ -1,12 +1,17 @@
+import path from 'path'
+import URL, { fileURLToPath } from 'url'
+
 import cookie from 'cookie'
-import URL from 'url'
-import querystring from 'query-string'
 import nunjucks from 'nunjucks'
+import querystring from 'query-string'
 import Parser from 'web-tree-sitter'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const bashGrammarFile = path.resolve(__dirname, 'tree-sitter-bash.wasm')
 
 // Top-level await is not available in Safari until 15 (TP)
 await Parser.init()
-const Bash = await Parser.Language.load('./tree-sitter-bash.wasm')
+const Bash = await Parser.Language.load(bashGrammarFile)
 const parser = new Parser()
 parser.setLanguage(Bash)
 
