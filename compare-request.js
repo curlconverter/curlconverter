@@ -105,7 +105,7 @@ const testFile = async (testFilename) => {
     }, 1200000)
   })
 
-  const inputFile = './fixtures/curl_commands/' + testFilename + '.' + 'txt'
+  const inputFile = './fixtures/curl_commands/' + testFilename + '.sh'
   if (!fs.existsSync(inputFile)) {
     throw "input file doesn't exist: " + inputFile
   }
@@ -119,7 +119,7 @@ const testFile = async (testFilename) => {
   } catch (e) {}
 
   for (const language of languages) {
-    const languageFile = './fixtures/' + language + '_output/' + testFilename + '.' + extension[language]
+    const languageFile = './fixtures/' + language + '/' + testFilename + '.' + extension[language]
     if (fs.existsSync(languageFile)) {
       const command = executable[language] + ' ' + languageFile
       try {
@@ -163,7 +163,7 @@ if (argv.language) {
 // if no tests were specified, run them all
 const tests = argv._.length ? argv._ : fs.readdirSync('./fixtures/curl_commands/')
 for (const test of tests) {
-  const testName = test.replace(/ /g, '_').replace(/\.txt$/, '')
+  const testName = test.replace(/ /g, '_').replace(/\.sh$/, '')
   await testFile(testName)
 }
 

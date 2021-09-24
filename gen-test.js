@@ -76,13 +76,13 @@ const argv = yargs(hideBin(process.argv))
   .argv
 
 const inPaths = argv._.map((infile) => {
-  // check that all files exist and add '.txt' to them if needed
+  // check that all files exist and add '.sh' to them if needed
   const inPath = path.parse(infile)
 
-  if (inPath.ext && inPath.ext !== '.txt') {
+  if (inPath.ext && inPath.ext !== '.sh') {
     process.stderr.write("unexpected file extension '" + ext + "' for " +
                           infile + '. command_file should have no extension ' +
-                          "or end with '.txt'\n")
+                          "or end with '.sh'\n")
     process.exit()
   }
 
@@ -91,8 +91,8 @@ const inPaths = argv._.map((infile) => {
   } else {
     inPath.dir = path.resolve(inPath.dir)
   }
-  // TODO: don't add .txt to relative file paths
-  const fullPath = path.join(inPath.dir, inPath.name + '.txt')
+  // TODO: don't add .sh to relative file paths
+  const fullPath = path.join(inPath.dir, inPath.name + '.sh')
   if (!fs.existsSync(fullPath)) {
     process.stderr.write('no such file: ' + fullPath + '\n')
     process.exit()
@@ -110,9 +110,9 @@ for (const inPath of inPaths) {
     const code = generator(curl)
 
     const newExt = '.' + extension[language]
-    const newFilename = path.basename(inPath).replace(/\.txt$/, newExt)
+    const newFilename = path.basename(inPath).replace(/\.sh$/, newExt)
     // TODO: if path is relative, calculate a different fixturesDir
-    const outPath = path.resolve(fixturesDir, language + '_output', newFilename)
+    const outPath = path.resolve(fixturesDir, language, newFilename)
     fs.writeFileSync(outPath, code)
 
     console.error('wrote to', outPath)
@@ -123,8 +123,8 @@ for (const inPath of inPaths) {
     const parserOutput = utils.parseCurlCommand(curl)
     const code = 'export default ' + jsesc(parserOutput, { compact: false, indent: '    ' })
 
-    const newFilename = path.basename(inPath).replace(/\.txt$/, '.js')
-    const outPath = path.resolve(fixturesDir, 'parser_output', newFilename)
+    const newFilename = path.basename(inPath).replace(/\.sh$/, '.js')
+    const outPath = path.resolve(fixturesDir, 'parser', newFilename)
 
     fs.writeFileSync(outPath, code + '\n')
     console.error('wrote to', outPath)
