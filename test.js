@@ -99,7 +99,15 @@ for (const filename of fs.readdirSync('./fixtures/parser/')) {
 
 const testFile = fileName => {
   const inputFilePath = 'fixtures/curl_commands/' + fileName
-  const inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
+  let inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
+  // Skip comment lines
+  const inputLines = []
+  for (const line of inputFileContents.split('\n')) {
+    if (!line.trim().startsWith('#')) {
+      inputLines.push(line)
+    }
+  }
+  inputFileContents = inputLines.join('\n')
 
   const parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
   const parserOutName = fileName.replace(/\.sh/, '')

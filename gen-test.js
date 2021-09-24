@@ -103,7 +103,16 @@ const inPaths = argv._.map((infile) => {
 let producedOutput = false
 for (const inPath of inPaths) {
   producedOutput = true
-  const curl = fs.readFileSync(inPath, 'utf8')
+
+  let curl = fs.readFileSync(inPath, 'utf8')
+  // Skip comment lines
+  const inputLines = []
+  for (const line of curl.split('\n')) {
+    if (!line.trim().startsWith('#')) {
+      inputLines.push(line)
+    }
+  }
+  curl = inputLines.join('\n')
 
   for (const language of argv.language) {
     const generator = curlconverter[translate[language]]

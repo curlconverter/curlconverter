@@ -109,7 +109,15 @@ const testFile = async (testFilename) => {
   if (!fs.existsSync(inputFile)) {
     throw "input file doesn't exist: " + inputFile
   }
-  const curlCommand = fs.readFileSync(inputFile, 'utf8')
+  let curlCommand = fs.readFileSync(inputFile, 'utf8')
+  const inputLines = []
+  for (const line of curl.split('\n')) {
+    if (!line.trim().startsWith('#')) {
+      inputLines.push(line)
+    }
+  }
+  curlCommand = inputLines.join('\n')
+
   const requestedUrl = utils.parseCurlCommand(curlCommand).url
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
     throw inputFile + ' requests ' + requestedUrl + '. It needs to request ' + EXPECTED_URL + ' so we can capture the data it sends.'
