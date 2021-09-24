@@ -206,8 +206,7 @@ ${data.join(',\n')}
   return dataString
 }
 
-export var toElixir = curlCommand => {
-  var request = util.parseCurlCommand(curlCommand)
+export const _toElixir = request => {
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -230,4 +229,8 @@ response = HTTPoison.request(request)
 `
 
   return template
+}
+export var toElixir = curlCommand => {
+  var request = util.parseCurlCommand(curlCommand)
+  return _toElixir(request)
 }

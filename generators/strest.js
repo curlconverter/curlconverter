@@ -43,8 +43,7 @@ function getQueryList (request) {
   return queryList
 }
 
-export const toStrest = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
+export const _toStrest = request => {
   const response = { version: 2 }
   if (request.insecure) {
     response.allowInsecure = true
@@ -97,4 +96,8 @@ export const toStrest = curlCommand => {
 
   const yamlString = yaml.stringify(response, 100, 2)
   return yamlString
+}
+export const toStrest = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toStrest(request)
 }

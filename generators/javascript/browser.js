@@ -1,7 +1,6 @@
-import { toJsFetch } from "./fetch.js";
+import { _toJsFetch, toJsFetch } from "./fetch.js";
 
-export const toBrowser = curlCommand => {
-  const browserCode = toJsFetch(curlCommand)
-
-  return browserCode
+export {
+  _toJsFetch as _toBrowser,
+  toJsFetch as toBrowser
 }

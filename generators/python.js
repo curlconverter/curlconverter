@@ -189,9 +189,7 @@ function detectEnvVar (inputString) {
   return [detectedVariables, modifiedString.join('')]
 }
 
-export const toPython = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
-
+export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
@@ -324,4 +322,8 @@ export const toPython = curlCommand => {
   }
 
   return pythonCode + '\n'
+}
+export const toPython = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toPython(request)
 }

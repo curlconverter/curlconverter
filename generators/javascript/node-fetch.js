@@ -1,8 +1,11 @@
-import { toJsFetch } from "./fetch.js";
+import { _toJsFetch } from "./fetch.js";
 
-export const toNodeFetch = curlCommand => {
+export const _toNodeFetch = request => {
   let nodeFetchCode = 'var fetch = require(\'node-fetch\');\n\n'
-  nodeFetchCode += toJsFetch(curlCommand)
-
+  nodeFetchCode += _toJsFetch(request)
   return nodeFetchCode
+}
+export const toNodeFetch = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toNodeFetch(request)
 }

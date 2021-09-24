@@ -5,9 +5,7 @@ import jsesc from 'jsesc'
 
 const quote = str => jsesc(str, { quotes: 'single' })
 
-export const toPhp = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
-
+export const _toPhp = request => {
   let headerString = false
   if (request.headers) {
     headerString = '$headers = array(\n'
@@ -81,4 +79,8 @@ export const toPhp = curlCommand => {
   phpCode += requestLine
 
   return phpCode + '\n'
+}
+export const toPhp = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toPhp(request)
 }

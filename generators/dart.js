@@ -10,8 +10,7 @@ function repr (value) {
   }
 }
 
-export const toDart = curlCommand => {
-  const r = util.parseCurlCommand(curlCommand)
+export const _toDart = r => {
   let s = ''
 
   if (r.auth || r.isDataBinary) s += "import 'dart:convert';\n"
@@ -113,4 +112,8 @@ export const toDart = curlCommand => {
     '}'
 
   return s + '\n'
+}
+export const toDart = curlCommand => {
+  const r = util.parseCurlCommand(curlCommand)
+  return _toDart(r)
 }

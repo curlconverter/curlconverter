@@ -29,7 +29,7 @@ const pushProp = (obj, prop, value) => {
 }
 
 // BEGIN GENERATED CURL OPTIONS
-const opts = {
+const curlLongOpts = {
   url: { type: 'string' },
   'dns-ipv4-addr': { type: 'string' },
   'dns-ipv6-addr': { type: 'string' },
@@ -383,7 +383,7 @@ const opts = {
   next: { type: 'bool' }
 }
 
-const shortOpts = {
+const curlShortOpts = {
   0: 'http1.0',
   1: 'tlsv1',
   2: 'sslv2',
@@ -453,7 +453,7 @@ const shortOpts = {
 // TODO: extract this from curl's source code
 const canBeList = new Set([
   // TODO: unlike curl, we don't support multiple
-  // URLs and just take the first one.
+  // URLs and just take the last one.
   'url',
   'header', 'proxy-header',
   'form',
@@ -462,13 +462,14 @@ const canBeList = new Set([
   'resolve',
   'connect-to',
   // TODO: support multiple cookies
+  // https://github.com/NickCarneiro/curlconverter/issues/161
   // 'cookie',
   'quote',
   'telnet-option'
 ])
 
 const shortened = {}
-for (const [opt, val] of Object.entries(opts)) {
+for (const [opt, val] of Object.entries(curlLongOpts)) {
   if (!has(val, 'name')) {
     val.name = opt
   }
@@ -486,12 +487,12 @@ for (const [opt, val] of Object.entries(opts)) {
   }
 }
 for (const [shortenedOpt, vals] of Object.entries(shortened)) {
-  if (!has(opts, shortenedOpt)) {
+  if (!has(curlLongOpts, shortenedOpt)) {
     if (vals.length === 1) {
-      opts[shortenedOpt] = vals[0]
+      curlLongOpts[shortenedOpt] = vals[0]
     } else if (vals.length > 1) {
       // More than one option shortens to this, it's ambiguous
-      opts[shortenedOpt] = null
+      curlLongOpts[shortenedOpt] = null
     }
   }
 }
@@ -506,7 +507,92 @@ const toBoolean = opt => {
   return true
 }
 
-const parseCurlCommand = curlCommand => {
+// NOTE: this bash string parsing is probably not entirely correct.
+// We get the text as it appears in the bash source code,
+// which might have escaped newlines (if the string spans
+// multiple lines) and escaped quotes and maybe other
+// things I don't know about.
+const parseSingleQuoteString = (str) => {
+  const BACKSLASHES = /\\(\n|')/gs
+  const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
+  return str.slice(1, -1).replace(BACKSLASHES, unescapeChar)
+}
+const parseDoubleQuoteString = (str) => {
+  const BACKSLASHES = /\\(\n|\\|")/gs
+  const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
+  return str.slice(1, -1).replace(BACKSLASHES, unescapeChar)
+}
+// ANSI-C quoted strings look $'like this'.
+// Not all shells have them but bash does
+// https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+//
+// https://git.savannah.gnu.org/cgit/bash.git/tree/lib/sh/strtrans.c
+const parseAnsiCString = (str) => {
+  const ANSI_BACKSLASHES = /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs
+  const unescapeChar = (m) => {
+    switch (m.charAt(1)) {
+      case '\\':
+        return '\\'
+      case 'a':
+        return '\a' // eslint-disable-line
+      case 'b':
+        return '\b'
+      case 'e':
+      case 'E':
+        return '\x1B'
+      case 'f':
+        return '\f'
+      case 'n':
+        return '\n'
+      case 'r':
+        return '\r'
+      case 't':
+        return '\t'
+      case 'v':
+        return '\v'
+      case "'":
+        return "'"
+      case '"':
+        return '"'
+      case '?':
+        return '?'
+      case 'c':
+        // bash handles all characters by considering the first byte
+        // of its UTF-8 input and can produce invalid UTF-8, whereas
+        // JavaScript stores strings in UTF-16
+        if (m.codePointAt(2) > 127) {
+          throw Error("non-ASCII control character in ANSI-C quoted string: '\\u{" + m.codePointAt(2).toString(16) + "}'")
+        }
+        // If this produces a 0x00 (null) character, it will cause bash to
+        // terminate the string at that character, but we return the null
+        // character in the result.
+        return m[2] === '?' ? '\x7F' : String.fromCodePoint(m[2].toUpperCase().codePointAt(0) & 0b00011111)
+      case 'x':
+      case 'u':
+      case 'U':
+        // Hexadecimal character literal
+        // Unlike bash, this will error if the the code point is greater than 10FFFF
+        return String.fromCodePoint(parseInt(m.slice(2), 16))
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+        // Octal character literal
+        return String.fromCodePoint(parseInt(m.slice(1), 8) % 256)
+      default:
+        // There must be a mis-match between ANSI_BACKSLASHES and the switch statement
+        throw Error('unhandled character in ANSI-C escape code: ' + JSON.stringify(m))
+    }
+  }
+
+  return str.slice(2, -1).replace(ANSI_BACKSLASHES, unescapeChar)
+}
+
+const tokenizeBashStr = (curlCommand) => {
   const curlArgs = parser.parse(curlCommand)
   // The AST must be in a nice format, i.e.
   // (program
@@ -544,102 +630,12 @@ const parseCurlCommand = curlCommand => {
   }
   // TODO: add childrenForFieldName to tree-sitter node/web bindings and then
   // use that here instead
-  let [cmdName, ...args] = command.children
+  // TODO: you can have variable_assignment before the actual command
+  // MY_VAR=foo curl example.com
+  const [cmdName, ...args] = command.children
   if (cmdName.type !== 'command_name') {
     // TODO: better error message.
     throw "expected a 'command_name' AST node, got " + cmdName.type + ' instead'
-  }
-  // TODO: no trim? error message?
-  if (cmdName.text.trim() !== 'curl') {
-    return
-  }
-
-  // NOTE: this string parsing is probably not entirely correct.
-  // We get the text as it appears in the bash source code,
-  // which might have escaped newlines (if the string spans
-  // multiple lines) and escaped quotes and maybe other
-  // things I don't know about.
-  //
-  // TODO: it would be nice for tree-sitter to do this for us.
-  // https://github.com/tree-sitter/tree-sitter-bash/issues/101
-  const parseSingleQuoteString = (str) => {
-    const BACKSLASHES = /\\(\n|')/gs
-    const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
-    return str.slice(1, -1).replace(BACKSLASHES, unescapeChar)
-  }
-  const parseDoubleQuoteString = (str) => {
-    const BACKSLASHES = /\\(\n|\\|")/gs
-    const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
-    return str.slice(1, -1).replace(BACKSLASHES, unescapeChar)
-  }
-  // ANSI-C quoted strings look $'like this'.
-  // Not all shells have them but bash does
-  // https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
-  //
-  // https://git.savannah.gnu.org/cgit/bash.git/tree/lib/sh/strtrans.c
-  const parseAnsiCString = (str) => {
-    const ANSI_BACKSLASHES = /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs
-    const unescapeChar = (m) => {
-      switch (m.charAt(1)) {
-        case '\\':
-          return '\\'
-        case 'a':
-          return '\a' // eslint-disable-line
-        case 'b':
-          return '\b'
-        case 'e':
-        case 'E':
-          return '\x1B'
-        case 'f':
-          return '\f'
-        case 'n':
-          return '\n'
-        case 'r':
-          return '\r'
-        case 't':
-          return '\t'
-        case 'v':
-          return '\v'
-        case "'":
-          return "'"
-        case '"':
-          return '"'
-        case '?':
-          return '?'
-        case 'c':
-          // bash handles all characters by considering the first byte
-          // of its UTF-8 input and can produce invalid UTF-8, whereas
-          // JavaScript stores strings in UTF-16
-          if (m.codePointAt(2) > 127) {
-            throw Error("non-ASCII control character in ANSI-C quoted string: '\\u{" + m.codePointAt(2).toString(16) + "}'")
-          }
-          // If this produces a 0x00 (null) character, it will cause bash to
-          // terminate the string at that character, but we return the null
-          // character in the result.
-          return m[2] === '?' ? '\x7F' : String.fromCodePoint(m[2].toUpperCase().codePointAt(0) & 0b00011111)
-        case 'x':
-        case 'u':
-        case 'U':
-          // Hexadecimal character literal
-          // Unlike bash, this will error if the the code point is greater than 10FFFF
-          return String.fromCodePoint(parseInt(m.slice(2), 16))
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-          // Octal character literal
-          return String.fromCodePoint(parseInt(m.slice(1), 8) % 256)
-        default:
-          // There must be a mis-match between ANSI_BACKSLASHES and the switch statement
-          throw Error('unhandled character in ANSI-C escape code: ' + JSON.stringify(m))
-      }
-    }
-
-    return str.slice(2, -1).replace(ANSI_BACKSLASHES, unescapeChar)
   }
 
   const toVal = (node) => {
@@ -656,6 +652,7 @@ const parseCurlCommand = curlCommand => {
         return node.text // TODO: handle variables properly downstream
       case 'concatenation':
         // item[]=1 turns into item=1 if we don't do this
+        // https://github.com/tree-sitter/tree-sitter-bash/issues/104
         if (node.children.every(n => n.type === 'word')) {
           return node.text
         }
@@ -663,10 +660,14 @@ const parseCurlCommand = curlCommand => {
       default:
         // console.error(curlCommand)
         // console.error(curlArgs.rootNode.toString())
-        throw 'unexpected argument type "' + node.type + '". Must be one of "word", "string", "raw_string", "ascii_c_string" or "simple_expansion"'
+        throw 'unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string" or "simple_expansion"'
     }
   }
-  args = args.map(toVal)
+  return [cmdName.text.trim(), ...args.map(toVal)]
+}
+
+const parseArgs = (args, opts) => {
+  const [longOpts, shortOpts] = opts || [curlLongOpts, curlShortOpts]
 
   const parsedArguments = {}
   for (let i = 0, stillflags = true; i < args.length; i++) {
@@ -677,7 +678,7 @@ const parseCurlCommand = curlCommand => {
            following (URL) argument to start with -. */
         stillflags = false
       } else if (arg.startsWith('--')) {
-        const longArg = opts[arg.slice(2)]
+        const longArg = longOpts[arg.slice(2)]
         if (longArg === null) {
           throw 'ambiguous argument ' + arg
         }
@@ -718,7 +719,7 @@ const parseCurlCommand = curlCommand => {
             throw 'option ' + arg + ': is unknown'
           }
           const shortFor = shortOpts[arg[j]]
-          const longArg = opts[shortFor]
+          const longArg = longOpts[shortFor]
           if (longArg.type === 'string') {
             let val
             if (j + 1 < arg.length) {
@@ -749,13 +750,16 @@ const parseCurlCommand = curlCommand => {
       parsedArguments[arg] = values[values.length - 1]
     }
   }
+  return parsedArguments
+}
 
+const buildRequest = parsedArguments => {
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
     // TODO: better error message (could be parsing fail)
     throw 'no URL specified!'
   }
-  let url = parsedArguments.url[0]
+  let url = parsedArguments.url[parsedArguments.url.length - 1]
 
   let headers
   let cookieString
@@ -919,6 +923,25 @@ const parseCurlCommand = curlCommand => {
   return request
 }
 
+const parseCurlCommand = (curlCommand) => {
+  const [cmdName, ...args] = Array.isArray(curlCommand) ? curlCommand : tokenizeBashStr(curlCommand)
+  if (typeof cmdName === 'undefined') {
+    const errorMsg = Array.isArray(curlCommand) ? 'no arguments provided' : 'failed to parse input'
+    throw errorMsg
+  }
+  if (cmdName.trim() !== 'curl') {
+    const shortenedCmdName = cmdName.length > 30 ? cmdName.slice(0, 27) + '...' : cmdName
+    if (cmdName.startsWith('curl ')) {
+      throw 'command should begin with a single token "curl" but instead begins with ' + JSON.stringify(shortenedCmdName)
+    } else {
+      throw 'command should begin with "curl" but instead begins with ' + JSON.stringify(shortenedCmdName)
+    }
+  }
+
+  const parsedArguments = parseArgs(args)
+  return buildRequest(parsedArguments)
+}
+
 const serializeCookies = cookieDict => {
   let cookieString = ''
   let i = 0
@@ -935,6 +958,10 @@ const serializeCookies = cookieDict => {
 }
 
 export {
+  curlLongOpts,
+  curlShortOpts,
+  parseArgs,
+  buildRequest,
   parseCurlCommand,
   serializeCookies
 }

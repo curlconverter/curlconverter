@@ -14,8 +14,11 @@ if (!Array.prototype.flat) {
   });
 }
 
-export const toMATLAB = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
+export const _toMATLAB = request => {
   const lines = toWebServices(request).concat('', toHTTPInterface(request))
   return lines.flat().filter(line => line !== null).join('\n')
+}
+export const toMATLAB = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toMATLAB(request)
 }

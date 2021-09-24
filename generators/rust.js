@@ -6,10 +6,8 @@ const INDENTATION = ' '.repeat(4)
 const indent = (line, level = 1) => INDENTATION.repeat(level) + line
 const quote = str => jsesc(str, { quotes: 'double' })
 
-export const toRust = curlCommand => {
+export const _toRust = request => {
   const lines = ['extern crate reqwest;']
-  const request = util.parseCurlCommand(curlCommand)
-
   const hasHeaders = request.headers || request.cookies
   {
     // Generate imports.
@@ -101,4 +99,8 @@ export const toRust = curlCommand => {
   )
 
   return lines.join('\n') + '\n'
+}
+export const toRust = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toRust(request)
 }
