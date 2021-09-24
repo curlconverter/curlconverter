@@ -3,13 +3,15 @@
 `curlconverter` acts as a drop-in replacement for [`curl`](https://en.wikipedia.org/wiki/CURL) and outputs a Python, JavaScript, Go, Rust, PHP, Java, R, Elixir, Dart or MATLAB program instead:
 
 ```sh
-$ curlconverter python -X PUT --data "Hello, world!" example.com
+$ curlconverter -X PUT --data "Hello, world!" example.com
 import requests
 
 data = 'Hello, world!'
 
 response = requests.put('http://example.com', data=data)
 ```
+
+You can choose your desired output language by passing `--language <language>`.
 
 [![NPM version][npm-image]][npm-url]
 

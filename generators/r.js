@@ -113,8 +113,7 @@ function getFilesString (request) {
   return filesString
 }
 
-export const toR = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
+export const _toR = request => {
   let cookieDict
   if (request.cookies) {
     cookieDict = 'cookies = c(\n'
@@ -211,4 +210,8 @@ export const toR = curlCommand => {
   }
 
   return rstatsCode + '\n'
+}
+export const toR = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toR(request)
 }

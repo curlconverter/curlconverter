@@ -4,8 +4,7 @@ import jsesc from 'jsesc'
 
 const doubleQuotes = str => jsesc(str, { quotes: 'double' })
 
-export const toJava = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
+export const _toJava = request => {
   let javaCode = ''
 
   if (request.auth) {
@@ -80,4 +79,8 @@ export const toJava = curlCommand => {
   javaCode += '}'
 
   return javaCode + '\n'
+}
+export const toJava = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toJava(request)
 }

@@ -16,12 +16,15 @@ function getDataString (request) {
   return request.data
 }
 
-export const toAnsible = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
+export const _toAnsible = request => {
   var convertedData
   if (request.data && typeof request.data === 'string') {
     convertedData = getDataString(request)
   }
   var result = nunjucks.renderString(ansibleTemplate, { request: request, data: convertedData })
   return result
+}
+export const toAnsible = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toAnsible(request)
 }

@@ -289,9 +289,9 @@ if __name__ == "__main__":
     # for tag, version in
     #     old_aliases = fill_out_aliases(parse_aliases(f), add_no_options)
 
-    js_params_lines = list(format_as_js(long_args, "opts", indent_type="  "))
+    js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent_type="  "))
     js_params_lines += [""]  # separate by a newline
-    js_params_lines += list(format_as_js(short_args, "shortOpts", indent_type="  "))
+    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent_type="  "))
 
     new_lines = []
     with open(OUTPUT_FILE) as f:

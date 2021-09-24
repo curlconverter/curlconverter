@@ -96,9 +96,7 @@ function getFilesString (request) {
   return data
 }
 
-export const toJsonString = curlCommand => {
-  const request = util.parseCurlCommand(curlCommand)
-
+export const _toJsonString = request => {
   const requestJson = {}
 
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
@@ -158,4 +156,8 @@ export const toJsonString = curlCommand => {
   }
 
   return JSON.stringify(Object.keys(requestJson).length ? requestJson : '{}', null, 4) + '\n'
+}
+export const toJsonString = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
+  return _toJsonString(request)
 }
