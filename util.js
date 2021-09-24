@@ -665,7 +665,7 @@ const tokenizeBashStr = (curlCommand) => {
       default:
         // console.error(curlCommand)
         // console.error(curlArgs.rootNode.toString())
-        throw 'unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string" or "simple_expansion"'
+        throw 'unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"'
     }
   }
   return [cmdName.text.trim(), ...args.map(toVal)]
@@ -685,11 +685,11 @@ const parseArgs = (args, opts) => {
       } else if (arg.startsWith('--')) {
         const longArg = longOpts[arg.slice(2)]
         if (longArg === null) {
-          throw 'ambiguous argument ' + arg
+          throw 'option ' + arg + ': is ambiguous'
         }
         if (typeof longArg === 'undefined') {
           // TODO: extract a list of deleted arguments to check here
-          throw 'unknown argument ' + arg
+          throw 'option ' + arg + ': is unknown'
         }
 
         if (longArg.type === 'string') {
