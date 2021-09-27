@@ -62,14 +62,41 @@ language: the language to convert the curl command to. The choices are
   rust
   strest
 
+curl_options: these should be passed exactly as they would be passed to curl.
+  see 'curl --help' or 'curl --manual' for which options are allowed here
+
 If no <curl_options> are passed, the script will read from stdin.`
 
 const curlConverterLongOpts = {
-  language: { type: 'string', name: 'language' }
+  language: { type: 'string' }
+}
+for (const [opt, val] of Object.entries(curlConverterLongOpts)) {
+  if (!Object.prototype.hasOwnProperty.call(val, 'name')) {
+    val.name = opt
+  }
+}
+const opts = [{ ...curlLongOpts, ...curlConverterLongOpts }, curlShortOpts]
+
+const exitWithError = error => {
+  if (typeof error === 'string' || error instanceof String) {
+    for (const line of error.toString().split('\n')) {
+      console.error('error: ' + line)
+    }
+  } else {
+    // curlconverter only throws strings.
+    // If this isn't our error, print the full traceback
+    console.error(error)
+  }
+  process.exit(1)
 }
 
 const argv = process.argv.slice(2)
-const parsedArguments = parseArgs(argv, [{ ...curlLongOpts, ...curlConverterLongOpts }, curlShortOpts])
+let parsedArguments
+try {
+  parsedArguments = parseArgs(argv, opts)
+} catch (e) {
+  exitWithError(e)
+}
 if (parsedArguments.help) {
   console.log(USAGE.trim())
   process.exit(0)
@@ -77,9 +104,10 @@ if (parsedArguments.help) {
 
 const language = Object.prototype.hasOwnProperty.call(parsedArguments, 'language') ? parsedArguments.language : defaultLanguage
 if (!Object.prototype.hasOwnProperty.call(translate, language)) {
-  console.error('error: unexpected --language: ' + JSON.stringify(language))
-  console.error('error: must be one of: ' + Object.keys(translate).join(', '))
-  process.exit(1)
+  exitWithError(
+    'unexpected --language: ' + JSON.stringify(language) + '\n' +
+    'must be one of: ' + Object.keys(translate).join(', ')
+  )
 }
 
 // If curlConverterLongOpts were the only args passed, read from stdin
@@ -89,9 +117,17 @@ for (const opt of Object.keys(curlConverterLongOpts)) {
 }
 if (!Object.keys(parsedArguments).length) {
   const input = fs.readFileSync(0, 'utf8')
-  request = parseCurlCommand(input)
+  try {
+    request = parseCurlCommand(input)
+  } catch (e) {
+    exitWithError(e)
+  }
 } else {
-  request = buildRequest(parsedArguments)
+  try {
+    request = buildRequest(parsedArguments)
+  } catch (e) {
+    exitWithError(e)
+  }
 }
 
 // Warning for users using the pre-4.0 CLI
