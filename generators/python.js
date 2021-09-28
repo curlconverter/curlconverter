@@ -2,7 +2,6 @@ import * as util from '../util.js'
 
 import jsesc from 'jsesc'
 import querystring from 'query-string'
-import 'string.prototype.startswith'
 
 function reprWithVariable (value, hasEnvironmentVariable) {
   if (!value) {

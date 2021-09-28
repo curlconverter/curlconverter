@@ -2,7 +2,6 @@ import * as util from '../util.js'
 
 import jsesc from 'jsesc'
 import querystring from 'query-string'
-import 'string.prototype.startswith'
 
 function repr (value) {
   // In context of url parameters, don't accept nulls and such.
