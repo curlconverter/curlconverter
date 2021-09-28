@@ -4,7 +4,6 @@ import * as util from '../util.js'
 
 import jsesc from 'jsesc'
 import querystring from 'query-string'
-import 'string.prototype.startswith'
 
 function reprn (value) { // back-tick quote names
   if (!value) {
