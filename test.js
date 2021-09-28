@@ -92,8 +92,9 @@ const expectedParserOutputs = {}
 for (const filename of fs.readdirSync('./fixtures/parser/')) {
   // Import expected parser outputs once. If we try to do this in the tests, tape will produce
   // "test exited without ending" errors.
-  const { default: expectedOutput } = await import('./fixtures/parser/' + filename)
-  expectedParserOutputs[filename.replace(/.js$/, '')] = expectedOutput
+  const expectedOutputJSON = fs.readFileSync('./fixtures/parser/' + filename)
+  const expectedOutput = JSON.parse(expectedOutputJSON)
+  expectedParserOutputs[filename.replace(/\.json$/, '')] = expectedOutput
 }
 
 const testFile = fileName => {
@@ -101,7 +102,7 @@ const testFile = fileName => {
   const inputFileContents = fs.readFileSync(inputFilePath, 'utf-8')
 
   const parserTestName = 'Parser: ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
-  const parserOutName = fileName.replace(/.sh/, '')
+  const parserOutName = fileName.replace(/\.sh/, '')
   if (Object.prototype.hasOwnProperty.call(expectedParserOutputs, parserOutName)) {
     const goodParserOutput = expectedParserOutputs[parserOutName]
     const parsedCommand = utils.parseCurlCommand(inputFileContents)
