@@ -17,15 +17,15 @@ function getCookies (request) {
     return ''
   }
 
-  var cookies = []
-  for (var cookieName in request.cookies) {
+  const cookies = []
+  for (const cookieName in request.cookies) {
     cookies.push(`${cookieName}=${request.cookies[cookieName]}`)
   }
   return `cookies: [~s|${cookies.join('; ')}|]`
 }
 
 function getOptions (request) {
-  var hackneyOptions = []
+  const hackneyOptions = []
 
   const auth = getBasicAuth(request)
   if (auth) {
@@ -41,7 +41,7 @@ function getOptions (request) {
     hackneyOptions.push(cookies)
   }
 
-  var hackneyOptionsString = ''
+  let hackneyOptionsString = ''
   if (hackneyOptions.length) {
     hackneyOptionsString = `hackney: [${hackneyOptions.join(', ')}]`
   }
@@ -54,9 +54,9 @@ function getBasicAuth (request) {
     return ''
   }
 
-  var splitAuth = request.auth.split(':')
-  var user = splitAuth[0] || ''
-  var password = splitAuth[1] || ''
+  const splitAuth = request.auth.split(':')
+  const user = splitAuth[0] || ''
+  const password = splitAuth[1] || ''
 
   return `basic_auth: {${repr(user)}, ${repr(password)}}`
 }
@@ -65,10 +65,10 @@ function getQueryDict (request) {
   if (!request.query) {
     return '[]'
   }
-  var queryDict = '[\n'
-  for (var paramName in request.query) {
-    var rawValue = request.query[paramName]
-    var paramValue
+  let queryDict = '[\n'
+  for (const paramName in request.query) {
+    const rawValue = request.query[paramName]
+    let paramValue
     if (Array.isArray(rawValue)) {
       paramValue = '[' + rawValue.map(repr).join(', ') + ']'
     } else {
@@ -84,8 +84,8 @@ function getHeadersDict (request) {
   if (!request.headers) {
     return '[]'
   }
-  var dict = '[\n'
-  for (var headerName in request.headers) {
+  let dict = '[\n'
+  for (const headerName in request.headers) {
     dict += `    {${repr(headerName)}, ${repr(request.headers[headerName])}},\n`
   }
   dict += '  ]'
@@ -111,19 +111,19 @@ function getFormDataString (request) {
     return ''
   }
 
-  var fileArgs = []
-  var dataArgs = []
-  for (var multipartKey in request.multipartUploads) {
-    var multipartValue = request.multipartUploads[multipartKey]
+  let fileArgs = []
+  let dataArgs = []
+  for (const multipartKey in request.multipartUploads) {
+    const multipartValue = request.multipartUploads[multipartKey]
     if (multipartValue.startsWith('@')) {
-      var fileName = multipartValue.slice(1)
+      const fileName = multipartValue.slice(1)
       fileArgs.push(`    {:file, ~s|${fileName}|}`)
     } else {
       dataArgs.push(`    {${repr(multipartKey)}, ${repr(multipartValue)}}`)
     }
   }
 
-  var content = []
+  let content = []
   fileArgs = fileArgs.join(',\n')
   if (fileArgs) {
     content.push(fileArgs)
@@ -146,7 +146,7 @@ ${content}
 
 function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
-    var filePath = request.data.slice(1)
+    const filePath = request.data.slice(1)
     if (request.isDataBinary) {
       return `File.read!("${filePath}")`
     } else {
@@ -154,11 +154,11 @@ function getDataString (request) {
     }
   }
 
-  var parsedQueryString = querystring.parse(request.data, { sort: false })
-  var keyCount = Object.keys(parsedQueryString).length
-  var singleKeyOnly =
+  const parsedQueryString = querystring.parse(request.data, { sort: false })
+  const keyCount = Object.keys(parsedQueryString).length
+  const singleKeyOnly =
     keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  var singularData = request.isDataBinary || singleKeyOnly
+  const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
     return `~s|${request.data}|`
   } else {
@@ -167,21 +167,21 @@ function getDataString (request) {
 }
 
 function getMultipleDataString (request, parsedQueryString) {
-  var repeatedKey = false
-  for (var key in parsedQueryString) {
-    var value = parsedQueryString[key]
+  let repeatedKey = false
+  for (const key in parsedQueryString) {
+    const value = parsedQueryString[key]
     if (Array.isArray(value)) {
       repeatedKey = true
     }
   }
 
-  var dataString
+  let dataString
   if (repeatedKey) {
     const data = []
-    for (key in parsedQueryString) {
-      value = parsedQueryString[key]
+    for (const key in parsedQueryString) {
+      const value = parsedQueryString[key]
       if (Array.isArray(value)) {
-        for (var i = 0; i < value.length; i++) {
+        for (let i = 0; i < value.length; i++) {
           data.push(`    {${repr(key)}, ${repr(value[i])}}`)
         }
       } else {
@@ -193,8 +193,8 @@ ${data.join(',\n')}
   ]`
   } else {
     const data = []
-    for (key in parsedQueryString) {
-      value = parsedQueryString[key]
+    for (const key in parsedQueryString) {
+      const value = parsedQueryString[key]
       data.push(`    {${repr(key)}, ${repr(value)}}`)
     }
     dataString = `[
@@ -229,7 +229,7 @@ response = HTTPoison.request(request)
 
   return template
 }
-export var toElixir = curlCommand => {
-  var request = util.parseCurlCommand(curlCommand)
+export const toElixir = curlCommand => {
+  const request = util.parseCurlCommand(curlCommand)
   return _toElixir(request)
 }

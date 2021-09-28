@@ -1,4 +1,3 @@
-import path from 'path'
 import URL from 'url'
 
 import cookie from 'cookie'

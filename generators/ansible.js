@@ -17,11 +17,11 @@ function getDataString (request) {
 }
 
 export const _toAnsible = request => {
-  var convertedData
+  let convertedData
   if (request.data && typeof request.data === 'string') {
     convertedData = getDataString(request)
   }
-  var result = nunjucks.renderString(ansibleTemplate, { request: request, data: convertedData })
+  const result = nunjucks.renderString(ansibleTemplate, { request: request, data: convertedData })
   return result
 }
 export const toAnsible = curlCommand => {
