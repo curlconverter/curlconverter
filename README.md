@@ -33,9 +33,11 @@ Install the JavaScript library for use in your own projects with
 $ npm install --save curlconverter
 ```
 
+curlconverter requires Node 12+.
+
 ## Usage
 
-The JavaScript API is a bunch of functions that take a string or an array
+The JavaScript API is a bunch of functions that can take either a string or an array
 
 ```js
 import * as curlconverter from 'curlconverter';
@@ -74,9 +76,9 @@ response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=coo
 
 > I'd rather write programs to write programs than write programs.
 >
-> — Dick Sites, Digital Equipment Corporation, September 1985
+> — Dick Sites, Digital Equipment Corporation, 1985
 
-Make sure you're running **Node 14** or greater. The test suite will fail on older versions of Node.js.
+Make sure you're running **Node 12** or greater. The test suite will fail on older versions of Node.js.
 
 If you add a new generator, make sure to update the list of supported languages in [bin/cli.js](bin/cli.js) or else it won't be accessible from the command line. Further, you'll want to update test.js and index.js for your new generator to make it part of the testing.
 
