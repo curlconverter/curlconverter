@@ -1,3 +1,4 @@
+import * as util from "../../util.js";
 import { _toJsFetch } from "./fetch.js";
 
 export const _toNodeFetch = request => {
