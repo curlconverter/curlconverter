@@ -1,9 +1,7 @@
-
 import * as curlconverter from './index.js'
 import * as utils from './util.js'
 
 import fs from 'fs'
-
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -12,22 +10,22 @@ export const fixturesDir = path.resolve(__dirname, 'fixtures')
 
 // TODO: move this (or something like this) to index.js?
 const converters = {
-  'ansible': {
+  ansible: {
     name: 'Ansible',
     extension: '.yml',
     converter: curlconverter.toAnsible
   },
-  'r': {
+  r: {
     name: 'R',
     extension: '.r',
     converter: curlconverter.toR
   },
-  'python': {
+  python: {
     name: 'Python',
     extension: '.py',
     converter: curlconverter.toPython
   },
-  'browser': {
+  browser: {
     name: 'Browser',
     extension: '.js',
     converter: curlconverter.toBrowser
@@ -37,56 +35,56 @@ const converters = {
     extension: '.js',
     converter: curlconverter.toNodeFetch
   },
-  'node': {
+  node: {
     name: 'Node',
     extension: '.js',
     converter: curlconverter.toNodeRequest
   },
-  'php': {
+  php: {
     name: 'PHP',
     extension: '.php',
     converter: curlconverter.toPhp
   },
-  'go': {
+  go: {
     name: 'Go',
     extension: '.go',
     converter: curlconverter.toGo
   },
-  'rust': {
+  rust: {
     name: 'Rust',
     extension: '.rs',
     converter: curlconverter.toRust
   },
-  'strest': {
+  strest: {
     name: 'Strest',
     extension: '.strest.yml',
     converter: curlconverter.toStrest
   },
-  'json': {
+  json: {
     name: 'Json',
     extension: '.json',
     converter: curlconverter.toJsonString
   },
-  'dart': {
+  dart: {
     name: 'Dart',
     extension: '.dart',
     converter: curlconverter.toDart
   },
-  'elixir': {
+  elixir: {
     name: 'Elixir',
     extension: '.ex',
     converter: curlconverter.toElixir
   },
-  'matlab': {
+  matlab: {
     name: 'MATLAB',
     extension: '.m',
     converter: curlconverter.toMATLAB
   },
-  'java': {
+  java: {
     name: 'Java',
     extension: '.java',
     converter: curlconverter.toJava
-  },
+  }
 }
 
 // Check that we have at least one test for every generator
@@ -107,14 +105,12 @@ for (const [converterName, converter] of Object.entries(converters)) {
     const dirContents = fs.readdirSync(testDir)
     if (!dirContents.length) {
       console.error(testDir + " doesn't contain any files")
-    } else if (!dirContents.filter(f => f.endsWith(converter.extension)).length) {
-      // TODO: early stopping
+    } else if (!dirContents.filter(f => f.endsWith(converter.extension)).length) { // TODO: early stopping
       console.error(testDir + " doesn't have any files ending with '" + converter.extension + "'")
     }
   } else {
     console.error(converterName + " doesn't have a corresponding directory in fixtures/")
   }
-
 }
 
 // Special case that returns the parsed argument object

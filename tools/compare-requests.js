@@ -58,17 +58,17 @@ const argv = yargs(hideBin(process.argv))
   .scriptName('compare-request')
   .usage('Usage: $0 [--no-diff] [-l <language>] [test_name...]')
   .option('diff', {
-    demandOption: false,
-    default: true,
     describe: 'print a colorized diff instead of the raw requests',
+    default: true,
+    demandOption: false,
     type: 'boolean'
   })
   .option('l', {
     alias: 'language',
-    choices: Object.keys(extension),
-    demandOption: false,
-    default: ['python'],
     describe: 'the language of the generated program to compare against',
+    choices: Object.keys(extension),
+    default: ['python'],
+    demandOption: false,
     type: 'string'
   })
   .alias('h', 'help')

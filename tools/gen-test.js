@@ -1,24 +1,23 @@
 #!/usr/bin/env node
 
-import * as utils from '../util.js'
-import { fixturesDir, converters } from '../test-utils.js'
+import fs from 'fs'
+import path from 'path'
 
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import fs from 'fs'
 
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { fixturesDir, converters } from '../test-utils.js'
 
 const argv = yargs(hideBin(process.argv))
   .scriptName('gen-test')
   .usage('Usage: $0 [-l <language>] [curl_command_filename...]')
   .option('l', {
     alias: 'language',
-    choices: Object.keys(converters),
-    demandOption: false,
-    default: Object.keys(converters),
     describe: 'the language to convert the curl command to ' + '(`--language parser` saves parser state as JSON)',
+    choices: Object.keys(converters),
+    default: Object.keys(converters),
+    defaultDescription: 'all of them',
+    demandOption: false,
     type: 'string'
   })
   .positional('curl_command_filename', { // this has no effect, it's here for --help
@@ -31,15 +30,14 @@ const argv = yargs(hideBin(process.argv))
 
 const languages = Array.isArray(argv.language) ? argv.language : [argv.language]
 
-let allRelativePaths = null
 const inPaths = argv._.map((infile) => {
   // check that all files exist and add '.sh' to them if needed
   const inPath = path.parse(infile)
 
   if (inPath.ext && inPath.ext !== '.sh') {
-    process.stderr.write("unexpected file extension '" + ext + "' for " +
-                          infile + '. command_file should have no extension ' +
-                          "or end with '.sh'\n")
+    console.error("unexpected file extension '" + inPath.ext + "' for " +
+                  infile + '. command_file should have no extension ' +
+                  "or end with '.sh'")
     process.exit()
   }
   if (!inPath.dir) {
@@ -49,15 +47,15 @@ const inPaths = argv._.map((infile) => {
   }
   const fullPath = path.join(inPath.dir, inPath.name + '.sh')
   if (!fs.existsSync(fullPath)) {
-    process.stderr.write('no such file: ' + fullPath + '\n')
+    console.error('no such file: ' + fullPath)
     process.exit()
   }
   return fullPath
 })
 
 for (const inPath of inPaths) {
-  let curl = fs.readFileSync(inPath, 'utf8')
-  for (const language of argv.language) {
+  const curl = fs.readFileSync(inPath, 'utf8')
+  for (const language of languages) {
     const converter = converters[language]
     const code = converter.converter(curl)
 
@@ -69,6 +67,6 @@ for (const inPath of inPaths) {
   }
 }
 
-if (inPaths.length) {
+if (inPaths.length && languages.length) {
   console.error('Please carefully check all the output for correctness before committing.')
 }
