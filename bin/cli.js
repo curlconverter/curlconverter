@@ -20,8 +20,7 @@ import { _toStrest } from '../generators/strest.js'
 
 import fs from 'fs'
 
-// TODO: report which version of curl the args were extracted from
-const VERSION = '4.0.0-alpha.5'
+const VERSION = '4.0.0-alpha.6 (curl 7.79.1)'
 
 // sets a default in case --language isn't passed
 const defaultLanguage = 'python'
