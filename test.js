@@ -1,10 +1,12 @@
 import test from 'tape'
+import path from 'path'
 import fs from 'fs'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
 import * as utils from './util.js'
 import * as curlconverter from './index.js'
+import { readInputTestFile, converters } from './test-utils.js'
 
 // The curl_commands/ directory contains input files
 // The file name is a description of the command.
@@ -147,8 +149,9 @@ const testArgs = yargs(hideBin(process.argv))
   .usage('Usage: $0 [--language <language>] [--test <test_name>] [test_name...]')
   .option('l', {
     alias: 'language',
-    choices: languageNames,
+    choices: Object.keys(converters),
     demandOption: false,
+    default: Object.keys(converters),
     describe: 'the language to convert the curl command to',
     type: 'string'
   })
@@ -161,11 +164,9 @@ const testArgs = yargs(hideBin(process.argv))
   .help()
   .argv
 
-let languages
-if (testArgs.language) {
-  languages = Array.isArray(testArgs.language) ? testArgs.language : [testArgs.language]
-}
+const languages = Array.isArray(testArgs.language) ? testArgs.language : [testArgs.language]
 
+// Test names can be positional args or --test=<test name>. We need to merge them
 let testNames = testArgs._.slice(1)
 if (Array.isArray(testArgs.test)) {
   testNames = testNames.concat(testArgs.test)
@@ -173,13 +174,41 @@ if (Array.isArray(testArgs.test)) {
   testNames.push(testArgs.test)
 }
 
-if (testNames && testNames.length) {
-  for (const testName of testNames) {
-    const fileName = testName.replace(/ /g, '_') + '.sh'
-    testFile(fileName)
+const testFileNames = testNames && testNames.length ?
+  testNames.map(t => t.replace(/ /g, '_') + '.sh') :
+  fs.readdirSync('./fixtures/curl_commands/') // otherwise, run them all
+
+for (const fileName of testFileNames) {
+  const inputFilePath = './fixtures/curl_commands/' + fileName
+  let inputFileContents = readInputTestFile(inputFilePath)
+
+  for (const [outputLanguage, output] of Object.entries(converters)) {
+    if (!languages.includes(outputLanguage)) {
+      console.log(`skipping language: ${output.name}`)
+      continue
+    }
+
+    const directory = './fixtures/' + outputLanguage + '/'
+
+    const filePath = directory + fileName.replace(/\.sh$/, output.extension)
+    const testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
+
+    if (fs.existsSync(filePath)) {
+      // normalize code for just \n line endings (aka fix input under Windows)
+      const expected = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
+      const actual = output.converter(inputFileContents)
+      if (outputLanguage === 'parser') {
+        test(testName, t => {
+          // TODO: `actual` is a needless roundtrip
+          t.deepEquals(JSON.parse(actual), JSON.parse(expected))
+          t.end()
+        })
+      } else {
+        test(testName, t => {
+          t.equal(actual, expected)
+          t.end()
+        })
+      }
+    }
   }
-} else {
-  // otherwise, run them all
-  const inputFiles = fs.readdirSync('fixtures/curl_commands/')
-  inputFiles.map(testFile)
 }

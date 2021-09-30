@@ -42,9 +42,9 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash",
-    "gen-test": "./gen-test.js",
-    "compare-request": "./compare-request.js",
-    "compare-requests": "./compare-request.js"
+    "gen-test": "./tools/gen-test.js",
+    "compare-requests": "./tools/compare-requests.js",
+    "compare-request": "./tools/compare-requests.js"
   },
   "standard": {
     "ignore": [
