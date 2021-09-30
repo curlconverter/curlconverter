@@ -52,23 +52,27 @@ const testFileNames = testNames && testNames.length
   ? testNames.map(t => t.replace(/ /g, '_') + '.sh')
   : fs.readdirSync(curlCommandsDir) // if no --test specified, run them all
 
+for (const outputLanguage of Object.keys(converters)) {
+  // TODO: always test 'parser'?
+  if (!languages.includes(outputLanguage)) {
+    console.error('skipping language: ' + outputLanguage)
+  }
+}
+
 for (const fileName of testFileNames) {
   const inputFilePath = path.resolve(curlCommandsDir, fileName)
   const inputFileContents = fs.readFileSync(inputFilePath, 'utf8')
 
-  for (const [outputLanguage, output] of Object.entries(converters)) {
-    if (!languages.includes(outputLanguage)) {
-      console.log('skipping language: ' + output.name)
-      continue
-    }
+  for (const outputLanguage of languages) {
+    const converter = converters[outputLanguage]
 
-    const filePath = path.resolve(fixturesDir, outputLanguage, fileName.replace(/\.sh$/, output.extension))
-    const testName = output.name + ': ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
+    const filePath = path.resolve(fixturesDir, outputLanguage, fileName.replace(/\.sh$/, converter.extension))
+    const testName = converter.name + ': ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
 
     if (fs.existsSync(filePath)) {
       // normalize code for just \n line endings (aka fix input under Windows)
       const expected = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
-      const actual = output.converter(inputFileContents)
+      const actual = converter.converter(inputFileContents)
       if (outputLanguage === 'parser') {
         test(testName, t => {
           // TODO: `actual` is a needless roundtrip
