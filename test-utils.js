@@ -1,21 +1,14 @@
-import fs from 'fs'
 
 import * as curlconverter from './index.js'
 import * as utils from './util.js'
 
-export const readInputTestFile = (filepath) => {
-  let contents = fs.readFileSync(filepath, 'utf8')
+import fs from 'fs'
 
-  // Skip comment lines
-  const inputLines = []
-  for (const line of contents.split('\n')) {
-    if (!line.trimStart().startsWith('#')) {
-      inputLines.push(line)
-    }
-  }
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-  return inputLines.join('\n')
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+export const fixturesDir = path.resolve(__dirname, 'fixtures')
 
 // TODO: move this (or something like this) to index.js?
 const converters = {
@@ -96,6 +89,8 @@ const converters = {
   },
 }
 
+// Check that we have at least one test for every generator
+// https://github.com/NickCarneiro/curlconverter/pull/299
 const testedConverters = Object.entries(converters).map(c => c[1].converter.name)
 const availableConverters = Object.entries(curlconverter).map(c => c[1].name)
 const missing = availableConverters.filter(c => !testedConverters.includes(c))
@@ -105,6 +100,21 @@ if (missing.length) {
 }
 if (extra.length) {
   console.error('these non-existant converters are being tested: ' + extra.join(', '))
+}
+for (const [converterName, converter] of Object.entries(converters)) {
+  const testDir = path.resolve(fixturesDir, converterName)
+  if (fs.existsSync(testDir)) {
+    const dirContents = fs.readdirSync(testDir)
+    if (!dirContents.length) {
+      console.error(testDir + " doesn't contain any files")
+    } else if (!dirContents.filter(f => f.endsWith(converter.extension)).length) {
+      // TODO: early stopping
+      console.error(testDir + " doesn't have any files ending with '" + converter.extension + "'")
+    }
+  } else {
+    console.error(converterName + " doesn't have a corresponding directory in fixtures/")
+  }
+
 }
 
 // Special case that returns the parsed argument object

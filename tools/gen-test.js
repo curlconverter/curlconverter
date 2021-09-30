@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as utils from '../util.js'
-import { readInputTestFile, converters } from '../test-utils.js'
+import { fixturesDir, converters } from '../test-utils.js'
 
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -9,9 +9,6 @@ import fs from 'fs'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const fixturesDir = path.resolve(__dirname, '../fixtures')
 
 const argv = yargs(hideBin(process.argv))
   .scriptName('gen-test')
@@ -59,8 +56,7 @@ const inPaths = argv._.map((infile) => {
 })
 
 for (const inPath of inPaths) {
-  let curl = readInputTestFile(inPath, 'utf8')
-
+  let curl = fs.readFileSync(inPath, 'utf8')
   for (const language of argv.language) {
     const converter = converters[language]
     const code = converter.converter(curl)

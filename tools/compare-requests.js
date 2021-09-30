@@ -5,22 +5,17 @@ import util from 'util'
 import { diffLines } from 'diff'
 import { exec } from 'child_process'
 
-import * as utils from './util.js'
+import * as utils from '../util.js'
+import { fixturesDir } from '../test-utils.js'
 
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import fs from 'fs'
 
-import path from 'path'
-import { fileURLToPath } from 'url'
-
 const awaitableExec = util.promisify(exec)
 
 const DEFAULT_PORT = 28139 // chosen randomly
 const EXPECTED_URL = 'http://localhost:' + DEFAULT_PORT
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const fixturesDir = path.resolve(__dirname, 'fixtures')
 
 // Only Python is supported currently.
 const extension = {
@@ -109,15 +104,7 @@ const testFile = async (testFilename) => {
   if (!fs.existsSync(inputFile)) {
     throw "input file doesn't exist: " + inputFile
   }
-  let curlCommand = fs.readFileSync(inputFile, 'utf8')
-  const inputLines = []
-  for (const line of curl.split('\n')) {
-    if (!line.trim().startsWith('#')) {
-      inputLines.push(line)
-    }
-  }
-  curlCommand = inputLines.join('\n')
-
+  const curlCommand = fs.readFileSync(inputFile, 'utf8')
   const requestedUrl = utils.parseCurlCommand(curlCommand).url
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
     throw inputFile + ' requests ' + requestedUrl + '. It needs to request ' + EXPECTED_URL + ' so we can capture the data it sends.'

@@ -6,7 +6,7 @@ import { hideBin } from 'yargs/helpers'
 
 import * as utils from './util.js'
 import * as curlconverter from './index.js'
-import { readInputTestFile, converters } from './test-utils.js'
+import { converters } from './test-utils.js'
 
 // The curl_commands/ directory contains input files
 // The file name is a description of the command.
@@ -180,7 +180,7 @@ const testFileNames = testNames && testNames.length ?
 
 for (const fileName of testFileNames) {
   const inputFilePath = './fixtures/curl_commands/' + fileName
-  let inputFileContents = readInputTestFile(inputFilePath)
+  let inputFileContents = fs.readFileSync(inputFilePath, 'utf8')
 
   for (const [outputLanguage, output] of Object.entries(converters)) {
     if (!languages.includes(outputLanguage)) {

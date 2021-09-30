@@ -699,14 +699,29 @@ const tokenizeBashStr = (curlCommand) => {
   if (curlArgs.rootNode.childCount < 1) {
     // TODO: better error message.
     throw new CCError('empty "program" node')
-  } else if (curlArgs.rootNode.childCount > 1) {
-    // TODO: warn that everything after the first "command" node is ignored
-  } else if (curlArgs.rootNode.firstChild.type !== 'command') {
-    // TODO: better error message.
-    throw new CCError("expected a 'command' AST node, got " + curlArgs.rootNode.firstChild.type + ' instead')
   }
 
-  const command = curlArgs.rootNode.firstChild
+  // Get the curl call AST node. Skip comments
+  let command
+  for (const programChildNode of curlArgs.rootNode.children) {
+    if (programChildNode.type === 'comment') {
+      continue
+    } else if (programChildNode.type === 'command') {
+      command = programChildNode
+      // TODO: if there are more `command` nodes,
+      // warn that everything after the first one is ignored
+      break
+    } else {
+      // TODO: better error message.
+      throw new CCError("expected a 'command' AST node, got " + curlArgs.rootNode.firstChild.type + ' instead')
+    }
+  }
+  if (!command) {
+    // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
+    // We would probably need to keep track of the node types we've seen.
+    throw new CCError("expected a 'command' AST node, only found 'comment' nodes")
+  }
+
   if (command.childCount < 1) {
     // TODO: better error message.
     throw new CCError('empty "command" node')
