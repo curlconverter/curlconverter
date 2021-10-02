@@ -56,7 +56,7 @@ OPTS_END = "};"
 BOOL_TYPES = ["bool", "none"]
 STR_TYPES = ["string", "filename"]
 ALIAS_TYPES = BOOL_TYPES + STR_TYPES
-RAW_ALIAS_TYPES = ALIAS_TYPES + ['true', 'false']
+RAW_ALIAS_TYPES = ALIAS_TYPES + ["true", "false"]
 
 
 OUTPUT_FILE = Path(__file__).parent / "util.js"
@@ -83,7 +83,7 @@ DUPES = {
     "use-ascii": "use-ascii",
     "ftp-ascii": "use-ascii",
     "ftpport": "ftp-port",
-     "ftp-port":  "ftp-port",
+    "ftp-port": "ftp-port",
     "socks": "socks5",
     "socks5": "socks5",
 }
@@ -111,6 +111,7 @@ def git_branch(git_dir=CURL_REPO):
     ).stdout
     return branch.strip()
 
+
 def is_git_repo(git_dir=CURL_REPO):
     result = subprocess.run(
         ["git", "rev-parse", "--is-inside-work-tree"],
@@ -118,7 +119,7 @@ def is_git_repo(git_dir=CURL_REPO):
         capture_output=True,
         text=True,
     )
-    return result.returncode == 0 and result.stdout.strip() == 'true'
+    return result.returncode == 0 and result.stdout.strip() == "true"
 
 
 def parse_aliases(lines):
@@ -236,7 +237,7 @@ def split(aliases):
     return long_args, short_args
 
 
-def format_as_js(d, var_name, indent='\t', indent_level=0):
+def format_as_js(d, var_name, indent="\t", indent_level=0):
     yield f"{indent * indent_level}const {var_name} = {{"
     for top_key, opt in d.items():
 
@@ -259,7 +260,7 @@ def format_as_js(d, var_name, indent='\t', indent_level=0):
     yield (indent * indent_level) + "};"
 
 
-def parse_version(tag):
+def parse_tag(tag):
     if not tag.startswith("curl-") or tag.startswith("curl_"):
         return None
     version = tag.removeprefix("curl-").removeprefix("curl_")
@@ -292,7 +293,7 @@ def curl_tags(git_dir=CURL_REPO):
         .splitlines()
     )
     for tag in tags:
-        if parse_version(tag):
+        if parse_tag(tag):
             yield tag
 
 
@@ -315,101 +316,109 @@ if __name__ == "__main__":
     if not is_git_repo(CURL_REPO):
         sys.exit(f"{CURL_REPO} is not a git repo")
 
-    tags = sorted(curl_tags(CURL_REPO), key=parse_version)
+    tags = sorted(curl_tags(CURL_REPO), key=parse_tag)
 
-    old_aliases = {}
+    aliases = {}
+    short_aliases = {}
     filename = "src/main.c"
     add_no_options = False
     for tag in tags:
-        print(tag)
         if tag == FILE_MOVED_TAG:
             filename = "src/tool_getparam.c"
         if tag == NO_OPTIONS_TAG:
             add_no_options = True
         f = file_at_commit(filename, tag)
+        aliases[tag] = {}
+        short_aliases[tag] = {}
         for alias in fill_out_aliases(parse_aliases(f), add_no_options):
-            alias_name = alias.get('name', alias['lname'])
-            alias_uniqueness = (
-                alias['lname'],
-                DUPES.get(alias_name, alias_name),
-                alias['letter'] if len(alias['letter']) == 1 else '',
-                alias['type'],
-                alias.get('expand', True)
-            )
-            old_aliases.setdefault(alias_uniqueness, []).append(tag)
-    import pprint
-    pprint.pprint(old_aliases)
-    missing_aliases= {}
-    for alias, lifespan in old_aliases.items():
-        if lifespan[-1] != tags[-1]:
-            print(lifespan[-1] , tags[-1])
-            missing_aliases[alias] = lifespan[-1]
-    pprint.pprint(missing_aliases)
+            alias["expand"] = alias.get("expand", True)
+            alias_name = alias.get("name", alias["lname"])
+            alias_name = DUPES.get(alias_name, alias_name)
+            # alias['name'] = alias_name
+            if alias["lname"] in aliases[tag] and aliases[tag][alias["lname"]] != alias:
+                raise ValueError("duplicate alias: --" + alias["lname"])
+            # We don't want to report when curl changed the internal ID of some option
+            if len(alias["letter"]) == 1:
+                short_aliases[tag][alias["letter"]] = (alias_name, alias["type"])
+            del alias["letter"]
+            lname = alias["lname"]
+            del alias["lname"]
+            # TODO: figure out what to do about how shortenings change over time
+            del alias["expand"]
+            aliases[tag][lname] = alias
+            # TODO: report how shortened --long options change
 
-    aliases = fill_out_aliases(
-        parse_aliases(file_at_commit(filename, tags[-1])),
-        add_no_options
-    )
-    long_args, short_args = split(aliases)
+    for cur_tag, next_tag in zip(aliases.keys(), list(aliases.keys())[1:]):
+        cur_aliases = short_aliases[cur_tag]
+        next_aliases = short_aliases[next_tag]
+        latest_aliases = short_aliases[list(aliases.keys())[-1]]
 
+        # We don't care about when options got added
+        # new_aliases = next_aliases.keys() - cur_aliases.keys()
+        removed_aliases = cur_aliases.keys() - next_aliases.keys()
+        changed_aliases = []
+        for common_alias in cur_aliases.keys() & next_aliases.keys():
+            if cur_aliases[common_alias] != next_aliases[common_alias]:
+                changed_aliases.append(common_alias)
 
-    current_aliases = {a['lname']: a for a in aliases}
-    changed_aliases = []
-    changed_short_args= {}
-    deleted_aliases = {}
-    for missing_alias, removed in missing_aliases.items():
-        missing_alias = {
-            "lname": missing_alias[0],
-            "name": missing_alias[1],
-            "letter": missing_alias[2],
-            "type": missing_alias[3],
-            "expand": missing_alias[4],
-        }
-        if missing_alias['lname'] in current_aliases:
-            current_alias = current_aliases[missing_alias['lname']]
-            current_alias = {
-                "lname": current_alias['lname'],
-                "name": current_alias.get('name', current_alias['lname']),
-                "letter": current_alias['letter'] if len(current_alias['letter']) == 1 else '',
-                "type": current_alias['type'],
-                "expand": current_alias.get('expand', True),
-            }
-            except_letter = missing_alias.keys() - {'letter'}
-            if all(missing_alias[p] == current_alias[p] for p in except_letter):
-                changed_short_args[missing_alias['letter']] = [missing_alias['lname'], removed]
-            else:
-                print(removed)
-                print(missing_alias, '->', )
-                print(current_alias)
+        if removed_aliases or changed_aliases:
+            header = f"{cur_tag} -> {next_tag}"
+            print(header)
+            print("=" * len(header))
+            for removed_alias in removed_aliases:
+                print(f"- -{removed_alias} {cur_aliases[removed_alias]}")
+                currently = latest_aliases.get(removed_alias)
+                if currently:
+                    # Could've been removed and added back multiple times, so what
+                    # it is on master is not necessarily how it was added back next.
+                    print("     added back later and is currently " + str(currently))
                 print()
-                missing_alias['deleted'] = removed
-                deleted_aliases[missing_alias['lname']] = missing_alias
-            # if all(missing_alias.keys(
-        else:
-            missing_alias['deleted'] = removed
-            deleted_aliases[missing_alias['lname']] = missing_alias
+            for changed_alias in changed_aliases:
+                print(f"- -{changed_alias} {cur_aliases[changed_alias]}")
+                print(f"+ -{changed_alias} {next_aliases[changed_alias]}")
+                currently = latest_aliases.get(changed_alias, "(no longer exists)")
+                if currently != next_aliases[changed_alias]:
+                    print("     later became " + str(currently))
+                print()
 
-    for deleted_alias in deleted_aliases.values():
-        if not deleted_alias['letter']:
-            continue
-        if deleted_alias['letter'] not in short_args:
-            if deleted_alias['letter'] in changed_short_args:
-                raise ValueError(f"duplicate deleted short option: {deleted_alias} {changed_short_args[deleted_alias['letter']]}")
-            changed_short_args[deleted_alias['letter']] = deleted_alias
-            continue
-        existing = short_args[deleted_alias['letter']]
-        existing_arg = long_args[existing]
-        existing_arg_name = existing_arg.get('name') #, existing_arg['lname'])
-        if existing_arg_name == deleted_alias['name']:
-            continue
+    print("-" * 80)
+    print()
 
+    for cur_tag, next_tag in zip(aliases.keys(), list(aliases.keys())[1:]):
+        cur_aliases = aliases[cur_tag]
+        next_aliases = aliases[next_tag]
 
-    pprint.pprint(changed_short_args, sort_dicts=False)
-    pprint.pprint(deleted_aliases, sort_dicts=False)
+        new_aliases = next_aliases.keys() - cur_aliases.keys()
+        removed_aliases = cur_aliases.keys() - next_aliases.keys()
+        changed_aliases = []
+        for common_alias in cur_aliases.keys() & next_aliases.keys():
+            if cur_aliases[common_alias] != next_aliases[common_alias]:
+                changed_aliases.append(common_alias)
 
+        # We don't care when aliases were added, only when/if they are removed,
+        # but we need to be able to see if an alias was added because it's actually
+        # replacing a previous alias.
+        # Only reporting added aliases when there are removed or changed aliases
+        # is probably good enough for that purpose.
+        if removed_aliases or changed_aliases:  # or new_aliases:
+            header = f"{cur_tag} -> {next_tag}"
+            print(header)
+            print("=" * len(header))
+            for new_alias in new_aliases:
+                print(f"+ --{new_alias}: {next_aliases[new_alias]}")
+                print()
+            for removed_alias in removed_aliases:
+                print(f"- --{removed_alias}: {cur_aliases[removed_alias]}")
+                print()
+            for changed_alias in changed_aliases:
+                print(f"- --{changed_alias}: {cur_aliases[changed_alias]}")
+                print(f"+ --{changed_alias}: {next_aliases[changed_alias]}")
+                print()
 
-    # breakpoint()
-    # exit()
+    current_aliases = fill_out_aliases(
+        parse_aliases(file_at_commit(filename, tags[-1])), add_no_options
+    )
+    long_args, short_args = split(current_aliases)
 
     js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent="  "))
     js_params_lines += [""]  # separate by a newline
