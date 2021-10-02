@@ -25,10 +25,11 @@
 # the old name needs to also be kept for backwards compatibility. To these
 # options we add a "name" property with the newest name.
 
-from pathlib import Path
-import sys
+import json
 import subprocess
+import sys
 from collections import Counter
+from pathlib import Path
 
 # Git repo of curl's source code to extract the args from
 # TODO: make this an optional command line arg
@@ -64,6 +65,9 @@ OUTPUT_FILE = Path(__file__).parent / "util.js"
 JS_PARAMS_START = "BEGIN GENERATED CURL OPTIONS"
 JS_PARAMS_END = "END GENERATED CURL OPTIONS"
 
+PACKAGE_JSON = Path(__file__).parent / "package.json"
+CLI_FILE = Path(__file__).parent / "bin" / "cli.js"
+CLI_VERSION_LINE_START = "const VERSION = "
 
 # These are options with the same `letter`, which are options that were
 # renamed, along with their new name.
@@ -443,5 +447,26 @@ if __name__ == "__main__":
         for line in f:
             new_lines.append(line)
 
+    new_cli_lines = []
+    curl_version = tags[-1].removeprefix("curl-").replace("_", ".")
+    with open(PACKAGE_JSON) as f:
+        package_version = json.load(f)["version"]
+    cli_version = f"{package_version} (curl {curl_version})"
+    cli_version_line = CLI_VERSION_LINE_START + repr(cli_version) + "\n"
+    with open(CLI_FILE) as f:
+        for line in f:
+            if line.strip().startswith(CLI_VERSION_LINE_START):
+                break
+            new_cli_lines.append(line)
+        else:
+            raise ValueError(f"no line in {CLI_FILE} starts with {CLI_VERSION_LINE_START!r}")
+
+        new_cli_lines.append(cli_version_line)
+
+        for line in f:
+            new_cli_lines.append(line)
+
     with open(OUTPUT_FILE, "w", newline="\n") as f:
         f.write("".join(new_lines))
+    with open(CLI_FILE, "w", newline="\n") as f:
+        f.write("".join(new_cli_lines))

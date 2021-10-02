@@ -443,10 +443,8 @@ const curlShortOpts = {
 // END GENERATED CURL OPTIONS
 
 // These are options that curl used to have.
-// This lets us explain to users why their command isn't parsing in some cases.
-// In the future it could be used to make curlconverter's arguments a super
-// set of curls, however this is complicated by the fact that curl's
-// --long-options can be shortened.
+// Those that don't conflict with the current options are supported by curlconverter.
+// TODO: curl's --long-options can be shortened.
 // For example if curl used to only have a single option, "--blah" then
 // "--bla" "--bl" and "--b" all used to be valid options as well. If later
 // "--blaz" was added, suddenly those 3 shortened options are removed (because
@@ -494,7 +492,7 @@ for (const [opt, val] of Object.entries(removedLongOpts)) {
   }
 }
 // TODO: use this to warn users when they specify a short option that
-// used to be for something else.
+// used to be for something else?
 const changedShortOpts = {
   p: 'used to be short for --port <port> (a since-deleted flag) until curl 7.3',
   // TODO: some of these might be renamed options
@@ -507,9 +505,8 @@ const changedShortOpts = {
   8: 'used to be short for --stderr <file> until curl 7.10.8',
   7: 'used to be short for --interface <name> until curl 7.10.8',
   6: 'used to be short for --krb <level> (which itself used to be --krb4 <level>) until curl 7.10.8',
-  // TODO: did this actually work?
+  // TODO: did these short options ever actually work?
   5: 'used to be another way to specify the url until curl 7.10.8',
-  // TODO: did these short options every actually work?
   '*': 'used to be another way to specify the url until curl 7.49.0',
   '~': 'used to be short for --xattr until curl 7.49.0'
 }
