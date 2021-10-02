@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 
-import net from 'net'
-import util from 'util'
-import { diffLines } from 'diff'
 import { exec } from 'child_process'
+import fs from 'fs'
+import net from 'net'
+import { promisify } from 'util'
+
+import colors from 'colors'
+import { diffLines } from 'diff'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
 import * as utils from '../util.js'
 import { fixturesDir } from '../test-utils.js'
 
-import yargs from 'yargs'
-import { hideBin } from 'yargs/helpers'
-import fs from 'fs'
-
-const awaitableExec = util.promisify(exec)
+const awaitableExec = promisify(exec)
 
 const DEFAULT_PORT = 28139 // chosen randomly
 const EXPECTED_URL = 'http://localhost:' + DEFAULT_PORT
@@ -29,7 +30,7 @@ const extension = {
   // matlab: 'm',
   // node: 'js',
   // php: 'php',
-  python: 'py',
+  python: 'py'
   // r: 'R',
   // rust: 'rs',
   // strest: 'strest.yml'
@@ -48,7 +49,7 @@ const executable = {
   // because curlconverter is an ES6 module.
   // node: 'node',
   // php: '',
-  python: 'python3',
+  python: 'python3'
   // r: '',
   // rust: '',
   // strest: ''
@@ -78,27 +79,44 @@ const argv = yargs(hideBin(process.argv))
 const testFile = async (testFilename) => {
   const rawRequests = []
 
-  const server = net.createServer((client) => {})
-  server.listen(DEFAULT_PORT)
-
+  const server = net.createServer()
   server.on('connection', (socket) => {
     socket.setEncoding('utf8')
-    socket.setTimeout(800000, () => {
-      console.error('Socket timed out')
+
+    // Timeout very quickly because we only care about recieving the sent request.
+    socket.setTimeout(800, () => {
+      socket.end()
     })
 
     socket.on('data', (data) => {
-      rawRequests.push(data)
+      rawRequests.push(data.replace(/\r\n/g, '\n'))
+      // TODO: what is this?
+      if (!socket.write('Data ::' + data)) {
+        socket.pause()
+      }
     })
 
-    socket.on('drain', () => { socket.resume() })
-    socket.on('error', (error) => { console.error(error) })
-    // socket.on('close', (error) => {})
-
+    socket.on('drain', () => {
+      socket.resume()
+    })
+    socket.on('timeout', () => {
+      socket.end()
+    })
+    socket.on('close', (error) => {
+      if (error) {
+        console.error('transmission error')
+      }
+    })
     setTimeout(() => {
       socket.destroy()
-    }, 1200000)
+    }, 1000)
   })
+
+  server.maxConnections = 1
+  server.listen(DEFAULT_PORT)
+  // setTimeout(function(){
+  //   server.close();
+  // }, 5000);
 
   const inputFile = './fixtures/curl_commands/' + testFilename + '.sh'
   if (!fs.existsSync(inputFile)) {
@@ -133,14 +151,13 @@ const testFile = async (testFilename) => {
 
   for (const languageRequest of languageRequests) {
     if (argv.diff) {
-      diffLines(curlRequest, languageRequest).forEach((part) => {
+      for (const part of diffLines(curlRequest, languageRequest)) {
         // green for additions, red for deletions
         // grey for common parts
         const color = part.added ? 'green'
           : part.removed ? 'red' : 'grey'
-        process.stdout.write(part.value[color])
-      })
-      process.stdout.write('\n')
+        process.stdout.write(colors[color](part.value))
+      }
     } else {
       console.log(curlRequest)
       console.log(languageRequest)
