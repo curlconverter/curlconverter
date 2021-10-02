@@ -1,17 +1,17 @@
 # curlconverter
 
-`curlconverter` transpiles [`curl`](https://en.wikipedia.org/wiki/CURL) Bash commands into programs in other programming languages.
+`curlconverter` transpiles [`curl`](https://en.wikipedia.org/wiki/CURL) commands into programs in other programming languages.
 
 ```sh
-$ curlconverter -X PUT --data "Hello, world!" example.com
+$ curlconverter --data "Hello, world!" example.com
 import requests
 
 data = 'Hello, world!'
 
-response = requests.put('http://example.com', data=data)
+response = requests.post('http://example.com', data=data)
 ```
 
-You can choose the output language by passing `--language <language>`. The options are Python `python` (the default), JavaScript `browser` `node` `node-request`, Go `go`, Rust `rust`, PHP `php`, Java `java`, R `r`, Elixir `elixir`, Dart `dart`, MATLAB `matlab` and a couple more.
+You can choose the output language by passing `--language <language>`. The options are Python `python` (the default), JavaScript `browser` `node` `node-request`, Go `go`, Rust `rust`, PHP `php`, Java `java`, R `r`, Elixir `elixir`, Dart `dart`, MATLAB `matlab` and a few more.
 
 [![NPM version][npm-image]][npm-url]
 
@@ -37,7 +37,7 @@ curlconverter requires Node 12+.
 
 ## Usage
 
-The JavaScript API is a bunch of functions that can take either a string or an array
+The JavaScript API is a bunch of functions that can take either a string of Bash code or an array
 
 ```js
 import * as curlconverter from 'curlconverter';

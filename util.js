@@ -442,11 +442,80 @@ const curlShortOpts = {
 }
 // END GENERATED CURL OPTIONS
 
+// These are options that curl used to have.
+// Those that don't conflict with the current options are supported by curlconverter.
+// TODO: curl's --long-options can be shortened.
+// For example if curl used to only have a single option, "--blah" then
+// "--bla" "--bl" and "--b" all used to be valid options as well. If later
+// "--blaz" was added, suddenly those 3 shortened options are removed (because
+// they are now ambiguous).
+// https://github.com/NickCarneiro/curlconverter/pull/280#issuecomment-931241328
+const removedLongOpts = {
+  'ftp-ascii': { type: 'bool', name: 'use-ascii', removed: '7.10.7' },
+  port: { type: 'string', removed: '7.3' },
+  upload: { type: 'bool', removed: '7.7' },
+  continue: { type: 'bool', removed: '7.9' },
+  '3p-url': { type: 'string', removed: '7.16.0' },
+  '3p-user': { type: 'string', removed: '7.16.0' },
+  '3p-quote': { type: 'string', removed: '7.16.0' },
+  'http2.0': { type: 'bool', name: 'http2', removed: '7.36.0' },
+  'no-http2.0': { type: 'bool', name: 'http2', removed: '7.36.0' },
+  'telnet-options': { type: 'string', name: 'telnet-option', removed: '7.49.0' },
+  'http-request': { type: 'string', name: 'request', removed: '7.49.0' },
+  socks: { type: 'string', name: 'socks5', removed: '7.49.0' },
+  'capath ': { type: 'string', name: 'capath', removed: '7.49.0' }, // trailing space
+  ftpport: { type: 'string', name: 'ftp-port', removed: '7.49.0' },
+  environment: { type: 'bool', removed: '7.54.1' },
+  // These --no-<option> flags were automatically generated and never had any effect
+  'no-tlsv1': { type: 'bool', name: 'tlsv1', removed: '7.54.1' },
+  'no-tlsv1.2': { type: 'bool', name: 'tlsv1.2', removed: '7.54.1' },
+  'no-http2-prior-knowledge': { type: 'bool', name: 'http2-prior-knowledge', removed: '7.54.1' },
+  'no-ipv6': { type: 'bool', name: 'ipv6', removed: '7.54.1' },
+  'no-ipv4': { type: 'bool', name: 'ipv4', removed: '7.54.1' },
+  'no-sslv2': { type: 'bool', name: 'sslv2', removed: '7.54.1' },
+  'no-tlsv1.0': { type: 'bool', name: 'tlsv1.0', removed: '7.54.1' },
+  'no-tlsv1.1': { type: 'bool', name: 'tlsv1.1', removed: '7.54.1' },
+  'no-remote-name': { type: 'bool', name: 'remote-name', removed: '7.54.1' },
+  'no-sslv3': { type: 'bool', name: 'sslv3', removed: '7.54.1' },
+  'no-get': { type: 'bool', name: 'get', removed: '7.54.1' },
+  'no-http1.0': { type: 'bool', name: 'http1.0', removed: '7.54.1' },
+  'no-next': { type: 'bool', name: 'next', removed: '7.54.1' },
+  'no-tlsv1.3': { type: 'bool', name: 'tlsv1.3', removed: '7.54.1' },
+  'no-environment': { type: 'bool', name: 'environment', removed: '7.54.1' },
+  'no-http1.1': { type: 'bool', name: 'http1.1', removed: '7.54.1' },
+  'no-proxy-tlsv1': { type: 'bool', name: 'proxy-tlsv1', removed: '7.54.1' },
+  'no-http2': { type: 'bool', name: 'http2', removed: '7.54.1' }
+}
+for (const [opt, val] of Object.entries(removedLongOpts)) {
+  if (!has(val, 'name')) {
+    val.name = opt
+  }
+}
+// TODO: use this to warn users when they specify a short option that
+// used to be for something else?
+const changedShortOpts = {
+  p: 'used to be short for --port <port> (a since-deleted flag) until curl 7.3',
+  // TODO: some of these might be renamed options
+  t: 'used to be short for --upload (a since-deleted boolean flag) until curl 7.7',
+  c: 'used to be short for --continue (a since-deleted boolean flag) until curl 7.9',
+  // TODO: did -@ actually work?
+  '@': 'used to be short for --create-dirs until curl 7.10.7',
+  Z: 'used to be short for --max-redirs <num> until curl 7.10.7',
+  9: 'used to be short for --crlf until curl 7.10.8',
+  8: 'used to be short for --stderr <file> until curl 7.10.8',
+  7: 'used to be short for --interface <name> until curl 7.10.8',
+  6: 'used to be short for --krb <level> (which itself used to be --krb4 <level>) until curl 7.10.8',
+  // TODO: did these short options ever actually work?
+  5: 'used to be another way to specify the url until curl 7.10.8',
+  '*': 'used to be another way to specify the url until curl 7.49.0',
+  '~': 'used to be short for --xattr until curl 7.49.0'
+}
+
 // These options can be specified more than once, they
 // are always returned as a list.
 // Normally, if you specify some option more than once,
 // curl will just take the last one.
-// TODO: extract this from curl's source code
+// TODO: extract this from curl's source code?
 const canBeList = new Set([
   // TODO: unlike curl, we don't support multiple
   // URLs and just take the last one.
@@ -490,6 +559,22 @@ for (const [shortenedOpt, vals] of Object.entries(shortened)) {
       // More than one option shortens to this, it's ambiguous
       curlLongOpts[shortenedOpt] = null
     }
+  }
+}
+for (const [removedOpt, val] of Object.entries(removedLongOpts)) {
+  if (!has(curlLongOpts, removedOpt)) {
+    curlLongOpts[removedOpt] = val
+  } else if (curlLongOpts[removedOpt] === null) {
+    // This happens with --socks because it became --socks5 and there are multiple options
+    // that start with "--socks"
+    // console.error("couldn't add removed option --" + removedOpt + " to curlLongOpts because it's already ambiguous")
+    // TODO: do we want to do this?
+    // curlLongOpts[removedOpt] = val
+  } else {
+    // Almost certainly a shortened form of a still-existing option
+    // This happens with --continue (now short for --continue-at)
+    // and --upload (now short for --upload-file)
+    // console.error("couldn't add removed option --" + removedOpt + ' to curlLongOpts because it already exists')
   }
 }
 
@@ -711,6 +796,9 @@ const parseArgs = (args, opts) => {
         }
         for (let j = 1; j < arg.length; j++) {
           if (!has(shortOpts, arg[j])) {
+            if (has(changedShortOpts, arg[j])) {
+              throw 'option ' + arg + ': ' + changedShortOpts[arg[j]]
+            }
             // TODO: there are a few deleted short options we could report
             throw 'option ' + arg + ': is unknown'
           }

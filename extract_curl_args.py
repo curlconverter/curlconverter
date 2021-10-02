@@ -25,16 +25,31 @@
 # the old name needs to also be kept for backwards compatibility. To these
 # options we add a "name" property with the newest name.
 
-from pathlib import Path
-import sys
+import json
 import subprocess
+import sys
 from collections import Counter
+from pathlib import Path
 
 # Git repo of curl's source code to extract the args from
-# TODO: make this a command line arg?
+# TODO: make this an optional command line arg
 CURL_REPO = Path(__file__).parent.parent / "curl"
-INPUT_FILE = CURL_REPO / "src" / "tool_getparam.c"
-OUTPUT_FILE = Path(__file__).parent / "util.js"
+
+OLD_INPUT_FILE = CURL_REPO / "src" / "main.c"
+NEW_INPUT_FILE = CURL_REPO / "src" / "tool_getparam.c"
+FILE_MOVED_TAG = "curl-7_23_0"  # when the above change happened
+
+# Originally there were only two arg "types": TRUE/FALSE which signified
+# whether the option expected a value or was a boolean (respectively).
+# Then in
+# 5abfdc0140df0977b02506d16796f616158bfe88
+# which was released as
+NO_OPTIONS_TAG = "curl-7_19_0"
+# all boolean (i.e. FALSE "type") options got an implicit --no-OPTION.
+# Then TRUE/FALSE was changed to ARG_STRING/ARG_BOOL.
+# Then it was realized that not all options should have a --no-OPTION
+# counterpart, so a new ARG_NONE type was added for those in
+# 913c3c8f5476bd7bc4d8d00509396bd4b525b8fc
 
 OPTS_START = "struct LongShort aliases[]= {"
 OPTS_END = "};"
@@ -42,9 +57,17 @@ OPTS_END = "};"
 BOOL_TYPES = ["bool", "none"]
 STR_TYPES = ["string", "filename"]
 ALIAS_TYPES = BOOL_TYPES + STR_TYPES
+RAW_ALIAS_TYPES = ALIAS_TYPES + ["true", "false"]
+
+
+OUTPUT_FILE = Path(__file__).parent / "util.js"
 
 JS_PARAMS_START = "BEGIN GENERATED CURL OPTIONS"
 JS_PARAMS_END = "END GENERATED CURL OPTIONS"
+
+PACKAGE_JSON = Path(__file__).parent / "package.json"
+CLI_FILE = Path(__file__).parent / "bin" / "cli.js"
+CLI_VERSION_LINE_START = "const VERSION = "
 
 # These are options with the same `letter`, which are options that were
 # renamed, along with their new name.
@@ -57,6 +80,16 @@ DUPES = {
     "ssl-reqd": "ssl-reqd",
     "proxy-service-name": "proxy-service-name",
     "socks5-gssapi-service": "proxy-service-name",
+    # These argument names have been deleted,
+    # they should appear as deleted options.
+    "request": "request",
+    "http-request": "request",
+    "use-ascii": "use-ascii",
+    "ftp-ascii": "use-ascii",
+    "ftpport": "ftp-port",
+    "ftp-port": "ftp-port",
+    "socks": "socks5",
+    "socks5": "socks5",
 }
 
 if not OUTPUT_FILE.is_file():
@@ -81,6 +114,16 @@ def git_branch(git_dir=CURL_REPO):
         text=True,
     ).stdout
     return branch.strip()
+
+
+def is_git_repo(git_dir=CURL_REPO):
+    result = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=git_dir,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
 
 
 def parse_aliases(lines):
@@ -112,7 +155,7 @@ def parse_aliases(lines):
 
         if 1 > len(letter) > 2:
             raise ValueError(f"letter form of --{lname} must be 1 or 2 characters long")
-        if type_ not in ALIAS_TYPES:
+        if type_ not in RAW_ALIAS_TYPES:
             raise ValueError(f"unknown desc for --{lname}: {desc!r}")
 
         alias = {"letter": letter, "lname": lname, "type": type_}
@@ -137,9 +180,9 @@ def fill_out_aliases(aliases, add_no_options=True):
     no_aliases = []
 
     for idx, alias in enumerate(aliases):
-        if alias["type"] == "false":
-            alias["type"] = "string"
         if alias["type"] == "true":
+            alias["type"] = "string"
+        if alias["type"] == "false":
             alias["type"] = "bool" if add_no_options else "none"
 
         if alias["type"] in BOOL_TYPES:
@@ -198,8 +241,8 @@ def split(aliases):
     return long_args, short_args
 
 
-def format_as_js(d, var_name, indent=0, indent_type='\t'):
-    yield f"{indent_type * indent}var {var_name} = {{"
+def format_as_js(d, var_name, indent="\t", indent_level=0):
+    yield f"{indent * indent_level}const {var_name} = {{"
     for top_key, opt in d.items():
 
         def quote(key):
@@ -214,14 +257,14 @@ def format_as_js(d, var_name, indent=0, indent_type='\t'):
 
         if isinstance(opt, dict):
             vals = [f"{quote(k)}: {val_to_js(v)}" for k, v in opt.items()]
-            yield f"{indent_type * (indent + 1)}{top_key!r}: {{{', '.join(vals)}}},"
+            yield f"{indent * (indent_level + 1)}{top_key!r}: {{{', '.join(vals)}}},"
         elif isinstance(opt, str):
-            yield f"{indent_type * (indent + 1)}{top_key!r}: {val_to_js(opt)},"
+            yield f"{indent * (indent_level + 1)}{top_key!r}: {val_to_js(opt)},"
 
-    yield (indent_type * indent) + "};"
+    yield (indent * indent_level) + "};"
 
 
-def parse_version(tag):
+def parse_tag(tag):
     if not tag.startswith("curl-") or tag.startswith("curl_"):
         return None
     version = tag.removeprefix("curl-").removeprefix("curl_")
@@ -254,9 +297,8 @@ def curl_tags(git_dir=CURL_REPO):
         .splitlines()
     )
     for tag in tags:
-        version = parse_version(tag)
-        if version:
-            yield tag, version
+        if parse_tag(tag):
+            yield tag
 
 
 def file_at_commit(filename, commit_hash, git_dir=CURL_REPO):
@@ -274,24 +316,117 @@ def file_at_commit(filename, commit_hash, git_dir=CURL_REPO):
 
 
 if __name__ == "__main__":
-    if git_branch(CURL_REPO) != "master":
-        sys.exit("not on curl repo's git master")
+    # TODO: check that repo is up to date
+    if not is_git_repo(CURL_REPO):
+        sys.exit(f"{CURL_REPO} is not a git repo")
 
-    *tags, last_tag = sorted(curl_tags(CURL_REPO), key=lambda x: x[1])
+    tags = sorted(curl_tags(CURL_REPO), key=parse_tag)
 
-    aliases = fill_out_aliases(
-        parse_aliases(file_at_commit("src/tool_getparam.c", last_tag[0]))
-    )
-    long_args, short_args = split(aliases)
-
-    moved_file = False
+    aliases = {}
+    short_aliases = {}
+    filename = "src/main.c"
     add_no_options = False
-    # for tag, version in
-    #     old_aliases = fill_out_aliases(parse_aliases(f), add_no_options)
+    for tag in tags:
+        if tag == FILE_MOVED_TAG:
+            filename = "src/tool_getparam.c"
+        if tag == NO_OPTIONS_TAG:
+            add_no_options = True
+        f = file_at_commit(filename, tag)
+        aliases[tag] = {}
+        short_aliases[tag] = {}
+        for alias in fill_out_aliases(parse_aliases(f), add_no_options):
+            alias["expand"] = alias.get("expand", True)
+            alias_name = alias.get("name", alias["lname"])
+            alias_name = DUPES.get(alias_name, alias_name)
+            # alias['name'] = alias_name
+            if alias["lname"] in aliases[tag] and aliases[tag][alias["lname"]] != alias:
+                raise ValueError("duplicate alias: --" + alias["lname"])
+            # We don't want to report when curl changed the internal ID of some option
+            if len(alias["letter"]) == 1:
+                short_aliases[tag][alias["letter"]] = (alias_name, alias["type"])
+            del alias["letter"]
+            lname = alias["lname"]
+            del alias["lname"]
+            # TODO: figure out what to do about how shortenings change over time
+            del alias["expand"]
+            aliases[tag][lname] = alias
+            # TODO: report how shortened --long options change
 
-    js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent_type="  "))
+    for cur_tag, next_tag in zip(aliases.keys(), list(aliases.keys())[1:]):
+        cur_aliases = short_aliases[cur_tag]
+        next_aliases = short_aliases[next_tag]
+        latest_aliases = short_aliases[list(aliases.keys())[-1]]
+
+        # We don't care about when options got added
+        # new_aliases = next_aliases.keys() - cur_aliases.keys()
+        removed_aliases = cur_aliases.keys() - next_aliases.keys()
+        changed_aliases = []
+        for common_alias in cur_aliases.keys() & next_aliases.keys():
+            if cur_aliases[common_alias] != next_aliases[common_alias]:
+                changed_aliases.append(common_alias)
+
+        if removed_aliases or changed_aliases:
+            header = f"{cur_tag} -> {next_tag}"
+            print(header)
+            print("=" * len(header))
+            for removed_alias in removed_aliases:
+                print(f"- -{removed_alias} {cur_aliases[removed_alias]}")
+                currently = latest_aliases.get(removed_alias)
+                if currently:
+                    # Could've been removed and added back multiple times, so what
+                    # it is on master is not necessarily how it was added back next.
+                    print("     added back later and is currently " + str(currently))
+                print()
+            for changed_alias in changed_aliases:
+                print(f"- -{changed_alias} {cur_aliases[changed_alias]}")
+                print(f"+ -{changed_alias} {next_aliases[changed_alias]}")
+                currently = latest_aliases.get(changed_alias, "(no longer exists)")
+                if currently != next_aliases[changed_alias]:
+                    print("     later became " + str(currently))
+                print()
+
+    print("-" * 80)
+    print()
+
+    for cur_tag, next_tag in zip(aliases.keys(), list(aliases.keys())[1:]):
+        cur_aliases = aliases[cur_tag]
+        next_aliases = aliases[next_tag]
+
+        new_aliases = next_aliases.keys() - cur_aliases.keys()
+        removed_aliases = cur_aliases.keys() - next_aliases.keys()
+        changed_aliases = []
+        for common_alias in cur_aliases.keys() & next_aliases.keys():
+            if cur_aliases[common_alias] != next_aliases[common_alias]:
+                changed_aliases.append(common_alias)
+
+        # We don't care when aliases were added, only when/if they are removed,
+        # but we need to be able to see if an alias was added because it's actually
+        # replacing a previous alias.
+        # Only reporting added aliases when there are removed or changed aliases
+        # is probably good enough for that purpose.
+        if removed_aliases or changed_aliases:  # or new_aliases:
+            header = f"{cur_tag} -> {next_tag}"
+            print(header)
+            print("=" * len(header))
+            for new_alias in new_aliases:
+                print(f"+ --{new_alias}: {next_aliases[new_alias]}")
+                print()
+            for removed_alias in removed_aliases:
+                print(f"- --{removed_alias}: {cur_aliases[removed_alias]}")
+                print()
+            for changed_alias in changed_aliases:
+                print(f"- --{changed_alias}: {cur_aliases[changed_alias]}")
+                print(f"+ --{changed_alias}: {next_aliases[changed_alias]}")
+                print()
+
+    current_aliases = fill_out_aliases(
+        parse_aliases(file_at_commit(filename, tags[-1])), add_no_options
+    )
+    long_args, short_args = split(current_aliases)
+
+    js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent="  "))
     js_params_lines += [""]  # separate by a newline
-    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent_type="  "))
+    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent="  "))
 
     new_lines = []
     with open(OUTPUT_FILE) as f:
@@ -312,5 +447,26 @@ if __name__ == "__main__":
         for line in f:
             new_lines.append(line)
 
+    new_cli_lines = []
+    curl_version = tags[-1].removeprefix("curl-").replace("_", ".")
+    with open(PACKAGE_JSON) as f:
+        package_version = json.load(f)["version"]
+    cli_version = f"{package_version} (curl {curl_version})"
+    cli_version_line = CLI_VERSION_LINE_START + repr(cli_version) + "\n"
+    with open(CLI_FILE) as f:
+        for line in f:
+            if line.strip().startswith(CLI_VERSION_LINE_START):
+                break
+            new_cli_lines.append(line)
+        else:
+            raise ValueError(f"no line in {CLI_FILE} starts with {CLI_VERSION_LINE_START!r}")
+
+        new_cli_lines.append(cli_version_line)
+
+        for line in f:
+            new_cli_lines.append(line)
+
     with open(OUTPUT_FILE, "w", newline="\n") as f:
         f.write("".join(new_lines))
+    with open(CLI_FILE, "w", newline="\n") as f:
+        f.write("".join(new_cli_lines))
