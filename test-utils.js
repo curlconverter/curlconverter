@@ -15,55 +15,10 @@ const converters = {
     extension: '.yml',
     converter: curlconverter.toAnsible
   },
-  r: {
-    name: 'R',
-    extension: '.r',
-    converter: curlconverter.toR
-  },
-  python: {
-    name: 'Python',
-    extension: '.py',
-    converter: curlconverter.toPython
-  },
   browser: {
     name: 'Browser',
     extension: '.js',
     converter: curlconverter.toBrowser
-  },
-  'node-fetch': {
-    name: 'Node',
-    extension: '.js',
-    converter: curlconverter.toNodeFetch
-  },
-  node: {
-    name: 'Node',
-    extension: '.js',
-    converter: curlconverter.toNodeRequest
-  },
-  php: {
-    name: 'PHP',
-    extension: '.php',
-    converter: curlconverter.toPhp
-  },
-  go: {
-    name: 'Go',
-    extension: '.go',
-    converter: curlconverter.toGo
-  },
-  rust: {
-    name: 'Rust',
-    extension: '.rs',
-    converter: curlconverter.toRust
-  },
-  strest: {
-    name: 'Strest',
-    extension: '.strest.yml',
-    converter: curlconverter.toStrest
-  },
-  json: {
-    name: 'Json',
-    extension: '.json',
-    converter: curlconverter.toJsonString
   },
   dart: {
     name: 'Dart',
@@ -75,15 +30,60 @@ const converters = {
     extension: '.ex',
     converter: curlconverter.toElixir
   },
-  matlab: {
-    name: 'MATLAB',
-    extension: '.m',
-    converter: curlconverter.toMATLAB
+  go: {
+    name: 'Go',
+    extension: '.go',
+    converter: curlconverter.toGo
   },
   java: {
     name: 'Java',
     extension: '.java',
     converter: curlconverter.toJava
+  },
+  json: {
+    name: 'Json',
+    extension: '.json',
+    converter: curlconverter.toJsonString
+  },
+  matlab: {
+    name: 'MATLAB',
+    extension: '.m',
+    converter: curlconverter.toMATLAB
+  },
+  node: {
+    name: 'Node',
+    extension: '.js',
+    converter: curlconverter.toNodeFetch
+  },
+  'node-request': {
+    name: 'Node',
+    extension: '.js',
+    converter: curlconverter.toNodeRequest
+  },
+  php: {
+    name: 'PHP',
+    extension: '.php',
+    converter: curlconverter.toPhp
+  },
+  python: {
+    name: 'Python',
+    extension: '.py',
+    converter: curlconverter.toPython
+  },
+  r: {
+    name: 'R',
+    extension: '.r',
+    converter: curlconverter.toR
+  },
+  rust: {
+    name: 'Rust',
+    extension: '.rs',
+    converter: curlconverter.toRust
+  },
+  strest: {
+    name: 'Strest',
+    extension: '.strest.yml',
+    converter: curlconverter.toStrest
   }
 }
 
