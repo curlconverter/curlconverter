@@ -33,7 +33,7 @@ Install the JavaScript library for use in your own projects with
 $ npm install --save curlconverter
 ```
 
-curlconverter requires Node 12+.
+curlconverter requires Node 12+. On macOS, it cannot be built on Node 16, you will have to downgrade.
 
 ## Usage
 
