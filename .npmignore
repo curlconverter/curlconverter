@@ -1,4 +1,15 @@
 *.iml
-/node_modules/
-npm-debug.log
 .idea
+.editorconfig
+Standard.xml
+
+.github/*
+.gitattributes
+
+docs/*
+
+extract_curl_args.py
+
+fixtures/*
+test.js
+test.sh
