@@ -9,11 +9,17 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [12, 14, 16]
+        exclude:
+          # Fails to build tree-sitter-bash
+          - os: windows-latest
+            node-version: 16
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v2

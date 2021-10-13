@@ -35,9 +35,9 @@
     "yargs": "^17.2.1"
   },
   "scripts": {
-    "test": "./node_modules/tape/bin/tape test.js",
-    "lint": "./node_modules/standard/bin/cmd.js index.js generators/*.js bin/*.js test.js *.js",
-    "lint:fix": "./node_modules/standard/bin/cmd.js --fix index.js generators/*.js bin/*.js test.js *.js"
+    "test": "tape test.js",
+    "lint": "standard           index.js generators/*.js bin/*.js test.js *.js",
+    "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js"
   },
   "bin": "bin/cli.js",
   "browser": {
