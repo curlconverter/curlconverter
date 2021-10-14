@@ -38,7 +38,8 @@
   "scripts": {
     "test": "tape test.js",
     "lint": "standard           index.js generators/*.js bin/*.js test.js *.js",
-    "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js"
+    "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js",
+    "prepare": "tree-sitter build-wasm node_modules/tree-sitter-bash"
   },
   "bin": "bin/cli.js",
   "browser": {
