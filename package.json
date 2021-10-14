@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "4.0.0-alpha.7",
+  "version": "4.0.0-alpha.8",
   "description": "convert curl commands to Python, JavaScript, Go, PHP and other languages",
   "homepage": "https://github.com/NickCarneiro/curlconverter",
   "author": {
@@ -18,6 +18,7 @@
     "converter"
   ],
   "type": "module",
+  "main": "index.js",
   "dependencies": {
     "cookie": "^0.4.1",
     "jsesc": "^3.0.2",
