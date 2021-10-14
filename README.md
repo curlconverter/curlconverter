@@ -71,6 +71,8 @@ headers = {
 response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 ```
 
+Note: for the above example to work as-is, it may be necessary to add `"type": "module"` to package.json.
+
 ## Contributing
 
 > I'd rather write programs to write programs than write programs.
