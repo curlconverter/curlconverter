@@ -13,12 +13,10 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Tests fail to run on Windows, see
+        # https://github.com/curlconverter/curlconverter/pull/310
+        os: [ubuntu-latest, macos-latest]
         node-version: [12, 14, 16]
-        exclude:
-          # Fails to build tree-sitter-bash
-          - os: windows-latest
-            node-version: 16
       fail-fast: false
 
     steps:
