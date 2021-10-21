@@ -855,7 +855,7 @@ const buildRequest = parsedArguments => {
       if (header.indexOf('Cookie') !== -1) {
         cookieString = header
       } else {
-        const components = header.split(/:(.*)/)
+        const components = header.split(/:(.*)/s)
         if (components[1]) {
           headers[components[0]] = components[1].trim()
         }
