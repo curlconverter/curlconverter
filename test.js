@@ -4,7 +4,7 @@ const fs = require('fs')
 
 const utils = require('./util')
 const curlconverter = require('./index.js')
-const yargs = require('yargs')
+const yargs = require('@curlconverter/yargs')
 
 // the curl_commands/ directory contains input files
 // The file name is a description of the command.

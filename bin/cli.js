@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const curlconverter = require('../index.js')
-const argv = require('yargs').argv
+const argv = require('@curlconverter/yargs').argv
 const fs = require('fs')
 
 // sets a default incase -l/--langauge isn't passed
