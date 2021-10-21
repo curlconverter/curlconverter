@@ -1,5 +1,5 @@
 const cookie = require('cookie')
-const yargs = require('yargs')
+const yargs = require('@curlconverter/yargs')
 const URL = require('url')
 const querystring = require('query-string')
 const nunjucks = require('nunjucks')
