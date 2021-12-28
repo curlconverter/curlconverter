@@ -108,8 +108,6 @@ function getDataString (request) {
         // but this is hopefully good enough.
         const roundtrips = JSON.stringify(dataAsJson) === request.data
         const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson, 0) + '\n'
-        delete request.headers['Content-Type']
-        delete request.headers['content-type']
         return [dataString, jsonDataString, roundtrips]
       } catch {}
     }
