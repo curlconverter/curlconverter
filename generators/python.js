@@ -384,7 +384,7 @@ export const _toPython = request => {
 
   if (request.query && jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '# NB. Original query string below. It seems impossible to parse and\n' +
+            '# Note: original query string below. It seems impossible to parse and\n' +
             '# reproduce query strings 100% accurately so the one below is given\n' +
             '# in case the reproduced version is not "correct".\n' +
             '#\n' +
@@ -395,13 +395,13 @@ export const _toPython = request => {
     pythonCode += '#' + requestLineWithOriginalUrl.replace(', json=json_data', ', data=data')
   } else if (request.query) {
     pythonCode += '\n\n' +
-            '# NB. Original query string below. It seems impossible to parse and\n' +
+            '# Note: original query string below. It seems impossible to parse and\n' +
             '# reproduce query strings 100% accurately so the one below is given\n' +
             '# in case the reproduced version is not "correct".\n'
     pythonCode += '#' + requestLineWithOriginalUrl
   } else if (jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '# The data is posted as JSON, which might not be serialized by\n' +
+            '# Note: the data is posted as JSON, which might not be serialized by\n' +
             '# Requests exactly as it appears in the original command. So\n' +
             '# the original data is also given.\n'
     pythonCode += '#' + dataString
