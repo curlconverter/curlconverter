@@ -36,13 +36,56 @@ function getQueryDict (request) {
   return queryDict
 }
 
+function jsonToPython (val, indent) {
+  let dataStr = ''
+  switch (typeof val) {
+    case 'string':
+      dataStr += repr(val)
+      break
+    case 'number':
+      dataStr += val
+      break
+    case 'boolean':
+      dataStr += val ? 'True' : 'False'
+      break
+    case 'object':
+      if (val === null) {
+        dataStr += 'None'
+      } else if (Array.isArray(val)) {
+        if (val.length === 0) {
+          dataStr += '[]'
+        } else {
+          dataStr += '[\n'
+          for (const item of val) {
+            dataStr += ' '.repeat(indent + 4) + jsonToPython(item, indent + 4) + ',\n'
+          }
+          dataStr += ' '.repeat(indent) + ']'
+        }
+      } else {
+        const len = Object.keys(val).length
+        if (len === 0) {
+          dataStr += '{}'
+        } else {
+          dataStr += '{\n'
+          for (const [k, v] of Object.entries(val)) {
+            // repr() because JSON keys must be strings.
+            dataStr += ' '.repeat(indent + 4) + repr(k) + ': ' + jsonToPython(v, indent + 4) + ',\n'
+          }
+          dataStr += ' '.repeat(indent) + '}'
+        }
+      }
+      break
+  }
+  return dataStr
+}
+
 function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
-      return 'data = open(\'' + filePath + '\', \'rb\').read()'
+      return ['data = open(\'' + filePath + '\', \'rb\').read()', null, null]
     } else {
-      return 'data = open(\'' + filePath + '\')'
+      return ['data = open(\'' + filePath + '\')', null, null]
     }
   }
 
@@ -51,9 +94,28 @@ function getDataString (request) {
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return 'data = ' + repr(request.data) + '\n'
+    const dataString = 'data = ' + repr(request.data) + '\n'
+    const isJson = request.headers &&
+          (request.headers['Content-Type'] === 'application/json' ||
+           request.headers['content-type'] === 'application/json')
+    if (isJson) {
+      try {
+        const dataAsJson = JSON.parse(request.data)
+        // TODO: we actually want to know how it's serialized by
+        // simplejson or Python's builtin json library,
+        // which is what Requests uses
+        // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+        // but this is hopefully good enough.
+        const roundtrips = JSON.stringify(dataAsJson) === request.data
+        const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson, 0) + '\n'
+        delete request.headers['Content-Type']
+        delete request.headers['content-type']
+        return [dataString, jsonDataString, roundtrips]
+      } catch {}
+    }
+    return [dataString, null, null]
   } else {
-    return getMultipleDataString(request, parsedQueryString)
+    return [getMultipleDataString(request, parsedQueryString), null, null]
   }
 }
 
@@ -232,9 +294,11 @@ export const _toPython = request => {
   }
 
   let dataString
+  let jsonDataString
+  let jsonDataStringRoundtrips
   let filesString
   if (request.data && typeof request.data === 'string') {
-    dataString = getDataString(request)
+    [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
   }
@@ -260,7 +324,11 @@ export const _toPython = request => {
     requestLineBody += ', cookies=cookies'
   }
   if (request.data && typeof request.data === 'string') {
-    requestLineBody += ', data=data'
+    if (jsonDataString) {
+      requestLineBody += ', json=json_data'
+    } else {
+      requestLineBody += ', data=data'
+    }
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'
   }
@@ -305,19 +373,39 @@ export const _toPython = request => {
   if (queryDict) {
     pythonCode += queryDict + '\n'
   }
-  if (dataString) {
+  if (jsonDataString) {
+    pythonCode += jsonDataString + '\n'
+  } else if (dataString) {
     pythonCode += dataString + '\n'
   } else if (filesString) {
     pythonCode += filesString + '\n'
   }
   pythonCode += requestLineWithUrlParams
 
-  if (request.query) {
+  if (request.query && jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '#NB. Original query string below. It seems impossible to parse and\n' +
-            '#reproduce query strings 100% accurately so the one below is given\n' +
-            '#in case the reproduced version is not "correct".\n'
-    pythonCode += '# ' + requestLineWithOriginalUrl
+            '# NB. Original query string below. It seems impossible to parse and\n' +
+            '# reproduce query strings 100% accurately so the one below is given\n' +
+            '# in case the reproduced version is not "correct".\n' +
+            '#\n' +
+            '# The data is also posted as JSON, which might not be serialized\n' +
+            '# exactly as it appears in the original command. So the original\n' +
+            '# data is also given.\n'
+    pythonCode += '#' + dataString
+    pythonCode += '#' + requestLineWithOriginalUrl.replace(', json=json_data', ', data=data')
+  } else if (request.query) {
+    pythonCode += '\n\n' +
+            '# NB. Original query string below. It seems impossible to parse and\n' +
+            '# reproduce query strings 100% accurately so the one below is given\n' +
+            '# in case the reproduced version is not "correct".\n'
+    pythonCode += '#' + requestLineWithOriginalUrl
+  } else if (jsonDataString && !jsonDataStringRoundtrips) {
+    pythonCode += '\n\n' +
+            '# The data is posted as JSON, which might not be serialized by\n' +
+            '# Requests exactly as it appears in the original command. So\n' +
+            '# the original data is also given.\n'
+    pythonCode += '#' + dataString
+    pythonCode += '#' + requestLineWithUrlParams.replace(', json=json_data', ', data=data')
   }
 
   return pythonCode + '\n'
