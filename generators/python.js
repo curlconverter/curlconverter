@@ -36,13 +36,58 @@ function getQueryDict (request) {
   return queryDict
 }
 
+function jsonToPython (obj, indent = 0) {
+  let s = ''
+  switch (typeof obj) {
+    case 'string':
+      s += repr(obj)
+      break
+    case 'number':
+      s += obj
+      break
+    case 'boolean':
+      s += obj ? 'True' : 'False'
+      break
+    case 'object':
+      if (obj === null) {
+        s += 'None'
+      } else if (Array.isArray(obj)) {
+        if (obj.length === 0) {
+          s += '[]'
+        } else {
+          s += '[\n'
+          for (const item of obj) {
+            s += ' '.repeat(indent + 4) + jsonToPython(item, indent + 4) + ',\n'
+          }
+          s += ' '.repeat(indent) + ']'
+        }
+      } else {
+        const len = Object.keys(obj).length
+        if (len === 0) {
+          s += '{}'
+        } else {
+          s += '{\n'
+          for (const [k, v] of Object.entries(obj)) {
+            // repr() because JSON keys must be strings.
+            s += ' '.repeat(indent + 4) + repr(k) + ': ' + jsonToPython(v, indent + 4) + ',\n'
+          }
+          s += ' '.repeat(indent) + '}'
+        }
+      }
+      break
+    default:
+      throw new Error('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
+  }
+  return s
+}
+
 function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
-      return 'data = open(\'' + filePath + '\', \'rb\').read()'
+      return ["data = open('" + filePath + "', 'rb').read()", null, null]
     } else {
-      return 'data = open(\'' + filePath + '\')'
+      return ["data = open('" + filePath + "')", null, null]
     }
   }
 
@@ -51,9 +96,35 @@ function getDataString (request) {
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    return 'data = ' + repr(request.data) + '\n'
+    const dataString = 'data = ' + repr(request.data) + '\n'
+    const isJson = request.headers &&
+          (request.headers['Content-Type'] === 'application/json' ||
+           request.headers['content-type'] === 'application/json')
+    if (isJson) {
+      try {
+        const dataAsJson = JSON.parse(request.data)
+        // TODO: we actually want to know how it's serialized by
+        // simplejson or Python's builtin json library,
+        // which is what Requests uses
+        // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+        // but this is hopefully good enough.
+        const roundtrips = JSON.stringify(dataAsJson) === request.data
+        const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson) + '\n'
+        // Remove "Content-Type" from the headers dict
+        // because Requests adds it automatically when you use json=
+        if (roundtrips) {
+          delete request.headers['Content-Type']
+          delete request.headers['content-type']
+          if (Object.keys(request.headers).length === 0) {
+            delete request.headers
+          }
+        }
+        return [dataString, jsonDataString, roundtrips]
+      } catch {}
+    }
+    return [dataString, null, null]
   } else {
-    return getMultipleDataString(request, parsedQueryString)
+    return [getMultipleDataString(request, parsedQueryString), null, null]
   }
 }
 
@@ -209,6 +280,23 @@ export const _toPython = request => {
     }
     cookieDict += '}\n'
   }
+
+  let queryDict
+  if (request.query) {
+    queryDict = getQueryDict(request)
+  }
+
+  let dataString
+  let jsonDataString
+  let jsonDataStringRoundtrips
+  let filesString
+  if (request.data && typeof request.data === 'string') {
+    // This can modify request.headers
+    [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
+  } else if (request.multipartUploads) {
+    filesString = getFilesString(request)
+  }
+
   let headerDict
   if (request.headers) {
     headerDict = 'headers = {\n'
@@ -226,18 +314,6 @@ export const _toPython = request => {
     headerDict += '}\n'
   }
 
-  let queryDict
-  if (request.query) {
-    queryDict = getQueryDict(request)
-  }
-
-  let dataString
-  let filesString
-  if (request.data && typeof request.data === 'string') {
-    dataString = getDataString(request)
-  } else if (request.multipartUploads) {
-    filesString = getFilesString(request)
-  }
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -246,8 +322,8 @@ export const _toPython = request => {
   if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  let requestLineWithUrlParams = 'response = requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
-  let requestLineWithOriginalUrl = 'response = requests.' + request.method + '(\'' + request.url + '\''
+  let requestLineWithUrlParams = 'response = requests.' + request.method + "('" + request.urlWithoutQuery + "'"
+  let requestLineWithOriginalUrl = 'response = requests.' + request.method + "('" + request.url + "'"
 
   let requestLineBody = ''
   if (request.headers) {
@@ -260,7 +336,11 @@ export const _toPython = request => {
     requestLineBody += ', cookies=cookies'
   }
   if (request.data && typeof request.data === 'string') {
-    requestLineBody += ', data=data'
+    if (jsonDataString) {
+      requestLineBody += ', json=json_data'
+    } else {
+      requestLineBody += ', data=data'
+    }
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'
   }
@@ -305,19 +385,39 @@ export const _toPython = request => {
   if (queryDict) {
     pythonCode += queryDict + '\n'
   }
-  if (dataString) {
+  if (jsonDataString) {
+    pythonCode += jsonDataString + '\n'
+  } else if (dataString) {
     pythonCode += dataString + '\n'
   } else if (filesString) {
     pythonCode += filesString + '\n'
   }
   pythonCode += requestLineWithUrlParams
 
-  if (request.query) {
+  if (request.query && jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '#NB. Original query string below. It seems impossible to parse and\n' +
-            '#reproduce query strings 100% accurately so the one below is given\n' +
-            '#in case the reproduced version is not "correct".\n'
-    pythonCode += '# ' + requestLineWithOriginalUrl
+            '# Note: original query string below. It seems impossible to parse and\n' +
+            '# reproduce query strings 100% accurately so the one below is given\n' +
+            '# in case the reproduced version is not "correct".\n' +
+            '#\n' +
+            '# The data is also posted as JSON, which might not be serialized\n' +
+            '# exactly as it appears in the original command. So the original\n' +
+            '# data is also given.\n'
+    pythonCode += '#' + dataString
+    pythonCode += '#' + requestLineWithOriginalUrl.replace(', json=json_data', ', data=data')
+  } else if (request.query) {
+    pythonCode += '\n\n' +
+            '# Note: original query string below. It seems impossible to parse and\n' +
+            '# reproduce query strings 100% accurately so the one below is given\n' +
+            '# in case the reproduced version is not "correct".\n'
+    pythonCode += '#' + requestLineWithOriginalUrl
+  } else if (jsonDataString && !jsonDataStringRoundtrips) {
+    pythonCode += '\n\n' +
+            '# Note: the data is posted as JSON, which might not be serialized by\n' +
+            '# Requests exactly as it appears in the original command. So\n' +
+            '# the original data is also given.\n'
+    pythonCode += '#' + dataString
+    pythonCode += '#' + requestLineWithUrlParams.replace(', json=json_data', ', data=data')
   }
 
   return pythonCode + '\n'
