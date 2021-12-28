@@ -11,13 +11,13 @@ data = 'Hello, world!'
 response = requests.post('http://example.com', data=data)
 ```
 
-You can choose the output language by passing `--language <language>`. The options are Python `python` (the default), JavaScript `browser` `node` `node-request`, Go `go`, Rust `rust`, PHP `php`, Java `java`, R `r`, Elixir `elixir`, Dart `dart`, MATLAB `matlab` and a few more.
+You can choose the output language by passing `--language <language>`. The options are `python` (the default), `browser`/`node`/`node-request` (JavaScript), `go`, `rust`, `php`, `java`, `r`, `elixir`, `dart`, `matlab` and a few more.
 
 [![NPM version][npm-image]][npm-url]
 
 ## Live Demo
 
-https://curl.trillworks.com
+https://curlconverter.com
 
 ## Install
 
@@ -71,6 +71,8 @@ headers = {
 
 response = requests.get('http://en.wikipedia.org/', headers=headers, cookies=cookies)
 ```
+
+Note: you have to add `"type": "module"` to your package.json for the above example to work.
 
 ## Contributing
 
