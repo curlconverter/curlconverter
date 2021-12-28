@@ -36,56 +36,58 @@ function getQueryDict (request) {
   return queryDict
 }
 
-function jsonToPython (val, indent) {
-  let dataStr = ''
-  switch (typeof val) {
+function jsonToPython (obj, indent = 0) {
+  let s = ''
+  switch (typeof obj) {
     case 'string':
-      dataStr += repr(val)
+      s += repr(obj)
       break
     case 'number':
-      dataStr += val
+      s += obj
       break
     case 'boolean':
-      dataStr += val ? 'True' : 'False'
+      s += obj ? 'True' : 'False'
       break
     case 'object':
-      if (val === null) {
-        dataStr += 'None'
-      } else if (Array.isArray(val)) {
-        if (val.length === 0) {
-          dataStr += '[]'
+      if (obj === null) {
+        s += 'None'
+      } else if (Array.isArray(obj)) {
+        if (obj.length === 0) {
+          s += '[]'
         } else {
-          dataStr += '[\n'
-          for (const item of val) {
-            dataStr += ' '.repeat(indent + 4) + jsonToPython(item, indent + 4) + ',\n'
+          s += '[\n'
+          for (const item of obj) {
+            s += ' '.repeat(indent + 4) + jsonToPython(item, indent + 4) + ',\n'
           }
-          dataStr += ' '.repeat(indent) + ']'
+          s += ' '.repeat(indent) + ']'
         }
       } else {
-        const len = Object.keys(val).length
+        const len = Object.keys(obj).length
         if (len === 0) {
-          dataStr += '{}'
+          s += '{}'
         } else {
-          dataStr += '{\n'
-          for (const [k, v] of Object.entries(val)) {
+          s += '{\n'
+          for (const [k, v] of Object.entries(obj)) {
             // repr() because JSON keys must be strings.
-            dataStr += ' '.repeat(indent + 4) + repr(k) + ': ' + jsonToPython(v, indent + 4) + ',\n'
+            s += ' '.repeat(indent + 4) + repr(k) + ': ' + jsonToPython(v, indent + 4) + ',\n'
           }
-          dataStr += ' '.repeat(indent) + '}'
+          s += ' '.repeat(indent) + '}'
         }
       }
       break
+    default:
+      throw new Error('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
   }
-  return dataStr
+  return s
 }
 
 function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
-      return ['data = open(\'' + filePath + '\', \'rb\').read()', null, null]
+      return ["data = open('" + filePath + "', 'rb').read()", null, null]
     } else {
-      return ['data = open(\'' + filePath + '\')', null, null]
+      return ["data = open('" + filePath + "')", null, null]
     }
   }
 
@@ -107,7 +109,7 @@ function getDataString (request) {
         // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
         // but this is hopefully good enough.
         const roundtrips = JSON.stringify(dataAsJson) === request.data
-        const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson, 0) + '\n'
+        const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson) + '\n'
         return [dataString, jsonDataString, roundtrips]
       } catch {}
     }
@@ -308,8 +310,8 @@ export const _toPython = request => {
   if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  let requestLineWithUrlParams = 'response = requests.' + request.method + '(\'' + request.urlWithoutQuery + '\''
-  let requestLineWithOriginalUrl = 'response = requests.' + request.method + '(\'' + request.url + '\''
+  let requestLineWithUrlParams = 'response = requests.' + request.method + "('" + request.urlWithoutQuery + "'"
+  let requestLineWithOriginalUrl = 'response = requests.' + request.method + "('" + request.url + "'"
 
   let requestLineBody = ''
   if (request.headers) {
