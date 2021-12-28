@@ -110,6 +110,15 @@ function getDataString (request) {
         // but this is hopefully good enough.
         const roundtrips = JSON.stringify(dataAsJson) === request.data
         const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson) + '\n'
+        // Remove "Content-Type" from the headers dict
+        // because Requests adds it automatically when you use json=
+        if (roundtrips) {
+          delete request.headers['Content-Type']
+          delete request.headers['content-type']
+          if (Object.keys(request.headers).length === 0) {
+            delete request.headers
+          }
+        }
         return [dataString, jsonDataString, roundtrips]
       } catch {}
     }
@@ -271,6 +280,23 @@ export const _toPython = request => {
     }
     cookieDict += '}\n'
   }
+
+  let queryDict
+  if (request.query) {
+    queryDict = getQueryDict(request)
+  }
+
+  let dataString
+  let jsonDataString
+  let jsonDataStringRoundtrips
+  let filesString
+  if (request.data && typeof request.data === 'string') {
+    // This can modify request.headers
+    [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
+  } else if (request.multipartUploads) {
+    filesString = getFilesString(request)
+  }
+
   let headerDict
   if (request.headers) {
     headerDict = 'headers = {\n'
@@ -288,20 +314,6 @@ export const _toPython = request => {
     headerDict += '}\n'
   }
 
-  let queryDict
-  if (request.query) {
-    queryDict = getQueryDict(request)
-  }
-
-  let dataString
-  let jsonDataString
-  let jsonDataStringRoundtrips
-  let filesString
-  if (request.data && typeof request.data === 'string') {
-    [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
-  } else if (request.multipartUploads) {
-    filesString = getFilesString(request)
-  }
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
