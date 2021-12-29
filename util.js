@@ -449,7 +449,7 @@ const curlShortOpts = {
 // "--bla" "--bl" and "--b" all used to be valid options as well. If later
 // "--blaz" was added, suddenly those 3 shortened options are removed (because
 // they are now ambiguous).
-// https://github.com/NickCarneiro/curlconverter/pull/280#issuecomment-931241328
+// https://github.com/curlconverter/curlconverter/pull/280#issuecomment-931241328
 const removedLongOpts = {
   'ftp-ascii': { type: 'bool', name: 'use-ascii', removed: '7.10.7' },
   port: { type: 'string', removed: '7.3' },
@@ -527,7 +527,7 @@ const canBeList = new Set([
   'resolve',
   'connect-to',
   // TODO: support multiple cookies
-  // https://github.com/NickCarneiro/curlconverter/issues/161
+  // https://github.com/curlconverter/curlconverter/issues/161
   // 'cookie',
   'quote',
   'telnet-option'
