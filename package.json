@@ -1,14 +1,14 @@
 {
   "name": "curlconverter",
-  "version": "4.0.0-alpha.8",
+  "version": "4.0.0-alpha.9",
   "description": "convert curl commands to Python, JavaScript, Go, PHP and other languages",
-  "homepage": "https://github.com/NickCarneiro/curlconverter",
+  "homepage": "https://github.com/curlconverter/curlconverter",
   "author": {
     "name": "Nick Carneiro",
     "email": "nickc@trillworks.com",
     "url": "http://trillworks.com"
   },
-  "repository": "NickCarneiro/curlconverter",
+  "repository": "curlconverter/curlconverter",
   "license": "MIT",
   "keywords": [
     "curl",
@@ -31,15 +31,15 @@
   },
   "devDependencies": {
     "standard": "^16.0.4",
-    "tape": "^5.3.1",
-    "tree-sitter-cli": "^0.20.0",
-    "yargs": "^17.2.1"
+    "tape": "^5.4.0",
+    "tree-sitter-cli": "^0.20.1",
+    "yargs": "^17.3.1"
   },
   "scripts": {
     "test": "tape test.js",
     "lint": "standard           index.js generators/*.js bin/*.js test.js *.js",
     "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js",
-    "prepublishOnly": "tree-sitter build-wasm node_modules/tree-sitter-bash"
+    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash"
   },
   "bin": "bin/cli.js",
   "browser": {
