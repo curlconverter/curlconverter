@@ -39,7 +39,7 @@
     "test": "tape test.js",
     "lint": "standard           index.js generators/*.js bin/*.js test.js *.js",
     "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js",
-    "prepublishOnly": "tree-sitter build-wasm node_modules/tree-sitter-bash"
+    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash"
   },
   "bin": "bin/cli.js",
   "browser": {
