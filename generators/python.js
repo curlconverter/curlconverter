@@ -91,9 +91,6 @@ function getDataString (request) {
 
   const dataString = 'data = ' + repr(request.data) + '\n'
 
-  const isJson = request.headers &&
-        (request.headers['Content-Type'] === 'application/json' ||
-          request.headers['content-type'] === 'application/json')
   if (getHeader(request, 'content-type') === 'application/json') {
     try {
       const dataAsJson = JSON.parse(request.data)
@@ -104,11 +101,6 @@ function getDataString (request) {
       // but this is hopefully good enough.
       const roundtrips = JSON.stringify(dataAsJson) === request.data
       const jsonDataString = 'json_data = ' + objToPython(dataAsJson) + '\n'
-      // Remove "Content-Type" from the headers dict
-      // because Requests adds it automatically when you use json=
-      if (roundtrips) {
-        deleteHeader(request, 'content-type')
-      }
       return [dataString, jsonDataString, roundtrips]
     } catch {}
   }
@@ -226,28 +218,11 @@ const getHeader = (request, header) => {
   return undefined
 }
 
-const deleteHeader = (request, header) => {
-  if (!request.headers) {
-    return
-  }
-  header = header.toLowerCase()
-  for (const existingHeader of Object.keys(request.headers)) {
-    if (existingHeader.toLowerCase() === header) {
-      delete request.headers[existingHeader]
-      // TODO: warn users about deleted header
-    }
-  }
-
-  // If there's no more headers, don't add a `headers = {}` line.
-  if (Object.keys(request.headers).length === 0) {
-    delete request.headers
-  }
-}
-
 export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
+  const commentedOutHeaders = new Set()
 
   let cookieDict
   if (request.cookies) {
@@ -286,8 +261,12 @@ export const _toPython = request => {
   let jsonDataStringRoundtrips
   let filesString
   if (request.data && typeof request.data === 'string') {
-    // This can modify request.headers
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
+    // Remove "Content-Type" from the headers dict
+    // because Requests adds it automatically when you use json=
+    if (jsonDataString && jsonDataStringRoundtrips) {
+      commentedOutHeaders.add('content-type')
+    }
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
     // If you pass files= then Requests adds this header and a `boundary`
@@ -295,7 +274,7 @@ export const _toPython = request => {
     // wheras curl does, so the request will fail.
     // https://github.com/curlconverter/curlconverter/issues/248
     if (filesString && getHeader(request, 'content-type') === 'multipart/form-data') {
-      deleteHeader(request, 'content-type')
+      commentedOutHeaders.add('content-type')
     }
   }
 
@@ -311,7 +290,8 @@ export const _toPython = request => {
         osVariables.add(newVar)
       }
 
-      headerDict += '    ' + repr(headerName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
+      const lineStart = commentedOutHeaders.has(headerName.toLowerCase()) ? '    # ' : '    '
+      headerDict += lineStart + repr(headerName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
     }
     headerDict += '}\n'
   }
