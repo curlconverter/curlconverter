@@ -94,22 +94,20 @@ function getDataString (request) {
   const isJson = request.headers &&
         (request.headers['Content-Type'] === 'application/json' ||
           request.headers['content-type'] === 'application/json')
-  if (isJson) {
+  if (getHeader(request, 'content-type') === 'application/json') {
     try {
       const dataAsJson = JSON.parse(request.data)
-      // We actually want to know how it's serialized by simplejson or
-      // Python's builtin json library, which is what Requests uses
+      // TODO: we actually want to know how it's serialized by
+      // simplejson or Python's builtin json library,
+      // which is what Requests uses
+      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
       // but this is hopefully good enough.
       const roundtrips = JSON.stringify(dataAsJson) === request.data
       const jsonDataString = 'json_data = ' + objToPython(dataAsJson) + '\n'
       // Remove "Content-Type" from the headers dict
       // because Requests adds it automatically when you use json=
       if (roundtrips) {
-        delete request.headers['Content-Type']
-        delete request.headers['content-type']
-        if (Object.keys(request.headers).length === 0) {
-          delete request.headers
-        }
+        deleteHeader(request, 'content-type')
       }
       return [dataString, jsonDataString, roundtrips]
     } catch {}
@@ -214,6 +212,37 @@ function detectEnvVar (inputString) {
   return [detectedVariables, modifiedString.join('')]
 }
 
+// Gets the first header, matching case-insensitively
+const getHeader = (request, header) => {
+  if (!request.headers) {
+    return undefined
+  }
+  header = header.toLowerCase()
+  for (const existingHeader of Object.keys(request.headers)) {
+    if (existingHeader.toLowerCase() === header) {
+      return request.headers[existingHeader]
+    }
+  }
+  return undefined
+}
+
+const deleteHeader = (request, header) => {
+  if (!request.headers) {
+    return
+  }
+  header = header.toLowerCase()
+  for (const existingHeader of Object.keys(request.headers)) {
+    if (existingHeader.toLowerCase() === header) {
+      delete request.headers[existingHeader]
+    }
+  }
+
+  // If there's no more headers, don't add a `headers = {}` line.
+  if (Object.keys(request.headers).length === 0) {
+    delete request.headers
+  }
+}
+
 export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
@@ -260,6 +289,14 @@ export const _toPython = request => {
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
+    // If you pass files= then Requests adds this header and a `boundary`
+    // If you manually pass a Content-Type header it won't set a `boundary`
+    // wheras curl does, so the request will fail.
+    // https://github.com/curlconverter/curlconverter/issues/248
+    if (filesString && getHeader(request, 'content-type') === 'multipart/form-data') {
+      deleteHeader(request, 'content-type')
+    }
+
   }
 
   let headerDict

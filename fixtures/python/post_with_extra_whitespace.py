@@ -2,7 +2,6 @@ import requests
 
 headers = {
     'accept': 'application/json',
-    'Content-Type': 'multipart/form-data',
 }
 
 files = {
