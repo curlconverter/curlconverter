@@ -234,6 +234,7 @@ const deleteHeader = (request, header) => {
   for (const existingHeader of Object.keys(request.headers)) {
     if (existingHeader.toLowerCase() === header) {
       delete request.headers[existingHeader]
+      // TODO: warn users about deleted header
     }
   }
 
@@ -296,7 +297,6 @@ export const _toPython = request => {
     if (filesString && getHeader(request, 'content-type') === 'multipart/form-data') {
       deleteHeader(request, 'content-type')
     }
-
   }
 
   let headerDict
