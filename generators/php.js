@@ -58,6 +58,8 @@ export const _toPhp = request => {
         }
       }
       requestDataCode += ']'
+    } else if (request.isDataBinary) {
+      requestDataCode += "file_get_contents('" + quote(request.data.substring(1)) + "')"
     } else {
       requestDataCode = "'" + quote(request.data) + "'"
     }
