@@ -1,10 +1,10 @@
 <?php
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://api.test.com/');
+curl_setopt($ch, CURLOPT_URL, 'https://example.com');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-curl_setopt($ch, CURLOPT_USERPWD, ':some_password');
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 $response = curl_exec($ch);
 

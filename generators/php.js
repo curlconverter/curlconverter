@@ -1,85 +1,65 @@
 import * as util from '../util.js'
-
-import querystring from 'query-string'
 import jsesc from 'jsesc'
 
 const quote = str => jsesc(str, { quotes: 'single' })
 
 export const _toPhp = request => {
-  let headerString = false
-  if (request.headers) {
-    headerString = '$headers = array(\n'
-    let i = 0
-    const headerCount = Object.keys(request.headers).length
-    for (const headerName in request.headers) {
-      headerString += "    '" + headerName + "' => '" + quote(request.headers[headerName]) + "'"
-      if (i < headerCount - 1) {
-        headerString += ',\n'
-      }
-      i++
-    }
-    if (request.cookies) {
-      const cookieString = quote(util.serializeCookies(request.cookies))
-      headerString += ",\n    'Cookie' => '" + cookieString + "'"
-    }
-    headerString += '\n);'
-  } else {
-    headerString = '$headers = array();'
-  }
-
-  let optionsString = false
-  if (request.auth) {
-    const splitAuth = request.auth.split(':').map(quote)
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
-    optionsString = "$options = array('auth' => array('" + user + "', '" + password + "'));"
-  }
-
-  let dataString = false
-  if (request.data) {
-    const parsedQueryString = querystring.parse(request.data, { sort: false })
-    dataString = '$data = array(\n'
-    const dataCount = Object.keys(parsedQueryString).length
-    if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
-      dataString = "$data = '" + quote(request.data) + "';"
-    } else {
-      let dataIndex = 0
-      for (const key in parsedQueryString) {
-        const value = parsedQueryString[key]
-        dataString += "    '" + key + "' => '" + quote(value) + "'"
-        if (dataIndex < dataCount - 1) {
-          dataString += ',\n'
-        }
-        dataIndex++
-      }
-      dataString += '\n);'
-    }
-  }
-  let requestLine = '$response = Requests::' + request.method + '(\'' + request.url + '\''
-  requestLine += ', $headers'
-  if (dataString) {
-    requestLine += ', $data'
-  }
-  if (optionsString) {
-    requestLine += ', $options'
-  }
-  requestLine += ');'
-
   let phpCode = '<?php\n'
-  phpCode += 'include(\'vendor/rmccue/requests/library/Requests.php\');\n'
-  phpCode += 'Requests::register_autoloader();\n'
-  phpCode += headerString + '\n'
-  if (dataString) {
-    phpCode += dataString + '\n'
-  }
-  if (optionsString) {
-    phpCode += optionsString + '\n'
+  phpCode += '$ch = curl_init();\n'
+  phpCode += "curl_setopt($ch, CURLOPT_URL, '" + quote(request.url) + "');\n"
+  phpCode += 'curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n'
+  phpCode += "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" + request.method.toUpperCase() + "');\n"
+
+  if (request.headers || request.compressed) {
+    let headersArrayCode = '[\n'
+
+    if (request.compressed) {
+      if (typeof request.headers === 'object') {
+        let isAcceptEncodingSet = false
+        for (const headerName in request.headers) {
+          if (headerName.toLowerCase() === 'accept-encoding') {
+            isAcceptEncodingSet = true
+            break
+          }
+        }
+        if (!isAcceptEncodingSet) { request.headers['Accept-Encoding'] = 'gzip' }
+      } else {
+        headersArrayCode += "\t'Accept-Encoding' => 'gzip',\n"
+      }
+    }
+
+    for (const headerName in request.headers) {
+      headersArrayCode += "\t'" + quote(headerName) + "' => '" + quote(request.headers[headerName]) + "',\n"
+    }
+
+    headersArrayCode += ']'
+    phpCode += 'curl_setopt($ch, CURLOPT_HTTPHEADER, ' + headersArrayCode + ');\n'
   }
 
-  phpCode += requestLine
+  if (request.cookies) {
+    phpCode += "curl_setopt($ch, CURLOPT_COOKIE, '" + quote(util.serializeCookies(request.cookies)) + "');\n"
+  }
 
-  return phpCode + '\n'
+  if (request.auth) {
+    phpCode += 'curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);\n'
+    phpCode += "curl_setopt($ch, CURLOPT_USERPWD, '" + quote(request.auth) + "');\n"
+  }
+
+  if (request.data) {
+    phpCode += "curl_setopt($ch, CURLOPT_POSTFIELDS, '" + quote(request.data) + "');\n"
+  }
+
+  if (request.insecure) {
+    phpCode += 'curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);\n'
+    phpCode += 'curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);\n'
+  }
+
+  phpCode += '\n$response = curl_exec($ch);\n\n'
+
+  phpCode += 'curl_close($ch);\n'
+  return phpCode
 }
+
 export const toPhp = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
   return _toPhp(request)
