@@ -4,9 +4,9 @@ headers = {
     'Content-Type': 'application/json',
 }
 
-params = (
+params = [
     ('pretty', ''),
-)
+]
 
 json_data = {
     'properties': {
