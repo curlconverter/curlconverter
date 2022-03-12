@@ -45,8 +45,23 @@ export const _toPhp = request => {
     phpCode += "curl_setopt($ch, CURLOPT_USERPWD, '" + quote(request.auth) + "');\n"
   }
 
-  if (request.data) {
-    phpCode += "curl_setopt($ch, CURLOPT_POSTFIELDS, '" + quote(request.data) + "');\n"
+  if (request.data || request.multipartUploads) {
+    let requestDataCode = ''
+    if (request.multipartUploads) {
+      requestDataCode = '[\n'
+      for (const multipartKey in request.multipartUploads) {
+        const multipartValue = request.multipartUploads[multipartKey]
+        if (multipartValue.charAt(0) === '@') {
+          requestDataCode += "\t'" + quote(multipartKey) + "' => new CURLFile('" + quote(multipartValue.substring(1)) + "'),\n"
+        } else {
+          requestDataCode += "\t'" + quote(multipartKey) + "' => '" + quote(multipartValue) + "',\n"
+        }
+      }
+      requestDataCode += ']'
+    } else {
+      requestDataCode = "'" + quote(request.data) + "'"
+    }
+    phpCode += 'curl_setopt($ch, CURLOPT_POSTFIELDS, ' + requestDataCode + ');\n'
   }
 
   if (request.insecure) {
