@@ -21,7 +21,7 @@ function repr (value) {
 }
 
 function getQueryDict (request) {
-  let queryDict = 'params = (\n'
+  let queryDict = 'params = [\n'
   for (const paramName in request.query) {
     const rawValue = request.query[paramName]
     let paramValue
@@ -32,7 +32,7 @@ function getQueryDict (request) {
     }
     queryDict += '    (' + repr(paramName) + ', ' + paramValue + '),\n'
   }
-  queryDict += ')\n'
+  queryDict += ']\n'
   return queryDict
 }
 
@@ -144,10 +144,10 @@ function getMultipleDataString (request, parsedQueryString) {
       const value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
-          dataString += '  (' + repr(key) + ', ' + repr(value[i]) + '),\n'
+          dataString += '    (' + repr(key) + ', ' + repr(value[i]) + '),\n'
         }
       } else {
-        dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
+        dataString += '    (' + repr(key) + ', ' + repr(value) + '),\n'
       }
     }
     dataString += ']\n'
@@ -157,7 +157,7 @@ function getMultipleDataString (request, parsedQueryString) {
     let i = 0
     for (const key in parsedQueryString) {
       const value = parsedQueryString[key]
-      dataString += '  ' + repr(key) + ': ' + repr(value)
+      dataString += '    ' + repr(key) + ': ' + repr(value)
       if (i === elementCount - 1) {
         dataString += '\n'
       } else {

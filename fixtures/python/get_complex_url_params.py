@@ -1,6 +1,6 @@
 import requests
 
-params = (
+params = [
     ('page', '1'),
     ('available', ['', '1']),
     ('location', '0'),
@@ -41,7 +41,7 @@ params = (
     ('duration', ''),
     ('isfd', ''),
     ('stopover', ''),
-)
+]
 
 response = requests.get('https://www.nomador.com/house-sitting/', params=params)
 

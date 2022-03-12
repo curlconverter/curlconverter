@@ -8,9 +8,9 @@ headers = {
     'Authorization': f"Bearer {DO_API_TOKEN}",
 }
 
-params = (
+params = [
     ('type', 'distribution'),
-)
+]
 
 response = requests.get('https://api.digitalocean.com/v2/images', headers=headers, params=params)
 
