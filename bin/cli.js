@@ -80,16 +80,9 @@ for (const [opt, val] of Object.entries(curlConverterLongOpts)) {
 }
 const opts = [{ ...curlLongOpts, ...curlConverterLongOpts }, curlShortOpts]
 
-const exitWithError = error => {
-  if (typeof error === 'string' || error instanceof String) {
-    for (const line of error.toString().split('\n')) {
-      console.error('error: ' + line)
-    }
-  } else {
-    // curlconverter only throws strings.
-    // If this isn't our error, print the full traceback
-    console.error(error)
-  }
+const exitWithError = (error, verbose = false) => {
+  // .toString() removes the traceback
+  console.error(verbose ? error : error.toString())
   process.exit(1)
 }
 
@@ -112,8 +105,9 @@ if (parsedArguments.version) {
 const language = Object.prototype.hasOwnProperty.call(parsedArguments, 'language') ? parsedArguments.language : defaultLanguage
 if (!Object.prototype.hasOwnProperty.call(translate, language)) {
   exitWithError(
-    'unexpected --language: ' + JSON.stringify(language) + '\n' +
-    'must be one of: ' + Object.keys(translate).join(', ')
+    new Error('unexpected --language: ' + JSON.stringify(language) + '\n' +
+    'must be one of: ' + Object.keys(translate).join(', ')),
+    parsedArguments.verbose
   )
 }
 
@@ -127,13 +121,13 @@ if (!Object.keys(parsedArguments).length) {
   try {
     request = parseCurlCommand(input)
   } catch (e) {
-    exitWithError(e)
+    exitWithError(e, parsedArguments.verbose)
   }
 } else {
   try {
     request = buildRequest(parsedArguments)
   } catch (e) {
-    exitWithError(e)
+    exitWithError(e, parsedArguments.verbose)
   }
 }
 
