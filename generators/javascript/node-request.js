@@ -1,5 +1,5 @@
-import * as util from "../../util.js";
-import jsesc from "jsesc";
+import * as util from '../../util.js'
+import jsesc from 'jsesc'
 
 export const _toNodeRequest = request => {
   let nodeRequestCode = 'var request = require(\'request\');\n\n'

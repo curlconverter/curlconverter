@@ -1,4 +1,4 @@
-import { _toJsFetch, toJsFetch } from "./fetch.js";
+import { _toJsFetch, toJsFetch } from './fetch.js'
 
 export {
   _toJsFetch as _toBrowser,

@@ -1,4 +1,4 @@
-import jsesc from "jsesc";
+import jsesc from 'jsesc'
 
 const repr = (value) => {
   // In context of url parameters, don't accept nulls and such.
@@ -35,7 +35,7 @@ const callFunction = (outputVariable, functionName, params, termination) => {
 
     // Split the params in multiple lines - if one line is not enough
     const combinedSingleLineLength = [outputVariable, functionName, singleLine]
-        .map(x => x ? x.length : 0).reduce((x, y) => x + y) +
+      .map(x => x ? x.length : 0).reduce((x, y) => x + y) +
       (outputVariable ? 3 : 0) + 2 + (termination ? termination.length : 1)
     functionCall += combinedSingleLineLength < 120 ? singleLine : multiLine
   } else {
@@ -112,7 +112,7 @@ const structify = (obj, indentLevel) => {
     for (const k in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, k)) {
         if (!k[0].match(/[a-z]/i)) {
-          throw Error('MATLAB structs do not support keys starting with non-alphabet symbols')
+          throw new Error('MATLAB structs do not support keys starting with non-alphabet symbols')
         }
         // recursive call to scan property
         if (first) { first = false } else {

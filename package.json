@@ -37,9 +37,15 @@
   },
   "scripts": {
     "test": "tape test.js",
-    "lint": "standard           index.js generators/*.js bin/*.js test.js *.js",
-    "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js",
+    "lint": "standard",
+    "lint:fix": "standard --fix",
     "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash"
+  },
+  "standard": {
+    "ignore": [
+      "/fixtures/",
+      "/dist/"
+    ]
   },
   "bin": "bin/cli.js",
   "browser": {

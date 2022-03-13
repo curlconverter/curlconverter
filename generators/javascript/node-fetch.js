@@ -1,5 +1,5 @@
-import * as util from "../../util.js";
-import { _toJsFetch } from "./fetch.js";
+import * as util from '../../util.js'
+import { _toJsFetch } from './fetch.js'
 
 export const _toNodeFetch = request => {
   let nodeFetchCode = 'var fetch = require(\'node-fetch\');\n\n'
