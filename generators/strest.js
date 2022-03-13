@@ -17,7 +17,7 @@ function getDataString (request) {
     // This doesn't work with --data-binary ''
     try {
       return {
-        mimeType: mimeType,
+        mimeType,
         text: JSON.parse(request.data)
       }
     } catch (e) {}
@@ -29,7 +29,7 @@ function getDataString (request) {
     }
   }
   return {
-    mimeType: mimeType,
+    mimeType,
     text: request.data
   }
 }
