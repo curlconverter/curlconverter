@@ -16,6 +16,8 @@ const has = (obj, prop) => {
   return Object.prototype.hasOwnProperty.call(obj, prop)
 }
 
+export class CCError extends Error {}
+
 const pushProp = (obj, prop, value) => {
   if (!has(obj, prop)) {
     obj[prop] = []
@@ -642,7 +644,7 @@ const parseAnsiCString = (str) => {
         // of its UTF-8 input and can produce invalid UTF-8, whereas
         // JavaScript stores strings in UTF-16
         if (m.codePointAt(2) > 127) {
-          throw new Error("non-ASCII control character in ANSI-C quoted string: '\\u{" + m.codePointAt(2).toString(16) + "}'")
+          throw new CCError("non-ASCII control character in ANSI-C quoted string: '\\u{" + m.codePointAt(2).toString(16) + "}'")
         }
         // If this produces a 0x00 (null) character, it will cause bash to
         // terminate the string at that character, but we return the null
@@ -666,7 +668,7 @@ const parseAnsiCString = (str) => {
         return String.fromCodePoint(parseInt(m.slice(1), 8) % 256)
       default:
         // There must be a mis-match between ANSI_BACKSLASHES and the switch statement
-        throw new Error('unhandled character in ANSI-C escape code: ' + JSON.stringify(m))
+        throw new CCError('unhandled character in ANSI-C escape code: ' + JSON.stringify(m))
     }
   }
 
@@ -691,23 +693,23 @@ const tokenizeBashStr = (curlCommand) => {
   // TODO: get only named children?
   if (curlArgs.rootNode.type !== 'program') {
     // TODO: better error message.
-    throw new Error("expected a 'program' AST node, got " + curlArgs.rootNode.type + ' instead')
+    throw new CCError("expected a 'program' AST node, got " + curlArgs.rootNode.type + ' instead')
   }
 
   if (curlArgs.rootNode.childCount < 1) {
     // TODO: better error message.
-    throw new Error('empty "program" node')
+    throw new CCError('empty "program" node')
   } else if (curlArgs.rootNode.childCount > 1) {
     // TODO: warn that everything after the first "command" node is ignored
   } else if (curlArgs.rootNode.firstChild.type !== 'command') {
     // TODO: better error message.
-    throw new Error("expected a 'command' AST node, got " + curlArgs.rootNode.firstChild.type + ' instead')
+    throw new CCError("expected a 'command' AST node, got " + curlArgs.rootNode.firstChild.type + ' instead')
   }
 
   const command = curlArgs.rootNode.firstChild
   if (command.childCount < 1) {
     // TODO: better error message.
-    throw new Error('empty "command" node')
+    throw new CCError('empty "command" node')
   }
   // TODO: add childrenForFieldName to tree-sitter node/web bindings and then
   // use that here instead
@@ -716,7 +718,7 @@ const tokenizeBashStr = (curlCommand) => {
   const [cmdName, ...args] = command.children
   if (cmdName.type !== 'command_name') {
     // TODO: better error message.
-    throw new Error("expected a 'command_name' AST node, got " + cmdName.type + ' instead')
+    throw new CCError("expected a 'command_name' AST node, got " + cmdName.type + ' instead')
   }
 
   const toVal = (node) => {
@@ -741,7 +743,7 @@ const tokenizeBashStr = (curlCommand) => {
       default:
         // console.error(curlCommand)
         // console.error(curlArgs.rootNode.toString())
-        throw new Error('unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"')
+        throw new CCError('unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"')
     }
   }
   return [cmdName.text.trim(), ...args.map(toVal)]
@@ -761,11 +763,11 @@ const parseArgs = (args, opts) => {
       } else if (arg.startsWith('--')) {
         const longArg = longOpts[arg.slice(2)]
         if (longArg === null) {
-          throw new Error('option ' + arg + ': is ambiguous')
+          throw new CCError('option ' + arg + ': is ambiguous')
         }
         if (typeof longArg === 'undefined') {
           // TODO: extract a list of deleted arguments to check here
-          throw new Error('option ' + arg + ': is unknown')
+          throw new CCError('option ' + arg + ': is unknown')
         }
 
         if (longArg.type === 'string') {
@@ -773,7 +775,7 @@ const parseArgs = (args, opts) => {
             i++
             pushProp(parsedArguments, longArg.name, args[i])
           } else {
-            throw new Error('option ' + arg + ': requires parameter')
+            throw new CCError('option ' + arg + ': requires parameter')
           }
         } else {
           parsedArguments[longArg.name] = toBoolean(arg.slice(2)) // TODO: all shortened args work correctly?
@@ -792,15 +794,15 @@ const parseArgs = (args, opts) => {
 
         // "-" on its own raises error
         if (arg.length === 1) {
-          throw new Error('option ' + arg + ': is unknown')
+          throw new CCError('option ' + arg + ': is unknown')
         }
         for (let j = 1; j < arg.length; j++) {
           if (!has(shortOpts, arg[j])) {
             if (has(changedShortOpts, arg[j])) {
-              throw new Error('option ' + arg + ': ' + changedShortOpts[arg[j]])
+              throw new CCError('option ' + arg + ': ' + changedShortOpts[arg[j]])
             }
             // TODO: there are a few deleted short options we could report
-            throw new Error('option ' + arg + ': is unknown')
+            throw new CCError('option ' + arg + ': is unknown')
           }
           const shortFor = shortOpts[arg[j]]
           const longArg = longOpts[shortFor]
@@ -814,7 +816,7 @@ const parseArgs = (args, opts) => {
               i++
               val = args[i]
             } else {
-              throw new Error('option ' + arg + ': requires parameter')
+              throw new CCError('option ' + arg + ': requires parameter')
             }
             pushProp(parsedArguments, longArg.name, val)
           } else {
@@ -841,7 +843,7 @@ const buildRequest = parsedArguments => {
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
     // TODO: better error message (could be parsing fail)
-    throw new Error('no URL specified!')
+    throw new CCError('no URL specified!')
   }
   let url = parsedArguments.url[parsedArguments.url.length - 1]
 
@@ -1011,14 +1013,14 @@ const parseCurlCommand = (curlCommand) => {
   const [cmdName, ...args] = Array.isArray(curlCommand) ? curlCommand : tokenizeBashStr(curlCommand)
   if (typeof cmdName === 'undefined') {
     const errorMsg = Array.isArray(curlCommand) ? 'no arguments provided' : 'failed to parse input'
-    throw new Error(errorMsg)
+    throw new CCError(errorMsg)
   }
   if (cmdName.trim() !== 'curl') {
     const shortenedCmdName = cmdName.length > 30 ? cmdName.slice(0, 27) + '...' : cmdName
     if (cmdName.startsWith('curl ')) {
-      throw new Error('command should begin with a single token "curl" but instead begins with ' + JSON.stringify(shortenedCmdName))
+      throw new CCError('command should begin with a single token "curl" but instead begins with ' + JSON.stringify(shortenedCmdName))
     } else {
-      throw new Error('command should begin with "curl" but instead begins with ' + JSON.stringify(shortenedCmdName))
+      throw new CCError('command should begin with "curl" but instead begins with ' + JSON.stringify(shortenedCmdName))
     }
   }
 

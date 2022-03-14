@@ -1,3 +1,5 @@
+import { CCError } from '../../util.js'
+
 import jsesc from 'jsesc'
 
 const repr = (value) => {
@@ -112,7 +114,7 @@ const structify = (obj, indentLevel) => {
     for (const k in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, k)) {
         if (!k[0].match(/[a-z]/i)) {
-          throw new Error('MATLAB structs do not support keys starting with non-alphabet symbols')
+          throw new CCError('MATLAB structs do not support keys starting with non-alphabet symbols')
         }
         // recursive call to scan property
         if (first) { first = false } else {

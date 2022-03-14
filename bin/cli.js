@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { curlLongOpts, curlShortOpts, parseArgs, buildRequest, parseCurlCommand } from '../util.js'
+import { curlLongOpts, curlShortOpts, parseArgs, buildRequest, parseCurlCommand, CCError } from '../util.js'
 
 import { _toAnsible } from '../generators/ansible.js'
 import { _toBrowser } from '../generators/javascript/browser.js'
@@ -81,8 +81,20 @@ for (const [opt, val] of Object.entries(curlConverterLongOpts)) {
 const opts = [{ ...curlLongOpts, ...curlConverterLongOpts }, curlShortOpts]
 
 const exitWithError = (error, verbose = false) => {
-  // .toString() removes the traceback
-  console.error(verbose ? error : error.toString())
+  let errMsg = error
+  if (!verbose) {
+    if (error instanceof CCError) {
+      errMsg = ''
+      for (const line of error.message.toString().split('\n')) {
+        errMsg += 'error: ' + line + '\n'
+      }
+      errMsg = errMsg.trimEnd()
+    } else {
+      // .toString() removes the traceback
+      errMsg = error.toString()
+    }
+  }
+  console.error(errMsg)
   process.exit(1)
 }
 
@@ -105,7 +117,7 @@ if (parsedArguments.version) {
 const language = Object.prototype.hasOwnProperty.call(parsedArguments, 'language') ? parsedArguments.language : defaultLanguage
 if (!Object.prototype.hasOwnProperty.call(translate, language)) {
   exitWithError(
-    new Error('unexpected --language: ' + JSON.stringify(language) + '\n' +
+    new CCError('unexpected --language: ' + JSON.stringify(language) + '\n' +
     'must be one of: ' + Object.keys(translate).join(', ')),
     parsedArguments.verbose
   )
@@ -139,5 +151,10 @@ if (request.url && request.url.startsWith('curl ')) {
 }
 
 const generator = translate[language]
-const code = generator(request)
+let code
+try {
+  code = generator(request)
+} catch (e) {
+  exitWithError(e, parsedArguments.verbose)
+}
 process.stdout.write(code)

@@ -76,7 +76,7 @@ function jsonToPython (obj, indent = 0) {
       }
       break
     default:
-      throw new Error('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
+      throw new util.CCError('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
   }
   return s
 }
