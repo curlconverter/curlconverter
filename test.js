@@ -44,11 +44,15 @@ const outputs = [
     command: curlconverter.toPhp
   },
   {
+    name: 'PHP-Requests',
+    extension: 'php',
+    command: curlconverter.toPhpRequests
+  },
+  {
     name: 'Go',
     extension: 'go',
     command: curlconverter.toGo
   },
-
   {
     name: 'Rust',
     extension: 'rs',
