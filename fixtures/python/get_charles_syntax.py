@@ -7,8 +7,8 @@ headers = {
     'Accept-Language': 'en-CN;q=1, zh-Hans-CN;q=0.9',
 }
 
-params = [
-    ('format', 'json'),
-]
+params = {
+    'format': 'json',
+}
 
 response = requests.get('http://api.ipify.org/', headers=headers, params=params)

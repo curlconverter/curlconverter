@@ -19,22 +19,6 @@ function repr (value) {
   return reprWithVariable(value, false)
 }
 
-function getQueryDict (request) {
-  let queryDict = 'params = [\n'
-  for (const paramName in request.query) {
-    const rawValue = request.query[paramName]
-    let paramValue
-    if (Array.isArray(rawValue)) {
-      paramValue = '[' + rawValue.map(repr).join(', ') + ']'
-    } else {
-      paramValue = repr(rawValue)
-    }
-    queryDict += '    (' + repr(paramName) + ', ' + paramValue + '),\n'
-  }
-  queryDict += ']\n'
-  return queryDict
-}
-
 function objToPython (obj, indent = 0) {
   let s = ''
   switch (typeof obj) {
@@ -89,7 +73,7 @@ function objToDictOrListOfTuples (obj) {
   }
   let s = '[\n'
   for (const vals of obj) {
-    s += '    (' + vals.map(objToPython).join(', ') + '),'
+    s += '    (' + vals.map(objToPython).join(', ') + '),\n'
   }
   s += ']'
   return s
@@ -263,9 +247,9 @@ export const _toPython = request => {
     certStr += '\n'
   }
 
-  let queryDict
+  let queryStr
   if (request.query) {
-    queryDict = getQueryDict(request)
+    queryStr = 'params = ' + objToDictOrListOfTuples(request.queryAsDict || request.queryAsList) + '\n'
   }
 
   let dataString
@@ -369,8 +353,8 @@ export const _toPython = request => {
   if (headerDict) {
     pythonCode += headerDict + '\n'
   }
-  if (queryDict) {
-    pythonCode += queryDict + '\n'
+  if (queryStr) {
+    pythonCode += queryStr + '\n'
   }
   if (certStr) {
     pythonCode += certStr + '\n'

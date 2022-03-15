@@ -15,13 +15,13 @@ headers = {
     'Access-Control-Request-Headers': 'content-type,csrf',
 }
 
-params = [
-    ('deviceSerialNumber', 'xxx^'),
-    ('deviceType', 'xxx^'),
-    ('guideId', 's56876^'),
-    ('contentType', 'station^'),
-    ('callSign', '^'),
-    ('mediaOwnerCustomerId', 'xxx'),
-]
+params = {
+    'deviceSerialNumber': 'xxx^',
+    'deviceType': 'xxx^',
+    'guideId': 's56876^',
+    'contentType': 'station^',
+    'callSign': '^',
+    'mediaOwnerCustomerId': 'xxx',
+}
 
 response = requests.options('https://layla.amazon.de/api/tunein/queue-and-play', headers=headers, params=params)
