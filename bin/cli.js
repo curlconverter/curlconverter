@@ -47,7 +47,7 @@ const translate = {
   strest: _toStrest
 }
 
-const USAGE = `Usage: curlconverter [--language <language>] [curl_options...]
+const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...]
 
 language: the language to convert the curl command to. The choices are
   ansible
@@ -66,20 +66,23 @@ language: the language to convert the curl command to. The choices are
   rust
   strest
 
-curl_options: these should be passed exactly as they would be passed to curl.
-  see 'curl --help' or 'curl --manual' for which options are allowed here
+-: read curl command from stdin
 
-If no <curl_options> are passed, the script will read from stdin.`
+curl_options: these should be passed exactly as they would be passed to curl.
+  see 'curl --help' or 'curl --manual' for which options are allowed here`
 
 const curlConverterLongOpts = {
-  language: { type: 'string' }
+  language: { type: 'string', name: 'language' },
+  stdin: { type: 'boolean', name: 'stdin' }
 }
-for (const [opt, val] of Object.entries(curlConverterLongOpts)) {
-  if (!Object.prototype.hasOwnProperty.call(val, 'name')) {
-    val.name = opt
-  }
+const curlConverterShortOpts = {
+  // a single - (dash) tells curlconverter to read input from stdin
+  '': 'stdin'
 }
-const opts = [{ ...curlLongOpts, ...curlConverterLongOpts }, curlShortOpts]
+const opts = [
+  { ...curlLongOpts, ...curlConverterLongOpts },
+  { ...curlConverterShortOpts, ...curlShortOpts }
+]
 
 const exitWithError = (error, verbose = false) => {
   let errMsg = error
@@ -96,7 +99,7 @@ const exitWithError = (error, verbose = false) => {
     }
   }
   console.error(errMsg)
-  process.exit(1)
+  process.exit(2) // curl exits with 2 so we do too
 }
 
 const argv = process.argv.slice(2)
@@ -115,7 +118,9 @@ if (parsedArguments.version) {
   process.exit(0)
 }
 
-const language = Object.prototype.hasOwnProperty.call(parsedArguments, 'language') ? parsedArguments.language : defaultLanguage
+const argc = Object.keys(parsedArguments).length
+const language = parsedArguments.language || defaultLanguage
+const stdin = parsedArguments.stdin
 if (!Object.prototype.hasOwnProperty.call(translate, language)) {
   exitWithError(
     new CCError('unexpected --language: ' + JSON.stringify(language) + '\n' +
@@ -123,13 +128,26 @@ if (!Object.prototype.hasOwnProperty.call(translate, language)) {
     parsedArguments.verbose
   )
 }
-
-// If curlConverterLongOpts were the only args passed, read from stdin
-let request
 for (const opt of Object.keys(curlConverterLongOpts)) {
   delete parsedArguments[opt]
 }
-if (!Object.keys(parsedArguments).length) {
+
+let request
+if (argc === 0) {
+  console.log(USAGE.trim())
+  process.exit(2)
+} else if (stdin) {
+  if (Object.keys(parsedArguments).length > 0) {
+    // Throw an error so that if user typos something like
+    // curlconverter - -data
+    // they aren't stuck with what looks like a hung terminal.
+    // TODO: some options like --verbose are understandable
+    const args = Object.keys(parsedArguments).map(a => '--' + a).join(', ')
+    exitWithError(
+      new CCError('if you pass --stdin or -, you can\'t also pass ' + args),
+      parsedArguments.verbose
+    )
+  }
   const input = fs.readFileSync(0, 'utf8')
   try {
     request = parseCurlCommand(input)

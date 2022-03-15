@@ -754,7 +754,7 @@ const parseArgs = (args, opts) => {
 
   const parsedArguments = {}
   for (let i = 0, stillflags = true; i < args.length; i++) {
-    const arg = args[i]
+    let arg = args[i]
     if (stillflags && arg.startsWith('-')) {
       if (arg === '--') {
         /* This indicates the end of the flags and thus enables the
@@ -792,9 +792,14 @@ const parseArgs = (args, opts) => {
         // -ABCXPOST
         // -> {A: true, B: true, C: true, request: 'POST'}
 
-        // "-" on its own raises error
+        // "-" passed to curl on its own raises an error,
+        // curlconverter's command line uses it to read from stdin
         if (arg.length === 1) {
-          throw new CCError('option ' + arg + ': is unknown')
+          if (has(shortOpts, '')) {
+            arg = ['-', '']
+          } else {
+            throw new CCError('option ' + arg + ': is unknown')
+          }
         }
         for (let j = 1; j < arg.length; j++) {
           if (!has(shortOpts, arg[j])) {
