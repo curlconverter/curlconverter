@@ -867,7 +867,7 @@ export const parseQueryString = (s) => {
   }
   const result = []
   for (const param of s.split('&')) {
-    let [key, val] = param.split('=', 2)
+    let [key, val] = param.split(/=(.*)/s, 2)
     key = decodeUriComponent(key)
     val = val === undefined ? null : decodeUriComponent(val)
     result.push([key, val])
