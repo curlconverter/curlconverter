@@ -29,9 +29,9 @@ const outputs = [
     command: curlconverter.toPython
   },
   {
-    name: 'Browser',
+    name: 'JavaScript',
     extension: 'js',
-    command: curlconverter.toBrowser
+    command: curlconverter.toJavaScript
   },
   {
     name: 'Node',
