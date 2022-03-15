@@ -21,7 +21,6 @@
   "main": "index.js",
   "dependencies": {
     "cookie": "^0.4.2",
-    "decode-uri-component": "^0.2.0",
     "jsesc": "^3.0.2",
     "nunjucks": "^3.2.3",
     "query-string": "^7.1.1",

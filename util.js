@@ -2,7 +2,6 @@ import URL from 'url'
 
 import cookie from 'cookie'
 import nunjucks from 'nunjucks'
-import decodeUriComponent from 'decode-uri-component'
 
 import parser from './parser.js'
 
@@ -867,10 +866,32 @@ export const parseQueryString = (s) => {
   }
   const result = []
   for (const param of s.split('&')) {
-    let [key, val] = param.split(/=(.*)/s, 2)
-    key = decodeUriComponent(key)
-    val = val === undefined ? null : decodeUriComponent(val)
-    result.push([key, val])
+    const [key, val] = param.split(/=(.*)/s, 2)
+    let decodedKey
+    let decodedVal
+    try {
+      decodedKey = decodeURIComponent(key)
+      decodedVal = val === undefined ? null : decodeURIComponent(val)
+    } catch (e) {
+      if (e instanceof URIError) {
+        // Query string contains invalid percent encoded characters,
+        // we cannot properly convert it.
+        return [null, null, null]
+      }
+      throw e
+    }
+    try {
+      if (encodeURIComponent(decodedKey) !== key || encodeURIComponent(decodedVal) !== val) {
+        // Query string doesn't round-trip, we cannot properly convert it.
+        return [null, null, null]
+      }
+    } catch (e) {
+      if (e instanceof URIError) {
+        return [null, null, null]
+      }
+      throw e
+    }
+    result.push([decodedKey, decodedVal])
   }
 
   // Group keys

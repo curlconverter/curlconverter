@@ -118,8 +118,7 @@ function getDataString (request) {
   }
 
   const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data, { sort: false })
-  const singleKeyOnly = parsedQuery.length === 1 && !parsedQuery[0][1]
-  if (request.isDataBinary || singleKeyOnly) {
+  if (!parsedQuery || request.isDataBinary || (parsedQuery.length === 1 && !parsedQuery[0][1])) {
     return [dataString, null, null]
   } else {
     const dataPythonObj = 'data = ' + objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) + '\n'
