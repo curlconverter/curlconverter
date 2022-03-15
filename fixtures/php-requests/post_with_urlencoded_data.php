@@ -1,9 +1,7 @@
 <?php
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'http://fiddle.jshell.net/echo/html/');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
+include('vendor/rmccue/requests/library/Requests.php');
+Requests::register_autoloader();
+$headers = array(
     'Origin' => 'http://fiddle.jshell.net',
     'Accept-Encoding' => 'gzip, deflate',
     'Accept-Language' => 'en-US,en;q=0.8',
@@ -12,10 +10,10 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Accept' => '*/*',
     'Referer' => 'http://fiddle.jshell.net/_display/',
     'X-Requested-With' => 'XMLHttpRequest',
-    'Connection' => 'keep-alive',
-]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, 'msg1=wow&msg2=such');
-
-$response = curl_exec($ch);
-
-curl_close($ch);
+    'Connection' => 'keep-alive'
+);
+$data = array(
+    'msg1' => 'wow',
+    'msg2' => 'such'
+);
+$response = Requests::post('http://fiddle.jshell.net/echo/html/', $headers, $data);

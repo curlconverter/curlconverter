@@ -1,9 +1,7 @@
 <?php
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'http://www.w3schools.com/ajax/demo_post.asp');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
+include('vendor/rmccue/requests/library/Requests.php');
+Requests::register_autoloader();
+$headers = array(
     'Origin' => 'http://www.w3schools.com',
     'Accept-Encoding' => 'gzip, deflate',
     'Accept-Language' => 'en-US,en;q=0.8',
@@ -12,9 +10,6 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Referer' => 'http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511',
     'Connection' => 'keep-alive',
     'Content-Length' => '0',
-]);
-curl_setopt($ch, CURLOPT_COOKIE, '_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126');
-
-$response = curl_exec($ch);
-
-curl_close($ch);
+    'Cookie' => '_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126'
+);
+$response = Requests::post('http://www.w3schools.com/ajax/demo_post.asp', $headers);

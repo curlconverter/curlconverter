@@ -12,7 +12,8 @@ import { _toJsonString } from '../generators/json.js'
 import { _toMATLAB } from '../generators/matlab/matlab.js'
 import { _toNode } from '../generators/javascript/node-fetch.js'
 import { _toNodeRequest } from '../generators/javascript/node-request.js'
-import { _toPhp } from '../generators/php.js'
+import { _toPhp } from '../generators/php/php.js'
+import { _toPhpRequests } from '../generators/php/php-requests.js'
 import { _toPython } from '../generators/python.js'
 import { _toR } from '../generators/r.js'
 import { _toRust } from '../generators/rust.js'
@@ -41,6 +42,7 @@ const translate = {
   node: _toNode,
   'node-request': _toNodeRequest,
   php: _toPhp,
+  'php-requests': _toPhpRequests,
   python: _toPython,
   r: _toR,
   rust: _toRust,
@@ -61,6 +63,7 @@ language: the language to convert the curl command to. The choices are
   node
   node-request
   php
+  php-requests
   python (the default)
   r
   rust

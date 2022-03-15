@@ -1,11 +1,11 @@
-import * as util from '../util.js'
+import * as util from '../../util.js'
 
 import querystring from 'query-string'
 import jsesc from 'jsesc'
 
 const quote = str => jsesc(str, { quotes: 'single' })
 
-export const _toPhp = request => {
+export const _toPhpRequests = request => {
   let headerString = false
   if (request.headers) {
     headerString = '$headers = array(\n'
@@ -80,7 +80,7 @@ export const _toPhp = request => {
 
   return phpCode + '\n'
 }
-export const toPhp = curlCommand => {
+export const toPhpRequests = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
-  return _toPhp(request)
+  return _toPhpRequests(request)
 }
