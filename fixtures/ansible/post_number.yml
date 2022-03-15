@@ -1,5 +1,5 @@
 -
-  name: 'http://a.com/'
+  name: 'http://a.com'
   uri:
     url: 'http://a.com'
     method: POST

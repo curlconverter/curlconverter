@@ -1,5 +1,5 @@
 -
-  name: 'https://example.com/'
+  name: 'https://example.com'
   uri:
     url: 'https://example.com'
     method: GET

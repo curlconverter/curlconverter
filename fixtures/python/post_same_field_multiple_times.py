@@ -1,9 +1,11 @@
 import requests
 
-data = [
-    ('foo', 'bar'),
-    ('foo', ''),
-    ('foo', 'barbar'),
-]
+data = {
+    'foo': [
+        'bar',
+        '',
+        'barbar',
+    ],
+}
 
 response = requests.post('http://example.com/', data=data)

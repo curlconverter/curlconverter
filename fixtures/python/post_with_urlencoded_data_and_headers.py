@@ -32,7 +32,7 @@ data = {
     'Longitude': '-79.4107246398925',
     'Latitude': '43.6552047278685',
     'ZoomLevel': '13',
-    'CurrentPage': '1'
+    'CurrentPage': '1',
 }
 
 response = requests.post('http://www.realtor.ca/api/Listing.svc/PropertySearch_Post', headers=headers, data=data)

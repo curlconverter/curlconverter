@@ -2,7 +2,7 @@ import URL from 'url'
 
 import cookie from 'cookie'
 import nunjucks from 'nunjucks'
-import querystring from 'query-string'
+import decodeUriComponent from 'decode-uri-component'
 
 import parser from './parser.js'
 
@@ -859,6 +859,67 @@ const parseArgs = (args, opts) => {
   return parsedArguments
 }
 
+export const parseQueryString = (s) => {
+  // if url is 'example.com?' => s is '' and we return []
+  // if url is 'example.com' => s is null and we return null
+  if (!s) {
+    return [null, null, null]
+  }
+  const result = []
+  for (const param of s.split('&')) {
+    let [key, val] = param.split('=', 2)
+    key = decodeUriComponent(key)
+    val = val === undefined ? null : decodeUriComponent(val)
+    result.push([key, val])
+  }
+
+  // Group keys
+  let asDict = {}
+  let prevKey = null
+  for (const [key, val] of result) {
+    if (prevKey === key) {
+      asDict[key].push(val)
+    } else {
+      if (!has(asDict, key)) {
+        asDict[key] = [val]
+      } else {
+        // If there's a repeat key, there is no way to
+        // represent this query string as a dictionary.
+        asDict = null
+        break
+      }
+    }
+    prevKey = key
+  }
+
+  // TODO: remove this and change all generators to use result/asDict
+  const asDictLossy = {}
+  for (let [key, val] of result) {
+    val = val === null ? '' : val
+    if (has(asDictLossy, key)) {
+      asDictLossy[key].push(val)
+    } else {
+      asDictLossy[key] = [val]
+    }
+  }
+
+  // Convert lists with 1 element to the element
+  if (asDict) {
+    for (const [key, val] of Object.entries(asDict)) {
+      if (val.length === 1) {
+        asDict[key] = val[0]
+      }
+    }
+  }
+  for (const [key, val] of Object.entries(asDictLossy)) {
+    if (val.length === 1) {
+      asDictLossy[key] = val[0]
+    }
+  }
+
+  return [result, asDict, asDictLossy]
+}
+
 const buildRequest = parsedArguments => {
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
@@ -959,25 +1020,26 @@ const buildRequest = parsedArguments => {
   if (urlObject.query && urlObject.query.endsWith('&')) {
     urlObject.query = urlObject.query.slice(0, -1)
   }
-  const query = querystring.parse(urlObject.query, { sort: false })
-  for (const param in query) {
-    if (query[param] === null) {
-      query[param] = ''
+  const [query, queryAsDict, queryAsDictLossy] = parseQueryString(urlObject.query)
+  // Most software libraries don't let you distinguish between a=&b= and a&b,
+  // so if we get an `a&b`-type query string, don't bother.
+  const request = { url }
+  if (!query || query.some((_k, v) => v === null)) {
+    request.urlWithoutQuery = url // TODO: rename
+  } else {
+    if (Object.keys(query).length > 0) {
+      request.query = queryAsDictLossy
+      request.queryAsList = query
+      request.queryAsDict = queryAsDict
     }
+    urlObject.search = null // Clean out the search/query portion.
+    request.urlWithoutQuery = URL.format(urlObject)
   }
 
-  urlObject.search = null // Clean out the search/query portion.
-  const request = {
-    url,
-    urlWithoutQuery: URL.format(urlObject)
-  }
   if (parsedArguments.compressed) {
     request.compressed = true
   }
 
-  if (Object.keys(query).length > 0) {
-    request.query = query
-  }
   if (headers) {
     request.headers = headers
   }

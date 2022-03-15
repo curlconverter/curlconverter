@@ -1,3 +1,3 @@
 import requests
 
-response = requests.get('https://example.com/', verify=False)
+response = requests.get('https://example.com', verify=False)

@@ -1,7 +1,6 @@
 import * as util from '../util.js'
 
 import jsesc from 'jsesc'
-import querystring from 'query-string'
 
 function reprWithVariable (value, hasEnvironmentVariable) {
   if (!value) {
@@ -36,7 +35,7 @@ function getQueryDict (request) {
   return queryDict
 }
 
-function jsonToPython (obj, indent = 0) {
+function objToPython (obj, indent = 0) {
   let s = ''
   switch (typeof obj) {
     case 'string':
@@ -57,7 +56,7 @@ function jsonToPython (obj, indent = 0) {
         } else {
           s += '[\n'
           for (const item of obj) {
-            s += ' '.repeat(indent + 4) + jsonToPython(item, indent + 4) + ',\n'
+            s += ' '.repeat(indent + 4) + objToPython(item, indent + 4) + ',\n'
           }
           s += ' '.repeat(indent) + ']'
         }
@@ -69,7 +68,7 @@ function jsonToPython (obj, indent = 0) {
           s += '{\n'
           for (const [k, v] of Object.entries(obj)) {
             // repr() because JSON keys must be strings.
-            s += ' '.repeat(indent + 4) + repr(k) + ': ' + jsonToPython(v, indent + 4) + ',\n'
+            s += ' '.repeat(indent + 4) + repr(k) + ': ' + objToPython(v, indent + 4) + ',\n'
           }
           s += ' '.repeat(indent) + '}'
         }
@@ -78,6 +77,21 @@ function jsonToPython (obj, indent = 0) {
     default:
       throw new util.CCError('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
   }
+  return s
+}
+
+function objToDictOrListOfTuples (obj) {
+  if (!Array.isArray(obj)) {
+    return objToPython(obj)
+  }
+  if (obj.length === 0) {
+    return '[]'
+  }
+  let s = '[\n'
+  for (const vals of obj) {
+    s += '    (' + vals.join(', ') + '),'
+  }
+  s += ']'
   return s
 }
 
@@ -91,84 +105,42 @@ function getDataString (request) {
     }
   }
 
-  const parsedQueryString = querystring.parse(request.data, { sort: false })
-  const keyCount = Object.keys(parsedQueryString).length
-  const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  const singularData = request.isDataBinary || singleKeyOnly
-  if (singularData) {
-    const dataString = 'data = ' + repr(request.data) + '\n'
-    const isJson = request.headers &&
-          (request.headers['Content-Type'] === 'application/json' ||
-           request.headers['content-type'] === 'application/json')
-    if (isJson) {
-      try {
-        const dataAsJson = JSON.parse(request.data)
-        // TODO: we actually want to know how it's serialized by
-        // simplejson or Python's builtin json library,
-        // which is what Requests uses
-        // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-        // but this is hopefully good enough.
-        const roundtrips = JSON.stringify(dataAsJson) === request.data
-        const jsonDataString = 'json_data = ' + jsonToPython(dataAsJson) + '\n'
-        // Remove "Content-Type" from the headers dict
-        // because Requests adds it automatically when you use json=
-        if (roundtrips) {
-          delete request.headers['Content-Type']
-          delete request.headers['content-type']
-          if (Object.keys(request.headers).length === 0) {
-            delete request.headers
-          }
+  const dataString = 'data = ' + repr(request.data) + '\n'
+
+  const isJson = request.headers &&
+        (request.headers['Content-Type'] === 'application/json' ||
+          request.headers['content-type'] === 'application/json')
+  if (isJson) {
+    try {
+      const dataAsJson = JSON.parse(request.data)
+      // TODO: we actually want to know how it's serialized by
+      // simplejson or Python's builtin json library,
+      // which is what Requests uses
+      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+      // but this is hopefully good enough.
+      const roundtrips = JSON.stringify(dataAsJson) === request.data
+      const jsonDataString = 'json_data = ' + objToPython(dataAsJson) + '\n'
+      // Remove "Content-Type" from the headers dict
+      // because Requests adds it automatically when you use json=
+      if (roundtrips) {
+        delete request.headers['Content-Type']
+        delete request.headers['content-type']
+        if (Object.keys(request.headers).length === 0) {
+          delete request.headers
         }
-        return [dataString, jsonDataString, roundtrips]
-      } catch {}
-    }
+      }
+      return [dataString, jsonDataString, roundtrips]
+    } catch {}
+  }
+
+  const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data, { sort: false })
+  const singleKeyOnly = parsedQuery.length === 1 && !parsedQuery[0][1]
+  if (request.isDataBinary || singleKeyOnly) {
     return [dataString, null, null]
   } else {
-    return [getMultipleDataString(request, parsedQueryString), null, null]
+    const dataPythonObj = 'data = ' + objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) + '\n'
+    return [dataPythonObj, null, null]
   }
-}
-
-function getMultipleDataString (request, parsedQueryString) {
-  let repeatedKey = false
-  for (const key in parsedQueryString) {
-    const value = parsedQueryString[key]
-    if (Array.isArray(value)) {
-      repeatedKey = true
-    }
-  }
-
-  let dataString
-  if (repeatedKey) {
-    dataString = 'data = [\n'
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
-      if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) {
-          dataString += '    (' + repr(key) + ', ' + repr(value[i]) + '),\n'
-        }
-      } else {
-        dataString += '    (' + repr(key) + ', ' + repr(value) + '),\n'
-      }
-    }
-    dataString += ']\n'
-  } else {
-    dataString = 'data = {\n'
-    const elementCount = Object.keys(parsedQueryString).length
-    let i = 0
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
-      dataString += '    ' + repr(key) + ': ' + repr(value)
-      if (i === elementCount - 1) {
-        dataString += '\n'
-      } else {
-        dataString += ',\n'
-      }
-      ++i
-    }
-    dataString += '}\n'
-  }
-
-  return dataString
 }
 
 function getFilesString (request) {

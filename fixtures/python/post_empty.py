@@ -1,3 +1,3 @@
 import requests
 
-response = requests.post('http://localhost:28139/')
+response = requests.post('http://localhost:28139')

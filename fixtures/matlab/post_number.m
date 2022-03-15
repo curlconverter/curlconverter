@@ -8,6 +8,6 @@ import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
-uri = URI('http://a.com/');
+uri = URI('http://a.com');
 body = JSONProvider(123);
 response = RequestMessage('post', [], body).send(uri.EncodedURI);
