@@ -50,7 +50,7 @@ if (Array.isArray(testArgs.test)) {
 
 const testFileNames = testNames && testNames.length
   ? testNames.map(t => t.replace(/ /g, '_') + '.sh')
-  : fs.readdirSync(curlCommandsDir) // if no --test specified, run them all
+  : fs.readdirSync(curlCommandsDir).filter(f => f.endsWith('.sh')) // if no --test specified, run them all
 
 for (const outputLanguage of Object.keys(converters)) {
   // TODO: always test 'parser'?
@@ -72,7 +72,15 @@ for (const fileName of testFileNames) {
     if (fs.existsSync(filePath)) {
       // normalize code for just \n line endings (aka fix input under Windows)
       const expected = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
-      const actual = converter.converter(inputFileContents)
+      let actual
+      try {
+        actual = converter.converter(inputFileContents)
+      } catch (e) {
+        console.error('could not convert' + testName + ' to ' + outputLanguage)
+        console.error()
+        console.error(e)
+        process.exit(1)
+      }
       if (outputLanguage === 'parser') {
         test(testName, t => {
           // TODO: `actual` is a needless roundtrip

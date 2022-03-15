@@ -3,6 +3,7 @@
 import { exec } from 'child_process'
 import fs from 'fs'
 import net from 'net'
+import path from 'path'
 import { promisify } from 'util'
 
 import colors from 'colors'
@@ -118,14 +119,14 @@ const testFile = async (testFilename) => {
   //   server.close();
   // }, 5000);
 
-  const inputFile = './fixtures/curl_commands/' + testFilename + '.sh'
+  const inputFile = path.join(fixturesDir, 'curl_commands', testFilename + '.sh')
   if (!fs.existsSync(inputFile)) {
-    throw "input file doesn't exist: " + inputFile
+    throw new Error("input file doesn't exist: " + inputFile)
   }
   const curlCommand = fs.readFileSync(inputFile, 'utf8')
   const requestedUrl = utils.parseCurlCommand(curlCommand).url
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
-    throw inputFile + ' requests ' + requestedUrl + '. It needs to request ' + EXPECTED_URL + ' so we can capture the data it sends.'
+    throw new Error(inputFile + ' requests ' + requestedUrl + '. It needs to request ' + EXPECTED_URL + ' so we can capture the data it sends.')
   }
   try {
     await awaitableExec('bash ' + inputFile)
@@ -154,7 +155,8 @@ const testFile = async (testFilename) => {
       for (const part of diffLines(curlRequest, languageRequest)) {
         // green for additions, red for deletions
         // grey for common parts
-        const color = part.added ? 'green'
+        const color = part.added
+          ? 'green'
           : part.removed ? 'red' : 'grey'
         process.stdout.write(colors[color](part.value))
       }
@@ -173,7 +175,7 @@ if (argv.language) {
 }
 
 // if no tests were specified, run them all
-const tests = argv._.length ? argv._ : fs.readdirSync('./fixtures/curl_commands/')
+const tests = argv._.length ? argv._ : fs.readdirSync(path.join(fixturesDir, 'curl_commands')).filter(n => n.endsWith('.sh'))
 for (const test of tests) {
   const testName = test.replace(/ /g, '_').replace(/\.sh$/, '')
   await testFile(testName)

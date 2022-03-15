@@ -15,11 +15,6 @@ const converters = {
     extension: '.yml',
     converter: curlconverter.toAnsible
   },
-  browser: {
-    name: 'Browser',
-    extension: '.js',
-    converter: curlconverter.toBrowser
-  },
   dart: {
     name: 'Dart',
     extension: '.dart',
@@ -40,6 +35,11 @@ const converters = {
     extension: '.java',
     converter: curlconverter.toJava
   },
+  javascript: {
+    name: 'JavaScript',
+    extension: '.js',
+    converter: curlconverter.toJavaScript
+  },
   json: {
     name: 'Json',
     extension: '.json',
@@ -53,7 +53,7 @@ const converters = {
   node: {
     name: 'Node',
     extension: '.js',
-    converter: curlconverter.toNodeFetch
+    converter: curlconverter.toNode
   },
   'node-request': {
     name: 'Node',
@@ -88,9 +88,9 @@ const converters = {
 }
 
 // Check that we have at least one test for every generator
-// https://github.com/NickCarneiro/curlconverter/pull/299
+// https://github.com/curlconverter/curlconverter/pull/299
 const testedConverters = Object.entries(converters).map(c => c[1].converter.name)
-const availableConverters = Object.entries(curlconverter).map(c => c[1].name)
+const availableConverters = Object.entries(curlconverter).map(c => c[1].name).filter(n => n !== 'CCError')
 const missing = availableConverters.filter(c => !testedConverters.includes(c))
 const extra = testedConverters.filter(c => !availableConverters.includes(c))
 if (missing.length) {

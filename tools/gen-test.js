@@ -57,7 +57,19 @@ for (const inPath of inPaths) {
   const curl = fs.readFileSync(inPath, 'utf8')
   for (const language of languages) {
     const converter = converters[language]
-    const code = converter.converter(curl)
+    let code
+    try {
+      code = converter.converter(curl)
+    } catch (e) {
+      console.error('error converting curl command to ' + language)
+      console.error(inPath)
+      console.error()
+      console.error(curl)
+      console.error()
+
+      console.error(e)
+      continue
+    }
 
     const newFilename = path.basename(inPath).replace(/\.sh$/, converter.extension)
     const outPath = path.resolve(inPath, '../..', language, newFilename)
