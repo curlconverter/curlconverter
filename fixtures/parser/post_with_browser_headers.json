@@ -12,11 +12,11 @@
     "Connection": "keep-alive",
     "Content-Length": "0"
   },
+  "method": "post",
   "cookies": {
     "_gat": "1",
     "ASPSESSIONIDACCRDTDC": "MCMDKFMBLLLHGKCGNMKNGPKI",
     "_ga": "GA1.2.1424920226.1419478126"
   },
-  "method": "post",
   "cookieString": "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
 }

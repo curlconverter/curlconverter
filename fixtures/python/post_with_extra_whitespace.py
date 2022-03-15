@@ -2,6 +2,7 @@ import requests
 
 headers = {
     'accept': 'application/json',
+    # requests won't add a boundary if this header is set
     # 'Content-Type': 'multipart/form-data',
 }
 

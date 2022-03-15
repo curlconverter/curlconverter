@@ -1,7 +1,8 @@
 import requests
 
 headers = {
-    'Content-Type': 'application/json',
+    # Already added when you pass json= but not when you pass data=
+    # 'Content-Type': 'application/json',
 }
 
 json_data = {

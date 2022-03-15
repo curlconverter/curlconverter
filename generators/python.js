@@ -222,7 +222,11 @@ export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
-  const commentedOutHeaders = new Set()
+  const commentedOutHeaders = {}
+  // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
+  if (getHeader(request, 'te') === 'trailers') {
+    commentedOutHeaders.te = "Requests doesn't support trailers"
+  }
 
   let cookieDict
   if (request.cookies) {
@@ -264,8 +268,11 @@ export const _toPython = request => {
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
-    if (jsonDataString && jsonDataStringRoundtrips) {
-      commentedOutHeaders.add('content-type')
+    if (jsonDataString) {
+      commentedOutHeaders['content-type'] = 'Already added when you pass json='
+      if (!jsonDataStringRoundtrips) {
+        commentedOutHeaders['content-type'] += ' but not when you pass data='
+      }
     }
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
@@ -274,7 +281,8 @@ export const _toPython = request => {
     // wheras curl does, so the request will fail.
     // https://github.com/curlconverter/curlconverter/issues/248
     if (filesString && getHeader(request, 'content-type') === 'multipart/form-data') {
-      commentedOutHeaders.add('content-type')
+      // TODO: better wording
+      commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set"
     }
   }
 
@@ -290,7 +298,13 @@ export const _toPython = request => {
         osVariables.add(newVar)
       }
 
-      const lineStart = commentedOutHeaders.has(headerName.toLowerCase()) ? '    # ' : '    '
+      let lineStart
+      if (commentedOutHeaders[headerName.toLowerCase()]) {
+        headerDict += '    # ' + commentedOutHeaders[headerName.toLowerCase()] + '\n'
+        lineStart = '    # '
+      } else {
+        lineStart = '    '
+      }
       headerDict += lineStart + repr(headerName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
     }
     headerDict += '}\n'

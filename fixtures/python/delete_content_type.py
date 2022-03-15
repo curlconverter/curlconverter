@@ -1,6 +1,7 @@
 import requests
 
 headers = {
+    # Already added when you pass json=
     # 'Content-Type': 'application/json',
 }
 
