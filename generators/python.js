@@ -89,7 +89,7 @@ function objToDictOrListOfTuples (obj) {
   }
   let s = '[\n'
   for (const vals of obj) {
-    s += '    (' + vals.join(', ') + '),'
+    s += '    (' + vals.map(objToPython).join(', ') + '),'
   }
   s += ']'
   return s

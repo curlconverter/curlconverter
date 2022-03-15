@@ -1024,10 +1024,10 @@ const buildRequest = parsedArguments => {
   // Most software libraries don't let you distinguish between a=&b= and a&b,
   // so if we get an `a&b`-type query string, don't bother.
   const request = { url }
-  if (!query || query.some((_k, v) => v === null)) {
+  if (!query || query.some((p) => p[1] === null)) {
     request.urlWithoutQuery = url // TODO: rename
   } else {
-    if (Object.keys(query).length > 0) {
+    if (query.length > 0) {
       request.query = queryAsDictLossy
       request.queryAsList = query
       request.queryAsDict = queryAsDict
