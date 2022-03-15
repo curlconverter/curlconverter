@@ -21,7 +21,7 @@ function repr (value) {
 }
 
 function getQueryDict (request) {
-  let queryDict = 'params = (\n'
+  let queryDict = 'params = [\n'
   for (const paramName in request.query) {
     const rawValue = request.query[paramName]
     let paramValue
@@ -32,7 +32,7 @@ function getQueryDict (request) {
     }
     queryDict += '    (' + repr(paramName) + ', ' + paramValue + '),\n'
   }
-  queryDict += ')\n'
+  queryDict += ']\n'
   return queryDict
 }
 
@@ -76,7 +76,7 @@ function jsonToPython (obj, indent = 0) {
       }
       break
     default:
-      throw new Error('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
+      throw new util.CCError('unexpected object type that shouldn\'t appear in JSON: ' + typeof obj)
   }
   return s
 }
@@ -85,9 +85,9 @@ function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
-      return ["data = open('" + filePath + "', 'rb').read()", null, null]
+      return ["data = open('" + filePath + "', 'rb').read()\n", null, null]
     } else {
-      return ["data = open('" + filePath + "')", null, null]
+      return ["data = open('" + filePath + "')\n", null, null]
     }
   }
 
@@ -144,10 +144,10 @@ function getMultipleDataString (request, parsedQueryString) {
       const value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
-          dataString += '  (' + repr(key) + ', ' + repr(value[i]) + '),\n'
+          dataString += '    (' + repr(key) + ', ' + repr(value[i]) + '),\n'
         }
       } else {
-        dataString += '  (' + repr(key) + ', ' + repr(value) + '),\n'
+        dataString += '    (' + repr(key) + ', ' + repr(value) + '),\n'
       }
     }
     dataString += ']\n'
@@ -157,7 +157,7 @@ function getMultipleDataString (request, parsedQueryString) {
     let i = 0
     for (const key in parsedQueryString) {
       const value = parsedQueryString[key]
-      dataString += '  ' + repr(key) + ': ' + repr(value)
+      dataString += '    ' + repr(key) + ': ' + repr(value)
       if (i === elementCount - 1) {
         dataString += '\n'
       } else {
@@ -280,6 +280,16 @@ export const _toPython = request => {
     }
     cookieDict += '}\n'
   }
+  let certStr
+  if (request.cert) {
+    certStr = 'cert = '
+    if (Array.isArray(request.cert)) {
+      certStr += '(' + request.cert.map(repr).join(', ') + ')'
+    } else {
+      certStr += repr(request.cert)
+    }
+    certStr += '\n'
+  }
 
   let queryDict
   if (request.query) {
@@ -344,9 +354,15 @@ export const _toPython = request => {
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'
   }
+  if (request.cert) {
+    requestLineBody += ', cert=cert'
+  }
   if (request.insecure) {
     requestLineBody += ', verify=False'
+  } else if (request.cacert || request.capath) {
+    requestLineBody += ', verify=' + repr(request.cacert || request.capath)
   }
+
   if (request.auth) {
     const splitAuth = request.auth.split(':')
     const user = splitAuth[0] || ''
@@ -384,6 +400,9 @@ export const _toPython = request => {
   }
   if (queryDict) {
     pythonCode += queryDict + '\n'
+  }
+  if (certStr) {
+    pythonCode += certStr + '\n'
   }
   if (jsonDataString) {
     pythonCode += jsonDataString + '\n'

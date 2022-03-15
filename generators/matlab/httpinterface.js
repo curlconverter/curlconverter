@@ -1,8 +1,8 @@
 import {
   repr, setVariableValue, callFunction,
   structify, containsBody, prepareQueryString,
-  prepareCookies, cookieString
-} from "./common.js";
+  prepareCookies
+} from './common.js'
 
 const prepareHeaders = (request) => {
   let response = null
@@ -66,8 +66,8 @@ const prepareURI = (request) => {
 }
 
 const prepareAuth = (request) => {
-  let options = []
-  let optionsParams = []
+  const options = []
+  const optionsParams = []
   if (request.auth) {
     const [usr, pass] = request.auth.split(':')
     const userfield = `'Username', ${repr(usr)}`

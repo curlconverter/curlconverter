@@ -1,7 +1,7 @@
-import * as util from "../../util.js";
-import jsesc from "jsesc";
+import * as util from '../../util.js'
+import jsesc from 'jsesc'
 
-export const _toJsFetch = request => {
+export const _toJavaScript = request => {
   let jsFetchCode = ''
 
   if (request.data) {
@@ -76,7 +76,7 @@ export const _toJsFetch = request => {
   return jsFetchCode + '\n'
 }
 
-export const toJsFetch = curlCommand => {
+export const toJavaScript = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
-  return _toJsFetch(request)
+  return _toJavaScript(request)
 }

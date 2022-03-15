@@ -1,6 +1,6 @@
 -
-  name: 'http://google.com/'
+  name: 'http://localhost:28139/'
   uri:
-    url: 'http://google.com'
+    url: 'http://localhost:28139'
     method: POST
   register: result

@@ -1,12 +1,12 @@
-import * as util from "../../util.js";
-import { _toJsFetch } from "./fetch.js";
+import * as util from '../../util.js'
+import { _toJavaScript } from './javascript.js'
 
-export const _toNodeFetch = request => {
-  let nodeFetchCode = 'var fetch = require(\'node-fetch\');\n\n'
-  nodeFetchCode += _toJsFetch(request)
-  return nodeFetchCode
+const importStatement = 'var fetch = require(\'node-fetch\');\n\n'
+
+export const _toNode = request => {
+  return importStatement + _toJavaScript(request)
 }
-export const toNodeFetch = curlCommand => {
+export const toNode = curlCommand => {
   const request = util.parseCurlCommand(curlCommand)
-  return _toNodeFetch(request)
+  return _toNode(request)
 }

@@ -3,7 +3,7 @@ import {
   addCellArray, structify, containsBody,
   prepareQueryString, prepareCookies,
   cookieString, paramsString
-} from "./common.js";
+} from './common.js'
 
 const isSupportedByWebServices = (request) => {
   if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {

@@ -26,7 +26,5 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
-      # Disabled because StandardJS doesn't support top-level await yet
-      # https://github.com/standard/standard/issues/1548
-      # run: npm run lint
+      - run: npm run lint
       - run: npm test

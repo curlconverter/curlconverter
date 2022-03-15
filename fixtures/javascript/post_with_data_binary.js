@@ -1,4 +1,4 @@
-fetch('http://example.com/post', {
+fetch('http://localhost:28139/post', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json; charset=UTF-8'

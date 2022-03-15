@@ -21,7 +21,7 @@ export const _toAnsible = request => {
   if (request.data && typeof request.data === 'string') {
     convertedData = getDataString(request)
   }
-  const result = nunjucks.renderString(ansibleTemplate, { request: request, data: convertedData })
+  const result = nunjucks.renderString(ansibleTemplate, { request, data: convertedData })
   return result
 }
 export const toAnsible = curlCommand => {
