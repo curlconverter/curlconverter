@@ -1,4 +1,4 @@
-import * as util from '../util.js'
+import * as util from '../../util.js'
 import jsesc from 'jsesc'
 
 const quote = str => jsesc(str, { quotes: 'single' })
@@ -24,12 +24,12 @@ export const _toPhp = request => {
         }
         if (!isAcceptEncodingSet) { request.headers['Accept-Encoding'] = 'gzip' }
       } else {
-        headersArrayCode += "\t'Accept-Encoding' => 'gzip',\n"
+        headersArrayCode += "    'Accept-Encoding' => 'gzip',\n"
       }
     }
 
     for (const headerName in request.headers) {
-      headersArrayCode += "\t'" + quote(headerName) + "' => '" + quote(request.headers[headerName]) + "',\n"
+      headersArrayCode += "    '" + quote(headerName) + "' => '" + quote(request.headers[headerName]) + "',\n"
     }
 
     headersArrayCode += ']'
@@ -52,9 +52,9 @@ export const _toPhp = request => {
       for (const multipartKey in request.multipartUploads) {
         const multipartValue = request.multipartUploads[multipartKey]
         if (multipartValue.charAt(0) === '@') {
-          requestDataCode += "\t'" + quote(multipartKey) + "' => new CURLFile('" + quote(multipartValue.substring(1)) + "'),\n"
+          requestDataCode += "    '" + quote(multipartKey) + "' => new CURLFile('" + quote(multipartValue.substring(1)) + "'),\n"
         } else {
-          requestDataCode += "\t'" + quote(multipartKey) + "' => '" + quote(multipartValue) + "',\n"
+          requestDataCode += "    '" + quote(multipartKey) + "' => '" + quote(multipartValue) + "',\n"
         }
       }
       requestDataCode += ']'

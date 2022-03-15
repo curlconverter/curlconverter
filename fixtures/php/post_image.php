@@ -4,7 +4,7 @@ curl_setopt($ch, CURLOPT_URL, 'http://example.com/targetservice');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
 curl_setopt($ch, CURLOPT_POSTFIELDS, [
-	'image' => new CURLFile('image.jpg'),
+    'image' => new CURLFile('image.jpg'),
 ]);
 
 $response = curl_exec($ch);
