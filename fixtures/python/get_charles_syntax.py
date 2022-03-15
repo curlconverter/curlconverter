@@ -12,8 +12,3 @@ params = [
 ]
 
 response = requests.get('http://api.ipify.org/', headers=headers, params=params)
-
-# Note: original query string below. It seems impossible to parse and
-# reproduce query strings 100% accurately so the one below is given
-# in case the reproduced version is not "correct".
-#response = requests.get('http://api.ipify.org/?format=json&', headers=headers)

@@ -298,6 +298,7 @@ export const _toPython = request => {
 
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
+  // TODO: warn users about unsupported schemes
   if (!request.url.match(/https?:/)) {
     request.url = 'http://' + request.url
   }
@@ -305,7 +306,6 @@ export const _toPython = request => {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
   let requestLineWithUrlParams = 'response = requests.' + request.method + "('" + request.urlWithoutQuery + "'"
-  let requestLineWithOriginalUrl = 'response = requests.' + request.method + "('" + request.url + "'"
 
   let requestLineBody = ''
   if (request.headers) {
@@ -343,7 +343,6 @@ export const _toPython = request => {
   }
   requestLineBody += ')'
 
-  requestLineWithOriginalUrl += requestLineBody.replace(', params=params', '')
   requestLineWithUrlParams += requestLineBody
 
   let pythonCode = ''
@@ -385,27 +384,10 @@ export const _toPython = request => {
   }
   pythonCode += requestLineWithUrlParams
 
-  if (request.query && jsonDataString && !jsonDataStringRoundtrips) {
+  if (jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '# Note: original query string below. It seems impossible to parse and\n' +
-            '# reproduce query strings 100% accurately so the one below is given\n' +
-            '# in case the reproduced version is not "correct".\n' +
-            '#\n' +
-            '# The data is also posted as JSON, which might not be serialized\n' +
-            '# exactly as it appears in the original command. So the original\n' +
-            '# data is also given.\n'
-    pythonCode += '#' + dataString
-    pythonCode += '#' + requestLineWithOriginalUrl.replace(', json=json_data', ', data=data')
-  } else if (request.query) {
-    pythonCode += '\n\n' +
-            '# Note: original query string below. It seems impossible to parse and\n' +
-            '# reproduce query strings 100% accurately so the one below is given\n' +
-            '# in case the reproduced version is not "correct".\n'
-    pythonCode += '#' + requestLineWithOriginalUrl
-  } else if (jsonDataString && !jsonDataStringRoundtrips) {
-    pythonCode += '\n\n' +
-            '# Note: the data is posted as JSON, which might not be serialized by\n' +
-            '# Requests exactly as it appears in the original command. So\n' +
+            '# Note: the data is posted as JSON, which might not be serialized\n' +
+            '# by Requests exactly as it appears in the original command. So\n' +
             '# the original data is also given.\n'
     pythonCode += '#' + dataString
     pythonCode += '#' + requestLineWithUrlParams.replace(', json=json_data', ', data=data')
