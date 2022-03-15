@@ -13,3 +13,5 @@ export { toPython } from './generators/python.js'
 export { toR } from './generators/r.js'
 export { toRust } from './generators/rust.js'
 export { toStrest } from './generators/strest.js'
+
+export { CCError } from './util.js'

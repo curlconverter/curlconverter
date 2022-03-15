@@ -20,26 +20,32 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
-    "cookie": "^0.4.1",
+    "cookie": "^0.4.2",
     "jsesc": "^3.0.2",
     "nunjucks": "^3.2.3",
-    "query-string": "^7.0.1",
+    "query-string": "^7.1.1",
     "tree-sitter": "^0.20.0",
     "tree-sitter-bash": "^0.19.0",
-    "web-tree-sitter": "^0.19.4",
+    "web-tree-sitter": "^0.20.5",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "standard": "^16.0.4",
-    "tape": "^5.4.0",
-    "tree-sitter-cli": "^0.20.1",
+    "standard": "^17.0.0-2",
+    "tape": "^5.5.2",
+    "tree-sitter-cli": "^0.20.6",
     "yargs": "^17.3.1"
   },
   "scripts": {
     "test": "tape test.js",
-    "lint": "standard           index.js generators/*.js bin/*.js test.js *.js",
-    "lint:fix": "standard --fix index.js generators/*.js bin/*.js test.js *.js",
+    "lint": "standard",
+    "lint:fix": "standard --fix",
     "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash"
+  },
+  "standard": {
+    "ignore": [
+      "/fixtures/",
+      "/dist/"
+    ]
   },
   "bin": "bin/cli.js",
   "browser": {
