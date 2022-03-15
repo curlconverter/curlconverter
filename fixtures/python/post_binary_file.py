@@ -6,4 +6,5 @@ headers = {
 }
 
 data = open('./sample.sparql', 'rb').read()
+
 response = requests.post('http://lodstories.isi.edu:3030/american-art/query', headers=headers, data=data)

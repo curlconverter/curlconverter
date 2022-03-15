@@ -1025,7 +1025,7 @@ const buildRequest = parsedArguments => {
   if (parsedArguments.insecure) {
     request.insecure = true
   }
-  // TODO: if the URL doesn't start with https://, curl doesn't verify 
+  // TODO: if the URL doesn't start with https://, curl doesn't verify
   // certificates, etc.
   if (parsedArguments.cert) {
     // --key has no effect if --cert isn't passed

@@ -85,9 +85,9 @@ function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
-      return ["data = open('" + filePath + "', 'rb').read()", null, null]
+      return ["data = open('" + filePath + "', 'rb').read()\n", null, null]
     } else {
-      return ["data = open('" + filePath + "')", null, null]
+      return ["data = open('" + filePath + "')\n", null, null]
     }
   }
 
