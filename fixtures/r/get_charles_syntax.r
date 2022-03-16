@@ -12,8 +12,3 @@ params = list(
 )
 
 res <- httr::GET(url = 'http://api.ipify.org/', httr::add_headers(.headers=headers), query = params)
-
-#NB. Original query string below. It seems impossible to parse and
-#reproduce query strings 100% accurately so the one below is given
-#in case the reproduced version is not "correct".
-# res <- httr::GET(url = 'http://api.ipify.org/?format=json&', httr::add_headers(.headers=headers))

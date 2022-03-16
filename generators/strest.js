@@ -35,12 +35,8 @@ function getDataString (request) {
 }
 
 function getQueryList (request) {
-  const queryList = []
-  for (const paramName in request.query) {
-    const rawValue = request.query[paramName]
-    queryList.push({ name: paramName, value: rawValue })
-  }
-  return queryList
+  // Convert nulls to empty string
+  return request.query.map(p => ({ name: p[0], value: p[1] || '' }))
 }
 
 export const _toStrest = request => {

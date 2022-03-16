@@ -66,7 +66,8 @@ for (const fileName of testFileNames) {
     const converter = converters[outputLanguage]
 
     const filePath = path.resolve(fixturesDir, outputLanguage, fileName.replace(/\.sh$/, converter.extension))
-    const testName = converter.name + ': ' + fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
+    const testName = fileName.replace(/_/g, ' ').replace(/\.sh$/, '')
+    const fullTestName = converter.name + ': ' + testName
 
     if (fs.existsSync(filePath)) {
       // normalize code for just \n line endings (aka fix input under Windows)
@@ -75,19 +76,18 @@ for (const fileName of testFileNames) {
       try {
         actual = converter.converter(inputFileContents)
       } catch (e) {
-        console.error('could not convert' + testName + ' to ' + outputLanguage)
-        console.error()
+        console.error('Failed converting ' + fileName + ' to ' + converter.name + ':')
         console.error(e)
         process.exit(1)
       }
       if (outputLanguage === 'parser') {
-        test(testName, t => {
+        test(fullTestName, t => {
           // TODO: `actual` is a needless roundtrip
           t.deepEquals(JSON.parse(actual), JSON.parse(expected))
           t.end()
         })
       } else {
-        test(testName, t => {
+        test(fullTestName, t => {
           t.equal(actual, expected)
           t.end()
         })

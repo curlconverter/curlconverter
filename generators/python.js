@@ -97,10 +97,8 @@ function getDataString (request) {
   if (isJson) {
     try {
       const dataAsJson = JSON.parse(request.data)
-      // TODO: we actually want to know how it's serialized by
-      // simplejson or Python's builtin json library,
-      // which is what Requests uses
-      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+      // We actually want to know how it's serialized by simplejson or
+      // Python's builtin json library, which is what Requests uses
       // but this is hopefully good enough.
       const roundtrips = JSON.stringify(dataAsJson) === request.data
       const jsonDataString = 'json_data = ' + objToPython(dataAsJson) + '\n'
@@ -117,13 +115,15 @@ function getDataString (request) {
     } catch {}
   }
 
-  const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data, { sort: false })
-  if (!parsedQuery || request.isDataBinary || (parsedQuery.length === 1 && !parsedQuery[0][1])) {
-    return [dataString, null, null]
-  } else {
+  const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data)
+  if (!request.isDataBinary &&
+      parsedQuery &&
+      parsedQuery.length &&
+      !parsedQuery.some(p => p === null)) {
     const dataPythonObj = 'data = ' + objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) + '\n'
     return [dataPythonObj, null, null]
   }
+  return [dataString, null, null]
 }
 
 function getFilesString (request) {
@@ -248,7 +248,7 @@ export const _toPython = request => {
 
   let queryStr
   if (request.query) {
-    queryStr = 'params = ' + objToDictOrListOfTuples(request.queryAsDict || request.queryAsList) + '\n'
+    queryStr = 'params = ' + objToDictOrListOfTuples(request.queryDict || request.query) + '\n'
   }
 
   let dataString
@@ -288,7 +288,7 @@ export const _toPython = request => {
   if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  let requestLineWithUrlParams = 'response = requests.' + request.method + "('" + request.urlWithoutQuery + "'"
+  let requestLine = 'response = requests.' + request.method + '(' + repr(request.urlWithoutQuery)
 
   let requestLineBody = ''
   if (request.headers) {
@@ -326,7 +326,7 @@ export const _toPython = request => {
   }
   requestLineBody += ')'
 
-  requestLineWithUrlParams += requestLineBody
+  requestLine += requestLineBody
 
   let pythonCode = ''
 
@@ -365,7 +365,7 @@ export const _toPython = request => {
   } else if (filesString) {
     pythonCode += filesString + '\n'
   }
-  pythonCode += requestLineWithUrlParams
+  pythonCode += requestLine
 
   if (jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
@@ -373,7 +373,7 @@ export const _toPython = request => {
             '# by Requests exactly as it appears in the original command. So\n' +
             '# the original data is also given.\n'
     pythonCode += '#' + dataString
-    pythonCode += '#' + requestLineWithUrlParams.replace(', json=json_data', ', data=data')
+    pythonCode += '#' + requestLine.replace(', json=json_data', ', data=data')
   }
 
   return pythonCode + '\n'

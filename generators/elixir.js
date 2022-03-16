@@ -66,15 +66,8 @@ function getQueryDict (request) {
     return '[]'
   }
   let queryDict = '[\n'
-  for (const paramName in request.query) {
-    const rawValue = request.query[paramName]
-    let paramValue
-    if (Array.isArray(rawValue)) {
-      paramValue = '[' + rawValue.map(repr).join(', ') + ']'
-    } else {
-      paramValue = repr(rawValue)
-    }
-    queryDict += `    {${repr(paramName)}, ${paramValue}},\n`
+  for (const [paramName, rawValue] of request.query) {
+    queryDict += `    {${repr(paramName)}, ${repr(rawValue)}},\n`
   }
   queryDict += '  ]'
   return queryDict

@@ -10,9 +10,10 @@ requests:
           value: '1'
         -
           name: available
-          value:
-            - ""
-            - '1'
+          value: ""
+        -
+          name: available
+          value: '1'
         -
           name: location
           value: '0'

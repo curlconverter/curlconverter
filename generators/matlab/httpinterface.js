@@ -58,9 +58,12 @@ const prepareHeaders = (request) => {
 }
 
 const prepareURI = (request) => {
-  const uriParams = [repr(request.urlWithoutQuery)]
-  if (request.query) {
+  const uriParams = []
+  if (request.queryDict) {
+    uriParams.push(repr(request.urlWithoutQuery))
     uriParams.push('QueryParameter(params\')')
+  } else {
+    uriParams.push(repr(request.url))
   }
   return callFunction('uri', 'URI', uriParams)
 }

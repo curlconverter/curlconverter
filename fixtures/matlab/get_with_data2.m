@@ -12,10 +12,6 @@ options = weboptions(...
 );
 response = webread(uri, options);
 
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'https://api.newrelic.com/v2/alerts_policy_channels.json?policy_id=policy_id&channel_ids=channel_id';
-response = webread(fullURI, options);
-
 %% HTTP Interface
 import matlab.net.*
 import matlab.net.http.*

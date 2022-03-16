@@ -16,22 +16,6 @@ function repr (value, isKey) {
   return isKey ? "'" + jsesc(value, { quotes: 'single' }) + "'" : value
 }
 
-function getQueries (request) {
-  const queries = {}
-  for (const paramName in request.query) {
-    const rawValue = request.query[paramName]
-    let paramValue
-    if (Array.isArray(rawValue)) {
-      paramValue = rawValue.map(repr)
-    } else {
-      paramValue = repr(rawValue)
-    }
-    queries[repr(paramName)] = paramValue
-  }
-
-  return queries
-}
-
 function getDataString (request) {
   /*
     if ( !request.isDataRaw && request.data.startsWith('@') ) {
@@ -130,7 +114,10 @@ export const _toJsonString = request => {
   }
 
   if (request.query) {
-    requestJson.queries = getQueries(request)
+    requestJson.query = request.query
+  }
+  if (request.queryDict) {
+    requestJson.queryDict = request.queryDict
   }
 
   if (request.data && typeof request.data === 'string') {

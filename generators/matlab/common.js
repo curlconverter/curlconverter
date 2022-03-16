@@ -143,8 +143,8 @@ const containsBody = (request) => {
 
 const prepareQueryString = (request) => {
   let response = null
-  if (request.query) {
-    const params = addCellArray(request.query, [], '', 1)
+  if (request.queryDict) {
+    const params = addCellArray(request.queryDict, [], '', 1)
     response = setVariableValue('params', params)
   }
   return response

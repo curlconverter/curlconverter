@@ -859,12 +859,13 @@ const parseArgs = (args, opts) => {
 }
 
 export const parseQueryString = (s) => {
-  // if url is 'example.com?' => s is '' and we return []
-  // if url is 'example.com' => s is null and we return null
+  // if url is 'example.com?' => s is ''
+  // if url is 'example.com'  => s is null
   if (!s) {
-    return [null, null, null]
+    return [null, null]
   }
-  const result = []
+
+  const asList = []
   for (const param of s.split('&')) {
     const [key, val] = param.split(/=(.*)/s, 2)
     let decodedKey
@@ -876,69 +877,51 @@ export const parseQueryString = (s) => {
       if (e instanceof URIError) {
         // Query string contains invalid percent encoded characters,
         // we cannot properly convert it.
-        return [null, null, null]
+        return [null, null]
       }
       throw e
     }
     try {
       if (encodeURIComponent(decodedKey) !== key || encodeURIComponent(decodedVal) !== val) {
         // Query string doesn't round-trip, we cannot properly convert it.
-        return [null, null, null]
+        return [null, null]
       }
     } catch (e) {
       if (e instanceof URIError) {
-        return [null, null, null]
+        return [null, null]
       }
       throw e
     }
-    result.push([decodedKey, decodedVal])
+    asList.push([decodedKey, decodedVal])
   }
 
   // Group keys
-  let asDict = {}
+  const asDict = {}
   let prevKey = null
-  for (const [key, val] of result) {
+  for (const [key, val] of asList) {
     if (prevKey === key) {
       asDict[key].push(val)
     } else {
       if (!has(asDict, key)) {
         asDict[key] = [val]
       } else {
-        // If there's a repeat key, there is no way to
-        // represent this query string as a dictionary.
-        asDict = null
-        break
+        // If there's a repeated key with a different key between
+        // one of its repetitions, there is no way to represent
+        // this query string as a dictionary.
+        return [asList, null]
       }
     }
     prevKey = key
   }
 
-  // TODO: remove this and change all generators to use result/asDict
-  const asDictLossy = {}
-  for (let [key, val] of result) {
-    val = val === null ? '' : val
-    if (has(asDictLossy, key)) {
-      asDictLossy[key].push(val)
-    } else {
-      asDictLossy[key] = [val]
-    }
-  }
-
   // Convert lists with 1 element to the element
-  if (asDict) {
-    for (const [key, val] of Object.entries(asDict)) {
-      if (val.length === 1) {
-        asDict[key] = val[0]
-      }
-    }
-  }
-  for (const [key, val] of Object.entries(asDictLossy)) {
+  for (const [key, val] of Object.entries(asDict)) {
     if (val.length === 1) {
-      asDictLossy[key] = val[0]
+      asDict[key] = val[0]
     }
   }
 
-  return [result, asDict, asDictLossy]
+  return [asList, asDict]
 }
 
 const buildRequest = parsedArguments => {
@@ -1041,17 +1024,18 @@ const buildRequest = parsedArguments => {
   if (urlObject.query && urlObject.query.endsWith('&')) {
     urlObject.query = urlObject.query.slice(0, -1)
   }
-  const [query, queryAsDict, queryAsDictLossy] = parseQueryString(urlObject.query)
+  const [queryAsList, queryAsDict] = parseQueryString(urlObject.query)
   // Most software libraries don't let you distinguish between a=&b= and a&b,
   // so if we get an `a&b`-type query string, don't bother.
   const request = { url }
-  if (!query || query.some((p) => p[1] === null)) {
-    request.urlWithoutQuery = url // TODO: rename
+  if (!queryAsList || queryAsList.some((p) => p[1] === null)) {
+    request.urlWithoutQuery = url // TODO: rename?
   } else {
-    if (query.length > 0) {
-      request.query = queryAsDictLossy
-      request.queryAsList = query
-      request.queryAsDict = queryAsDict
+    if (queryAsList.length > 0) {
+      request.query = queryAsList
+      if (queryAsDict) {
+        request.queryDict = queryAsDict
+      }
     }
     urlObject.search = null // Clean out the search/query portion.
     request.urlWithoutQuery = URL.format(urlObject)

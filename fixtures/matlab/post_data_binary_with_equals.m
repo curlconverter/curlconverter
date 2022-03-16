@@ -48,10 +48,6 @@ options = weboptions(...
 );
 response = webwrite(uri, body, options);
 
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'https://localhost/api/service.svc?action=CreateItem&ID=-37&AC=1';
-response = webwrite(fullURI, body, options);
-
 %% HTTP Interface
 import matlab.net.*
 import matlab.net.http.*
