@@ -11,7 +11,7 @@ data = 'Hello, world!'
 response = requests.post('http://example.com', data=data)
 ```
 
-You can choose the output language by passing `--language <language>`. The options are `python` (the default), `browser`/`node`/`node-request` (JavaScript), `go`, `rust`, `php`, `java`, `r`, `elixir`, `dart`, `matlab` and a few more.
+You can choose the output language by passing `--language <language>`. The options are `python` (the default), `javascript`/`node`/`node-request`, `php`, `go`, `java`, `r`, `rust`, `elixir`, `dart`, `matlab` and a few more.
 
 [![NPM version][npm-image]][npm-url]
 
