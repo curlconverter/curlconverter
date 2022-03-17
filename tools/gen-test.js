@@ -86,8 +86,7 @@ for (const inPath of inPaths) {
 }
 if (!printEachFile) {
   console.error('wrote', total, 'file' + (total === 1 ? '' : 's'))
-} 
-
+}
 
 if (inPaths.length && languages.length) {
   console.error('Please carefully check all the output for correctness before committing.')
