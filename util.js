@@ -882,9 +882,14 @@ export const parseQueryString = (s) => {
       throw e
     }
     try {
-      if (encodeURIComponent(decodedKey) !== key ||
-          (decodedVal && encodeURIComponent(decodedVal) !== val)) {
-        // Query string doesn't round-trip, we cannot properly convert it.
+      // If the query string doesn't round-trip, we cannot properly convert it.
+      // TODO: this is too strict. Ideally we want to check how each runtime/library
+      // percent encodes query strings. For example, a %27 character in the input query
+      // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
+      const roundTripKey = encodeURIComponent(decodedKey)
+      const roundTripVal = encodeURIComponent(decodedVal)
+      if ((roundTripKey !== key && roundTripKey.replace('%20', '+') !== key) ||
+          (decodedVal && (roundTripVal !== val && roundTripVal.replace('%20', '+') !== val))) {
         return [null, null]
       }
     } catch (e) {
