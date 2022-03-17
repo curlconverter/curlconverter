@@ -268,7 +268,7 @@ export const _toPython = request => {
     // https://github.com/curlconverter/curlconverter/issues/248
     if (filesString && util.getHeader(request, 'content-type') === 'multipart/form-data') {
       // TODO: better wording
-      commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set"
+      commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set when you pass files="
     }
   }
 
@@ -390,9 +390,8 @@ export const _toPython = request => {
 
   if (jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '# Note: the data is posted as JSON, which might not be serialized\n' +
-            '# by Requests exactly as it appears in the original command. So\n' +
-            '# the original data is also given.\n'
+            '# Note: json_data will not be serialized by requests\n' +
+            '# exactly as it was in the original request.\n'
     pythonCode += '#' + dataString
     pythonCode += '#' + requestLine.replace(', json=json_data', ', data=data')
   }

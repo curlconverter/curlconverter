@@ -15,8 +15,7 @@ json_data = {
 
 response = requests.put('http://localhost:9200/twitter/_mapping/user?pretty', headers=headers, json=json_data)
 
-# Note: the data is posted as JSON, which might not be serialized
-# by Requests exactly as it appears in the original command. So
-# the original data is also given.
+# Note: json_data will not be serialized by requests
+# exactly as it was in the original request.
 #data = '{"properties": {"email": {"type": "keyword"}}}'
 #response = requests.put('http://localhost:9200/twitter/_mapping/user?pretty', headers=headers, data=data)
