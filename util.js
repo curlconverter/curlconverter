@@ -945,7 +945,8 @@ const buildRequest = parsedArguments => {
     }
     parsedArguments.header.forEach(header => {
       const [name, value] = header.split(/:(.*)/s, 2)
-      if (header.indexOf('Cookie') !== -1) {
+      if (name.toLowerCase().trim().startsWith('cookie') && value.trim()) {
+        // TODO: this will be overwritten if --cookie is passed
         cookieString = header
       } else {
         headers.push([name, value ? value.replace(/^ /, '') : ''])
