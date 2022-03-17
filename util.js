@@ -589,11 +589,11 @@ const toBoolean = opt => {
   return true
 }
 
-// NOTE: this bash string parsing is probably not entirely correct.
-// We get the text as it appears in the bash source code,
-// which might have escaped newlines (if the string spans
-// multiple lines) and escaped quotes and maybe other
-// things I don't know about.
+const parseWord = (str) => {
+  const BACKSLASHES = /\\./gs
+  const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
+  return str.replace(BACKSLASHES, unescapeChar)
+}
 const parseSingleQuoteString = (str) => {
   const BACKSLASHES = /\\(\n|')/gs
   const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
@@ -738,15 +738,14 @@ const tokenizeBashStr = (curlCommand) => {
   const toVal = (node) => {
     switch (node.type) {
       case 'word':
-        return node.text
+      case 'simple_expansion': // TODO: handle variables properly downstream
+        return parseWord(node.text)
       case 'string':
         return parseDoubleQuoteString(node.text)
       case 'raw_string':
         return parseSingleQuoteString(node.text)
       case 'ansii_c_string':
         return parseAnsiCString(node.text)
-      case 'simple_expansion':
-        return node.text // TODO: handle variables properly downstream
       case 'concatenation':
         // item[]=1 turns into item=1 if we don't do this
         // https://github.com/tree-sitter/tree-sitter-bash/issues/104
