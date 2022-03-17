@@ -1031,14 +1031,15 @@ const buildRequest = parsedArguments => {
   if (!queryAsList || queryAsList.some((p) => p[1] === null)) {
     request.urlWithoutQuery = url // TODO: rename?
   } else {
+    urlObject.search = null // Clean out the search/query portion.
+    request.urlWithoutQuery = URL.format(urlObject)
+
     if (queryAsList.length > 0) {
       request.query = queryAsList
       if (queryAsDict) {
         request.queryDict = queryAsDict
       }
     }
-    urlObject.search = null // Clean out the search/query portion.
-    request.urlWithoutQuery = URL.format(urlObject)
   }
 
   if (parsedArguments.compressed) {

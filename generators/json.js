@@ -80,8 +80,6 @@ function getFilesString (request) {
 }
 
 export const _toJsonString = request => {
-  const requestJson = {}
-
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -91,9 +89,16 @@ export const _toJsonString = request => {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
 
-  requestJson.url = request.urlWithoutQuery.replace(/\/$/, '')
-  requestJson.raw_url = request.url
-  requestJson.method = request.method
+  const requestJson = {
+    url: (request.queryDict ? request.urlWithoutQuery : request.url).replace(/\/$/, ''),
+    // url: request.queryDict ? request.urlWithoutQuery : request.url,
+    raw_url: request.url,
+    // TODO: move this after .query?
+    method: request.method
+  }
+  // if (request.queryDict) {
+  //   requestJson.query = request.queryDict
+  // }
 
   if (request.cookies) {
     const cookies = {}
@@ -113,11 +118,9 @@ export const _toJsonString = request => {
     requestJson.headers = headers
   }
 
-  if (request.query) {
-    requestJson.query = request.query
-  }
   if (request.queryDict) {
-    requestJson.queryDict = request.queryDict
+    // TODO: rename
+    requestJson.queries = request.queryDict
   }
 
   if (request.data && typeof request.data === 'string') {
