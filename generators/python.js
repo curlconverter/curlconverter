@@ -319,10 +319,9 @@ export const _toPython = request => {
   }
 
   if (request.auth) {
-    const splitAuth = request.auth.split(':')
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
-    requestLineBody += ', auth=(' + repr(user) + ', ' + repr(password) + ')'
+    const [user, password] = request.auth
+    const authClass = request.digest ? 'HTTPDigestAuth' : ''
+    requestLineBody += ', auth=' + authClass + '(' + repr(user) + ', ' + repr(password) + ')'
   }
   requestLineBody += ')'
 
@@ -335,7 +334,11 @@ export const _toPython = request => {
     pythonCode += 'import os\n'
   }
 
-  pythonCode += 'import requests\n\n'
+  pythonCode += 'import requests\n'
+  if (request.auth && request.digest) {
+    pythonCode += 'from requests.auth import HTTPDigestAuth\n'
+  }
+  pythonCode += '\n'
 
   if (osVariables.size > 0) {
     for (const osVar of osVariables) {

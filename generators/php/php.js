@@ -42,7 +42,7 @@ export const _toPhp = request => {
 
   if (request.auth) {
     phpCode += 'curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);\n'
-    phpCode += "curl_setopt($ch, CURLOPT_USERPWD, '" + quote(request.auth) + "');\n"
+    phpCode += "curl_setopt($ch, CURLOPT_USERPWD, '" + quote(request.auth.join(':')) + "');\n"
   }
 
   if (request.data || request.multipartUploads) {

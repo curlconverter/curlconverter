@@ -29,9 +29,7 @@ export const _toPhpRequests = request => {
 
   let optionsString = false
   if (request.auth) {
-    const splitAuth = request.auth.split(':').map(quote)
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
+    const [user, password] = request.auth
     optionsString = "$options = array('auth' => array('" + user + "', '" + password + "'));"
   }
 

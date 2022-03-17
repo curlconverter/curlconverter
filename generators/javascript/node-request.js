@@ -47,9 +47,7 @@ export const _toNodeRequest = request => {
 
   if (request.auth) {
     nodeRequestCode += ',\n'
-    const splitAuth = request.auth.split(':')
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
+    const [user, password] = request.auth
     nodeRequestCode += '    auth: {\n'
     nodeRequestCode += "        'user': '" + user + "',\n"
     nodeRequestCode += "        'pass': '" + password + "'\n"
