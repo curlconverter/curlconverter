@@ -119,7 +119,7 @@ function getDataString (request) {
   if (!request.isDataBinary &&
       parsedQuery &&
       parsedQuery.length &&
-      !parsedQuery.some(p => p === null)) {
+      !parsedQuery.some(p => p[1] === null)) {
     const dataPythonObj = 'data = ' + objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) + '\n'
     return [dataPythonObj, null, null]
   }

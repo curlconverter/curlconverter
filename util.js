@@ -882,7 +882,8 @@ export const parseQueryString = (s) => {
       throw e
     }
     try {
-      if (encodeURIComponent(decodedKey) !== key || encodeURIComponent(decodedVal) !== val) {
+      if (encodeURIComponent(decodedKey) !== key ||
+          (decodedVal && encodeURIComponent(decodedVal) !== val)) {
         // Query string doesn't round-trip, we cannot properly convert it.
         return [null, null]
       }
@@ -1004,6 +1005,7 @@ const buildRequest = parsedArguments => {
   const urlObject = URL.parse(url) // eslint-disable-line
   // if GET request with data, convert data to query string
   // NB: the -G flag does not change the http verb. It just moves the data into the url.
+  // TODO: this probably has a lot of mismatches with curl
   if (parsedArguments.get) {
     urlObject.query = urlObject.query ? urlObject.query : ''
     if (has(parsedArguments, 'data')) {
@@ -1017,6 +1019,7 @@ const buildRequest = parsedArguments => {
 
       urlQueryString += parsedArguments.data.join('&')
       urlObject.query += urlQueryString
+      // TODO: url and urlObject will be different if url has an #id
       url += urlQueryString
       delete parsedArguments.data
     }
