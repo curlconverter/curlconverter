@@ -29,9 +29,7 @@ export const _toGo = request => {
   }
 
   if (request.auth) {
-    const splitAuth = request.auth.split(':')
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
+    const [user, password] = request.auth
     goCode += '\treq.SetBasicAuth("' + user + '", "' + password + '")\n'
   }
   goCode += '\tresp, err := client.Do(req)\n'

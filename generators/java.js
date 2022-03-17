@@ -46,7 +46,7 @@ export const _toJava = request => {
   }
 
   if (request.auth) {
-    javaCode += '\t\tbyte[] message = ("' + doubleQuotes(request.auth) + '").getBytes("UTF-8");\n'
+    javaCode += '\t\tbyte[] message = ("' + doubleQuotes(request.auth.join(':')) + '").getBytes("UTF-8");\n'
     javaCode += '\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n'
     javaCode += '\t\thttpConn.setRequestProperty("Authorization", "Basic " + basicAuth);\n'
     javaCode += '\n'

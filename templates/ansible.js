@@ -18,8 +18,8 @@ export const ansibleTemplate = `-
     {%- endif %}
 {%- endif %}
 {%- if request.auth %}
-    {%- set url_username = request.auth.split(":")[0] %}
-    {%- set url_password = request.auth.split(":")[1] %}
+    {%- set url_username = request.auth[0] %}
+    {%- set url_password = request.auth[1] %}
     {%- if url_username %}
     url_username: {{ url_username }}
     {%- endif %}

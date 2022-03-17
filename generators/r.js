@@ -172,9 +172,7 @@ export const _toR = request => {
     requestLineBody += ', config = httr::config(ssl_verifypeer = FALSE)'
   }
   if (request.auth) {
-    const splitAuth = request.auth.split(':')
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
+    const [user, password] = request.auth
     requestLineBody += ', httr::authenticate(' + repr(user) + ', ' + repr(password) + ')'
   }
   requestLineBody += ')'

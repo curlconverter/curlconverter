@@ -21,9 +21,7 @@ export const _toDart = r => {
     'void main() async {\n'
 
   if (r.auth) {
-    const splitAuth = r.auth.split(':')
-    const uname = splitAuth[0] || ''
-    const pword = splitAuth[1] || ''
+    const [uname, pword] = r.auth
 
     s +=
       "  var uname = '" + uname + "';\n" +

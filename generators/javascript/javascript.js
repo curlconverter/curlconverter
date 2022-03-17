@@ -51,9 +51,7 @@ export const _toJavaScript = request => {
         i++
       }
       if (request.auth) {
-        const splitAuth = request.auth.split(':')
-        const user = splitAuth[0] || ''
-        const password = splitAuth[1] || ''
+        const [user, password] = request.auth
         jsFetchCode += '        \'Authorization\': \'Basic \' + btoa(\'' + user + ':' + password + '\')'
       }
       if (request.cookies) {

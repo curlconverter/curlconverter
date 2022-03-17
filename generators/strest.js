@@ -75,13 +75,13 @@ export const _toStrest = request => {
     }
   }
   if (request.auth) {
-    response.requests.curl_converter.auth = {
-      basic: {}
+    const [username, password] = request.auth
+    const basic = {}
+    if (username) {
+      basic.username = username
     }
-    if (request.auth.split(':')[0]) {
-      response.requests.curl_converter.auth.basic.username = request.auth.split(':')[0]
-    }
-    response.requests.curl_converter.auth.basic.password = request.auth.split(':')[1]
+    basic.password = password
+    response.requests.curl_converter.auth = { basic }
   }
 
   let queryList

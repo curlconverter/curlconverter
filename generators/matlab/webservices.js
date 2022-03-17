@@ -23,7 +23,7 @@ const parseWebOptions = (request) => {
 
   const headers = {}
   if (request.auth) {
-    const [username, password] = request.auth.split(':')
+    const [username, password] = request.auth
     if (username !== '') {
       options.Username = username
       options.Password = password

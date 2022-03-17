@@ -72,7 +72,7 @@ const prepareAuth = (request) => {
   const options = []
   const optionsParams = []
   if (request.auth) {
-    const [usr, pass] = request.auth.split(':')
+    const [usr, pass] = request.auth
     const userfield = `'Username', ${repr(usr)}`
     const passfield = `'Password', ${repr(pass)}`
     const authparams = (usr ? `${userfield}, ` : '') + passfield

@@ -54,10 +54,7 @@ function getBasicAuth (request) {
     return ''
   }
 
-  const splitAuth = request.auth.split(':')
-  const user = splitAuth[0] || ''
-  const password = splitAuth[1] || ''
-
+  const [user, password] = request.auth
   return `basic_auth: {${repr(user)}, ${repr(password)}}`
 }
 

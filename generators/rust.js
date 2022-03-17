@@ -63,8 +63,8 @@ export const _toRust = request => {
   lines.push(indent(`.${request.method}("${quote(request.url)}")`, 2))
 
   if (request.auth) {
-    const [user, password] = request.auth.split(':', 2).map(quote)
-    lines.push(indent(`.basic_auth("${user || ''}", Some("${password || ''}"))`, 2))
+    const [user, password] = request.auth
+    lines.push(indent(`.basic_auth("${quote(user)}", Some("${quote(password)}"))`, 2))
   }
 
   if (hasHeaders) {

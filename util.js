@@ -1086,7 +1086,11 @@ const buildRequest = parsedArguments => {
   }
 
   if (parsedArguments.user) {
-    request.auth = parsedArguments.user
+    const [user, pass] = parsedArguments.user.split(/:(.*)/s, 2)
+    request.auth = [user, pass || '']
+  }
+  if (parsedArguments.digest) {
+    request.digest = parsedArguments.digest
   }
   if (has(request, 'data')) {
     if (request.data.length > 1) {

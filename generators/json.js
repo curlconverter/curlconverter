@@ -134,10 +134,7 @@ export const _toJsonString = request => {
   }
 
   if (request.auth) {
-    const splitAuth = request.auth.split(':')
-    const user = splitAuth[0] || ''
-    const password = splitAuth[1] || ''
-
+    const [user, password] = request.auth
     requestJson.auth = {
       user: repr(user),
       password: repr(password)
