@@ -75,8 +75,8 @@ function getHeadersDict (request) {
     return '[]'
   }
   let dict = '[\n'
-  for (const headerName in request.headers) {
-    dict += `    {${repr(headerName)}, ${repr(request.headers[headerName])}},\n`
+  for (const [headerName, headerValue] of request.headers) {
+    dict += `    {${repr(headerName)}, ${repr(headerValue)}},\n`
   }
   dict += '  ]'
   return dict

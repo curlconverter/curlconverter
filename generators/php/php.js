@@ -14,22 +14,17 @@ export const _toPhp = request => {
     let headersArrayCode = '[\n'
 
     if (request.compressed) {
-      if (typeof request.headers === 'object') {
-        let isAcceptEncodingSet = false
-        for (const headerName in request.headers) {
-          if (headerName.toLowerCase() === 'accept-encoding') {
-            isAcceptEncodingSet = true
-            break
-          }
+      if (request.headers) {
+        if (!util.hasHeader(request, 'accept-encoding')) {
+          request.headers.push(['Accept-Encoding', 'gzip'])
         }
-        if (!isAcceptEncodingSet) { request.headers['Accept-Encoding'] = 'gzip' }
       } else {
         headersArrayCode += "    'Accept-Encoding' => 'gzip',\n"
       }
     }
 
-    for (const headerName in request.headers) {
-      headersArrayCode += "    '" + quote(headerName) + "' => '" + quote(request.headers[headerName]) + "',\n"
+    for (const [headerName, headerValue] of (request.headers || [])) {
+      headersArrayCode += "    '" + quote(headerName) + "' => '" + quote(headerValue) + "',\n"
     }
 
     headersArrayCode += ']'

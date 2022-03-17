@@ -123,8 +123,8 @@ export const _toR = request => {
   if (request.headers) {
     const hels = []
     headerDict = 'headers = c(\n'
-    for (const headerName in request.headers) {
-      hels.push('  ' + reprn(headerName) + ' = ' + repr(request.headers[headerName]))
+    for (const [headerName, headerValue] of request.headers) {
+      hels.push('  ' + reprn(headerName) + ' = ' + repr(headerValue))
     }
     headerDict += hels.join(',\n')
     headerDict += '\n)\n'

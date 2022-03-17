@@ -19,8 +19,8 @@ export const _toGo = request => {
   }
   goCode += '\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n'
   if (request.headers || request.cookies) {
-    for (const headerName in request.headers) {
-      goCode += '\treq.Header.Set("' + headerName + '", "' + request.headers[headerName] + '")\n'
+    for (const [headerName, headerValue] of (request.headers || [])) {
+      goCode += '\treq.Header.Set("' + headerName + '", "' + headerValue + '")\n'
     }
     if (request.cookies) {
       const cookieString = util.serializeCookies(request.cookies)

@@ -5,10 +5,10 @@ export const _toNodeRequest = request => {
   let nodeRequestCode = 'var request = require(\'request\');\n\n'
   if (request.headers || request.cookies) {
     nodeRequestCode += 'var headers = {\n'
-    const headerCount = Object.keys(request.headers).length
+    const headerCount = request.headers ? request.headers.length : 0
     let i = 0
-    for (const headerName in request.headers) {
-      nodeRequestCode += '    \'' + headerName + '\': \'' + request.headers[headerName] + '\''
+    for (const [headerName, headerValue] of (request.headers || [])) {
+      nodeRequestCode += '    \'' + headerName + '\': \'' + headerValue + '\''
       if (i < headerCount - 1 || request.cookies) {
         nodeRequestCode += ',\n'
       } else {

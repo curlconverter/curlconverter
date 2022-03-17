@@ -23,9 +23,9 @@ function getDataString (request) {
     } catch (e) {}
   }
 
-  for (const paramName in request.headers) {
+  for (const [paramName, paramValue] of (request.headers || [])) {
     if (paramName === 'Content-Type') {
-      mimeType = request.headers[paramName]
+      mimeType = paramValue
     }
   }
   return {
@@ -61,10 +61,10 @@ export const _toStrest = request => {
 
   if (request.headers) {
     response.requests.curl_converter.request.headers = []
-    for (const prop in request.headers) {
+    for (const [name, value] of request.headers) {
       response.requests.curl_converter.request.headers.push({
-        name: prop,
-        value: request.headers[prop]
+        name,
+        value
       })
     }
     if (request.cookieString) {

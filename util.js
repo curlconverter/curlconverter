@@ -941,25 +941,25 @@ const buildRequest = parsedArguments => {
   let cookieString
   if (parsedArguments.header) {
     if (!headers) {
-      headers = {}
+      headers = []
     }
     parsedArguments.header.forEach(header => {
+      const [name, value] = header.split(/:(.*)/s, 2)
       if (header.indexOf('Cookie') !== -1) {
         cookieString = header
       } else {
-        const components = header.split(/:(.*)/s)
-        if (components[1]) {
-          headers[components[0]] = components[1].trim()
-        }
+        headers.push([name, value ? value.replace(/^ /, '') : ''])
       }
     })
   }
 
   if (parsedArguments['user-agent']) {
     if (!headers) {
-      headers = {}
+      headers = []
     }
-    headers['User-Agent'] = parsedArguments['user-agent']
+    // TODO: headers are case insesitive
+    // detect prevalining case convention of other headers and match it
+    headers.push(['User-Agent', parsedArguments['user-agent']])
   }
 
   if (parsedArguments.cookie) {
@@ -1154,11 +1154,40 @@ const serializeCookies = cookieDict => {
   return cookieString
 }
 
+// Gets the first header, matching case-insensitively
+const getHeader = (request, header) => {
+  if (!request.headers) {
+    return undefined
+  }
+  const lookup = header.toLowerCase()
+  for (const [h, v] of request.headers) {
+    if (h.toLowerCase() === lookup) {
+      return v
+    }
+  }
+  return undefined
+}
+
+const hasHeader = (request, header) => {
+  if (!request.headers) {
+    return false
+  }
+  const lookup = header.toLowerCase()
+  for (const h of request.headers) {
+    if (h[0].toLowerCase() === lookup) {
+      return true
+    }
+  }
+  return false
+}
+
 export {
   curlLongOpts,
   curlShortOpts,
   parseArgs,
   buildRequest,
   parseCurlCommand,
-  serializeCookies
+  serializeCookies,
+  getHeader,
+  hasHeader
 }

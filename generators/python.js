@@ -91,7 +91,7 @@ function getDataString (request) {
 
   const dataString = 'data = ' + repr(request.data) + '\n'
 
-  if (getHeader(request, 'content-type') === 'application/json') {
+  if (util.getHeader(request, 'content-type') === 'application/json') {
     try {
       const dataAsJson = JSON.parse(request.data)
       // TODO: we actually want to know how it's serialized by
@@ -204,27 +204,13 @@ function detectEnvVar (inputString) {
   return [detectedVariables, modifiedString.join('')]
 }
 
-// Gets the first header, matching case-insensitively
-const getHeader = (request, header) => {
-  if (!request.headers) {
-    return undefined
-  }
-  header = header.toLowerCase()
-  for (const existingHeader of Object.keys(request.headers)) {
-    if (existingHeader.toLowerCase() === header) {
-      return request.headers[existingHeader]
-    }
-  }
-  return undefined
-}
-
 export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
   const commentedOutHeaders = {}
   // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
-  if (getHeader(request, 'te') === 'trailers') {
+  if (util.getHeader(request, 'te') === 'trailers') {
     commentedOutHeaders.te = "Requests doesn't support trailers"
   }
 
@@ -280,7 +266,7 @@ export const _toPython = request => {
     // If you manually pass a Content-Type header it won't set a `boundary`
     // wheras curl does, so the request will fail.
     // https://github.com/curlconverter/curlconverter/issues/248
-    if (filesString && getHeader(request, 'content-type') === 'multipart/form-data') {
+    if (filesString && util.getHeader(request, 'content-type') === 'multipart/form-data') {
       // TODO: better wording
       commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set"
     }
@@ -288,9 +274,10 @@ export const _toPython = request => {
 
   let headerDict
   if (request.headers) {
+    // TODO: what if there are repeat headers
     headerDict = 'headers = {\n'
-    for (const headerName in request.headers) {
-      const [detectedVars, modifiedString] = detectEnvVar(request.headers[headerName])
+    for (const [headerName, headerValue] of request.headers) {
+      const [detectedVars, modifiedString] = detectEnvVar(headerValue)
 
       const hasVariable = detectedVars.size > 0
 
