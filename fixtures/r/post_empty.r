@@ -1,3 +1,3 @@
 require(httr)
 
-res <- httr::POST(url = 'http://localhost:28139/')
+res <- httr::POST(url = 'http://localhost:28139')

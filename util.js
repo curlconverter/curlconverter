@@ -2,7 +2,6 @@ import URL from 'url'
 
 import cookie from 'cookie'
 import nunjucks from 'nunjucks'
-import querystring from 'query-string'
 
 import parser from './parser.js'
 
@@ -859,6 +858,78 @@ const parseArgs = (args, opts) => {
   return parsedArguments
 }
 
+export const parseQueryString = (s) => {
+  // if url is 'example.com?' => s is ''
+  // if url is 'example.com'  => s is null
+  if (!s) {
+    return [null, null]
+  }
+
+  const asList = []
+  for (const param of s.split('&')) {
+    const [key, val] = param.split(/=(.*)/s, 2)
+    let decodedKey
+    let decodedVal
+    try {
+      decodedKey = decodeURIComponent(key)
+      decodedVal = val === undefined ? null : decodeURIComponent(val)
+    } catch (e) {
+      if (e instanceof URIError) {
+        // Query string contains invalid percent encoded characters,
+        // we cannot properly convert it.
+        return [null, null]
+      }
+      throw e
+    }
+    try {
+      // If the query string doesn't round-trip, we cannot properly convert it.
+      // TODO: this is too strict. Ideally we want to check how each runtime/library
+      // percent encodes query strings. For example, a %27 character in the input query
+      // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
+      const roundTripKey = encodeURIComponent(decodedKey)
+      const roundTripVal = encodeURIComponent(decodedVal)
+      if ((roundTripKey !== key && roundTripKey.replace('%20', '+') !== key) ||
+          (decodedVal && (roundTripVal !== val && roundTripVal.replace('%20', '+') !== val))) {
+        return [null, null]
+      }
+    } catch (e) {
+      if (e instanceof URIError) {
+        return [null, null]
+      }
+      throw e
+    }
+    asList.push([decodedKey, decodedVal])
+  }
+
+  // Group keys
+  const asDict = {}
+  let prevKey = null
+  for (const [key, val] of asList) {
+    if (prevKey === key) {
+      asDict[key].push(val)
+    } else {
+      if (!has(asDict, key)) {
+        asDict[key] = [val]
+      } else {
+        // If there's a repeated key with a different key between
+        // one of its repetitions, there is no way to represent
+        // this query string as a dictionary.
+        return [asList, null]
+      }
+    }
+    prevKey = key
+  }
+
+  // Convert lists with 1 element to the element
+  for (const [key, val] of Object.entries(asDict)) {
+    if (val.length === 1) {
+      asDict[key] = val[0]
+    }
+  }
+
+  return [asList, asDict]
+}
+
 const buildRequest = parsedArguments => {
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
@@ -939,6 +1010,7 @@ const buildRequest = parsedArguments => {
   const urlObject = URL.parse(url) // eslint-disable-line
   // if GET request with data, convert data to query string
   // NB: the -G flag does not change the http verb. It just moves the data into the url.
+  // TODO: this probably has a lot of mismatches with curl
   if (parsedArguments.get) {
     urlObject.query = urlObject.query ? urlObject.query : ''
     if (has(parsedArguments, 'data')) {
@@ -952,6 +1024,7 @@ const buildRequest = parsedArguments => {
 
       urlQueryString += parsedArguments.data.join('&')
       urlObject.query += urlQueryString
+      // TODO: url and urlObject will be different if url has an #id
       url += urlQueryString
       delete parsedArguments.data
     }
@@ -959,25 +1032,28 @@ const buildRequest = parsedArguments => {
   if (urlObject.query && urlObject.query.endsWith('&')) {
     urlObject.query = urlObject.query.slice(0, -1)
   }
-  const query = querystring.parse(urlObject.query, { sort: false })
-  for (const param in query) {
-    if (query[param] === null) {
-      query[param] = ''
+  const [queryAsList, queryAsDict] = parseQueryString(urlObject.query)
+  // Most software libraries don't let you distinguish between a=&b= and a&b,
+  // so if we get an `a&b`-type query string, don't bother.
+  const request = { url }
+  if (!queryAsList || queryAsList.some((p) => p[1] === null)) {
+    request.urlWithoutQuery = url // TODO: rename?
+  } else {
+    urlObject.search = null // Clean out the search/query portion.
+    request.urlWithoutQuery = URL.format(urlObject)
+
+    if (queryAsList.length > 0) {
+      request.query = queryAsList
+      if (queryAsDict) {
+        request.queryDict = queryAsDict
+      }
     }
   }
 
-  urlObject.search = null // Clean out the search/query portion.
-  const request = {
-    url,
-    urlWithoutQuery: URL.format(urlObject)
-  }
   if (parsedArguments.compressed) {
     request.compressed = true
   }
 
-  if (Object.keys(query).length > 0) {
-    request.query = query
-  }
   if (headers) {
     request.headers = headers
   }

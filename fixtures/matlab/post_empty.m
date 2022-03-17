@@ -8,6 +8,6 @@ import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
-uri = URI('http://localhost:28139/');
+uri = URI('http://localhost:28139');
 body = FileProvider();
 response = RequestMessage('post', [], body).send(uri.EncodedURI);

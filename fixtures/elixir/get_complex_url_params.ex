@@ -5,7 +5,8 @@ request = %HTTPoison.Request{
   headers: [],
   params: [
     {~s|page|, ~s|1|},
-    {~s|available|, ["", ~s|1|]},
+    {~s|available|, ""},
+    {~s|available|, ~s|1|},
     {~s|location|, ~s|0|},
     {~s|city[id]|, ~s|0|},
     {~s|city[locality]|, ""},

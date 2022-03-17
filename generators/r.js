@@ -24,8 +24,8 @@ function repr (value) {
 
 function getQueryDict (request) {
   let queryDict = 'params = list(\n'
-  queryDict += Object.keys(request.query).map((paramName) => {
-    const rawValue = request.query[paramName]
+  queryDict += Object.keys(request.queryDict).map((paramName) => {
+    const rawValue = request.queryDict[paramName]
     let paramValue
     if (Array.isArray(rawValue)) {
       paramValue = 'c(' + rawValue.map(repr).join(', ') + ')'
@@ -131,7 +131,7 @@ export const _toR = request => {
   }
 
   let queryDict
-  if (request.query) {
+  if (request.queryDict) {
     queryDict = getQueryDict(request)
   }
 
@@ -150,14 +150,14 @@ export const _toR = request => {
   if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  let requestLineWithUrlParams = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.urlWithoutQuery + '\''
-  let requestLineWithOriginalUrl = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + request.url + '\''
+  const url = request.queryDict ? request.urlWithoutQuery : request.url
+  let requestLine = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + url + '\''
 
   let requestLineBody = ''
   if (request.headers) {
     requestLineBody += ', httr::add_headers(.headers=headers)'
   }
-  if (request.query) {
+  if (request.queryDict) {
     requestLineBody += ', query = params'
   }
   if (request.cookies) {
@@ -179,8 +179,7 @@ export const _toR = request => {
   }
   requestLineBody += ')'
 
-  requestLineWithOriginalUrl += requestLineBody.replace(', query = params', '')
-  requestLineWithUrlParams += requestLineBody
+  requestLine += requestLineBody
 
   let rstatsCode = ''
   rstatsCode += 'require(httr)\n\n'
@@ -198,15 +197,7 @@ export const _toR = request => {
   } else if (filesString) {
     rstatsCode += filesString + '\n'
   }
-  rstatsCode += requestLineWithUrlParams
-
-  if (request.query) {
-    rstatsCode += '\n\n' +
-            '#NB. Original query string below. It seems impossible to parse and\n' +
-            '#reproduce query strings 100% accurately so the one below is given\n' +
-            '#in case the reproduced version is not "correct".\n'
-    rstatsCode += '# ' + requestLineWithOriginalUrl
-  }
+  rstatsCode += requestLine
 
   return rstatsCode + '\n'
 }

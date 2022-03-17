@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "http://a.com/",
+  url: "http://a.com",
   options: [],
   headers: [],
   params: [],

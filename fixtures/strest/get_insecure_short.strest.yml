@@ -3,5 +3,5 @@ allowInsecure: true
 requests:
   curl_converter:
     request:
-      url: 'https://www.site.com/'
+      url: 'https://www.site.com'
       method: GET

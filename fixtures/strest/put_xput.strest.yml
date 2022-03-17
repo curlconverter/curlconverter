@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'http://localhost:9200/twitter/_mapping/user'
+      url: 'http://localhost:9200/twitter/_mapping/user?pretty'
       method: PUT
       postData:
         mimeType: application/json
@@ -14,7 +14,3 @@ requests:
         -
           name: Content-Type
           value: application/json
-      queryString:
-        -
-          name: pretty
-          value: ""

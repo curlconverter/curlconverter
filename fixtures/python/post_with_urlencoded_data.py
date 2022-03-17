@@ -14,7 +14,7 @@ headers = {
 
 data = {
     'msg1': 'wow',
-    'msg2': 'such'
+    'msg2': 'such',
 }
 
 response = requests.post('http://fiddle.jshell.net/echo/html/', headers=headers, data=data)

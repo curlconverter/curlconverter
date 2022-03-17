@@ -54,15 +54,10 @@ export const _toDart = r => {
 
   const hasQuery = r.query
   if (hasQuery) {
+    // TODO: dict won't work with repeated keys
     s += '  var params = {\n'
-    for (const paramName in r.query) {
-      const rawValue = r.query[paramName]
-      let paramValue
-      if (Array.isArray(rawValue)) {
-        paramValue = '[' + rawValue.map(repr).join(', ') + ']'
-      } else {
-        paramValue = repr(rawValue)
-      }
+    for (const [paramName, rawValue] of r.query) {
+      const paramValue = repr(rawValue === null ? '' : rawValue)
       s += '    ' + repr(paramName) + ': ' + paramValue + ',\n'
     }
     s += '  };\n'

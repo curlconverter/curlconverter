@@ -12,10 +12,6 @@ options = weboptions(...
 );
 response = webread(uri, options);
 
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'http://205.147.98.6/vc/moviesmagic?p=5&pub=testmovie&tkn=817263812';
-response = webread(fullURI, options);
-
 %% HTTP Interface
 import matlab.net.*
 import matlab.net.http.*

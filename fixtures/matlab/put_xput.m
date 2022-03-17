@@ -1,7 +1,5 @@
 %% Web Access using Data Import and Export API
-params = {'pretty' ''};
-baseURI = 'http://localhost:9200/twitter/_mapping/user';
-uri = [baseURI '?' char(join(join(params, '='), '&'))];
+uri = 'http://localhost:9200/twitter/_mapping/user?pretty';
 body = struct(...
     'properties', struct(...
         'email', struct(...
@@ -15,18 +13,13 @@ options = weboptions(...
 );
 response = webwrite(uri, body, options);
 
-% As there is a query, a full URI may be necessary instead.
-fullURI = 'http://localhost:9200/twitter/_mapping/user?pretty';
-response = webwrite(fullURI, body, options);
-
 %% HTTP Interface
 import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
-params = {'pretty' ''};
 header = HeaderField('Content-Type', 'application/json');
-uri = URI('http://localhost:9200/twitter/_mapping/user', QueryParameter(params'));
+uri = URI('http://localhost:9200/twitter/_mapping/user?pretty');
 body = JSONProvider(struct(...
     'properties', struct(...
         'email', struct(...

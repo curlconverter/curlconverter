@@ -1,5 +1,5 @@
 -
-  name: 'http://localhost:9200/twitter/_mapping/user'
+  name: 'http://localhost:9200/twitter/_mapping/user?pretty'
   uri:
     url: 'http://localhost:9200/twitter/_mapping/user?pretty'
     method: PUT

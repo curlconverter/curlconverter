@@ -110,7 +110,7 @@ const prepareOptions = (request, options) => {
 
 const prepareBasicURI = (request) => {
   const response = []
-  if (request.query) {
+  if (request.queryDict) {
     response.push(setVariableValue('baseURI', repr(request.urlWithoutQuery)))
     response.push(setVariableValue('uri', `[baseURI '?' ${paramsString}]`))
   } else {
@@ -163,14 +163,6 @@ const prepareWebCall = (request, options) => {
   }
   lines.push(callFunction('response', webFunction, params))
 
-  if (request.query) {
-    params[0] = 'fullURI'
-    lines.push('',
-      '% As there is a query, a full URI may be necessary instead.',
-      setVariableValue('fullURI', repr(request.url)),
-      callFunction('response', webFunction, params)
-    )
-  }
   return lines
 }
 

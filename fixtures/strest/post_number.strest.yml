@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'http://a.com/'
+      url: 'http://a.com'
       method: POST
       postData:
         mimeType: application/json

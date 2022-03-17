@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 void main() async {
   var params = {
     'page': '1',
-    'available': ['', '1'],
+    'available': '',
+    'available': '1',
     'location': '0',
     'city[id]': '0',
     'city[locality]': '',
