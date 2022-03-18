@@ -30,10 +30,10 @@ export const _toJava = request => {
 
   let gzip = false
   if (request.headers) {
-    for (const headerName in request.headers) {
-      javaCode += '\t\thttpConn.setRequestProperty("' + headerName + '", "' + doubleQuotes(request.headers[headerName]) + '");\n'
+    for (const [headerName, headerValue] of request.headers) {
+      javaCode += '\t\thttpConn.setRequestProperty("' + headerName + '", "' + doubleQuotes(headerValue) + '");\n'
       if (headerName.toLowerCase() === 'accept-encoding') {
-        gzip = request.headers[headerName].indexOf('gzip') !== -1
+        gzip = headerValue.indexOf('gzip') !== -1
       }
     }
     javaCode += '\n'

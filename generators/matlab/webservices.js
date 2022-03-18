@@ -33,7 +33,7 @@ const parseWebOptions = (request) => {
   }
 
   if (request.headers) {
-    for (const [key, value] of Object.entries(request.headers)) {
+    for (const [key, value] of request.headers) {
       switch (key) {
         case 'User-Agent':
           options.UserAgent = value

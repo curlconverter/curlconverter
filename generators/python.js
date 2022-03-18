@@ -91,26 +91,16 @@ function getDataString (request) {
 
   const dataString = 'data = ' + repr(request.data) + '\n'
 
-  const isJson = request.headers &&
-        (request.headers['Content-Type'] === 'application/json' ||
-          request.headers['content-type'] === 'application/json')
-  if (isJson) {
+  if (util.getHeader(request, 'content-type') === 'application/json') {
     try {
       const dataAsJson = JSON.parse(request.data)
-      // We actually want to know how it's serialized by simplejson or
-      // Python's builtin json library, which is what Requests uses
+      // TODO: we actually want to know how it's serialized by
+      // simplejson or Python's builtin json library,
+      // which is what Requests uses
+      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
       // but this is hopefully good enough.
       const roundtrips = JSON.stringify(dataAsJson) === request.data
       const jsonDataString = 'json_data = ' + objToPython(dataAsJson) + '\n'
-      // Remove "Content-Type" from the headers dict
-      // because Requests adds it automatically when you use json=
-      if (roundtrips) {
-        delete request.headers['Content-Type']
-        delete request.headers['content-type']
-        if (Object.keys(request.headers).length === 0) {
-          delete request.headers
-        }
-      }
       return [dataString, jsonDataString, roundtrips]
     } catch {}
   }
@@ -218,6 +208,11 @@ export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
+  const commentedOutHeaders = {}
+  // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
+  if (util.getHeader(request, 'te') === 'trailers') {
+    commentedOutHeaders.te = "Requests doesn't support trailers"
+  }
 
   let cookieDict
   if (request.cookies) {
@@ -256,17 +251,33 @@ export const _toPython = request => {
   let jsonDataStringRoundtrips
   let filesString
   if (request.data && typeof request.data === 'string') {
-    // This can modify request.headers
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
+    // Remove "Content-Type" from the headers dict
+    // because Requests adds it automatically when you use json=
+    if (jsonDataString) {
+      commentedOutHeaders['content-type'] = 'Already added when you pass json='
+      if (!jsonDataStringRoundtrips) {
+        commentedOutHeaders['content-type'] += ' but not when you pass data='
+      }
+    }
   } else if (request.multipartUploads) {
     filesString = getFilesString(request)
+    // If you pass files= then Requests adds this header and a `boundary`
+    // If you manually pass a Content-Type header it won't set a `boundary`
+    // wheras curl does, so the request will fail.
+    // https://github.com/curlconverter/curlconverter/issues/248
+    if (filesString && util.getHeader(request, 'content-type') === 'multipart/form-data') {
+      // TODO: better wording
+      commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set when you pass files="
+    }
   }
 
   let headerDict
   if (request.headers) {
+    // TODO: what if there are repeat headers
     headerDict = 'headers = {\n'
-    for (const headerName in request.headers) {
-      const [detectedVars, modifiedString] = detectEnvVar(request.headers[headerName])
+    for (const [headerName, headerValue] of request.headers) {
+      const [detectedVars, modifiedString] = detectEnvVar(headerValue)
 
       const hasVariable = detectedVars.size > 0
 
@@ -274,7 +285,14 @@ export const _toPython = request => {
         osVariables.add(newVar)
       }
 
-      headerDict += '    ' + repr(headerName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
+      let lineStart
+      if (commentedOutHeaders[headerName.toLowerCase()]) {
+        headerDict += '    # ' + commentedOutHeaders[headerName.toLowerCase()] + '\n'
+        lineStart = '    # '
+      } else {
+        lineStart = '    '
+      }
+      headerDict += lineStart + repr(headerName) + ': ' + reprWithVariable(modifiedString, hasVariable) + ',\n'
     }
     headerDict += '}\n'
   }
@@ -372,9 +390,8 @@ export const _toPython = request => {
 
   if (jsonDataString && !jsonDataStringRoundtrips) {
     pythonCode += '\n\n' +
-            '# Note: the data is posted as JSON, which might not be serialized\n' +
-            '# by Requests exactly as it appears in the original command. So\n' +
-            '# the original data is also given.\n'
+            '# Note: json_data will not be serialized by requests\n' +
+            '# exactly as it was in the original request.\n'
     pythonCode += '#' + dataString
     pythonCode += '#' + requestLine.replace(', json=json_data', ', data=data')
   }

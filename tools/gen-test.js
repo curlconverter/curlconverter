@@ -53,6 +53,8 @@ const inPaths = argv._.map((infile) => {
   return fullPath
 })
 
+const printEachFile = inPaths.length < 10 || languages.length < Object.keys(converters).length
+let total = 0
 for (const inPath of inPaths) {
   const curl = fs.readFileSync(inPath, 'utf8')
   for (const language of languages) {
@@ -75,8 +77,15 @@ for (const inPath of inPaths) {
     const outPath = path.resolve(inPath, '../..', language, newFilename)
 
     fs.writeFileSync(outPath, code)
-    console.error('wrote to', outPath)
+    if (printEachFile) {
+      console.error('wrote to', outPath)
+    } else {
+      total += 1
+    }
   }
+}
+if (!printEachFile) {
+  console.error('wrote', total, 'file' + (total === 1 ? '' : 's'))
 }
 
 if (inPaths.length && languages.length) {

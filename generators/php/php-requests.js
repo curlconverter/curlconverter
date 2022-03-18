@@ -10,9 +10,9 @@ export const _toPhpRequests = request => {
   if (request.headers) {
     headerString = '$headers = array(\n'
     let i = 0
-    const headerCount = Object.keys(request.headers).length
-    for (const headerName in request.headers) {
-      headerString += "    '" + headerName + "' => '" + quote(request.headers[headerName]) + "'"
+    const headerCount = request.headers ? request.headers.length : 0
+    for (const [headerName, headerValue] of request.headers) {
+      headerString += "    '" + headerName + "' => '" + quote(headerValue) + "'"
       if (i < headerCount - 1) {
         headerString += ',\n'
       }

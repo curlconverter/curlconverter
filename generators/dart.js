@@ -33,7 +33,9 @@ export const _toDart = r => {
   const hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method === 'put'
   if (hasHeaders) {
     s += '  var headers = {\n'
-    for (const hname in r.headers) s += "    '" + hname + "': '" + r.headers[hname] + "',\n"
+    for (const [hname, hval] of (r.headers || [])) {
+      s += "    '" + hname + "': '" + hval + "',\n"
+    }
 
     if (r.cookies) {
       const cookiestr = util.serializeCookies(r.cookies)
@@ -42,7 +44,7 @@ export const _toDart = r => {
 
     if (r.auth) s += "    'Authorization': authn,\n"
     if (r.compressed) s += "    'Accept-Encoding': 'gzip',\n"
-    if (!hasHeaders['Content-Type'] && (r.isDataBinary || r.method === 'put')) {
+    if (!util.hasHeader(r, 'content-type') && (r.isDataBinary || r.method === 'put')) {
       s += "    'Content-Type': 'application/x-www-form-urlencoded',\n"
     }
 

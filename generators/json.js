@@ -110,12 +110,8 @@ export const _toJsonString = request => {
   }
 
   if (request.headers) {
-    const headers = {}
-    for (const headerName in request.headers) {
-      headers[repr(headerName)] = repr(request.headers[headerName])
-    }
-
-    requestJson.headers = headers
+    // TODO: what if Object.keys().length !== request.headers.length?
+    requestJson.headers = Object.fromEntries(request.headers)
   }
 
   if (request.queryDict) {

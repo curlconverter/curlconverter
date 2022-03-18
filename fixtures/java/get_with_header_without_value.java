@@ -12,6 +12,7 @@ class Main {
 		httpConn.setRequestMethod("GET");
 
 		httpConn.setRequestProperty("Content-Type", "text/xml;charset=UTF-8");
+		httpConn.setRequestProperty("getWorkOrderCancel", "");
 
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
 				? httpConn.getInputStream()

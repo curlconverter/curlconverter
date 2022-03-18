@@ -26,9 +26,8 @@ export const _toRust = request => {
 
   if (request.headers || request.cookies) {
     lines.push(indent('let mut headers = header::HeaderMap::new();'))
-    for (const headerName in request.headers) {
-      const headerValue = quote(request.headers[headerName])
-      lines.push(indent(`headers.insert("${headerName}", "${headerValue}".parse().unwrap());`))
+    for (const [headerName, headerValue] of (request.headers || [])) {
+      lines.push(indent(`headers.insert("${headerName}", "${quote(headerValue)}".parse().unwrap());`))
     }
 
     if (request.cookies) {

@@ -8,15 +8,13 @@ const prepareHeaders = (request) => {
   let response = null
 
   if (request.headers) {
-    const headerEntries = Object.entries(request.headers)
-
     // cookies are part of headers
-    const headerCount = headerEntries.length + (request.cookies ? 1 : 0)
+    const headerCount = request.headers.length + (request.cookies ? 1 : 0)
 
     const headers = []
     let header = headerCount === 1 ? '' : '['
 
-    for (const [key, value] of headerEntries) {
+    for (const [key, value] of request.headers) {
       switch (key) {
         case 'Cookie':
           break

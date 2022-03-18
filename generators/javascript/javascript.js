@@ -14,11 +14,11 @@ export const _toJavaScript = request => {
       JSON.parse(request.data)
 
       if (!request.headers) {
-        request.headers = {}
+        request.headers = []
       }
 
-      if (!request.headers['Content-Type']) {
-        request.headers['Content-Type'] = 'application/json; charset=UTF-8'
+      if (!util.hasHeader(request, 'Content-Type')) {
+        request.headers.push(['Content-Type', 'application/json; charset=UTF-8'])
       }
 
       request.data = 'JSON.stringify(' + request.data + ')'
@@ -41,10 +41,10 @@ export const _toJavaScript = request => {
         jsFetchCode += ',\n'
       }
       jsFetchCode += '    headers: {\n'
-      const headerCount = Object.keys(request.headers || {}).length
+      const headerCount = request.headers ? request.headers.length : 0
       let i = 0
-      for (const headerName in request.headers) {
-        jsFetchCode += '        \'' + headerName + '\': \'' + request.headers[headerName] + '\''
+      for (const [headerName, headerValue] of (request.headers || [])) {
+        jsFetchCode += '        \'' + headerName + '\': \'' + headerValue + '\''
         if (i < headerCount - 1 || request.cookies || request.auth) {
           jsFetchCode += ',\n'
         }
