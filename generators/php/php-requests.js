@@ -18,10 +18,6 @@ export const _toPhpRequests = request => {
       }
       i++
     }
-    if (request.cookies) {
-      const cookieString = quote(util.serializeCookies(request.cookies))
-      headerString += ",\n    'Cookie' => '" + cookieString + "'"
-    }
     headerString += '\n);'
   } else {
     headerString = '$headers = array();'

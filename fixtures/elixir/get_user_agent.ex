@@ -4,7 +4,7 @@ request = %HTTPoison.Request{
   options: [],
   headers: [
     {~s|x-msisdn|, ~s|XXXXXXXXXXXXX|},
-    {~s|User-Agent|, ~s|Mozilla Android6.1|},
+    {~s|user-agent|, ~s|Mozilla Android6.1|},
   ],
   params: [
     {~s|p|, ~s|5|},

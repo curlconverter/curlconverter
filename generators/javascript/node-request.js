@@ -3,22 +3,18 @@ import jsesc from 'jsesc'
 
 export const _toNodeRequest = request => {
   let nodeRequestCode = 'var request = require(\'request\');\n\n'
-  if (request.headers || request.cookies) {
+  if (request.headers) {
     nodeRequestCode += 'var headers = {\n'
     const headerCount = request.headers ? request.headers.length : 0
     let i = 0
     for (const [headerName, headerValue] of (request.headers || [])) {
       nodeRequestCode += '    \'' + headerName + '\': \'' + headerValue + '\''
-      if (i < headerCount - 1 || request.cookies) {
+      if (i < headerCount - 1) {
         nodeRequestCode += ',\n'
       } else {
         nodeRequestCode += '\n'
       }
       i++
-    }
-    if (request.cookies) {
-      const cookieString = util.serializeCookies(request.cookies)
-      nodeRequestCode += '    \'Cookie\': \'' + cookieString + '\'\n'
     }
     nodeRequestCode += '};\n\n'
   }
@@ -37,7 +33,7 @@ export const _toNodeRequest = request => {
     nodeRequestCode += ',\n    method: \'' + request.method.toUpperCase() + '\''
   }
 
-  if (request.headers || request.cookies) {
+  if (request.headers) {
     nodeRequestCode += ',\n'
     nodeRequestCode += '    headers: headers'
   }

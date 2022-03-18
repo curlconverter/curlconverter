@@ -8,11 +8,10 @@ const quote = str => jsesc(str, { quotes: 'double' })
 
 export const _toRust = request => {
   const lines = ['extern crate reqwest;']
-  const hasHeaders = request.headers || request.cookies
   {
     // Generate imports.
     const imports = [
-      { want: 'header', condition: hasHeaders },
+      { want: 'header', condition: !!request.headers },
       { want: 'multipart', condition: !!request.multipartUploads }
     ].filter(i => i.condition).map(i => i.want)
 
@@ -24,19 +23,16 @@ export const _toRust = request => {
   }
   lines.push('', 'fn main() -> Result<(), Box<dyn std::error::Error>> {')
 
-  if (request.headers || request.cookies) {
+  if (request.headers) {
     lines.push(indent('let mut headers = header::HeaderMap::new();'))
+    const headerEnum = {
+      cookie: 'header::COOKIE'
+    }
     for (const [headerName, headerValue] of (request.headers || [])) {
-      lines.push(indent(`headers.insert("${headerName}", "${quote(headerValue)}".parse().unwrap());`))
+      const enumValue = headerEnum[headerName.toLowerCase()]
+      const name = enumValue || `"${headerName}"`
+      lines.push(indent(`headers.insert(${name}, "${quote(headerValue)}".parse().unwrap());`))
     }
-
-    if (request.cookies) {
-      const cookies = Object.keys(request.cookies)
-        .map(key => `${key}=${request.cookies[key]}`)
-        .join('; ')
-      lines.push(indent(`headers.insert(header::COOKIE, "${quote(cookies)}".parse().unwrap());`))
-    }
-
     lines.push('')
   }
 
@@ -66,7 +62,7 @@ export const _toRust = request => {
     lines.push(indent(`.basic_auth("${quote(user)}", Some("${quote(password)}"))`, 2))
   }
 
-  if (hasHeaders) {
+  if (request.headers) {
     lines.push(indent('.headers(headers)', 2))
   }
 

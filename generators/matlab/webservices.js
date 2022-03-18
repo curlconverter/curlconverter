@@ -36,6 +36,7 @@ const parseWebOptions = (request) => {
     for (const [key, value] of request.headers) {
       switch (key) {
         case 'User-Agent':
+        case 'user-agent':
           options.UserAgent = value
           break
         case 'Content-Type':

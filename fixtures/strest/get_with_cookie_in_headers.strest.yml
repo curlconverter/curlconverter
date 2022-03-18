@@ -24,6 +24,9 @@ requests:
           name: Referer
           value: 'https://httpbin.org/'
         -
+          name: Cookie
+          value: authCookie=123
+        -
           name: Connection
           value: keep-alive
         -
@@ -32,6 +35,3 @@ requests:
         -
           name: Sec-Metadata
           value: 'destination=empty, site=same-origin'
-        -
-          name: Cookie
-          value: authCookie=123

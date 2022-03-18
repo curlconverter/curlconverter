@@ -67,12 +67,6 @@ export const _toStrest = request => {
         value
       })
     }
-    if (request.cookieString) {
-      response.requests.curl_converter.request.headers.push({
-        name: 'Cookie',
-        value: request.cookieString
-      })
-    }
   }
   if (request.auth) {
     const [username, password] = request.auth

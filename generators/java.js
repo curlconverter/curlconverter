@@ -39,12 +39,6 @@ export const _toJava = request => {
     javaCode += '\n'
   }
 
-  if (request.cookies) {
-    const cookieString = util.serializeCookies(request.cookies)
-    javaCode += '\t\thttpConn.setRequestProperty("Cookie", "' + doubleQuotes(cookieString) + '");\n'
-    javaCode += '\n'
-  }
-
   if (request.auth) {
     javaCode += '\t\tbyte[] message = ("' + doubleQuotes(request.auth.join(':')) + '").getBytes("UTF-8");\n'
     javaCode += '\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n'

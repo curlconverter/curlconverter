@@ -1,6 +1,5 @@
 import URL from 'url'
 
-import cookie from 'cookie'
 import nunjucks from 'nunjucks'
 
 import parser from './parser.js'
@@ -938,34 +937,41 @@ const buildRequest = parsedArguments => {
   let url = parsedArguments.url[parsedArguments.url.length - 1]
 
   let headers
-  let cookieString
   if (parsedArguments.header) {
     if (!headers) {
       headers = []
     }
-    parsedArguments.header.forEach(header => {
+    for (const header of parsedArguments.header) {
       const [name, value] = header.split(/:(.*)/s, 2)
-      if (name.toLowerCase().trim().startsWith('cookie') && value.trim()) {
-        // TODO: this will be overwritten if --cookie is passed
-        cookieString = header
-      } else {
-        headers.push([name, value ? value.replace(/^ /, '') : ''])
-      }
-    })
+      headers.push([name, value ? value.replace(/^ /, '') : ''])
+    }
+  }
+  const capitalizeHeaders = !headers || headers.some(h => h[0] !== h[0].toLowerCase()) || !headers.length
+
+  let cookies
+  const cookieHeaders = (headers || []).filter(h => h[0].toLowerCase() === 'cookie')
+  if (cookieHeaders.length === 1) {
+    const parsedCookies = parseCookiesStrict(cookieHeaders[0][1])
+    if (parsedCookies) {
+      cookies = parsedCookies
+    }
+  } else if (cookieHeaders.length === 0) {
+    // If there is a Cookie header, --cookies is ignored
+    if (parsedArguments.cookie) {
+      // TODO: a --cookie without a = character reads from it as a filename
+      const cookieString = parsedArguments.cookie.join(';')
+      headers.push([capitalizeHeaders ? 'Cookie' : 'cookie', cookieString])
+      cookies = parseCookies(cookieString, false)
+    }
   }
 
   if (parsedArguments['user-agent']) {
     if (!headers) {
       headers = []
     }
-    // TODO: headers are case insesitive
-    // detect prevalining case convention of other headers and match it
-    headers.push(['User-Agent', parsedArguments['user-agent']])
+    headers.push([capitalizeHeaders ? 'User-Agent' : 'user-agent', parsedArguments['user-agent']])
   }
 
-  if (parsedArguments.cookie) {
-    cookieString = parsedArguments.cookie
-  }
   let multipartUploads
   if (parsedArguments.form) {
     multipartUploads = {}
@@ -976,13 +982,6 @@ const buildRequest = parsedArguments => {
       const [key, value] = multipartArgument.split('=', 2)
       multipartUploads[key] = value
     })
-  }
-  let cookies
-  if (cookieString) {
-    const cookieParseOptions = { decode: (s) => s }
-    // separate out cookie headers into separate data structure
-    // note: cookie is case insensitive
-    cookies = cookie.parse(cookieString.replace(/^Cookie: /gi, ''), cookieParseOptions)
   }
 
   // TODO: don't lower case method,
@@ -1050,6 +1049,12 @@ const buildRequest = parsedArguments => {
     }
   }
 
+  if (cookies) {
+    // generators that use .cookies need to do
+    // deleteHeader(request, 'cookie')
+    request.cookies = cookies
+  }
+
   if (parsedArguments.compressed) {
     request.compressed = true
   }
@@ -1059,10 +1064,6 @@ const buildRequest = parsedArguments => {
   }
   request.method = method
 
-  if (cookies) {
-    request.cookies = cookies
-    request.cookieString = cookieString.replace('Cookie: ', '')
-  }
   if (multipartUploads) {
     request.multipartUploads = multipartUploads
   }
@@ -1170,16 +1171,53 @@ const getHeader = (request, header) => {
 }
 
 const hasHeader = (request, header) => {
-  if (!request.headers) {
-    return false
-  }
+  return !!countHeader(request, header)
+}
+
+const deleteHeader = (request, header) => {
   const lookup = header.toLowerCase()
-  for (const h of request.headers) {
-    if (h[0].toLowerCase() === lookup) {
-      return true
+  for (let i = request.headers.length - 1; i >= 0; i--) {
+    if (request.headers[i][0].toLowerCase() === lookup) {
+      request.headers.splice(i, 1)
     }
   }
-  return false
+}
+
+const countHeader = (request, header) => {
+  let count = 0
+  const lookup = header.toLowerCase()
+  for (const h of (request.headers || [])) {
+    if (h[0].toLowerCase() === lookup) {
+      count += 1
+    }
+  }
+  return count
+}
+
+const parseCookiesStrict = (cookieString) => {
+  const cookies = []
+  for (let cookie of cookieString.split(';')) {
+    cookie = cookie.replace(/^ /, '')
+    const [name, value] = cookie.split(/=(.*)/s, 2)
+    if (value === undefined) {
+      return null
+    }
+    cookies.push([name, value])
+  }
+  return cookies
+}
+
+const parseCookies = (cookieString) => {
+  const cookies = []
+  for (let cookie of cookieString.split(';')) {
+    cookie = cookie.trim()
+    if (!cookie) {
+      continue
+    }
+    const [name, value] = cookie.split(/=(.*)/s, 2)
+    cookies.push([name, value || ''])
+  }
+  return cookies
 }
 
 export {
@@ -1190,5 +1228,7 @@ export {
   parseCurlCommand,
   serializeCookies,
   getHeader,
-  hasHeader
+  hasHeader,
+  deleteHeader,
+  has
 }

@@ -18,8 +18,8 @@ function getCookies (request) {
   }
 
   const cookies = []
-  for (const cookieName in request.cookies) {
-    cookies.push(`${cookieName}=${request.cookies[cookieName]}`)
+  for (const [cookieName, cookieValue] of request.cookies) {
+    cookies.push(`${cookieName}=${cookieValue}`)
   }
   return `cookies: [~s|${cookies.join('; ')}|]`
 }
@@ -203,6 +203,9 @@ export const _toElixir = request => {
   }
   if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
+  }
+  if (request.cookies) {
+    util.deleteHeader(request, 'cookie')
   }
 
   const template = `request = %HTTPoison.Request{

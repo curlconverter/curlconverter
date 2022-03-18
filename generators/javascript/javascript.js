@@ -29,14 +29,14 @@ export const _toJavaScript = request => {
 
   jsFetchCode += 'fetch(\'' + request.url + '\''
 
-  if (request.method !== 'get' || request.headers || request.cookies || request.auth || request.body) {
+  if (request.method !== 'get' || request.headers || request.auth || request.body) {
     jsFetchCode += ', {\n'
 
     if (request.method !== 'get') {
       jsFetchCode += '    method: \'' + request.method.toUpperCase() + '\''
     }
 
-    if (request.headers || request.cookies || request.auth) {
+    if (request.headers || request.auth) {
       if (request.method !== 'get') {
         jsFetchCode += ',\n'
       }
@@ -45,7 +45,7 @@ export const _toJavaScript = request => {
       let i = 0
       for (const [headerName, headerValue] of (request.headers || [])) {
         jsFetchCode += '        \'' + headerName + '\': \'' + headerValue + '\''
-        if (i < headerCount - 1 || request.cookies || request.auth) {
+        if (i < headerCount - 1 || request.auth) {
           jsFetchCode += ',\n'
         }
         i++
@@ -53,10 +53,6 @@ export const _toJavaScript = request => {
       if (request.auth) {
         const [user, password] = request.auth
         jsFetchCode += '        \'Authorization\': \'Basic \' + btoa(\'' + user + ':' + password + '\')'
-      }
-      if (request.cookies) {
-        const cookieString = util.serializeCookies(request.cookies)
-        jsFetchCode += '        \'Cookie\': \'' + cookieString + '\''
       }
 
       jsFetchCode += '\n    }'
