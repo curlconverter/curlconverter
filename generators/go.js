@@ -18,13 +18,9 @@ export const _toGo = request => {
     goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", nil)\n'
   }
   goCode += '\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n'
-  if (request.headers || request.cookies) {
+  if (request.headers) {
     for (const [headerName, headerValue] of (request.headers || [])) {
       goCode += '\treq.Header.Set("' + headerName + '", "' + headerValue + '")\n'
-    }
-    if (request.cookies) {
-      const cookieString = util.serializeCookies(request.cookies)
-      goCode += '\treq.Header.Set("Cookie", "' + cookieString + '")\n'
     }
   }
 

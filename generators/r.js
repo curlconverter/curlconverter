@@ -116,8 +116,10 @@ export const _toR = request => {
   let cookieDict
   if (request.cookies) {
     cookieDict = 'cookies = c(\n'
-    cookieDict += Object.keys(request.cookies).map(cookieName => '  ' + repr(cookieName) + ' = ' + repr(request.cookies[cookieName])).join(',\n')
+    cookieDict += request.cookies.map(c => '  ' + repr(c[0]) + ' = ' + repr(c[1])).join(',\n')
+    // TODO: isn't this an extra \n?
     cookieDict += '\n)\n'
+    util.deleteHeader(request, 'Cookie')
   }
   let headerDict
   if (request.headers) {

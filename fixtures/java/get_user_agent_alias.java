@@ -12,7 +12,7 @@ class Main {
 		httpConn.setRequestMethod("GET");
 
 		httpConn.setRequestProperty("x-msisdn", "XXXXXXXXXXXXX");
-		httpConn.setRequestProperty("User-Agent", "Mozilla Android6.1");
+		httpConn.setRequestProperty("user-agent", "Mozilla Android6.1");
 
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
 				? httpConn.getInputStream()

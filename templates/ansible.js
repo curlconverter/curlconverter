@@ -13,9 +13,6 @@ export const ansibleTemplate = `-
     {%- for key, value in request.headers %}
       {{ key }}: '{{ value }}'
     {%- endfor %}
-    {%- if request.cookieString %}
-      Cookie: '{{ request.cookieString }}'
-    {%- endif %}
 {%- endif %}
 {%- if request.auth %}
     {%- set url_username = request.auth[0] %}

@@ -216,9 +216,10 @@ export const _toPython = request => {
 
   let cookieDict
   if (request.cookies) {
+    // TODO: could have repeat cookies
     cookieDict = 'cookies = {\n'
-    for (const cookieName in request.cookies) {
-      const [detectedVars, modifiedString] = detectEnvVar(request.cookies[cookieName])
+    for (const [cookieName, cookieValue] of request.cookies) {
+      const [detectedVars, modifiedString] = detectEnvVar(cookieValue)
 
       const hasEnvironmentVariable = detectedVars.size > 0
 
@@ -229,7 +230,10 @@ export const _toPython = request => {
       cookieDict += '    ' + repr(cookieName) + ': ' + reprWithVariable(modifiedString, hasEnvironmentVariable) + ',\n'
     }
     cookieDict += '}\n'
+    // TODO: cookieDict should too, to avoid surprises.
+    commentedOutHeaders.cookie = request.cookies.length > 1 ? 'Requests sorts cookies= alphabetically' : ''
   }
+
   let certStr
   if (request.cert) {
     certStr = 'cert = '
@@ -286,8 +290,10 @@ export const _toPython = request => {
       }
 
       let lineStart
-      if (commentedOutHeaders[headerName.toLowerCase()]) {
-        headerDict += '    # ' + commentedOutHeaders[headerName.toLowerCase()] + '\n'
+      if (util.has(commentedOutHeaders, headerName.toLowerCase())) {
+        if (commentedOutHeaders[headerName.toLowerCase()]) {
+          headerDict += '    # ' + commentedOutHeaders[headerName.toLowerCase()] + '\n'
+        }
         lineStart = '    # '
       } else {
         lineStart = '    '

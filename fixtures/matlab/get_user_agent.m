@@ -23,7 +23,7 @@ params = {
 };
 header = [
     HeaderField('x-msisdn', 'XXXXXXXXXXXXX')
-    HeaderField('User-Agent', 'Mozilla Android6.1')
+    HeaderField('user-agent', 'Mozilla Android6.1')
 ]';
 uri = URI('http://205.147.98.6/vc/moviesmagic', QueryParameter(params'));
 response = RequestMessage('get', header).send(uri.EncodedURI);

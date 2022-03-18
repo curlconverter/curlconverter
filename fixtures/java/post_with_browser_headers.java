@@ -17,10 +17,9 @@ class Main {
 		httpConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36");
 		httpConn.setRequestProperty("Accept", "*/*");
 		httpConn.setRequestProperty("Referer", "http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511");
+		httpConn.setRequestProperty("Cookie", "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126");
 		httpConn.setRequestProperty("Connection", "keep-alive");
 		httpConn.setRequestProperty("Content-Length", "0");
-
-		httpConn.setRequestProperty("Cookie", "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126");
 
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
 				? httpConn.getInputStream()

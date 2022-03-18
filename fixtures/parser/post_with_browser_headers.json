@@ -1,6 +1,20 @@
 {
   "url": "http://www.w3schools.com/ajax/demo_post.asp",
   "urlWithoutQuery": "http://www.w3schools.com/ajax/demo_post.asp",
+  "cookies": [
+    [
+      "_gat",
+      "1"
+    ],
+    [
+      "ASPSESSIONIDACCRDTDC",
+      "MCMDKFMBLLLHGKCGNMKNGPKI"
+    ],
+    [
+      "_ga",
+      "GA1.2.1424920226.1419478126"
+    ]
+  ],
   "compressed": true,
   "headers": [
     [
@@ -28,6 +42,10 @@
       "http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511"
     ],
     [
+      "Cookie",
+      "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
+    ],
+    [
       "Connection",
       "keep-alive"
     ],
@@ -36,11 +54,5 @@
       "0"
     ]
   ],
-  "method": "post",
-  "cookies": {
-    "_gat": "1",
-    "ASPSESSIONIDACCRDTDC": "MCMDKFMBLLLHGKCGNMKNGPKI",
-    "_ga": "GA1.2.1424920226.1419478126"
-  },
-  "cookieString": "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
+  "method": "post"
 }

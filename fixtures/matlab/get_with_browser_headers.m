@@ -15,8 +15,8 @@ options = weboptions(...
         'Accept-Language' 'en-US,en;q=0.8'
         'Accept' 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
         'Referer' 'http://www.wikipedia.org/'
-        'Connection' 'keep-alive'
         'Cookie' char(join(join(cookies, '='), '; '))
+        'Connection' 'keep-alive'
     }...
 );
 response = webread(uri, options);

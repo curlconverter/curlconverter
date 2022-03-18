@@ -17,11 +17,10 @@ class Main {
 		httpConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36");
 		httpConn.setRequestProperty("accept", "application/json");
 		httpConn.setRequestProperty("Referer", "https://httpbin.org/");
+		httpConn.setRequestProperty("Cookie", "authCookie=123");
 		httpConn.setRequestProperty("Connection", "keep-alive");
 		httpConn.setRequestProperty("Cache-Control", "no-cache");
 		httpConn.setRequestProperty("Sec-Metadata", "destination=empty, site=same-origin");
-
-		httpConn.setRequestProperty("Cookie", "authCookie=123");
 
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
 				? httpConn.getInputStream()

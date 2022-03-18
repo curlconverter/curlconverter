@@ -15,7 +15,6 @@ class Main {
 
 		httpConn.setRequestProperty("A", "''a'");
 		httpConn.setRequestProperty("B", "\"");
-
 		httpConn.setRequestProperty("Cookie", "x=1'; y=2\"");
 
 		byte[] message = ("ol':asd\"").getBytes("UTF-8");

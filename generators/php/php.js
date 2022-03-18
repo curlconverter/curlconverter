@@ -4,6 +4,12 @@ import jsesc from 'jsesc'
 const quote = str => jsesc(str, { quotes: 'single' })
 
 export const _toPhp = request => {
+  let cookieString
+  if (util.hasHeader(request, 'cookie')) {
+    cookieString = util.getHeader(request, 'cookie')
+    util.deleteHeader(request, 'cookie')
+  }
+
   let phpCode = '<?php\n'
   phpCode += '$ch = curl_init();\n'
   phpCode += "curl_setopt($ch, CURLOPT_URL, '" + quote(request.url) + "');\n"
@@ -31,8 +37,8 @@ export const _toPhp = request => {
     phpCode += 'curl_setopt($ch, CURLOPT_HTTPHEADER, ' + headersArrayCode + ');\n'
   }
 
-  if (request.cookies) {
-    phpCode += "curl_setopt($ch, CURLOPT_COOKIE, '" + quote(util.serializeCookies(request.cookies)) + "');\n"
+  if (cookieString) {
+    phpCode += "curl_setopt($ch, CURLOPT_COOKIE, '" + quote(cookieString) + "');\n"
   }
 
   if (request.auth) {

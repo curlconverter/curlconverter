@@ -12,7 +12,6 @@ class Main {
 		httpConn.setRequestMethod("GET");
 
 		httpConn.setRequestProperty("accept", "application/json");
-
 		httpConn.setRequestProperty("Cookie", "mysamplecookie=someValue; emptycookie=; otherCookie=2");
 
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2

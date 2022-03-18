@@ -153,7 +153,8 @@ const prepareQueryString = (request) => {
 const prepareCookies = (request) => {
   let response = null
   if (request.cookies) {
-    const cookies = addCellArray(request.cookies, [], '', 1)
+    // TODO: throws away repeat cookies
+    const cookies = addCellArray(Object.fromEntries(request.cookies), [], '', 1)
     response = setVariableValue('cookies', cookies)
   }
   return response

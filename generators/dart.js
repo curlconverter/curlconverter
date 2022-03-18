@@ -30,16 +30,11 @@ export const _toDart = r => {
       '\n'
   }
 
-  const hasHeaders = r.headers || r.cookies || r.compressed || r.isDataBinary || r.method === 'put'
+  const hasHeaders = r.headers || r.compressed || r.isDataBinary || r.method === 'put'
   if (hasHeaders) {
     s += '  var headers = {\n'
     for (const [hname, hval] of (r.headers || [])) {
       s += "    '" + hname + "': '" + hval + "',\n"
-    }
-
-    if (r.cookies) {
-      const cookiestr = util.serializeCookies(r.cookies)
-      s += "    'Cookie': '" + cookiestr + "',\n"
     }
 
     if (r.auth) s += "    'Authorization': authn,\n"

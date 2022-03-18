@@ -101,12 +101,11 @@ export const _toJsonString = request => {
   // }
 
   if (request.cookies) {
-    const cookies = {}
-    for (const cookieName in request.cookies) {
-      cookies[repr(cookieName)] = repr(request.cookies[cookieName])
-    }
-
-    requestJson.cookies = cookies
+    // TODO: repeated cookies
+    requestJson.cookies = Object.fromEntries(request.cookies)
+    // Normally when a generator uses .cookies, it should delete it from
+    // headers, but users of the JSON output would expect to have all the
+    // headers in .headers.
   }
 
   if (request.headers) {

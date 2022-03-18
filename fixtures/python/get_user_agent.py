@@ -2,7 +2,7 @@ import requests
 
 headers = {
     'x-msisdn': 'XXXXXXXXXXXXX',
-    'User-Agent': 'Mozilla Android6.1',
+    'user-agent': 'Mozilla Android6.1',
 }
 
 params = {
