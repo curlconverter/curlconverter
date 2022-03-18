@@ -93,7 +93,7 @@ const prepareMultipartUploads = (request) => {
   let response = null
   if (request.multipartUploads) {
     const params = []
-    for (const [key, value] of Object.entries(request.multipartUploads)) {
+    for (const [key, value] of request.multipartUploads) {
       const pair = []
       pair.push(repr(key))
       const fileProvider = prepareDataProvider(value, null, '', 1)

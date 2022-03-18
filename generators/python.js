@@ -119,8 +119,7 @@ function getDataString (request) {
 function getFilesString (request) {
   // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
   let filesString = 'files = {\n'
-  for (const multipartKey in request.multipartUploads) {
-    const multipartValue = request.multipartUploads[multipartKey]
+  for (const [multipartKey, multipartValue] of request.multipartUploads) {
     if (multipartValue.startsWith('@')) {
       const fileName = multipartValue.slice(1)
       filesString += '    ' + repr(multipartKey) + ': (' + repr(fileName) + ', open(' + repr(fileName) + ", 'rb')),\n"

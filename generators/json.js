@@ -58,8 +58,7 @@ function getFilesString (request) {
   data.files = {}
   data.data = {}
 
-  for (const multipartKey in request.multipartUploads) {
-    const multipartValue = request.multipartUploads[multipartKey]
+  for (const [multipartKey, multipartValue] of request.multipartUploads) {
     if (multipartValue.startsWith('@')) {
       const fileName = multipartValue.slice(1)
       data.files[repr(multipartKey)] = repr(fileName)

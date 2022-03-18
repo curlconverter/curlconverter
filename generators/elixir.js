@@ -103,8 +103,7 @@ function getFormDataString (request) {
 
   let fileArgs = []
   let dataArgs = []
-  for (const multipartKey in request.multipartUploads) {
-    const multipartValue = request.multipartUploads[multipartKey]
+  for (const [multipartKey, multipartValue] of request.multipartUploads) {
     if (multipartValue.startsWith('@')) {
       const fileName = multipartValue.slice(1)
       fileArgs.push(`    {:file, ~s|${fileName}|}`)
