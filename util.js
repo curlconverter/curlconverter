@@ -973,6 +973,17 @@ const buildRequest = parsedArguments => {
     headers.push([capitalizeHeaders ? 'User-Agent' : 'user-agent', parsedArguments['user-agent']])
   }
 
+  if (parsedArguments.referer) {
+    if (!headers) {
+      headers = []
+    }
+    // referer can be ";auto" or followed by ";auto", we ignore that.
+    const referer = parsedArguments.referer.replace(/;auto$/, '')
+    if (referer) {
+      headers.push([capitalizeHeaders ? 'Referer' : 'referer', referer])
+    }
+  }
+
   let multipartUploads
   if (parsedArguments.form) {
     multipartUploads = []
