@@ -117,17 +117,33 @@ function getDataString (request) {
 }
 
 function getFilesString (request) {
-  // http://docs.python-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
-  let filesString = 'files = {\n'
-  for (const [multipartKey, multipartValue] of request.multipartUploads) {
-    if (multipartValue.startsWith('@')) {
-      const fileName = multipartValue.slice(1)
-      filesString += '    ' + repr(multipartKey) + ': (' + repr(fileName) + ', open(' + repr(fileName) + ", 'rb')),\n"
+  const multipartUploads = request.multipartUploads.map(m => {
+    let multipartValue
+    if (m[1].startsWith('@')) {
+      const fileName = m[1].slice(1)
+      multipartValue = '(' + repr(fileName) + ', open(' + repr(fileName) + ", 'rb'))"
     } else {
-      filesString += '    ' + repr(multipartKey) + ': (None, ' + repr(multipartValue) + '),\n'
+      multipartValue = '(None, ' + repr(m[1]) + ')'
     }
+    return [m[0], multipartValue]
+  })
+
+  const multipartUploadsAsDict = Object.fromEntries(multipartUploads)
+
+  let filesString = 'files = '
+  if (Object.keys(multipartUploadsAsDict).length === multipartUploads.length) {
+    filesString += '{\n'
+    for (const [multipartKey, multipartValue] of multipartUploads) {
+      filesString += '    ' + repr(multipartKey) + ': ' + multipartValue + ',\n'
+    }
+    filesString += '}\n'
+  } else {
+    filesString += '[\n'
+    for (const [multipartKey, multipartValue] of multipartUploads) {
+      filesString += '    (' + repr(multipartKey) + ', ' + multipartValue + '),\n'
+    }
+    filesString += ']\n'
   }
-  filesString += '}\n'
 
   return filesString
 }
