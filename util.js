@@ -526,9 +526,7 @@ const canBeList = new Set([
   'mail-rcpt',
   'resolve',
   'connect-to',
-  // TODO: support multiple cookies
-  // https://github.com/curlconverter/curlconverter/issues/161
-  // 'cookie',
+  'cookie',
   'quote',
   'telnet-option'
 ])
@@ -960,6 +958,9 @@ const buildRequest = parsedArguments => {
     if (parsedArguments.cookie) {
       // TODO: a --cookie without a = character reads from it as a filename
       const cookieString = parsedArguments.cookie.join(';')
+      if (!headers) {
+        headers = []
+      }
       headers.push([capitalizeHeaders ? 'Cookie' : 'cookie', cookieString])
       cookies = parseCookies(cookieString, false)
     }
