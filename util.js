@@ -977,7 +977,11 @@ const buildRequest = parsedArguments => {
     if (!headers) {
       headers = []
     }
-    headers.push([capitalizeHeaders ? 'Referer' : 'referer', parsedArguments.referer])
+    // referer can be ";auto" or followed by ";auto", we ignore that.
+    const referer = parsedArguments.referer.replace(/;auto$/, '')
+    if (referer) {
+      headers.push([capitalizeHeaders ? 'Referer' : 'referer', referer])
+    }
   }
 
   let multipartUploads
