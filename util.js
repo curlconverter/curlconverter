@@ -1118,6 +1118,9 @@ const buildRequest = parsedArguments => {
   if (parsedArguments.capath) {
     request.capath = parsedArguments.capath
   }
+  if (parsedArguments.output) {
+    request.output = parsedArguments.output
+  }
 
   return request
 }
