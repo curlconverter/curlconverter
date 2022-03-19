@@ -42,7 +42,8 @@ export const _toPhp = request => {
   }
 
   if (request.auth) {
-    phpCode += 'curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);\n'
+    let authType = request.digest ? 'CURLAUTH_DIGEST' : 'CURLAUTH_BASIC'
+    phpCode += 'curl_setopt($ch, CURLOPT_HTTPAUTH, ' + authType + ');\n'
     phpCode += "curl_setopt($ch, CURLOPT_USERPWD, '" + quote(request.auth.join(':')) + "');\n"
   }
 
