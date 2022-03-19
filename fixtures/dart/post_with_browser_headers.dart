@@ -14,7 +14,8 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var res = await http.post('http://www.w3schools.com/ajax/demo_post.asp', headers: headers);
+  var url = Uri.parse('http://www.w3schools.com/ajax/demo_post.asp');
+  var res = await http.post(url, headers: headers);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }

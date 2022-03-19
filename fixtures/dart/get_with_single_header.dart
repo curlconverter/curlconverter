@@ -5,7 +5,8 @@ void main() async {
     'foo': 'bar',
   };
 
-  var res = await http.get('http://example.com/', headers: headers);
+  var url = Uri.parse('http://example.com/');
+  var res = await http.get(url, headers: headers);
   if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

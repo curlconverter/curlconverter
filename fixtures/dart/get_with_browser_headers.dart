@@ -12,7 +12,8 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var res = await http.get('http://en.wikipedia.org/', headers: headers);
+  var url = Uri.parse('http://en.wikipedia.org/');
+  var res = await http.get(url, headers: headers);
   if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

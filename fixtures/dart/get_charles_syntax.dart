@@ -14,7 +14,8 @@ void main() async {
   };
   var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');
 
-  var res = await http.get('http://api.ipify.org/?$query', headers: headers);
+  var url = Uri.parse('http://api.ipify.org/?$query');
+  var res = await http.get(url, headers: headers);
   if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

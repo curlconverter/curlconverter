@@ -6,7 +6,8 @@ void main() async {
     'Content-Type': 'application/x-www-form-urlencoded',
   };
 
-  var res = await http.post('http://localhost:28139', headers: headers);
+  var url = Uri.parse('http://localhost:28139');
+  var res = await http.post(url, headers: headers);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }
