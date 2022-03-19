@@ -1132,6 +1132,15 @@ const buildRequest = parsedArguments => {
   }
   if (parsedArguments.proxy) {
     request.proxy = parsedArguments.proxy
+    if (parsedArguments['proxy-user']) {
+      request.proxyAuth = parsedArguments['proxy-user']
+    }
+  }
+  if (parsedArguments['max-time']) {
+    request.timeout = parsedArguments['max-time']
+  }
+  if (parsedArguments.location) {
+    request.followRedirects = true
   }
   if (parsedArguments.output) {
     request.output = parsedArguments.output

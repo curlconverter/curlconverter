@@ -59,11 +59,26 @@ export const _toPhp = request => {
       }
       requestDataCode += ']'
     } else if (request.isDataBinary) {
-      requestDataCode += "file_get_contents('" + quote(request.data.substring(1)) + "')"
+      requestDataCode = "file_get_contents('" + quote(request.data.substring(1)) + "')"
     } else {
       requestDataCode = "'" + quote(request.data) + "'"
     }
     phpCode += 'curl_setopt($ch, CURLOPT_POSTFIELDS, ' + requestDataCode + ');\n'
+  }
+
+  if (request.proxy) {
+    phpCode += "curl_setopt($ch, CURLOPT_PROXY, '" + quote(request.proxy) + "');\n"
+    if (request.proxyAuth) {
+      phpCode += "curl_setopt($ch, CURLOPT_PROXYUSERPWD, '" + quote(request.proxyAuth) + "');\n"
+    }
+  }
+
+  if (request.timeout) {
+    phpCode += 'curl_setopt($ch, CURLOPT_TIMEOUT, ' + (parseInt(request.timeout) || 0) + ');\n'
+  }
+
+  if (request.followRedirects) {
+    phpCode += 'curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);\n'
   }
 
   if (request.insecure) {
