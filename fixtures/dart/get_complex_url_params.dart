@@ -46,7 +46,8 @@ void main() async {
   };
   var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');
 
-  var res = await http.get('https://www.nomador.com/house-sitting/?$query');
+  var url = Uri.parse('https://www.nomador.com/house-sitting/?$query');
+  var res = await http.get(url);
   if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
 }

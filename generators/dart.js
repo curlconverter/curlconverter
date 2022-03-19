@@ -85,10 +85,11 @@ export const _toDart = r => {
   }
 
   if (hasQuery) {
-    s += '  var res = await http.' + r.method + "('" + r.urlWithoutQuery + "?$query'"
+    s += "  var url = Uri.parse('" + r.urlWithoutQuery + "?$query');\n"
   } else {
-    s += '  var res = await http.' + r.method + "('" + r.url + "'"
+    s += "  var url = Uri.parse('" + r.url + "');\n"
   }
+  s += '  var res = await http.' + r.method + '(url'
 
   if (hasHeaders) s += ', headers: headers'
   else if (r.auth) s += ", headers: {'Authorization': authn}"

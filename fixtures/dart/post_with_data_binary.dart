@@ -8,7 +8,8 @@ void main() async {
 
   var data = utf8.encode('{"title":"china1"}');
 
-  var res = await http.post('http://localhost:28139/post', headers: headers, body: data);
+  var url = Uri.parse('http://localhost:28139/post');
+  var res = await http.post(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }

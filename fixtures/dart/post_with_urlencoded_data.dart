@@ -16,7 +16,8 @@ void main() async {
 
   var data = 'msg1=wow&msg2=such';
 
-  var res = await http.post('http://fiddle.jshell.net/echo/html/', headers: headers, body: data);
+  var url = Uri.parse('http://fiddle.jshell.net/echo/html/');
+  var res = await http.post(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }
