@@ -249,6 +249,35 @@ export const _toPython = request => {
     commentedOutHeaders.cookie = request.cookies.length > 1 ? 'Requests sorts cookies= alphabetically' : ''
   }
 
+  let proxyDict
+  if (request.proxy) {
+    const proxy = request.proxy.includes('://') ? request.proxy : 'http://' + request.proxy
+    const protocol = proxy.split('://')[0].toLowerCase()
+
+    proxyDict = 'proxies = {\n'
+    switch (protocol) {
+      case 'http':
+      case 'https':
+        // TODO: hopefully including both is right
+        proxyDict += "    'http': " + repr(proxy) + ',\n'
+        proxyDict += "    'https': " + repr(proxy) + ',\n'
+        break
+      case 'socks':
+        proxyDict += "    'socks4': " + repr(proxy) + ',\n'
+        break
+      case 'socks4':
+      case 'socks5':
+      case 'socks5h':
+      case 'socks4a':
+      default:
+        proxyDict += "    '" + protocol + "': " + repr(proxy) + ',\n'
+        break
+      // default:
+      //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
+    }
+    proxyDict += '}\n'
+  }
+
   let certStr
   if (request.cert) {
     certStr = 'cert = '
@@ -348,6 +377,9 @@ export const _toPython = request => {
   } else if (request.multipartUploads) {
     requestLineBody += ', files=files'
   }
+  if (request.proxy) {
+    requestLineBody += ', proxies=proxies'
+  }
   if (request.cert) {
     requestLineBody += ', cert=cert'
   }
@@ -386,6 +418,10 @@ export const _toPython = request => {
     }
 
     pythonCode += '\n'
+  }
+
+  if (proxyDict) {
+    pythonCode += proxyDict + '\n'
   }
 
   if (cookieDict) {
