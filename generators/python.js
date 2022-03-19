@@ -417,6 +417,14 @@ export const _toPython = request => {
     pythonCode += '#' + requestLine.replace(', json=json_data', ', data=data')
   }
 
+  if (request.output && request.output !== '/dev/null') {
+    if (request.output === '-') {
+      pythonCode += '\nprint(response.text)'
+    } else {
+      pythonCode += '\n\nwith open(' + repr(request.output) + ", 'wb') as f:\n    f.write(response.content)"
+    }
+  }
+
   return pythonCode + '\n'
 }
 export const toPython = curlCommand => {
