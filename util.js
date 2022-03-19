@@ -973,6 +973,13 @@ const buildRequest = parsedArguments => {
     headers.push([capitalizeHeaders ? 'User-Agent' : 'user-agent', parsedArguments['user-agent']])
   }
 
+  if (parsedArguments.referer) {
+    if (!headers) {
+      headers = []
+    }
+    headers.push([capitalizeHeaders ? 'Referer' : 'referer', parsedArguments.referer])
+  }
+
   let multipartUploads
   if (parsedArguments.form) {
     multipartUploads = []
