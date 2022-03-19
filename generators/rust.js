@@ -38,8 +38,8 @@ export const _toRust = request => {
 
   if (request.multipartUploads) {
     lines.push(indent('let form = multipart::Form::new()'))
-    const parts = Object.keys(request.multipartUploads).map(partType => {
-      const partValue = request.multipartUploads[partType]
+    const parts = request.multipartUploads.map(m => {
+      const [partType, partValue] = m
       switch (partType) {
         case 'image':
         case 'file': {

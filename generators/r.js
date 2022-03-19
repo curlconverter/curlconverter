@@ -95,8 +95,8 @@ function getMultipleDataString (request, parsedQueryString) {
 function getFilesString (request) {
   // http://docs.rstats-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
   let filesString = 'files = list(\n'
-  filesString += Object.keys(request.multipartUploads).map((multipartKey) => {
-    const multipartValue = request.multipartUploads[multipartKey]
+  filesString += request.multipartUploads.map((m) => {
+    const [multipartKey, multipartValue] = m
     let fileParam
     if (multipartValue.startsWith('@')) {
       const fileName = multipartValue.slice(1)

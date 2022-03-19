@@ -974,13 +974,13 @@ const buildRequest = parsedArguments => {
 
   let multipartUploads
   if (parsedArguments.form) {
-    multipartUploads = {}
+    multipartUploads = []
     parsedArguments.form.forEach(multipartArgument => {
-      // input looks like key=value. value could be json or a file path prepended with an @
-      // TODO: what if multipartArgument is empty string?
-      // TODO: if string has more than one '=', this throws away data
-      const [key, value] = multipartArgument.split('=', 2)
-      multipartUploads[key] = value
+      // -F is the most complicated option, we just assume it looks
+      // like key=value and some generators handle value being @filepath
+      // TODO: https://curl.se/docs/manpage.html#-F
+      const [key, value] = multipartArgument.split(/=(.*)/s, 2)
+      multipartUploads.push([key, value || ''])
     })
   }
 
@@ -1175,6 +1175,9 @@ const hasHeader = (request, header) => {
 }
 
 const deleteHeader = (request, header) => {
+  if (!request.headers) {
+    return
+  }
   const lookup = header.toLowerCase()
   for (let i = request.headers.length - 1; i >= 0; i--) {
     if (request.headers[i][0].toLowerCase() === lookup) {

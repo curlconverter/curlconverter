@@ -50,8 +50,7 @@ export const _toPhp = request => {
     let requestDataCode = ''
     if (request.multipartUploads) {
       requestDataCode = '[\n'
-      for (const multipartKey in request.multipartUploads) {
-        const multipartValue = request.multipartUploads[multipartKey]
+      for (const [multipartKey, multipartValue] of request.multipartUploads) {
         if (multipartValue.charAt(0) === '@') {
           requestDataCode += "    '" + quote(multipartKey) + "' => new CURLFile('" + quote(multipartValue.substring(1)) + "'),\n"
         } else {
