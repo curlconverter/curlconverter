@@ -20,12 +20,12 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
+    "@curlconverter/tree-sitter-bash": "^0.0.2",
     "cookie": "^0.4.2",
     "jsesc": "^3.0.2",
     "nunjucks": "^3.2.3",
     "query-string": "^7.1.1",
     "tree-sitter": "^0.20.0",
-    "tree-sitter-bash": "^0.19.0",
     "web-tree-sitter": "^0.20.5",
     "yamljs": "^0.3.0"
   },
@@ -41,7 +41,7 @@
     "test": "tape test.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/tree-sitter-bash",
+    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash",
     "gen-test": "./tools/gen-test.js",
     "compare-requests": "./tools/compare-requests.js",
     "compare-request": "./tools/compare-requests.js"
