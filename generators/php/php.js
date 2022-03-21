@@ -42,7 +42,8 @@ export const _toPhp = request => {
   }
 
   if (request.auth) {
-    phpCode += 'curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);\n'
+    const authType = request.digest ? 'CURLAUTH_DIGEST' : 'CURLAUTH_BASIC'
+    phpCode += 'curl_setopt($ch, CURLOPT_HTTPAUTH, ' + authType + ');\n'
     phpCode += "curl_setopt($ch, CURLOPT_USERPWD, '" + quote(request.auth.join(':')) + "');\n"
   }
 
@@ -58,12 +59,27 @@ export const _toPhp = request => {
         }
       }
       requestDataCode += ']'
-    } else if (request.isDataBinary) {
-      requestDataCode += "file_get_contents('" + quote(request.data.substring(1)) + "')"
+    } else if (request.isDataBinary && request.data.charAt(0) === '@') {
+      requestDataCode = "file_get_contents('" + quote(request.data.substring(1)) + "')"
     } else {
       requestDataCode = "'" + quote(request.data) + "'"
     }
     phpCode += 'curl_setopt($ch, CURLOPT_POSTFIELDS, ' + requestDataCode + ');\n'
+  }
+
+  if (request.proxy) {
+    phpCode += "curl_setopt($ch, CURLOPT_PROXY, '" + quote(request.proxy) + "');\n"
+    if (request.proxyAuth) {
+      phpCode += "curl_setopt($ch, CURLOPT_PROXYUSERPWD, '" + quote(request.proxyAuth) + "');\n"
+    }
+  }
+
+  if (request.timeout) {
+    phpCode += 'curl_setopt($ch, CURLOPT_TIMEOUT, ' + (parseInt(request.timeout) || 0) + ');\n'
+  }
+
+  if (request.followRedirects) {
+    phpCode += 'curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);\n'
   }
 
   if (request.insecure) {
