@@ -112,6 +112,8 @@ const curlLongOpts = {
   'retry-max-time': { type: 'string' },
   'proxy-negotiate': { type: 'bool' },
   'no-proxy-negotiate': { type: 'bool', name: 'proxy-negotiate', expand: false },
+  'form-escape': { type: 'bool' },
+  'no-form-escape': { type: 'bool', name: 'form-escape', expand: false },
   'ftp-account': { type: 'string' },
   'proxy-anyauth': { type: 'bool' },
   'no-proxy-anyauth': { type: 'bool', name: 'proxy-anyauth', expand: false },
@@ -224,6 +226,7 @@ const curlLongOpts = {
   'data-ascii': { type: 'string' },
   'data-binary': { type: 'string' },
   'data-urlencode': { type: 'string' },
+  json: { type: 'string' },
   'dump-header': { type: 'string' },
   referer: { type: 'string' },
   cert: { type: 'string' },
@@ -236,6 +239,7 @@ const curlLongOpts = {
   capath: { type: 'string' },
   pubkey: { type: 'string' },
   hostpubmd5: { type: 'string' },
+  hostpubsha256: { type: 'string' },
   crlfile: { type: 'string' },
   tlsuser: { type: 'string' },
   tlspassword: { type: 'string' },
@@ -522,7 +526,7 @@ const canBeList = new Set([
   'url',
   'header', 'proxy-header',
   'form',
-  'data', 'data-binary', 'data-ascii', 'data-raw', 'data-urlencode',
+  'data', 'data-binary', 'data-ascii', 'data-raw', 'data-urlencode', 'json',
   'mail-rcpt',
   'resolve',
   'connect-to',
@@ -1012,7 +1016,8 @@ const buildRequest = parsedArguments => {
     has(parsedArguments, 'data-ascii') ||
     has(parsedArguments, 'data-binary') ||
     has(parsedArguments, 'data-raw') ||
-    has(parsedArguments, 'form')) && !(parsedArguments.get)) {
+    has(parsedArguments, 'form') ||
+    has(parsedArguments, 'json')) && !(parsedArguments.get)) {
     method = 'post'
   } else {
     method = 'get'
@@ -1071,9 +1076,6 @@ const buildRequest = parsedArguments => {
     request.compressed = true
   }
 
-  if (headers) {
-    request.headers = headers
-  }
   request.method = method
 
   if (multipartUploads) {
@@ -1097,6 +1099,17 @@ const buildRequest = parsedArguments => {
     // TODO: this doesn't exactly match curl
     // all '&' and all but the first '=' need to be escaped
     request.data = parsedArguments['data-urlencode']
+  } else if (parsedArguments.json) {
+    if (!headers) {
+      headers = []
+    }
+    headers.push([capitalizeHeaders ? 'Content-Type' : 'content-type', 'application/json'])
+    headers.push([capitalizeHeaders ? 'Accept' : 'accept', 'application/json'])
+    request.data = parsedArguments.json
+  }
+
+  if (headers) {
+    request.headers = headers
   }
 
   if (parsedArguments.user) {
@@ -1109,7 +1122,7 @@ const buildRequest = parsedArguments => {
   if (has(request, 'data')) {
     if (request.data.length > 1) {
       request.dataArray = request.data
-      request.data = request.data.join('&')
+      request.data = request.data.join(parsedArguments.json ? '' : '&')
     } else {
       request.data = request.data[0]
     }
