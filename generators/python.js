@@ -91,7 +91,9 @@ function getDataString (request) {
 
   const dataString = 'data = ' + repr(request.data) + '\n'
 
-  if (util.getHeader(request, 'content-type') === 'application/json') {
+  const isJson = util.hasHeader(request, 'content-type') &&
+        util.getHeader(request, 'content-type').split(';')[0].trim() === 'application/json'
+  if (isJson) {
     try {
       const dataAsJson = JSON.parse(request.data)
       // TODO: we actually want to know how it's serialized by
@@ -302,7 +304,7 @@ export const _toPython = request => {
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
-    if (jsonDataString) {
+    if (jsonDataString && util.getHeader(request, 'content-type').trim() === 'application/json') {
       commentedOutHeaders['content-type'] = 'Already added when you pass json='
       if (!jsonDataStringRoundtrips) {
         commentedOutHeaders['content-type'] += ' but not when you pass data='
@@ -314,7 +316,10 @@ export const _toPython = request => {
     // If you manually pass a Content-Type header it won't set a `boundary`
     // wheras curl does, so the request will fail.
     // https://github.com/curlconverter/curlconverter/issues/248
-    if (filesString && util.getHeader(request, 'content-type') === 'multipart/form-data') {
+    if (filesString &&
+        util.hasHeader(request, 'content-type') &&
+        util.getHeader(request, 'content-type').trim() === 'multipart/form-data' &&
+        !util.getHeader(request, 'content-type').includes('boundary=')) {
       // TODO: better wording
       commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set when you pass files="
     }
