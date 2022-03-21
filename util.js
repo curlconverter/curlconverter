@@ -1159,6 +1159,13 @@ const buildRequest = parsedArguments => {
     request.output = parsedArguments.output
   }
 
+  if (parsedArguments.http2) {
+    request.http2 = parsedArguments.http2
+  }
+  if (parsedArguments.http3) {
+    request.http3 = parsedArguments.http3
+  }
+
   return request
 }
 
