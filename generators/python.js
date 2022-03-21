@@ -448,6 +448,12 @@ export const _toPython = request => {
   } else if (filesString) {
     pythonCode += filesString + '\n'
   }
+
+  if (request.http2 || request.http3) {
+    // TODO: warn users out of band, not in the generated code
+    const version = request.http2 ? '2' : '3'
+    pythonCode += `# Warning: this was an HTTP/${version} request but requests only supports HTTP/1.1\n`
+  }
   pythonCode += requestLine
 
   if (jsonDataString && !jsonDataStringRoundtrips) {
