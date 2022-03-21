@@ -59,7 +59,7 @@ export const _toPhp = request => {
         }
       }
       requestDataCode += ']'
-    } else if (request.isDataBinary) {
+    } else if (request.isDataBinary && request.data.charAt(0) === '@') {
       requestDataCode = "file_get_contents('" + quote(request.data.substring(1)) + "')"
     } else {
       requestDataCode = "'" + quote(request.data) + "'"
