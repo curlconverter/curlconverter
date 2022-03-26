@@ -30,6 +30,7 @@ function getDataString (request) {
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
     const data = {}
+    // TODO: dataRaw = request.data ?
     data[repr(request.data)] = ''
     return { data }
   } else {

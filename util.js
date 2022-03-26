@@ -992,18 +992,6 @@ const buildRequest = parsedArguments => {
     }
   }
 
-  let multipartUploads
-  if (parsedArguments.form) {
-    multipartUploads = []
-    parsedArguments.form.forEach(multipartArgument => {
-      // -F is the most complicated option, we just assume it looks
-      // like key=value and some generators handle value being @filepath
-      // TODO: https://curl.se/docs/manpage.html#-F
-      const [key, value] = multipartArgument.split(/=(.*)/s, 2)
-      multipartUploads.push([key, value || ''])
-    })
-  }
-
   // TODO: don't lower case method,
   // curl expects you to uppercase always, if you do -X PoSt, that's
   // what it will put as the method and we should do the same.
@@ -1082,13 +1070,9 @@ const buildRequest = parsedArguments => {
 
   request.method = method
 
-  if (multipartUploads) {
-    request.multipartUploads = multipartUploads
-  }
   // TODO: all of these could be specified in the same command.
   // They also need to maintain order.
   // TODO: do all of these allow @file?
-  // TODO: set Content-Type downstream for some of these
   if (parsedArguments.data) {
     request.data = parsedArguments.data
     _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
@@ -1112,11 +1096,21 @@ const buildRequest = parsedArguments => {
     request.data = parsedArguments.json
     _setHeaderIfMissing(headers, 'Content-Type', 'application/json', lowercase)
     _setHeaderIfMissing(headers, 'Accept', 'application/json', lowercase)
+  } else if (parsedArguments.form) {
+    request.multipartUploads = []
+    for (const multipartArgument of parsedArguments.form) {
+      // -F is the most complicated option, we just assume it looks
+      // like key=value and some generators handle value being @filepath
+      // TODO: https://curl.se/docs/manpage.html#-F
+      const [key, value] = multipartArgument.split(/=(.*)/s, 2)
+      request.multipartUploads.push([key, value || ''])
+    }
   }
 
   if (headers.length) {
     for (let i = headers.length - 1; i >= 0; i--) {
-      if (headers[i][1].toLowerCase() === null) {
+      if (headers[i][1] === null) {
+        // TODO: ideally we should generate code that explicitly unsets the header too
         headers.splice(i, 1)
       }
     }
