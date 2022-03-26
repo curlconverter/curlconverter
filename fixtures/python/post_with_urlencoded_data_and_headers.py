@@ -2,7 +2,7 @@ import requests
 
 headers = {
     'Origin': 'http://www.realtor.ca',
-    'Accept-Encoding': 'gzip, deflate',
+    # 'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-US,en;q=0.8',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',

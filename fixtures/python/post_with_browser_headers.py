@@ -8,7 +8,7 @@ cookies = {
 
 headers = {
     'Origin': 'http://www.w3schools.com',
-    'Accept-Encoding': 'gzip, deflate',
+    # 'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-US,en;q=0.8',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
     'Accept': '*/*',
