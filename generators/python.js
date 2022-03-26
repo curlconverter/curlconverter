@@ -225,7 +225,7 @@ export const _toPython = request => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
-  const commentedOutHeaders = {}
+  const commentedOutHeaders = { 'content-length': '' }
   // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
   if (util.getHeader(request, 'te') === 'trailers') {
     commentedOutHeaders.te = "Requests doesn't support trailers"
