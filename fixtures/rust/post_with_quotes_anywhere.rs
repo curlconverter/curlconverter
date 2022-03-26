@@ -6,6 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     headers.insert("A", "''a'".parse().unwrap());
     headers.insert("B", "\"".parse().unwrap());
     headers.insert(header::COOKIE, "x=1'; y=2\"".parse().unwrap());
+    headers.insert("Content-Type", "application/x-www-form-urlencoded".parse().unwrap());
 
     let res = reqwest::Client::new()
         .post("https://example.com")

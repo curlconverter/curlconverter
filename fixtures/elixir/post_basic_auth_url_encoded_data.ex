@@ -2,7 +2,9 @@ request = %HTTPoison.Request{
   method: :post,
   url: "http://localhost/api/oauth/token/",
   options: [hackney: [basic_auth: {~s|foo|, ~s|bar|}]],
-  headers: [],
+  headers: [
+    {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},
+  ],
   params: [],
   body: [
     {~s|grant_type|, ~s|client_credentials|}

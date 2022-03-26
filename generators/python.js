@@ -113,6 +113,9 @@ function getDataString (request) {
       parsedQuery.length &&
       !parsedQuery.some(p => p[1] === null)) {
     const dataPythonObj = 'data = ' + objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) + '\n'
+    if (util.getHeader(request, 'content-type') === 'application/x-www-form-urlencoded') {
+      util.deleteHeader(request, 'content-type')
+    }
     return [dataPythonObj, null, null]
   }
   return [dataString, null, null]
@@ -300,7 +303,7 @@ export const _toPython = request => {
   let jsonDataString
   let jsonDataStringRoundtrips
   let filesString
-  if (request.data && typeof request.data === 'string') {
+  if (request.data) {
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
@@ -326,7 +329,7 @@ export const _toPython = request => {
   }
 
   let headerDict
-  if (request.headers) {
+  if (request.headers && request.headers.length) {
     // TODO: what if there are repeat headers
     headerDict = 'headers = {\n'
     for (const [headerName, headerValue] of request.headers) {
@@ -364,7 +367,7 @@ export const _toPython = request => {
   let requestLine = 'response = requests.' + request.method + '(' + repr(request.urlWithoutQuery)
 
   let requestLineBody = ''
-  if (request.headers) {
+  if (request.headers && request.headers.length) {
     requestLineBody += ', headers=headers'
   }
   if (request.query) {

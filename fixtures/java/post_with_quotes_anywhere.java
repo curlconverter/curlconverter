@@ -16,6 +16,7 @@ class Main {
 		httpConn.setRequestProperty("A", "''a'");
 		httpConn.setRequestProperty("B", "\"");
 		httpConn.setRequestProperty("Cookie", "x=1'; y=2\"");
+		httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
 		byte[] message = ("ol':asd\"").getBytes("UTF-8");
 		String basicAuth = DatatypeConverter.printBase64Binary(message);

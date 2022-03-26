@@ -1,8 +1,13 @@
 var request = require('request');
 
+var headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+};
+
 var options = {
     url: 'http://localhost:28139',
-    method: 'POST'
+    method: 'POST',
+    headers: headers
 };
 
 function callback(error, response, body) {

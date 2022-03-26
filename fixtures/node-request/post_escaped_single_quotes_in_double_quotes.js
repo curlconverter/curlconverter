@@ -1,10 +1,15 @@
 var request = require('request');
 
+var headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+};
+
 var dataString = 'foo=\\\'bar\\\'';
 
 var options = {
     url: 'http://example.com/',
     method: 'POST',
+    headers: headers,
     body: dataString
 };
 

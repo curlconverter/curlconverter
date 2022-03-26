@@ -3,7 +3,8 @@ uri = 'http://localhost/api/oauth/token/';
 body = 'grant_type=client_credentials';
 options = weboptions(...
     'Username', 'foo',...
-    'Password', 'bar'...
+    'Password', 'bar',...
+    'MediaType', 'application/x-www-form-urlencoded'...
 );
 response = webwrite(uri, body, options);
 
@@ -12,8 +13,9 @@ import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
+header = HeaderField('Content-Type', 'application/x-www-form-urlencoded');
 uri = URI('http://localhost/api/oauth/token/');
 cred = Credentials('Username', 'foo', 'Password', 'bar');
 options = HTTPOptions('Credentials', cred);
 body = FormProvider('grant_type', 'client_credentials');
-response = RequestMessage('post', [], body).send(uri.EncodedURI, options);
+response = RequestMessage('post', header, body).send(uri.EncodedURI, options);

@@ -2,7 +2,9 @@ request = %HTTPoison.Request{
   method: :post,
   url: "https://cmdb.litop.local/webservices/rest.php",
   options: [],
-  headers: [],
+  headers: [
+    {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},
+  ],
   params: [],
   body: [
     {~s|version|, ~s|1.2|},

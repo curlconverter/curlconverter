@@ -1091,23 +1091,23 @@ const buildRequest = parsedArguments => {
   // TODO: set Content-Type downstream for some of these
   if (parsedArguments.data) {
     request.data = parsedArguments.data
-    // _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-binary']) {
     request.data = parsedArguments['data-binary']
     request.isDataBinary = true
-    // _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-ascii']) {
     request.data = parsedArguments['data-ascii']
-    // _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-raw']) {
     request.data = parsedArguments['data-raw']
     request.isDataRaw = true
-    // _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-urlencode']) {
     // TODO: this doesn't exactly match curl
     // all '&' and all but the first '=' need to be escaped
     request.data = parsedArguments['data-urlencode']
-    // _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments.json) {
     request.data = parsedArguments.json
     _setHeaderIfMissing(headers, 'Content-Type', 'application/json', lowercase)

@@ -1,10 +1,15 @@
 var request = require('request');
 
+var headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+};
+
 var dataString = '{"title":"china1"}';
 
 var options = {
     url: 'http://localhost:28139/post',
     method: 'POST',
+    headers: headers,
     body: dataString
 };
 

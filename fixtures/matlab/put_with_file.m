@@ -2,7 +2,10 @@
 uri = 'http://awesomeurl.com/upload';
 body = fileread('new_file');
 body(body==13 | body==10) = [];
-options = weboptions('RequestMethod', 'put');
+options = weboptions(...
+    'RequestMethod', 'put',...
+    'MediaType', 'application/x-www-form-urlencoded'...
+);
 response = webwrite(uri, body, options);
 
 %% HTTP Interface
@@ -10,7 +13,8 @@ import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
+header = HeaderField('Content-Type', 'application/x-www-form-urlencoded');
 uri = URI('http://awesomeurl.com/upload');
 body = fileread('new_file');
 body(body==13 | body==10) = [];
-response = RequestMessage('put', [], body).send(uri.EncodedURI);
+response = RequestMessage('put', header, body).send(uri.EncodedURI);

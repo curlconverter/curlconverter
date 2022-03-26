@@ -12,6 +12,8 @@ class Main {
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 
+		httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
 		writer.write("msg1=wow&msg2=such&msg3=@rawmsg");

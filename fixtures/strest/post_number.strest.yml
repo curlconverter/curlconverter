@@ -7,3 +7,7 @@ requests:
       postData:
         mimeType: application/json
         text: 123
+      headers:
+        -
+          name: Content-Type
+          value: application/x-www-form-urlencoded

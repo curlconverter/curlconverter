@@ -5,5 +5,9 @@ requests:
       url: 'http://example.com/post'
       method: POST
       postData:
-        mimeType: application/json
+        mimeType: application/x-www-form-urlencoded
         text: 'msg1=wow&msg2=such&msg3=@rawmsg'
+      headers:
+        -
+          name: Content-Type
+          value: application/x-www-form-urlencoded

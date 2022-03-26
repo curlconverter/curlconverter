@@ -16,6 +16,7 @@
     ]
   ],
   "compressed": true,
+  "method": "post",
   "headers": [
     [
       "Origin",
@@ -53,6 +54,5 @@
       "Content-Length",
       "0"
     ]
-  ],
-  "method": "post"
+  ]
 }

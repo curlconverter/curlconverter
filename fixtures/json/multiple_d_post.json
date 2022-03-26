@@ -2,6 +2,9 @@
     "url": "https://cmdb.litop.local/webservices/rest.php",
     "raw_url": "https://cmdb.litop.local/webservices/rest.php",
     "method": "post",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
     "data": {
         "version": "1.2",
         "auth_user": "fdgxf",

@@ -6,4 +6,6 @@
     body:
       "msg1=wow&msg2=such&msg3=@rawmsg"
     body_format: json
+    headers:
+      Content-Type: 'application/x-www-form-urlencoded'
   register: result

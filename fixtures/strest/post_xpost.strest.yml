@@ -10,3 +10,7 @@ requests:
           keywords: php
           page: 1
           searchMode: 1
+      headers:
+        -
+          name: Content-Type
+          value: application/x-www-form-urlencoded

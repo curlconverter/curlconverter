@@ -2,6 +2,9 @@
     "url": "http://localhost:28139/post",
     "raw_url": "http://localhost:28139/post",
     "method": "post",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
     "data": {
         "{\"title\":\"china1\"}": ""
     }
