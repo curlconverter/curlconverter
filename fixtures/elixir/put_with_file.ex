@@ -2,7 +2,9 @@ request = %HTTPoison.Request{
   method: :put,
   url: "http://awesomeurl.com/upload",
   options: [],
-  headers: [],
+  headers: [
+    {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},
+  ],
   params: [],
   body: {:file, ~s|new_file|}
 }

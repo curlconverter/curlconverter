@@ -6,4 +6,6 @@
     body:
       {"keywords":"php","page":1,"searchMode":1}
     body_format: json
+    headers:
+      Content-Type: 'application/x-www-form-urlencoded'
   register: result

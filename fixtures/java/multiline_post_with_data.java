@@ -13,6 +13,7 @@ class Main {
 		httpConn.setRequestMethod("GET");
 
 		httpConn.setRequestProperty("Origin", "http://fiddle.jshell.net");
+		httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());

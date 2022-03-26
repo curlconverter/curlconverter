@@ -1,14 +1,18 @@
 {
   "url": "http://fiddle.jshell.net/echo/html/",
   "urlWithoutQuery": "http://fiddle.jshell.net/echo/html/",
+  "method": "get",
+  "data": "msg1=value1&msg2=value2",
   "headers": [
     [
       "Origin",
       "http://fiddle.jshell.net"
+    ],
+    [
+      "Content-Type",
+      "application/x-www-form-urlencoded"
     ]
   ],
-  "method": "get",
-  "data": "msg1=value1&msg2=value2",
   "dataArray": [
     "msg1=value1",
     "msg2=value2"

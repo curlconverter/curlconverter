@@ -871,8 +871,10 @@ export const parseQueryString = (s) => {
     let decodedKey
     let decodedVal
     try {
-      decodedKey = decodeURIComponent(key)
-      decodedVal = val === undefined ? null : decodeURIComponent(val)
+      // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
+      // before decoding.
+      decodedKey = decodeURIComponent(key.replace(/\+/g, ' '))
+      decodedVal = val === undefined ? null : decodeURIComponent(val.replace(/\+/g, ' '))
     } catch (e) {
       if (e instanceof URIError) {
         // Query string contains invalid percent encoded characters,
@@ -886,10 +888,15 @@ export const parseQueryString = (s) => {
       // TODO: this is too strict. Ideally we want to check how each runtime/library
       // percent encodes query strings. For example, a %27 character in the input query
       // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
-      const roundTripKey = encodeURIComponent(decodedKey)
-      const roundTripVal = encodeURIComponent(decodedVal)
-      if ((roundTripKey !== key && roundTripKey.replace('%20', '+') !== key) ||
-          (decodedVal && (roundTripVal !== val && roundTripVal.replace('%20', '+') !== val))) {
+      const percentEncodeChar = (c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()
+      // Match Python's urllib.parse.quote() behavior
+      // https://stackoverflow.com/questions/946170/equivalent-javascript-functions-for-pythons-urllib-parse-quote-and-urllib-par
+      const percentEncode = (s) => encodeURIComponent(s).replace(/[()*!']/g, percentEncodeChar) // .replace('%20', '+')
+      const roundTripKey = percentEncode(decodedKey)
+      const roundTripVal = percentEncode(decodedVal)
+      // If the original data used %20 instead of + (what requests will send), that's close enough
+      if ((roundTripKey !== key && roundTripKey.replace(/%20/g, '+') !== key) ||
+          (decodedVal && (roundTripVal !== val && roundTripVal.replace(/%20/g, '+') !== val))) {
         return [null, null]
       }
     } catch (e) {
@@ -938,20 +945,26 @@ const buildRequest = parsedArguments => {
   }
   let url = parsedArguments.url[parsedArguments.url.length - 1]
 
-  let headers
+  const headers = []
   if (parsedArguments.header) {
-    if (!headers) {
-      headers = []
-    }
     for (const header of parsedArguments.header) {
-      const [name, value] = header.split(/:(.*)/s, 2)
-      headers.push([name, value ? value.replace(/^ /, '') : ''])
+      if (header.includes(':')) {
+        const [name, value] = header.split(/:(.*)/s, 2)
+        if (!value.trim()) {
+          headers.push([name, null])
+        } else {
+          headers.push([name, value.replace(/^ /, '')])
+        }
+      } else if (header.includes(';')) {
+        const [name] = header.split(/;(.*)/s, 2)
+        headers.push([name, ''])
+      }
     }
   }
-  const capitalizeHeaders = !headers || headers.some(h => h[0] !== h[0].toLowerCase()) || !headers.length
+  const lowercase = headers.length && headers.every(h => h[0] === h[0].toLowerCase())
 
   let cookies
-  const cookieHeaders = (headers || []).filter(h => h[0].toLowerCase() === 'cookie')
+  const cookieHeaders = headers.filter(h => h[0].toLowerCase() === 'cookie')
   if (cookieHeaders.length === 1) {
     const parsedCookies = parseCookiesStrict(cookieHeaders[0][1])
     if (parsedCookies) {
@@ -962,42 +975,21 @@ const buildRequest = parsedArguments => {
     if (parsedArguments.cookie) {
       // TODO: a --cookie without a = character reads from it as a filename
       const cookieString = parsedArguments.cookie.join(';')
-      if (!headers) {
-        headers = []
-      }
-      headers.push([capitalizeHeaders ? 'Cookie' : 'cookie', cookieString])
+      _setHeaderIfMissing(headers, 'Cookie', cookieString, lowercase)
       cookies = parseCookies(cookieString, false)
     }
   }
 
   if (parsedArguments['user-agent']) {
-    if (!headers) {
-      headers = []
-    }
-    headers.push([capitalizeHeaders ? 'User-Agent' : 'user-agent', parsedArguments['user-agent']])
+    _setHeaderIfMissing(headers, 'User-Agent', parsedArguments['user-agent'], lowercase)
   }
 
   if (parsedArguments.referer) {
-    if (!headers) {
-      headers = []
-    }
     // referer can be ";auto" or followed by ";auto", we ignore that.
     const referer = parsedArguments.referer.replace(/;auto$/, '')
     if (referer) {
-      headers.push([capitalizeHeaders ? 'Referer' : 'referer', referer])
+      _setHeaderIfMissing(headers, 'Referer', referer, lowercase)
     }
-  }
-
-  let multipartUploads
-  if (parsedArguments.form) {
-    multipartUploads = []
-    parsedArguments.form.forEach(multipartArgument => {
-      // -F is the most complicated option, we just assume it looks
-      // like key=value and some generators handle value being @filepath
-      // TODO: https://curl.se/docs/manpage.html#-F
-      const [key, value] = multipartArgument.split(/=(.*)/s, 2)
-      multipartUploads.push([key, value || ''])
-    })
   }
 
   // TODO: don't lower case method,
@@ -1078,37 +1070,50 @@ const buildRequest = parsedArguments => {
 
   request.method = method
 
-  if (multipartUploads) {
-    request.multipartUploads = multipartUploads
-  }
   // TODO: all of these could be specified in the same command.
   // They also need to maintain order.
   // TODO: do all of these allow @file?
-  // TODO: set Content-Type downstream for some of these
   if (parsedArguments.data) {
     request.data = parsedArguments.data
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-binary']) {
     request.data = parsedArguments['data-binary']
     request.isDataBinary = true
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-ascii']) {
     request.data = parsedArguments['data-ascii']
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-raw']) {
     request.data = parsedArguments['data-raw']
     request.isDataRaw = true
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments['data-urlencode']) {
     // TODO: this doesn't exactly match curl
     // all '&' and all but the first '=' need to be escaped
     request.data = parsedArguments['data-urlencode']
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
   } else if (parsedArguments.json) {
-    if (!headers) {
-      headers = []
-    }
-    headers.push([capitalizeHeaders ? 'Content-Type' : 'content-type', 'application/json'])
-    headers.push([capitalizeHeaders ? 'Accept' : 'accept', 'application/json'])
     request.data = parsedArguments.json
+    _setHeaderIfMissing(headers, 'Content-Type', 'application/json', lowercase)
+    _setHeaderIfMissing(headers, 'Accept', 'application/json', lowercase)
+  } else if (parsedArguments.form) {
+    request.multipartUploads = []
+    for (const multipartArgument of parsedArguments.form) {
+      // -F is the most complicated option, we just assume it looks
+      // like key=value and some generators handle value being @filepath
+      // TODO: https://curl.se/docs/manpage.html#-F
+      const [key, value] = multipartArgument.split(/=(.*)/s, 2)
+      request.multipartUploads.push([key, value || ''])
+    }
   }
 
-  if (headers) {
+  if (headers.length) {
+    for (let i = headers.length - 1; i >= 0; i--) {
+      if (headers[i][1] === null) {
+        // TODO: ideally we should generate code that explicitly unsets the header too
+        headers.splice(i, 1)
+      }
+    }
     request.headers = headers
   }
 
@@ -1217,20 +1222,51 @@ const getHeader = (request, header) => {
   return undefined
 }
 
+const _hasHeader = (headers, header) => {
+  const lookup = header.toLowerCase()
+  for (const h of headers) {
+    if (h[0].toLowerCase() === lookup) {
+      return true
+    }
+  }
+  return false
+}
+
 const hasHeader = (request, header) => {
-  return !!countHeader(request, header)
+  if (!request.headers) {
+    return
+  }
+  return _hasHeader(request.headers, header)
+}
+
+const _setHeaderIfMissing = (headers, header, value, lowercase = false) => {
+  if (_hasHeader(headers, header)) {
+    return false
+  }
+  headers.push([lowercase ? header.toLowerCase() : header, value])
+  return true
+}
+const setHeaderIfMissing = (request, header, value, lowercase = false) => {
+  if (!request.headers) {
+    return
+  }
+  return _setHeaderIfMissing(request.headers, header, value, lowercase)
+}
+
+const _deleteHeader = (headers, header) => {
+  const lookup = header.toLowerCase()
+  for (let i = headers.length - 1; i >= 0; i--) {
+    if (headers[i][0].toLowerCase() === lookup) {
+      headers.splice(i, 1)
+    }
+  }
 }
 
 const deleteHeader = (request, header) => {
   if (!request.headers) {
     return
   }
-  const lookup = header.toLowerCase()
-  for (let i = request.headers.length - 1; i >= 0; i--) {
-    if (request.headers[i][0].toLowerCase() === lookup) {
-      request.headers.splice(i, 1)
-    }
-  }
+  return _deleteHeader(request.headers, header)
 }
 
 const countHeader = (request, header) => {
@@ -1273,12 +1309,18 @@ const parseCookies = (cookieString) => {
 export {
   curlLongOpts,
   curlShortOpts,
+
+  parseCurlCommand,
   parseArgs,
   buildRequest,
-  parseCurlCommand,
+
   serializeCookies,
+
   getHeader,
   hasHeader,
+  countHeader,
+  setHeaderIfMissing,
   deleteHeader,
+
   has
 }

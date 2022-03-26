@@ -2,6 +2,8 @@
   "url": "http://fiddle.jshell.net/echo/html/",
   "urlWithoutQuery": "http://fiddle.jshell.net/echo/html/",
   "compressed": true,
+  "method": "post",
+  "data": "msg1=wow&msg2=such",
   "headers": [
     [
       "Origin",
@@ -39,7 +41,5 @@
       "Connection",
       "keep-alive"
     ]
-  ],
-  "method": "post",
-  "data": "msg1=wow&msg2=such"
+  ]
 }

@@ -13,6 +13,8 @@ class Main {
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 
+		httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
 		byte[] message = ("foo:bar").getBytes("UTF-8");
 		String basicAuth = DatatypeConverter.printBase64Binary(message);
 		httpConn.setRequestProperty("Authorization", "Basic " + basicAuth);

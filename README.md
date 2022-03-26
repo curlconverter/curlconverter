@@ -3,10 +3,12 @@
 `curlconverter` transpiles [`curl`](https://en.wikipedia.org/wiki/CURL) commands into programs in other programming languages.
 
 ```sh
-$ curlconverter --data "Hello, world!" example.com
+$ curlconverter --data-raw "hello=world" example.com
 import requests
 
-data = 'Hello, world!'
+data = {
+    'hello': 'world',
+}
 
 response = requests.post('http://example.com', data=data)
 ```

@@ -1,7 +1,9 @@
 import requests
 
-data = {
-    'foo': '\'bar\'',
+headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
 }
 
-response = requests.post('http://example.com/', data=data)
+data = 'foo=\'bar\''
+
+response = requests.post('http://example.com/', headers=headers, data=data)

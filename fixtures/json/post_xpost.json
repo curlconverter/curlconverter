@@ -2,6 +2,9 @@
     "url": "http://us.jooble.org/api/xxxxxxxxxxxxxxxx",
     "raw_url": "http://us.jooble.org/api/xxxxxxxxxxxxxxxx",
     "method": "post",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
     "data": {
         "{\"keywords\":\"php\",\"page\":1,\"searchMode\":1}": ""
     }

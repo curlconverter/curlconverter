@@ -16,7 +16,7 @@ headers = {
     # Requests sorts cookies= alphabetically
     # 'Cookie': '_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126',
     'Connection': 'keep-alive',
-    'Content-Length': '0',
+    # 'Content-Length': '0',
 }
 
 response = requests.post('http://www.w3schools.com/ajax/demo_post.asp', headers=headers, cookies=cookies)

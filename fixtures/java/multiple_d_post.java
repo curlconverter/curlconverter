@@ -12,6 +12,8 @@ class Main {
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 
+		httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
 		httpConn.setDoOutput(true);
 		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
 		writer.write("version=1.2&auth_user=fdgxf&auth_pwd=oxfdscds&json_data={ \"operation\": \"core/get\", \"class\": \"Software\", \"key\": \"key\" }");

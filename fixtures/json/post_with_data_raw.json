@@ -2,6 +2,9 @@
     "url": "http://example.com/post",
     "raw_url": "http://example.com/post",
     "method": "post",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
     "data": {
         "msg1": "wow",
         "msg2": "such",
