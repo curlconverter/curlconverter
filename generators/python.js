@@ -367,7 +367,14 @@ export const _toPython = request => {
   if (!request.urlWithoutQuery.match(/https?:/)) {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
-  let requestLine = 'response = requests.' + request.method + '(' + repr(request.urlWithoutQuery)
+
+  let requestLine
+  if (['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'].includes(request.method)) {
+    requestLine = 'response = requests.' + request.method.toLowerCase() + '(' + repr(request.urlWithoutQuery)
+  } else {
+    // If the method wasn't uppercase, Requests will uppercase it anyway, but we write it out in its original case
+    requestLine = 'response = requests.request(' + repr(request.method) + ', ' + repr(request.urlWithoutQuery)
+  }
 
   let requestLineBody = ''
   if (request.headers && request.headers.length) {

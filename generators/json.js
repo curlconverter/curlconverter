@@ -94,7 +94,7 @@ export const _toJsonString = request => {
     // url: request.queryDict ? request.urlWithoutQuery : request.url,
     raw_url: request.url,
     // TODO: move this after .query?
-    method: request.method
+    method: request.method.toLowerCase() // lowercase for backwards compatibility
   }
   // if (request.queryDict) {
   //   requestJson.query = request.queryDict

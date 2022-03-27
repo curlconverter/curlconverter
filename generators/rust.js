@@ -55,7 +55,7 @@ export const _toRust = request => {
   }
 
   lines.push(indent('let res = reqwest::Client::new()'))
-  lines.push(indent(`.${request.method}("${quote(request.url)}")`, 2))
+  lines.push(indent(`.${request.method.toLowerCase()}("${quote(request.url)}")`, 2))
 
   if (request.auth) {
     const [user, password] = request.auth

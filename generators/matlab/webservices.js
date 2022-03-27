@@ -6,7 +6,7 @@ import {
 } from './common.js'
 
 const isSupportedByWebServices = (request) => {
-  if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method)) {
+  if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method.toLowerCase())) {
     return false
   }
   return !request.multipartUploads && !request.insecure
@@ -17,8 +17,8 @@ const parseWebOptions = (request) => {
 
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
   // thus, it is necessary to set the method for other requests
-  if (request.method !== 'get' && request.method !== 'post') {
-    options.RequestMethod = request.method
+  if (request.method.toLowerCase() !== 'get' && request.method.toLowerCase() !== 'post') {
+    options.RequestMethod = request.method.toLowerCase()
   }
 
   const headers = {}

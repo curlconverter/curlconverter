@@ -49,7 +49,7 @@ export const _toPhpRequests = request => {
       dataString += '\n);'
     }
   }
-  let requestLine = '$response = Requests::' + request.method + '(\'' + request.url + '\''
+  let requestLine = '$response = Requests::' + request.method.toLowerCase() + '(\'' + request.url + '\''
   requestLine += ', $headers'
   if (dataString) {
     requestLine += ', $data'

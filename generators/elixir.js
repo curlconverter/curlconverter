@@ -208,7 +208,7 @@ export const _toElixir = request => {
   }
 
   const template = `request = %HTTPoison.Request{
-  method: :${request.method},
+  method: :${request.method.toLowerCase()},
   url: "${request.urlWithoutQuery}",
   options: ${getOptions(request)},
   headers: ${getHeadersDict(request)},

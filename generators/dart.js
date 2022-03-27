@@ -30,7 +30,7 @@ export const _toDart = r => {
       '\n'
   }
 
-  const hasHeaders = r.headers || r.compressed || r.isDataBinary || r.method === 'put'
+  const hasHeaders = r.headers || r.compressed || r.isDataBinary || r.method.toLowerCase() === 'put'
   if (hasHeaders) {
     s += '  var headers = {\n'
     for (const [hname, hval] of (r.headers || [])) {
@@ -39,7 +39,7 @@ export const _toDart = r => {
 
     if (r.auth) s += "    'Authorization': authn,\n"
     if (r.compressed) s += "    'Accept-Encoding': 'gzip',\n"
-    if (!util.hasHeader(r, 'content-type') && (r.isDataBinary || r.method === 'put')) {
+    if (!util.hasHeader(r, 'content-type') && (r.isDataBinary || r.method.toLowerCase() === 'put')) {
       s += "    'Content-Type': 'application/x-www-form-urlencoded',\n"
     }
 
@@ -89,7 +89,7 @@ export const _toDart = r => {
   } else {
     s += "  var url = Uri.parse('" + r.url + "');\n"
   }
-  s += '  var res = await http.' + r.method + '(url'
+  s += '  var res = await http.' + r.method.toLowerCase() + '(url'
 
   if (hasHeaders) s += ', headers: headers'
   else if (r.auth) s += ", headers: {'Authorization': authn}"
@@ -98,7 +98,7 @@ export const _toDart = r => {
   /* eslint-disable no-template-curly-in-string */
   s +=
     ');\n' +
-    "  if (res.statusCode != 200) throw Exception('http." + r.method + " error: statusCode= ${res.statusCode}');\n" +
+    "  if (res.statusCode != 200) throw Exception('http." + r.method.toLowerCase() + " error: statusCode= ${res.statusCode}');\n" +
     '  print(res.body);\n' +
     '}'
 
