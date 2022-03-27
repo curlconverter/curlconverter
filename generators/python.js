@@ -2,13 +2,44 @@ import * as util from '../util.js'
 
 import jsesc from 'jsesc'
 
+// TODO: if string contains ' but no " use "" instead
+// https://peps.python.org/pep-3138/
+// eslint-disable-next-line no-control-regex
+const escapedChars = / |\r|\n|\t|\\|[\x00-\x1f]|\x7f|\p{Cc}|\p{Cf}|\p{Cs}|\p{Co}|\p{Cn}|\p{Zl}|\p{Zp}|\p{Zs}|'/gu
+function escapeChar (c) {
+  // TODO: "Convert leading surrogate pair characters without trailing character
+  // (0xd800-0xdbff, but not followed by 0xdc00-0xdfff) to ‘\uXXXX’."
+  switch (c) {
+    case ' ':
+      return ' '
+    case '\r':
+      return '\\r'
+    case '\n':
+      return '\\n'
+    case '\t':
+      return '\\t'
+    case '\\':
+      return '\\\\'
+    case '\'':
+      return '\\\''
+  }
+  const hex = c.codePointAt(0).toString(16)
+  if (hex.length <= 2) {
+    return '\\x' + hex.padStart(2, '0')
+  }
+  if (hex.length <= 4) {
+    return '\\u' + hex.padStart(4, '0')
+  }
+  return '\\U' + hex.padStart(8, '0')
+}
+
 function reprWithVariable (value, hasEnvironmentVariable) {
   if (!value) {
     return "''"
   }
 
   if (!hasEnvironmentVariable) {
-    return "'" + jsesc(value, { quotes: 'single' }) + "'"
+    return repr(value)
   }
 
   return 'f"' + jsesc(value, { quotes: 'double' }) + '"'
@@ -16,7 +47,7 @@ function reprWithVariable (value, hasEnvironmentVariable) {
 
 function repr (value) {
   // In context of url parameters, don't accept nulls and such.
-  return reprWithVariable(value, false)
+  return "'" + value.replaceAll(escapedChars, escapeChar) + "'"
 }
 
 function objToPython (obj, indent = 0) {
