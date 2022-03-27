@@ -29,7 +29,7 @@ export const _toNodeRequest = request => {
 
   nodeRequestCode += 'var options = {\n'
   nodeRequestCode += '    url: \'' + request.url + '\''
-  if (request.method !== 'get') {
+  if (request.method.toUpperCase() !== 'GET') {
     nodeRequestCode += ',\n    method: \'' + request.method.toUpperCase() + '\''
   }
 

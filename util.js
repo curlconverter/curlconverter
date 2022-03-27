@@ -992,27 +992,24 @@ const buildRequest = parsedArguments => {
     }
   }
 
-  // TODO: don't lower case method,
-  // curl expects you to uppercase always, if you do -X PoSt, that's
-  // what it will put as the method and we should do the same.
+  // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
+  // will send, but most APIs will helpfully uppercase what you pass in as the method.
   // TODO: read curl's source to figure out precedence rules.
-  let method
+  let method = 'GET'
   if (parsedArguments.head) {
-    method = 'head'
+    method = 'HEAD'
   } else if (has(parsedArguments, 'request') &&
     parsedArguments.request !== 'null') { // Safari adds `-Xnull` if it can't determine the request type
-    method = parsedArguments.request.toLowerCase()
+    method = parsedArguments.request
   } else if (parsedArguments['upload-file']) { // --upload-file '' doesn't do anything.
-    method = 'put'
+    method = 'PUT'
   } else if ((has(parsedArguments, 'data') ||
     has(parsedArguments, 'data-ascii') ||
     has(parsedArguments, 'data-binary') ||
     has(parsedArguments, 'data-raw') ||
     has(parsedArguments, 'form') ||
     has(parsedArguments, 'json')) && !(parsedArguments.get)) {
-    method = 'post'
-  } else {
-    method = 'get'
+    method = 'POST'
   }
 
   const urlObject = URL.parse(url) // eslint-disable-line

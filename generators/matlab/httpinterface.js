@@ -181,10 +181,10 @@ const prepareData = (request) => {
 }
 
 const prepareRequestMessage = (request) => {
-  let reqMessage = [repr(request.method)]
+  let reqMessage = [repr(request.method.toLowerCase())]
   if (request.cookie || request.headers) {
     reqMessage.push('header')
-  } else if (request.method === 'get') {
+  } else if (request.method.toLowerCase() === 'get') {
     reqMessage = ''
   }
   if (containsBody(request)) {

@@ -29,15 +29,18 @@ export const _toJavaScript = request => {
 
   jsFetchCode += 'fetch(\'' + request.url + '\''
 
-  if (request.method !== 'get' || request.headers || request.auth || request.body) {
+  if (request.method.toUpperCase() !== 'GET' || request.headers || request.auth || request.body) {
     jsFetchCode += ', {\n'
 
-    if (request.method !== 'get') {
+    if (request.method.toUpperCase() !== 'GET') {
+      // TODO: If you pass a weird method to fetch() it won't uppercase it
+      // const methods = []
+      // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
       jsFetchCode += '    method: \'' + request.method.toUpperCase() + '\''
     }
 
     if (request.headers || request.auth) {
-      if (request.method !== 'get') {
+      if (request.method.toUpperCase() !== 'GET') {
         jsFetchCode += ',\n'
       }
       jsFetchCode += '    headers: {\n'

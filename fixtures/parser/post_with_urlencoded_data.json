@@ -2,7 +2,7 @@
   "url": "http://fiddle.jshell.net/echo/html/",
   "urlWithoutQuery": "http://fiddle.jshell.net/echo/html/",
   "compressed": true,
-  "method": "post",
+  "method": "POST",
   "data": "msg1=wow&msg2=such",
   "headers": [
     [

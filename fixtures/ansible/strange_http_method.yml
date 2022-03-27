@@ -1,0 +1,6 @@
+-
+  name: 'example.com'
+  uri:
+    url: 'example.com'
+    method: WHAT
+  register: result

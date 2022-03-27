@@ -13,9 +13,9 @@ export const _toGo = request => {
     // import strings
     goCode = goCode.replace('\n)', '\n\t"strings"\n)')
     goCode += '\tvar data = strings.NewReader(`' + request.data + '`)\n'
-    goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", data)\n'
+    goCode += '\treq, err := http.NewRequest("' + request.method + '", "' + request.url + '", data)\n'
   } else {
-    goCode += '\treq, err := http.NewRequest("' + request.method.toUpperCase() + '", "' + request.url + '", nil)\n'
+    goCode += '\treq, err := http.NewRequest("' + request.method + '", "' + request.url + '", nil)\n'
   }
   goCode += '\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n'
   if (request.headers) {

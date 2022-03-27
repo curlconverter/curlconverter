@@ -28,7 +28,7 @@
     ]
   ],
   "compressed": true,
-  "method": "get",
+  "method": "GET",
   "headers": [
     [
       "Accept-Encoding",

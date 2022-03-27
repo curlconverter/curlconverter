@@ -16,7 +16,7 @@
     ]
   ],
   "compressed": true,
-  "method": "post",
+  "method": "POST",
   "headers": [
     [
       "Origin",

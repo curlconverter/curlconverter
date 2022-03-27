@@ -26,7 +26,7 @@ export const _toJava = request => {
   javaCode += '\tpublic static void main(String[] args) throws IOException {\n'
   javaCode += '\t\tURL url = new URL("' + request.url + '");\n'
   javaCode += '\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n'
-  javaCode += '\t\thttpConn.setRequestMethod("' + request.method.toUpperCase() + '");\n\n'
+  javaCode += '\t\thttpConn.setRequestMethod("' + request.method + '");\n\n'
 
   let gzip = false
   if (request.headers) {

@@ -14,7 +14,7 @@ export const _toPhp = request => {
   phpCode += '$ch = curl_init();\n'
   phpCode += "curl_setopt($ch, CURLOPT_URL, '" + quote(request.url) + "');\n"
   phpCode += 'curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n'
-  phpCode += "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" + request.method.toUpperCase() + "');\n"
+  phpCode += "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" + request.method + "');\n"
 
   if (request.headers || request.compressed) {
     let headersArrayCode = '[\n'
