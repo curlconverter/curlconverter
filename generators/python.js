@@ -87,6 +87,12 @@ function getDataString (request) {
         filePath = request.stdin
       } else if (request.input) {
         request.data = request.input
+      } else {
+        if (request.isDataBinary) {
+          return ["data = sys.stdin.buffer.read().replace(b'\\n', b'')\n", null, null]
+        } else {
+          return ["data = sys.stdin.read().replace('\\n', '')\n", null, null]
+        }
       }
     }
     if (!request.input) {
