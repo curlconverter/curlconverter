@@ -753,7 +753,7 @@ const tokenize = (curlCommand) => {
       } else if (redirect.type === 'heredoc_redirect') {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
-        if (redirect.childCount < 1) {
+        if (redirect.namedChildCount < 1) {
           throw new CCError("got 'redirected_statement' AST node with heredoc but no heredoc start")
         }
         const heredocStart = redirect.namedChildren[0].text
@@ -762,7 +762,7 @@ const tokenize = (curlCommand) => {
           throw new CCError("got 'redirected_statement' AST node with no heredoc body")
         }
         // TODO: herestrings and heredocs are different
-        if (heredocBody.type !== 'heredoc_body' || redirect.type === 'herestring_redirect') {
+        if (heredocBody.type !== 'heredoc_body') {
           throw new CCError("got 'redirected_statement' AST node with heredoc but no heredoc body, got " + heredocBody.type + ' instead')
         }
         // TODO: heredocs do variable expansion and stuff
@@ -774,6 +774,12 @@ const tokenize = (curlCommand) => {
         }
         // Curl remove newlines when you pass any @filename including @- for stdin
         input = input.replace(/\n/g, '')
+      } else if (redirect.type === 'herestring_redirect') {
+        if (redirect.namedChildCount < 1) {
+          throw new CCError("got 'redirected_statement' AST node with empty herestring")
+        }
+        // TODO: this just converts bash code to text
+        input = redirect.firstNamedChild.text
       } else {
         throw new CCError("got 'redirected_statement' AST node whose second child is not one of 'file_redirect', 'heredoc_redirect' or 'herestring_redirect', got " + command.type + ' instead')
       }
