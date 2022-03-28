@@ -4,6 +4,7 @@ headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
 }
 
-data = open('new_file')
+with open('new_file') as f:
+    data = f.read().replace('\n', '')
 
 response = requests.put('http://awesomeurl.com/upload', headers=headers, data=data)

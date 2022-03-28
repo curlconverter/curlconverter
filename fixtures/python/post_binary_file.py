@@ -5,6 +5,7 @@ headers = {
     'Accept': 'application/sparql-results+json',
 }
 
-data = open('./sample.sparql', 'rb').read()
+with open('./sample.sparql', 'rb') as f:
+    data = f.read().replace(b'\n', b'')
 
 response = requests.post('http://lodstories.isi.edu:3030/american-art/query', headers=headers, data=data)

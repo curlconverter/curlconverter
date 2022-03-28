@@ -675,7 +675,32 @@ const parseAnsiCString = (str) => {
   return str.slice(2, -1).replace(ANSI_BACKSLASHES, unescapeChar)
 }
 
-const tokenizeBashStr = (curlCommand) => {
+const toVal = (node) => {
+  switch (node.type) {
+    case 'word':
+    case 'simple_expansion': // TODO: handle variables properly downstream
+      return parseWord(node.text)
+    case 'string':
+      return parseDoubleQuoteString(node.text)
+    case 'raw_string':
+      return parseSingleQuoteString(node.text)
+    case 'ansii_c_string':
+      return parseAnsiCString(node.text)
+    case 'concatenation':
+      // item[]=1 turns into item=1 if we don't do this
+      // https://github.com/tree-sitter/tree-sitter-bash/issues/104
+      if (node.children.every(n => n.type === 'word')) {
+        return node.text
+      }
+      return node.children.map(toVal).join('')
+    default:
+      // console.error(curlCommand)
+      // console.error(curlArgs.rootNode.toString())
+      throw new CCError('unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"')
+  }
+}
+
+const tokenize = (curlCommand) => {
   const curlArgs = parser.parse(curlCommand)
   // The AST must be in a nice format, i.e.
   // (program
@@ -693,7 +718,7 @@ const tokenizeBashStr = (curlCommand) => {
   // TODO: get only named children?
   if (curlArgs.rootNode.type !== 'program') {
     // TODO: better error message.
-    throw new CCError("expected a 'program' AST node, got " + curlArgs.rootNode.type + ' instead')
+    throw new CCError("expected a 'program' top-level AST node, got " + curlArgs.rootNode.type + ' instead')
   }
 
   if (curlArgs.rootNode.childCount < 1) {
@@ -702,7 +727,7 @@ const tokenizeBashStr = (curlCommand) => {
   }
 
   // Get the curl call AST node. Skip comments
-  let command
+  let command, stdin, input
   for (const programChildNode of curlArgs.rootNode.children) {
     if (programChildNode.type === 'comment') {
       continue
@@ -711,15 +736,64 @@ const tokenizeBashStr = (curlCommand) => {
       // TODO: if there are more `command` nodes,
       // warn that everything after the first one is ignored
       break
+    } else if (programChildNode.type === 'redirected_statement') {
+      if (!programChildNode.childCount) {
+        throw new CCError("got empty 'redirected_statement' AST node")
+      }
+      let redirect
+      [command, redirect] = programChildNode.children
+      if (command.type !== 'command') {
+        throw new CCError("got 'redirected_statement' AST node whose first child is not a 'command', got " + command.type + ' instead')
+      }
+      if (programChildNode.childCount < 2) {
+        throw new CCError("got 'redirected_statement' AST node with only one child - no redirect")
+      }
+      if (redirect.type === 'file_redirect') {
+        stdin = toVal(redirect.namedChildren[0])
+      } else if (redirect.type === 'heredoc_redirect') {
+        // heredoc bodies are children of the parent program node
+        // https://github.com/tree-sitter/tree-sitter-bash/issues/118
+        if (redirect.namedChildCount < 1) {
+          throw new CCError("got 'redirected_statement' AST node with heredoc but no heredoc start")
+        }
+        const heredocStart = redirect.namedChildren[0].text
+        const heredocBody = programChildNode.nextNamedSibling
+        if (!heredocBody) {
+          throw new CCError("got 'redirected_statement' AST node with no heredoc body")
+        }
+        // TODO: herestrings and heredocs are different
+        if (heredocBody.type !== 'heredoc_body') {
+          throw new CCError("got 'redirected_statement' AST node with heredoc but no heredoc body, got " + heredocBody.type + ' instead')
+        }
+        // TODO: heredocs do variable expansion and stuff
+        if (heredocStart.length) {
+          input = heredocBody.text.slice(0, -heredocStart.length)
+        } else {
+          // this shouldn't happen
+          input = heredocBody.text
+        }
+        // Curl remove newlines when you pass any @filename including @- for stdin
+        input = input.replace(/\n/g, '')
+      } else if (redirect.type === 'herestring_redirect') {
+        if (redirect.namedChildCount < 1) {
+          throw new CCError("got 'redirected_statement' AST node with empty herestring")
+        }
+        // TODO: this just converts bash code to text
+        input = redirect.firstNamedChild.text
+      } else {
+        throw new CCError("got 'redirected_statement' AST node whose second child is not one of 'file_redirect', 'heredoc_redirect' or 'herestring_redirect', got " + command.type + ' instead')
+      }
+
+      break
     } else {
       // TODO: better error message.
-      throw new CCError("expected a 'command' AST node, got " + curlArgs.rootNode.firstChild.type + ' instead')
+      throw new CCError("expected a 'command' or 'redirected_statement' AST node, instead got " + curlArgs.rootNode.firstChild.type)
     }
   }
   if (!command) {
     // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
     // We would probably need to keep track of the node types we've seen.
-    throw new CCError("expected a 'command' AST node, only found 'comment' nodes")
+    throw new CCError("expected a 'command' or 'redirected_statement' AST node, only found 'comment' nodes")
   }
 
   if (command.childCount < 1) {
@@ -736,31 +810,12 @@ const tokenizeBashStr = (curlCommand) => {
     throw new CCError("expected a 'command_name' AST node, got " + cmdName.type + ' instead')
   }
 
-  const toVal = (node) => {
-    switch (node.type) {
-      case 'word':
-      case 'simple_expansion': // TODO: handle variables properly downstream
-        return parseWord(node.text)
-      case 'string':
-        return parseDoubleQuoteString(node.text)
-      case 'raw_string':
-        return parseSingleQuoteString(node.text)
-      case 'ansii_c_string':
-        return parseAnsiCString(node.text)
-      case 'concatenation':
-        // item[]=1 turns into item=1 if we don't do this
-        // https://github.com/tree-sitter/tree-sitter-bash/issues/104
-        if (node.children.every(n => n.type === 'word')) {
-          return node.text
-        }
-        return node.children.map(toVal).join('')
-      default:
-        // console.error(curlCommand)
-        // console.error(curlArgs.rootNode.toString())
-        throw new CCError('unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"')
-    }
+  return {
+    cmdName: cmdName.text.trim(),
+    args: args.map(toVal),
+    stdin,
+    input
   }
-  return [cmdName.text.trim(), ...args.map(toVal)]
 }
 
 const parseArgs = (args, opts) => {
@@ -1172,10 +1227,17 @@ const buildRequest = parsedArguments => {
 }
 
 const parseCurlCommand = (curlCommand) => {
-  const [cmdName, ...args] = Array.isArray(curlCommand) ? curlCommand : tokenizeBashStr(curlCommand)
-  if (typeof cmdName === 'undefined') {
-    const errorMsg = Array.isArray(curlCommand) ? 'no arguments provided' : 'failed to parse input'
-    throw new CCError(errorMsg)
+  let cmdName, args, stdin, input
+  if (Array.isArray(curlCommand)) {
+    [cmdName, ...args] = curlCommand
+    if (typeof cmdName === 'undefined') {
+      throw new CCError('no arguments provided')
+    }
+  } else {
+    ({ cmdName, args, stdin, input } = tokenize(curlCommand))
+    if (typeof cmdName === 'undefined') {
+      throw new CCError('failed to parse input')
+    }
   }
   if (cmdName.trim() !== 'curl') {
     const shortenedCmdName = cmdName.length > 30 ? cmdName.slice(0, 27) + '...' : cmdName
@@ -1187,7 +1249,14 @@ const parseCurlCommand = (curlCommand) => {
   }
 
   const parsedArguments = parseArgs(args)
-  return buildRequest(parsedArguments)
+  const request = buildRequest(parsedArguments)
+  if (stdin) {
+    request.stdin = stdin
+  }
+  if (input) {
+    request.input = input
+  }
+  return request
 }
 
 const serializeCookies = cookieDict => {

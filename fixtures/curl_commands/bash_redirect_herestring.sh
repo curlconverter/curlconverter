@@ -1,0 +1,1 @@
+curl -X POST https://plex.tv/api/servers/00000000000/shared_servers/ -H "'Accept': 'application/json'" -H "Authorization: Bearer 000000000000000-0000" -H "Content-Type: application/json" --data-binary @- <<< $MYVARIABLE

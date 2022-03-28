@@ -84,7 +84,7 @@ const curlConverterShortOpts = {
 }
 const opts = [
   { ...curlLongOpts, ...curlConverterLongOpts },
-  { ...curlConverterShortOpts, ...curlShortOpts }
+  { ...curlShortOpts, ...curlConverterShortOpts }
 ]
 
 const exitWithError = (error, verbose = false) => {
@@ -140,14 +140,16 @@ if (argc === 0) {
   console.log(USAGE.trim())
   process.exit(2)
 } else if (stdin) {
-  if (Object.keys(parsedArguments).length > 0) {
+  // This lets you do something like
+  // echo curl example.com | curlconverter --verbose
+  const extraArgs = Object.keys(parsedArguments).filter(a => a !== 'verbose')
+  if (extraArgs.length > 0) {
     // Throw an error so that if user typos something like
     // curlconverter - -data
     // they aren't stuck with what looks like a hung terminal.
-    // TODO: some options like --verbose are understandable
-    const args = Object.keys(parsedArguments).map(a => '--' + a).join(', ')
+    const extraArgsStr = extraArgs.map(a => '--' + a).join(', ')
     exitWithError(
-      new CCError('if you pass --stdin or -, you can\'t also pass ' + args),
+      new CCError('if you pass --stdin or -, you can\'t also pass ' + extraArgsStr),
       parsedArguments.verbose
     )
   }

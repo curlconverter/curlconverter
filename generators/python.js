@@ -81,11 +81,26 @@ function objToDictOrListOfTuples (obj) {
 
 function getDataString (request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
-    const filePath = request.data.slice(1)
-    if (request.isDataBinary) {
-      return ["data = open('" + filePath + "', 'rb').read()\n", null, null]
-    } else {
-      return ["data = open('" + filePath + "')\n", null, null]
+    let filePath = request.data.slice(1)
+    if (filePath === '-') {
+      if (request.stdin) {
+        filePath = request.stdin
+      } else if (request.input) {
+        request.data = request.input
+      } else {
+        if (request.isDataBinary) {
+          return ["data = sys.stdin.buffer.read().replace(b'\\n', b'')\n", null, null]
+        } else {
+          return ["data = sys.stdin.read().replace('\\n', '')\n", null, null]
+        }
+      }
+    }
+    if (!request.input) {
+      if (request.isDataBinary) {
+        return ['with open(' + repr(filePath) + ", 'rb') as f:\n    data = f.read().replace(b'\\n', b'')\n", null, null]
+      } else {
+        return ['with open(' + repr(filePath) + ") as f:\n    data = f.read().replace('\\n', '')\n", null, null]
+      }
     }
   }
 
