@@ -11,8 +11,8 @@ import { diffLines } from 'diff'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import * as utils from '../util.js'
-import { fixturesDir } from '../test-utils.js'
+import * as utils from '../src/util.js'
+import { fixturesDir } from '../test/test-utils.js'
 
 const awaitableExec = promisify(exec)
 
@@ -133,7 +133,7 @@ const testFile = async (testFilename) => {
   } catch (e) {}
 
   for (const language of languages) {
-    const languageFile = './fixtures/' + language + '/' + testFilename + '.' + extension[language]
+    const languageFile = path.join(fixturesDir, language, testFilename + '.' + extension[language])
     if (fs.existsSync(languageFile)) {
       const command = executable[language] + ' ' + languageFile
       try {

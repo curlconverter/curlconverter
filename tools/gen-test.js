@@ -6,7 +6,7 @@ import path from 'path'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import { fixturesDir, converters } from '../test-utils.js'
+import { fixturesDir, converters } from '../test/test-utils.js'
 const curlCommandDir = path.resolve(fixturesDir, 'curl_commands')
 
 const argv = yargs(hideBin(process.argv))

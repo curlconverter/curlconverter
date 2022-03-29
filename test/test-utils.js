@@ -1,12 +1,12 @@
-import * as curlconverter from './index.js'
-import * as utils from './util.js'
+import * as curlconverter from '../src/index.js'
+import * as utils from '../src/util.js'
 
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-export const fixturesDir = path.resolve(__dirname, 'fixtures')
+export const fixturesDir = path.resolve(__dirname, '../../test/fixtures')
 
 // TODO: move this (or something like this) to index.js?
 const converters = {
