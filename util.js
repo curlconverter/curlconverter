@@ -617,7 +617,7 @@ const parseAnsiCString = (str) => {
       case '\\':
         return '\\'
       case 'a':
-        return '\a' // eslint-disable-line
+        return '\x07'
       case 'b':
         return '\b'
       case 'e':
