@@ -15,7 +15,7 @@ jobs:
       matrix:
         # Tests fail to run on Windows, see
         # https://github.com/curlconverter/curlconverter/pull/310
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         node-version: [12, 14, 16]
       fail-fast: false
 

@@ -41,7 +41,7 @@
     "test": "tape test.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "prepublishOnly": "tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash",
+    "prepare": "tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash",
     "gen-test": "./tools/gen-test.js",
     "compare-requests": "./tools/compare-requests.js",
     "compare-request": "./tools/compare-requests.js"
