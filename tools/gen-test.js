@@ -7,6 +7,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
 import { fixturesDir, converters } from '../test-utils.js'
+const curlCommandDir = path.resolve(fixturesDir, 'curl_commands')
 
 const argv = yargs(hideBin(process.argv))
   .scriptName('gen-test')
@@ -30,7 +31,9 @@ const argv = yargs(hideBin(process.argv))
 
 const languages = Array.isArray(argv.language) ? argv.language : [argv.language]
 
-const inPaths = argv._.map((infile) => {
+const overwriteExistingOnly = !argv._.length
+const inFiles = overwriteExistingOnly ? fs.readdirSync(curlCommandDir).filter(p => p.endsWith('.sh')) : argv._
+const inPaths = inFiles.map((infile) => {
   // check that all files exist and add '.sh' to them if needed
   const inPath = path.parse(infile)
 
@@ -40,11 +43,7 @@ const inPaths = argv._.map((infile) => {
                   "or end with '.sh'")
     process.exit()
   }
-  if (!inPath.dir) {
-    inPath.dir = path.resolve(fixturesDir, 'curl_commands')
-  } else {
-    inPath.dir = path.resolve(inPath.dir)
-  }
+  inPath.dir = inPath.dir ? path.resolve(inPath.dir) : curlCommandDir
   const fullPath = path.join(inPath.dir, inPath.name + '.sh')
   if (!fs.existsSync(fullPath)) {
     console.error('no such file: ' + fullPath)
@@ -59,6 +58,9 @@ for (const inPath of inPaths) {
   const curl = fs.readFileSync(inPath, 'utf8')
   for (const language of languages) {
     const converter = converters[language]
+    const newFilename = path.basename(inPath).replace(/\.sh$/, converter.extension)
+    const outPath = path.resolve(inPath, '../..', language, newFilename)
+
     let code
     try {
       code = converter.converter(curl)
@@ -73,8 +75,10 @@ for (const inPath of inPaths) {
       continue
     }
 
-    const newFilename = path.basename(inPath).replace(/\.sh$/, converter.extension)
-    const outPath = path.resolve(inPath, '../..', language, newFilename)
+    // Might as well generate the output to check
+    if (overwriteExistingOnly && !fs.existsSync(outPath)) {
+      continue
+    }
 
     fs.writeFileSync(outPath, code)
     if (printEachFile) {
