@@ -84,14 +84,14 @@ Note: you have to add `"type": "module"` to your package.json for the above exam
 
 Make sure you're running **Node 12** or greater. The test suite will fail on older versions of Node.js.
 
-If you add a new generator, make sure to update the list of supported languages in [src/cli.js](src/cli.js) or else it won't be accessible from the command line. Further, you'll want to update test.js and index.js for your new generator to make it part of the testing.
+If you add a new generator, make sure to update the list of supported languages in [src/cli.ts](src/cli.ts) or else it won't be accessible from the command line. Further, you'll want to update test.js and index.js for your new generator to make it part of the testing.
 
 If you want to add new functionality, start with a test.
 
-- Create a file containing the curl command in `fixtures/curl_commands` with a descriptive filename like `post_with_headers.sh`
-- Create a file containing the output in `fixtures/python/` with a matching filename (but different extension) like `post_with_headers.py`
+- Create a file containing the curl command in `test/fixtures/curl_commands` with a descriptive filename like `post_with_headers.sh`
+- Create a file containing the output in `test/fixtures/python/` with a matching filename (but different extension) like `post_with_headers.py`
 - Run tests with `npm test`.
-- If your filenames match correctly, you should see one failing test. Fix it by modifying the parser in `util.js` or the generators in `generators/`
+- If your filenames match correctly, you should see one failing test. Fix it by modifying the parser in `util.ts` or the generators in `src/generators/`
 
 The parser generates a generic data structure consumed by code generator functions.
 
@@ -99,25 +99,21 @@ You can run a specific test with:
 
 ``` sh
 npm test -- test_name
-# or
-node test.js test_name
 ```
 
-where `test_name` is a file (without the `.sh` extension) in `fixtures/curl_commands/`
+where `test_name` is a file (without the `.sh` extension) in `test/fixtures/curl_commands/`
 
 You can run only the tests for a specific language generator with:
 
 ``` sh
 npm test -- --language=python
-# or
-node test.js --language=python
 ```
 
 I recommend setting this up with a debugger so you can see exactly what the parser is passing to the generator.
 Here's my Intellij run configuration for a single test:
 ![Screenshot of intellij debug configuration](/docs/intellijconfig.png)
 
-Before submitting a PR, please check that your JS code conforms to the code style enforced by [StandardJS](https://standardjs.com) with
+Before submitting a PR, please check that your JS code conforms to our code style with
 
 ```sh
 npm run lint
@@ -126,7 +122,7 @@ npm run lint
 Use the following to fix your code if it doesn't:
 
 ```sh
-npm run lint:fix
+npm run fix
 ```
 
 If you get stuck, please reach out via email. I am always willing to hop on a Google Hangout and pair program.
