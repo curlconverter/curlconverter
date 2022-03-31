@@ -1,22 +1,26 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from '../util.js'
+import type { Request, QueryDict } from '../util.js'
 
 import querystring from 'query-string'
-import jsesc from 'jsesc'
 
-function repr (value, isKey) {
-  // In context of url parameters, don't accept nulls and such.
-  /*
-    if ( !value ) {
-   return ""
-   } else {
-   return "'" + jsesc(value, { quotes: 'single' }) + "'"
-   } */
-  return isKey ? "'" + jsesc(value, { quotes: 'single' }) + "'" : value
+type JSONOutput = {
+  url: string,
+  raw_url: string,
+  method: string,
+  cookies?: { [key: string]: string },
+  headers?: { [key: string]: string | null },
+  queries?: QueryDict,
+  data?: { [key: string]: string },
+  // raw_data?: string[],
+  files?: { [key: string]: string },
+  // raw_files: string[],
+  insecure?: boolean,
+  auth?: {user: string, password: string},
 }
 
-function getDataString (request) {
+function getDataString (request: Request) {
   /*
     if ( !request.isDataRaw && request.data.startsWith('@') ) {
    var filePath = request.data.slice(1);
@@ -29,57 +33,55 @@ function getDataString (request) {
   const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
   const singularData = request.isDataBinary || singleKeyOnly
   if (singularData) {
-    const data = {}
+    const data: {[key: string]: string} = {}
     // TODO: dataRaw = request.data ?
-    data[repr(request.data)] = ''
+    data[request.data] = ''
     return { data }
   } else {
     return getMultipleDataString(request, parsedQueryString)
   }
 }
 
-function getMultipleDataString (request, parsedQueryString) {
-  const data = {}
+function getMultipleDataString (request: Request, parsedQueryString: querystring.ParsedQuery<string>  ) {
+  const data: {[key: string]: string | string[]} = {}
 
   for (const key in parsedQueryString) {
     const value = parsedQueryString[key]
     if (Array.isArray(value)) {
-      data[repr(key)] = value
+      data[key] = value.map((v: string | null) => v ? v : '')
     } else {
-      data[repr(key)] = repr(value)
+      data[key] = value ? value : ''
     }
   }
 
   return { data }
 }
 
-function getFilesString (request) {
-  const data = {}
-
-  data.files = {}
-  data.data = {}
+function getFilesString (request: Request): {'files'?: {[key: string]: string}, 'data'?: {[key: string]: string}} | undefined {
+  if (!request.multipartUploads) {
+    return undefined
+  }
+  const data: {files: { [key: string]: string }, data: { [key: string]: string }} = {
+    files : {},
+    data : {}
+  }
 
   for (const [multipartKey, multipartValue] of request.multipartUploads) {
     if (multipartValue.startsWith('@')) {
       const fileName = multipartValue.slice(1)
-      data.files[repr(multipartKey)] = repr(fileName)
+      data.files[multipartKey] = fileName
     } else {
-      data.data[repr(multipartKey)] = repr(multipartValue)
+      data.data[multipartKey] = multipartValue
     }
   }
 
-  if (Object.keys(data.files).length === 0) {
-    delete data.files
+  return {
+    files: Object.keys(data.files).length ? data.files : undefined,
+    data: Object.keys(data.data).length ? data.data : undefined
   }
-
-  if (Object.keys(data.data).length === 0) {
-    delete data.data
-  }
-
-  return data
 }
 
-export const _toJsonString = request => {
+export const _toJsonString = (request: Request) => {
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -89,7 +91,7 @@ export const _toJsonString = request => {
     request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
   }
 
-  const requestJson = {
+  const requestJson: JSONOutput = {
     url: (request.queryDict ? request.urlWithoutQuery : request.url).replace(/\/$/, ''),
     // url: request.queryDict ? request.urlWithoutQuery : request.url,
     raw_url: request.url,
@@ -118,6 +120,7 @@ export const _toJsonString = request => {
     requestJson.queries = request.queryDict
   }
 
+  // TODO: not Object.assign, doesn't work with type system
   if (request.data && typeof request.data === 'string') {
     Object.assign(requestJson, getDataString(request))
   } else if (request.multipartUploads) {
@@ -131,14 +134,14 @@ export const _toJsonString = request => {
   if (request.auth) {
     const [user, password] = request.auth
     requestJson.auth = {
-      user: repr(user),
-      password: repr(password)
+      user: user,
+      password: password
     }
   }
 
   return JSON.stringify(Object.keys(requestJson).length ? requestJson : '{}', null, 4) + '\n'
 }
-export const toJsonString = curlCommand => {
+export const toJsonString = (curlCommand: string | string[]) => {
   const request = util.parseCurlCommand(curlCommand)
   return _toJsonString(request)
 }

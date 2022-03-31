@@ -1,9 +1,11 @@
 import * as util from '../../util.js'
+import type { Request} from '../../util.js'
+
 import jsesc from 'jsesc'
 
-const quote = str => jsesc(str, { quotes: 'single' })
+const quote = (str: string): string => jsesc(str, { quotes: 'single' })
 
-export const _toPhp = request => {
+export const _toPhp = (request: Request): string => {
   let cookieString
   if (util.hasHeader(request, 'cookie')) {
     cookieString = util.getHeader(request, 'cookie')
@@ -30,6 +32,9 @@ export const _toPhp = request => {
     }
 
     for (const [headerName, headerValue] of (request.headers || [])) {
+      if (headerValue === null) {
+        continue
+      }
       headersArrayCode += "    '" + quote(headerName) + "' => '" + quote(headerValue) + "',\n"
     }
 
@@ -93,7 +98,7 @@ export const _toPhp = request => {
   return phpCode
 }
 
-export const toPhp = curlCommand => {
+export const toPhp = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toPhp(request)
 }

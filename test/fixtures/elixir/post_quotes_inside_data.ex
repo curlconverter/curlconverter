@@ -7,7 +7,7 @@ request = %HTTPoison.Request{
   ],
   params: [],
   body: [
-    {~s|field|, ~s|don\'t you like quotes|}
+    {~s|field|, ~s|don't you like quotes|}
   ]
 }
 

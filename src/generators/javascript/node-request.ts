@@ -1,7 +1,9 @@
 import * as util from '../../util.js'
+import type { Request} from '../../util.js'
+
 import jsesc from 'jsesc'
 
-export const _toNodeRequest = request => {
+export const _toNodeRequest = (request: Request): string => {
   let nodeRequestCode = 'var request = require(\'request\');\n\n'
   if (request.headers) {
     nodeRequestCode += 'var headers = {\n'
@@ -62,7 +64,7 @@ export const _toNodeRequest = request => {
 
   return nodeRequestCode + '\n'
 }
-export const toNodeRequest = curlCommand => {
+export const toNodeRequest = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toNodeRequest(request)
 }

@@ -56,7 +56,7 @@ const executable = {
   // strest: ''
 }
 
-const argv = yargs(hideBin(process.argv))
+const argv = await yargs(hideBin(process.argv))
   .scriptName('compare-request')
   .usage('Usage: $0 [--no-diff] [-l <language>] [test_name...]')
   .option('diff', {
@@ -75,10 +75,10 @@ const argv = yargs(hideBin(process.argv))
   })
   .alias('h', 'help')
   .help()
-  .argv
+  .parse()
 
-const testFile = async (testFilename) => {
-  const rawRequests = []
+const testFile = async (testFilename: string): Promise<void> => {
+  const rawRequests: string[] = []
 
   const server = net.createServer()
   server.on('connection', (socket) => {
@@ -90,7 +90,8 @@ const testFile = async (testFilename) => {
     })
 
     socket.on('data', (data) => {
-      rawRequests.push(data.replace(/\r\n/g, '\n'))
+      // TODO: this is not a Buffer, it's a string...
+      rawRequests.push((data as unknown as string).replace(/\r\n/g, '\n'))
       // TODO: what is this?
       if (!socket.write('Data ::' + data)) {
         socket.pause()
@@ -169,7 +170,7 @@ const testFile = async (testFilename) => {
   server.close()
 }
 
-let languages
+let languages: ('python')[]
 if (argv.language) {
   languages = Array.isArray(argv.language) ? argv.language : [argv.language]
 }
@@ -177,7 +178,7 @@ if (argv.language) {
 // if no tests were specified, run them all
 const tests = argv._.length ? argv._ : fs.readdirSync(path.join(fixturesDir, 'curl_commands')).filter(n => n.endsWith('.sh'))
 for (const test of tests) {
-  const testName = test.replace(/ /g, '_').replace(/\.sh$/, '')
+  const testName = test.toString().replace(/ /g, '_').replace(/\.sh$/, '')
   await testFile(testName)
 }
 

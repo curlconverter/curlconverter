@@ -1,12 +1,13 @@
 import * as util from '../util.js'
+import type { Request } from '../util.js'
 
 import jsesc from 'jsesc'
 
 const INDENTATION = ' '.repeat(4)
-const indent = (line, level = 1) => INDENTATION.repeat(level) + line
-const quote = str => jsesc(str, { quotes: 'double' })
+const indent = (line:string, level = 1): string => INDENTATION.repeat(level) + line
+const quote = (str: string): string => jsesc(str, { quotes: 'double' })
 
-export const _toRust = request => {
+export const _toRust = (request: Request) => {
   const lines = ['extern crate reqwest;']
   {
     // Generate imports.
@@ -25,13 +26,15 @@ export const _toRust = request => {
 
   if (request.headers) {
     lines.push(indent('let mut headers = header::HeaderMap::new();'))
-    const headerEnum = {
+    const headerEnum: { [key: string]: string } = {
       cookie: 'header::COOKIE'
     }
     for (const [headerName, headerValue] of (request.headers || [])) {
       const enumValue = headerEnum[headerName.toLowerCase()]
       const name = enumValue || `"${headerName}"`
-      lines.push(indent(`headers.insert(${name}, "${quote(headerValue)}".parse().unwrap());`))
+      if (headerValue !== null) {
+        lines.push(indent(`headers.insert(${name}, "${quote(headerValue)}".parse().unwrap());`))
+      }
     }
     lines.push('')
   }
@@ -95,7 +98,7 @@ export const _toRust = request => {
 
   return lines.join('\n') + '\n'
 }
-export const toRust = curlCommand => {
+export const toRust = (curlCommand: string | string[]) => {
   const request = util.parseCurlCommand(curlCommand)
   return _toRust(request)
 }

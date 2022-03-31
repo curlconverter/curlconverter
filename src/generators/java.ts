@@ -1,10 +1,11 @@
 import * as util from '../util.js'
+import type { Request} from '../util.js'
 
 import jsesc from 'jsesc'
 
-const doubleQuotes = str => jsesc(str, { quotes: 'double' })
+const doubleQuotes = (str: string): string => jsesc(str, { quotes: 'double' })
 
-export const _toJava = request => {
+export const _toJava = (request: Request): string => {
   let javaCode = ''
 
   if (request.auth) {
@@ -31,8 +32,11 @@ export const _toJava = request => {
   let gzip = false
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers) {
+      if (headerValue === null) {
+        continue
+      }
       javaCode += '\t\thttpConn.setRequestProperty("' + headerName + '", "' + doubleQuotes(headerValue) + '");\n'
-      if (headerName.toLowerCase() === 'accept-encoding') {
+      if (headerName.toLowerCase() === 'accept-encoding' && headerValue) {
         gzip = headerValue.indexOf('gzip') !== -1
       }
     }
@@ -74,7 +78,7 @@ export const _toJava = request => {
 
   return javaCode + '\n'
 }
-export const toJava = curlCommand => {
+export const toJava = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toJava(request)
 }

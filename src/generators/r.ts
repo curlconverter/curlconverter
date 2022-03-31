@@ -1,11 +1,12 @@
 // Author: Bob Rudis (bob@rud.is)
 
 import * as util from '../util.js'
+import type { Request, Cookie, QueryDict } from '../util.js'
 
 import jsesc from 'jsesc'
 import querystring from 'query-string'
 
-function reprn (value) { // back-tick quote names
+function reprn (value: string | null): string { // back-tick quote names
   if (!value) {
     return '``'
   } else {
@@ -13,7 +14,7 @@ function reprn (value) { // back-tick quote names
   }
 }
 
-function repr (value) {
+function repr (value: string): string {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
@@ -22,15 +23,19 @@ function repr (value) {
   }
 }
 
-function getQueryDict (request) {
+function getQueryDict (request: Request): string | undefined {
+  if (request.queryDict === undefined) {
+    return undefined
+  }
+
   let queryDict = 'params = list(\n'
   queryDict += Object.keys(request.queryDict).map((paramName) => {
-    const rawValue = request.queryDict[paramName]
+    const rawValue = (request.queryDict as QueryDict)[paramName]
     let paramValue
     if (Array.isArray(rawValue)) {
-      paramValue = 'c(' + rawValue.map(repr).join(', ') + ')'
+      paramValue = 'c(' + (rawValue as string[]).map(repr).join(', ') + ')'
     } else {
-      paramValue = repr(rawValue)
+      paramValue = repr(rawValue as string)
     }
     return ('  ' + reprn(paramName) + ' = ' + paramValue)
   }).join(',\n')
@@ -38,7 +43,7 @@ function getQueryDict (request) {
   return queryDict
 }
 
-function getDataString (request) {
+function getDataString (request: Request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     return 'data = upload_file(\'' + filePath + '\')'
@@ -55,7 +60,7 @@ function getDataString (request) {
   }
 }
 
-function getMultipleDataString (request, parsedQueryString) {
+function getMultipleDataString (request: Request, parsedQueryString: querystring.ParsedQuery<string> ) {
   let repeatedKey = false
   for (const key in parsedQueryString) {
     const value = parsedQueryString[key]
@@ -72,10 +77,11 @@ function getMultipleDataString (request, parsedQueryString) {
       const value = parsedQueryString[key]
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
-          els.push('  ' + reprn(key) + ' = ' + repr(value[i]))
+          const val = value[i]
+          els.push('  ' + reprn(key) + ' = ' + repr(val === null ? '' : val))
         }
       } else {
-        els.push('  ' + reprn(key) + ' = ' + repr(value))
+        els.push('  ' + reprn(key) + ' = ' + repr(value === null ? '' : value))
       }
     }
     dataString += els.join(',\n')
@@ -84,7 +90,7 @@ function getMultipleDataString (request, parsedQueryString) {
     dataString = 'data = list(\n'
     dataString += Object.keys(parsedQueryString).map((key) => {
       const value = parsedQueryString[key]
-      return ('  ' + reprn(key) + ' = ' + repr(value))
+      return ('  ' + reprn(key) + ' = ' + repr(value === null ? '' : value as string))
     }).join(',\n')
     dataString += '\n)\n'
   }
@@ -92,7 +98,10 @@ function getMultipleDataString (request, parsedQueryString) {
   return dataString
 }
 
-function getFilesString (request) {
+function getFilesString (request: Request): string | undefined {
+  if (!request.multipartUploads) {
+    return undefined
+  }
   // http://docs.rstats-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
   let filesString = 'files = list(\n'
   filesString += request.multipartUploads.map((m) => {
@@ -112,11 +121,11 @@ function getFilesString (request) {
   return filesString
 }
 
-export const _toR = request => {
+export const _toR = (request: Request) => {
   let cookieDict
   if (request.cookies) {
     cookieDict = 'cookies = c(\n'
-    cookieDict += request.cookies.map(c => '  ' + repr(c[0]) + ' = ' + repr(c[1])).join(',\n')
+    cookieDict += request.cookies.map((c: Cookie) => '  ' + repr(c[0]) + ' = ' + repr(c[1])).join(',\n')
     // TODO: isn't this an extra \n?
     cookieDict += '\n)\n'
     util.deleteHeader(request, 'Cookie')
@@ -126,16 +135,15 @@ export const _toR = request => {
     const hels = []
     headerDict = 'headers = c(\n'
     for (const [headerName, headerValue] of request.headers) {
-      hels.push('  ' + reprn(headerName) + ' = ' + repr(headerValue))
+      if (headerValue !== null) {
+        hels.push('  ' + reprn(headerName) + ' = ' + repr(headerValue))
+      }
     }
     headerDict += hels.join(',\n')
     headerDict += '\n)\n'
   }
 
-  let queryDict
-  if (request.queryDict) {
-    queryDict = getQueryDict(request)
-  }
+  const queryDict = getQueryDict(request)
 
   let dataString
   let filesString
@@ -189,7 +197,7 @@ export const _toR = request => {
   if (headerDict) {
     rstatsCode += headerDict + '\n'
   }
-  if (queryDict) {
+  if (queryDict !== undefined) {
     rstatsCode += queryDict + '\n'
   }
   if (dataString) {
@@ -201,7 +209,7 @@ export const _toR = request => {
 
   return rstatsCode + '\n'
 }
-export const toR = curlCommand => {
+export const toR = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toR(request)
 }

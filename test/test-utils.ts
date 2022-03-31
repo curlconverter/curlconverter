@@ -8,7 +8,31 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const fixturesDir = path.resolve(__dirname, '../../test/fixtures')
 
+// Special case that returns the parsed argument object
+const toParser = (curl: string | string[]): string => {
+  const parserOutput = utils.parseCurlCommand(curl)
+  const code = JSON.stringify(parserOutput, null, 2)
+  return code + '\n'
+}
+
 // TODO: move this (or something like this) to index.js?
+// TODO: 'parser' ?
+type Converter = ('ansible' |
+  'dart' |
+  'elixir' |
+  'go' |
+  'java' |
+  'javascript' |
+  'json' |
+  'matlab' |
+  'node' |
+  'node-request' |
+  'php' |
+  'python' |
+  'r' |
+  'rust' |
+  'strest' | 
+  'parser')
 const converters = {
   ansible: {
     name: 'Ansible',
@@ -84,6 +108,11 @@ const converters = {
     name: 'Strest',
     extension: '.strest.yml',
     converter: curlconverter.toStrest
+  },
+  parser: {
+    name: 'Parser',
+    extension: '.json',
+    converter: toParser
   }
 }
 
@@ -92,7 +121,7 @@ const converters = {
 const testedConverters = Object.entries(converters).map(c => c[1].converter.name)
 const availableConverters = Object.entries(curlconverter).map(c => c[1].name).filter(n => n !== 'CCError')
 const missing = availableConverters.filter(c => !testedConverters.includes(c))
-const extra = testedConverters.filter(c => !availableConverters.includes(c))
+const extra = testedConverters.filter(c => !availableConverters.includes(c) && c !== 'toParser')
 if (missing.length) {
   console.error('these converters are not tested: ' + missing.join(', '))
 }
@@ -113,16 +142,5 @@ for (const [converterName, converter] of Object.entries(converters)) {
   }
 }
 
-// Special case that returns the parsed argument object
-const toParser = (curl) => {
-  const parserOutput = utils.parseCurlCommand(curl)
-  const code = JSON.stringify(parserOutput, null, 2)
-  return code + '\n'
-}
-converters.parser = {
-  name: 'Parser',
-  extension: '.json',
-  converter: toParser
-}
-
 export { converters }
+export type { Converter }

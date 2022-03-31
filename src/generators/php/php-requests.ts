@@ -1,17 +1,22 @@
 import * as util from '../../util.js'
+import type { Request} from '../../util.js'
 
 import querystring from 'query-string'
 import jsesc from 'jsesc'
 
-const quote = str => jsesc(str, { quotes: 'single' })
+// TODO: only string
+const quote = (str: string | null | (string | null)[]): string => jsesc(str, { quotes: 'single' })
 
-export const _toPhpRequests = request => {
-  let headerString = false
+export const _toPhpRequests = (request: Request): string => {
+  let headerString: string
   if (request.headers) {
     headerString = '$headers = array(\n'
     let i = 0
     const headerCount = request.headers ? request.headers.length : 0
     for (const [headerName, headerValue] of request.headers) {
+      if (headerValue === null) {
+        continue // TODO: this could miss not adding a trailing comma
+      }
       headerString += "    '" + headerName + "' => '" + quote(headerValue) + "'"
       if (i < headerCount - 1) {
         headerString += ',\n'
@@ -23,13 +28,13 @@ export const _toPhpRequests = request => {
     headerString = '$headers = array();'
   }
 
-  let optionsString = false
+  let optionsString
   if (request.auth) {
     const [user, password] = request.auth
     optionsString = "$options = array('auth' => array('" + user + "', '" + password + "'));"
   }
 
-  let dataString = false
+  let dataString
   if (request.data) {
     const parsedQueryString = querystring.parse(request.data, { sort: false })
     dataString = '$data = array(\n'
@@ -74,7 +79,7 @@ export const _toPhpRequests = request => {
 
   return phpCode + '\n'
 }
-export const toPhpRequests = curlCommand => {
+export const toPhpRequests = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toPhpRequests(request)
 }

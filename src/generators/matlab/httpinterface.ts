@@ -3,8 +3,9 @@ import {
   structify, containsBody, prepareQueryString,
   prepareCookies
 } from './common.js'
+import type { Request} from '../../util.js'
 
-const prepareHeaders = (request) => {
+const prepareHeaders = (request: Request): string | null => {
   let response = null
 
   if (request.headers) {
@@ -15,6 +16,9 @@ const prepareHeaders = (request) => {
     let header = headerCount === 1 ? '' : '['
 
     for (const [key, value] of request.headers) {
+      if (value === null) {
+        continue
+      }
       switch (key) {
         case 'Cookie':
           break
@@ -55,7 +59,7 @@ const prepareHeaders = (request) => {
   return response
 }
 
-const prepareURI = (request) => {
+const prepareURI = (request: Request) => {
   const uriParams = []
   if (request.queryDict) {
     uriParams.push(repr(request.urlWithoutQuery))
@@ -66,7 +70,7 @@ const prepareURI = (request) => {
   return callFunction('uri', 'URI', uriParams)
 }
 
-const prepareAuth = (request) => {
+const prepareAuth = (request: Request): string[] => {
   const options = []
   const optionsParams = []
   if (request.auth) {
@@ -89,16 +93,13 @@ const prepareAuth = (request) => {
   return options
 }
 
-const prepareMultipartUploads = (request) => {
+const prepareMultipartUploads = (request: Request): string | null => {
   let response = null
   if (request.multipartUploads) {
-    const params = []
+    const params: [string, string][] = []
     for (const [key, value] of request.multipartUploads) {
-      const pair = []
-      pair.push(repr(key))
       const fileProvider = prepareDataProvider(value, null, '', 1)
-      pair.push(fileProvider)
-      params.push(pair)
+      params.push([repr(key), fileProvider as string]) // TODO: can this be not a string?
     }
     response = callFunction('body', 'MultipartFormProvider', params)
   }
@@ -106,7 +107,7 @@ const prepareMultipartUploads = (request) => {
   return response
 }
 
-const isJsonString = (str) => {
+const isJsonString = (str: string): boolean => {
   // Source: https://stackoverflow.com/a/3710226/5625738
   try {
     JSON.parse(str)
@@ -116,7 +117,7 @@ const isJsonString = (str) => {
   return true
 }
 
-const prepareDataProvider = (value, output, termination, indentLevel, isDataBinary, isDataRaw) => {
+const prepareDataProvider = (value: string, output: string | null, termination: string, indentLevel: number, isDataBinary?: boolean, isDataRaw?: boolean): string | string[] => {
   if (typeof indentLevel === 'undefined' || indentLevel === null) indentLevel = 0
   if (typeof isDataBinary === 'undefined') isDataBinary = true
   if (!isDataRaw && value[0] === '@') {
@@ -155,10 +156,10 @@ const prepareDataProvider = (value, output, termination, indentLevel, isDataBina
   return callFunction(output, 'FormProvider', formValue, termination)
 }
 
-const prepareData = (request) => {
+const prepareData = (request: Request) => {
   let response = null
   if (request.dataArray) {
-    const data = request.dataArray.map(x => x.split('=').map(x => {
+    const data = request.dataArray.map((x: string) => x.split('=').map(x => {
       let ans = repr(x)
       try {
         const jsonData = JSON.parse(x)
@@ -180,8 +181,8 @@ const prepareData = (request) => {
   return response
 }
 
-const prepareRequestMessage = (request) => {
-  let reqMessage = [repr(request.method.toLowerCase())]
+const prepareRequestMessage = (request: Request): string => {
+  let reqMessage: string[] | string = [repr(request.method.toLowerCase())]
   if (request.cookie || request.headers) {
     reqMessage.push('header')
   } else if (request.method.toLowerCase() === 'get') {
@@ -189,9 +190,10 @@ const prepareRequestMessage = (request) => {
   }
   if (containsBody(request)) {
     if (reqMessage.length === 1) {
-      reqMessage.push('[]')
+      // TODO: this could be a string actually
+      (reqMessage as string[]).push('[]')
     }
-    reqMessage.push('body')
+    (reqMessage as string[]).push('body')
   }
 
   // list as many params as necessary
@@ -207,7 +209,7 @@ const prepareRequestMessage = (request) => {
   return response.join('\n')
 }
 
-export const toHTTPInterface = (request) => {
+export const toHTTPInterface = (request: Request): (string | string[] | null)[] => {
   return [
     '%% HTTP Interface',
     'import matlab.net.*',

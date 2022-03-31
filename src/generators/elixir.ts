@@ -1,18 +1,21 @@
 import * as util from '../util.js'
+import type { Request} from '../util.js'
 
 import jsesc from 'jsesc'
 import querystring from 'query-string'
 
-function repr (value) {
+// TODO: I bet elixir's array syntax is different and if the query string 
+// values are arrays that actually generates broken code.
+function repr (value: string | null | (string | null)[]): string {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return '""'
   } else {
-    return `~s|${jsesc(value, { quotes: 'backticks' })}|`
+    return `~s|${jsesc(value, { quotes: 'backtick' })}|`
   }
 }
 
-function getCookies (request) {
+function getCookies (request: Request): string {
   if (!request.cookies) {
     return ''
   }
@@ -24,7 +27,7 @@ function getCookies (request) {
   return `cookies: [~s|${cookies.join('; ')}|]`
 }
 
-function getOptions (request) {
+function getOptions (request: Request): string {
   const hackneyOptions = []
 
   const auth = getBasicAuth(request)
@@ -49,7 +52,7 @@ function getOptions (request) {
   return `[${hackneyOptionsString}]`
 }
 
-function getBasicAuth (request) {
+function getBasicAuth (request: Request): string {
   if (!request.auth) {
     return ''
   }
@@ -58,7 +61,7 @@ function getBasicAuth (request) {
   return `basic_auth: {${repr(user)}, ${repr(password)}}`
 }
 
-function getQueryDict (request) {
+function getQueryDict (request: Request): string {
   if (!request.query) {
     return '[]'
   }
@@ -70,7 +73,7 @@ function getQueryDict (request) {
   return queryDict
 }
 
-function getHeadersDict (request) {
+function getHeadersDict (request: Request): string {
   if (!request.headers) {
     return '[]'
   }
@@ -82,7 +85,7 @@ function getHeadersDict (request) {
   return dict
 }
 
-function getBody (request) {
+function getBody (request: Request): string {
   const formData = getFormDataString(request)
 
   if (formData) {
@@ -92,7 +95,7 @@ function getBody (request) {
   return '""'
 }
 
-function getFormDataString (request) {
+function getFormDataString (request: Request): string {
   if (request.data && typeof request.data === 'string') {
     return getDataString(request)
   }
@@ -101,8 +104,8 @@ function getFormDataString (request) {
     return ''
   }
 
-  let fileArgs = []
-  let dataArgs = []
+  let fileArgs: string[] | string = []
+  let dataArgs: string[] | string = []
   for (const [multipartKey, multipartValue] of request.multipartUploads) {
     if (multipartValue.startsWith('@')) {
       const fileName = multipartValue.slice(1)
@@ -112,7 +115,7 @@ function getFormDataString (request) {
     }
   }
 
-  let content = []
+  let content: string[] | string = []
   fileArgs = fileArgs.join(',\n')
   if (fileArgs) {
     content.push(fileArgs)
@@ -133,7 +136,7 @@ ${content}
   return ''
 }
 
-function getDataString (request) {
+function getDataString (request: Request): string {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     const filePath = request.data.slice(1)
     if (request.isDataBinary) {
@@ -155,7 +158,7 @@ function getDataString (request) {
   }
 }
 
-function getMultipleDataString (request, parsedQueryString) {
+function getMultipleDataString (request: Request, parsedQueryString: querystring.ParsedQuery<string>): string {
   let repeatedKey = false
   for (const key in parsedQueryString) {
     const value = parsedQueryString[key]
@@ -194,7 +197,7 @@ ${data.join(',\n')}
   return dataString
 }
 
-export const _toElixir = request => {
+export const _toElixir = (request: Request): string => {
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -221,7 +224,7 @@ response = HTTPoison.request(request)
 
   return template
 }
-export const toElixir = curlCommand => {
+export const toElixir = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toElixir(request)
 }

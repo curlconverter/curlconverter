@@ -6,6 +6,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
 import { fixturesDir, converters } from './test-utils.js'
+import type { Converter } from './test-utils.js'
 
 // The curl_commands/ directory contains input files
 // The file name is a description of the command.
@@ -16,7 +17,7 @@ import { fixturesDir, converters } from './test-utils.js'
 const curlCommandsDir = path.resolve(fixturesDir, 'curl_commands')
 console.log(curlCommandsDir)
 
-const testArgs = yargs(hideBin(process.argv))
+const testArgs = await yargs(hideBin(process.argv))
   .scriptName('test.js')
   .usage('Usage: $0 [--language <language>] [--test <test_name>] [test_name...]')
   .option('l', {
@@ -36,9 +37,9 @@ const testArgs = yargs(hideBin(process.argv))
   })
   .alias('h', 'help')
   .help()
-  .argv
+  .parse()
 
-const languages = Array.isArray(testArgs.language) ? testArgs.language : [testArgs.language]
+const languages: Converter[] = Array.isArray(testArgs.language) ? testArgs.language : [testArgs.language]
 
 // Test names can be positional args or --test=<test name>. We need to merge them
 let testNames = testArgs._.slice(1)
@@ -49,12 +50,12 @@ if (Array.isArray(testArgs.test)) {
 }
 
 const testFileNames = testNames && testNames.length
-  ? testNames.map(t => t.replace(/ /g, '_') + '.sh')
+  ? testNames.map(t => t.toString().replace(/ /g, '_') + '.sh')
   : fs.readdirSync(curlCommandsDir).filter(f => f.endsWith('.sh')) // if no --test specified, run them all
 
 for (const outputLanguage of Object.keys(converters)) {
   // TODO: always test 'parser'?
-  if (!languages.includes(outputLanguage)) {
+  if (!languages.includes(outputLanguage as Converter)) {
     console.error('skipping language: ' + outputLanguage)
   }
 }
@@ -73,7 +74,7 @@ for (const fileName of testFileNames) {
     if (fs.existsSync(filePath)) {
       // normalize code for just \n line endings (aka fix input under Windows)
       const expected = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n')
-      let actual
+      let actual: string
       try {
         actual = converter.converter(inputFileContents)
       } catch (e) {

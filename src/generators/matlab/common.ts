@@ -1,8 +1,9 @@
 import { CCError } from '../../util.js'
+import type { Request} from '../../util.js'
 
 import jsesc from 'jsesc'
 
-const repr = (value) => {
+const repr = (value?: string | null) => {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
@@ -11,7 +12,7 @@ const repr = (value) => {
   return "'" + jsesc(value, { quotes: 'single' }).replace(/\\'/g, "''") + "'"
 }
 
-const setVariableValue = (outputVariable, value, termination) => {
+const setVariableValue = (outputVariable: string | null, value: string, termination?: string): string => {
   let result = ''
 
   if (outputVariable) {
@@ -23,7 +24,7 @@ const setVariableValue = (outputVariable, value, termination) => {
   return result
 }
 
-const callFunction = (outputVariable, functionName, params, termination) => {
+const callFunction = (outputVariable: string | null, functionName: string, params: string | string[] | string[][], termination?: string) => {
   let functionCall = functionName + '('
   if (Array.isArray(params)) {
     const singleLine = params.map(x => Array.isArray(x) ? x.join(', ') : x).join(', ')
@@ -47,7 +48,7 @@ const callFunction = (outputVariable, functionName, params, termination) => {
   return setVariableValue(outputVariable, functionCall, termination)
 }
 
-const addCellArray = (mapping, keysNotToQuote, keyValSeparator, indentLevel, pairs) => {
+const addCellArray = (mapping: {[key: string]: string | null | (null | string)[]}, keysNotToQuote: string[], keyValSeparator: string, indentLevel: number, pairs?: boolean) => {
   const indentUnit = ' '.repeat(4)
   const indent = indentUnit.repeat(indentLevel)
   const indentPrevLevel = indentUnit.repeat(indentLevel - 1)
@@ -57,22 +58,27 @@ const addCellArray = (mapping, keysNotToQuote, keyValSeparator, indentLevel, pai
 
   let response = pairs ? '' : '{'
   if (entries.length === 1) {
-    let [key, value] = entries.pop()
-    if (keysNotToQuote && !keysNotToQuote.includes(key)) value = `${repr(value)}`
-    response += `${repr(key)}${keyValSeparator} ${value}`
+    const [key, value] = entries.pop() as [string, string]
+    let val = value
+    if (keysNotToQuote && !keysNotToQuote.includes(key)) val = `${repr(value)}`
+    response += `${repr(key)}${keyValSeparator} ${val}`
   } else {
     if (pairs) response += '...'
     let counter = entries.length
-    for (let [key, value] of entries) {
+    for (const [key, value] of entries) {
+      let val = value
+      if (val === null) {
+        continue
+      }
       --counter
       if (keysNotToQuote && !keysNotToQuote.includes(key)) {
-        if (typeof value === 'object') {
-          value = `[${value.map(repr).join()}]`
+        if (typeof val === 'object') {
+          val = `[${val.map(repr).join()}]`
         } else {
-          value = `${repr(value)}`
+          val = `${repr(val)}`
         }
       }
-      response += `\n${indent}${repr(key)}${keyValSeparator} ${value}`
+      response += `\n${indent}${repr(key)}${keyValSeparator} ${val}`
       if (pairs) {
         if (counter !== 0) response += ','
         response += '...'
@@ -84,7 +90,7 @@ const addCellArray = (mapping, keysNotToQuote, keyValSeparator, indentLevel, pai
   return response
 }
 
-const structify = (obj, indentLevel) => {
+const structify = (obj: any, indentLevel?: number) => {
   let response = ''
   indentLevel = !indentLevel ? 1 : ++indentLevel
   const indent = ' '.repeat(4 * indentLevel)
@@ -137,27 +143,25 @@ const structify = (obj, indentLevel) => {
   return response
 }
 
-const containsBody = (request) => {
-  return Object.prototype.hasOwnProperty.call(request, 'data') || request.multipartUploads
+const containsBody = (request: Request): boolean => {
+  return Boolean(Object.prototype.hasOwnProperty.call(request, 'data') || request.multipartUploads)
 }
 
-const prepareQueryString = (request) => {
-  let response = null
+const prepareQueryString = (request: Request): string | null => {
   if (request.queryDict) {
     const params = addCellArray(request.queryDict, [], '', 1)
-    response = setVariableValue('params', params)
+    return setVariableValue('params', params)
   }
-  return response
+  return null
 }
 
-const prepareCookies = (request) => {
-  let response = null
+const prepareCookies = (request: Request): string | null => {
   if (request.cookies) {
     // TODO: throws away repeat cookies
     const cookies = addCellArray(Object.fromEntries(request.cookies), [], '', 1)
-    response = setVariableValue('cookies', cookies)
+    return setVariableValue('cookies', cookies)
   }
-  return response
+  return null
 }
 
 const cookieString = 'char(join(join(cookies, \'=\'), \'; \'))'

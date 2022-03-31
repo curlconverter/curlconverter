@@ -4,16 +4,17 @@ import {
   prepareQueryString, prepareCookies,
   cookieString, paramsString
 } from './common.js'
+import type { Request} from '../../util.js'
 
-const isSupportedByWebServices = (request) => {
+const isSupportedByWebServices = (request: Request): boolean => {
   if (!new Set(['get', 'post', 'put', 'delete', 'patch']).has(request.method.toLowerCase())) {
     return false
   }
   return !request.multipartUploads && !request.insecure
 }
 
-const parseWebOptions = (request) => {
-  const options = {}
+const parseWebOptions = (request: Request): {[key: string]: string} => {
+  const options: {[key: string]: string} = {}
 
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
   // thus, it is necessary to set the method for other requests
@@ -21,7 +22,7 @@ const parseWebOptions = (request) => {
     options.RequestMethod = request.method.toLowerCase()
   }
 
-  const headers = {}
+  const headers: {[key: string]: string} = {}
   if (request.auth) {
     const [username, password] = request.auth
     if (username !== '') {
@@ -34,6 +35,9 @@ const parseWebOptions = (request) => {
 
   if (request.headers) {
     for (const [key, value] of request.headers) {
+      if (value === null) {
+        continue
+      }
       switch (key) {
         case 'User-Agent':
         case 'user-agent':
@@ -98,8 +102,8 @@ const parseWebOptions = (request) => {
   return options
 }
 
-const prepareOptions = (request, options) => {
-  const lines = []
+const prepareOptions = (request: Request, options: {[key: string]: string}): string[] => {
+  const lines: string[] = []
   if (Object.keys(options).length === 0) {
     return lines
   }
@@ -109,7 +113,7 @@ const prepareOptions = (request, options) => {
   return lines
 }
 
-const prepareBasicURI = (request) => {
+const prepareBasicURI = (request: Request): string[] => {
   const response = []
   if (request.queryDict) {
     response.push(setVariableValue('baseURI', repr(request.urlWithoutQuery)))
@@ -120,8 +124,8 @@ const prepareBasicURI = (request) => {
   return response
 }
 
-const prepareBasicData = (request) => {
-  let response = []
+const prepareBasicData = (request: Request): string | string[] => {
+  let response: string | string[] = []
   if (Object.prototype.hasOwnProperty.call(request, 'data')) {
     if (request.data === '') {
       response = setVariableValue('body', repr())
@@ -151,7 +155,7 @@ const prepareBasicData = (request) => {
   return response
 }
 
-const prepareWebCall = (request, options) => {
+const prepareWebCall = (request: Request, options: {[key: string]: string}): string[] => {
   const lines = []
   const webFunction = containsBody(request) ? 'webwrite' : 'webread'
 
@@ -167,8 +171,8 @@ const prepareWebCall = (request, options) => {
   return lines
 }
 
-export const toWebServices = (request) => {
-  let lines = [
+export const toWebServices = (request: Request): (string | string[] | null)[] => {
+  let lines: (string | string[] | null)[] = [
     '%% Web Access using Data Import and Export API'
   ]
 

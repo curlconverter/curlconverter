@@ -1,7 +1,9 @@
 import * as util from '../util.js'
+import type { Request} from '../util.js'
+
 import jsesc from 'jsesc'
 
-function repr (value) {
+function repr (value: string): string {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
     return "''"
@@ -10,7 +12,7 @@ function repr (value) {
   }
 }
 
-export const _toDart = r => {
+export const _toDart = (r: Request): string => {
   let s = ''
 
   if (r.auth || r.isDataBinary) s += "import 'dart:convert';\n"
@@ -47,8 +49,7 @@ export const _toDart = r => {
     s += '\n'
   }
 
-  const hasQuery = r.query
-  if (hasQuery) {
+  if (r.query) {
     // TODO: dict won't work with repeated keys
     s += '  var params = {\n'
     for (const [paramName, rawValue] of r.query) {
@@ -84,7 +85,7 @@ export const _toDart = r => {
     }
   }
 
-  if (hasQuery) {
+  if (r.query) {
     s += "  var url = Uri.parse('" + r.urlWithoutQuery + "?$query');\n"
   } else {
     s += "  var url = Uri.parse('" + r.url + "');\n"
@@ -104,7 +105,7 @@ export const _toDart = r => {
 
   return s + '\n'
 }
-export const toDart = curlCommand => {
+export const toDart = (curlCommand: string | string[]): string => {
   const r = util.parseCurlCommand(curlCommand)
   return _toDart(r)
 }

@@ -1,7 +1,9 @@
 import * as util from '../util.js'
+import type { Request} from '../util.js'
+
 import jsesc from 'jsesc'
 
-export const _toGo = request => {
+export const _toGo = (request: Request): string => {
   let goCode = 'package main\n\n'
   goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n'
   goCode += 'func main() {\n'
@@ -42,7 +44,7 @@ export const _toGo = request => {
 
   return goCode + '\n'
 }
-export const toGo = curlCommand => {
+export const toGo = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toGo(request)
 }

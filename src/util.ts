@@ -4,28 +4,100 @@ import nunjucks from 'nunjucks'
 
 import parser from './parser.js'
 
-const env = nunjucks.configure(['templates/'], { // set folders with templates
+const env = nunjucks.configure(['templates/'], {
+  // set folders with templates
   autoescape: false
 })
-env.addFilter('isArr', something => Array.isArray(something))
-env.addFilter('isString', something => typeof something === 'string')
+env.addFilter('isArr', (something: any): boolean => Array.isArray(something))
+env.addFilter(
+  'isString',
+  (something: any): boolean => typeof something === 'string'
+)
 
-const has = (obj, prop) => {
+// TODO: this type doesn't work.
+function has<T, K extends PropertyKey>(
+  obj: T,
+  prop: K
+): obj is T & Record<K, unknown> {
   return Object.prototype.hasOwnProperty.call(obj, prop)
 }
 
 export class CCError extends Error {}
 
-const pushProp = (obj, prop, value) => {
+function pushProp<Type>(
+  obj: { [key: string]: Type[] },
+  prop: string,
+  value: Type
+) {
   if (!has(obj, prop)) {
-    obj[prop] = []
+    // TODO: I have no idea what
+    // Type 'never[]' is not assignable to type 'never'.
+    // means
+    ;(obj[prop] as Type[]) = []
   }
   obj[prop].push(value)
   return obj
 }
 
+interface _LongShort {
+  name?: string // added dynamically
+  type: 'string' | 'number' | 'bool'
+  expand?: boolean
+  removed?: string
+}
+
+interface LongShort {
+  name: string
+  type: 'string' | 'number' | 'bool'
+  expand?: boolean
+  removed?: string
+}
+
+interface _LongOpts {
+  [key: string]: _LongShort
+}
+interface LongOpts {
+  [key: string]: LongShort | null
+}
+interface ShortOpts {
+  [key: string]: string
+}
+
+type Query = Array<[string, string | null]>
+interface QueryDict {
+  [key: string]: string | null | Array<string | null>
+}
+
+type Headers = Array<[string, string | null]>
+
+type Cookie = [string, string]
+type Cookies = Array<Cookie>
+
+interface ParsedArguments {
+  request?: string // the HTTP method
+  data?: string[]
+  'data-binary'?: string[]
+  'data-ascii'?: string[]
+  'data-raw'?: string[]
+  'data-urlencode'?: string[]
+  json?: string[]
+  [key: string]: any
+}
+
+interface Request {
+  url: string
+  query?: Query
+  queryDict?: QueryDict
+  headers?: Headers
+  stdin?: string
+  input?: string
+  multipartUploads?: [string, string][]
+  auth?: [string, string]
+  [key: string]: any
+}
+
 // BEGIN GENERATED CURL OPTIONS
-const curlLongOpts = {
+const _curlLongOpts: _LongOpts = {
   url: { type: 'string' },
   'dns-ipv4-addr': { type: 'string' },
   'dns-ipv6-addr': { type: 'string' },
@@ -39,7 +111,11 @@ const curlLongOpts = {
   'disable-epsv': { type: 'bool', name: 'epsv' },
   'no-disable-epsv': { type: 'bool', name: 'epsv', expand: false },
   'disallow-username-in-url': { type: 'bool' },
-  'no-disallow-username-in-url': { type: 'bool', name: 'disallow-username-in-url', expand: false },
+  'no-disallow-username-in-url': {
+    type: 'bool',
+    name: 'disallow-username-in-url',
+    expand: false
+  },
   epsv: { type: 'bool' },
   'no-epsv': { type: 'bool', name: 'epsv', expand: false },
   'dns-servers': { type: 'string' },
@@ -69,7 +145,11 @@ const curlLongOpts = {
   wdebug: { type: 'bool' },
   'no-wdebug': { type: 'bool', name: 'wdebug', expand: false },
   'ftp-create-dirs': { type: 'bool' },
-  'no-ftp-create-dirs': { type: 'bool', name: 'ftp-create-dirs', expand: false },
+  'no-ftp-create-dirs': {
+    type: 'bool',
+    name: 'ftp-create-dirs',
+    expand: false
+  },
   'create-dirs': { type: 'bool' },
   'no-create-dirs': { type: 'bool', name: 'create-dirs', expand: false },
   'create-file-mode': { type: 'string' },
@@ -84,7 +164,11 @@ const curlLongOpts = {
   krb: { type: 'string' },
   krb4: { type: 'string', name: 'krb' },
   'haproxy-protocol': { type: 'bool' },
-  'no-haproxy-protocol': { type: 'bool', name: 'haproxy-protocol', expand: false },
+  'no-haproxy-protocol': {
+    type: 'bool',
+    name: 'haproxy-protocol',
+    expand: false
+  },
   'max-filesize': { type: 'string' },
   'disable-eprt': { type: 'bool', name: 'eprt' },
   'no-disable-eprt': { type: 'bool', name: 'eprt', expand: false },
@@ -107,11 +191,19 @@ const curlLongOpts = {
   'no-proxy-basic': { type: 'bool', name: 'proxy-basic', expand: false },
   retry: { type: 'string' },
   'retry-connrefused': { type: 'bool' },
-  'no-retry-connrefused': { type: 'bool', name: 'retry-connrefused', expand: false },
+  'no-retry-connrefused': {
+    type: 'bool',
+    name: 'retry-connrefused',
+    expand: false
+  },
   'retry-delay': { type: 'string' },
   'retry-max-time': { type: 'string' },
   'proxy-negotiate': { type: 'bool' },
-  'no-proxy-negotiate': { type: 'bool', name: 'proxy-negotiate', expand: false },
+  'no-proxy-negotiate': {
+    type: 'bool',
+    name: 'proxy-negotiate',
+    expand: false
+  },
   'form-escape': { type: 'bool' },
   'no-form-escape': { type: 'bool', name: 'form-escape', expand: false },
   'ftp-account': { type: 'string' },
@@ -120,9 +212,17 @@ const curlLongOpts = {
   'trace-time': { type: 'bool' },
   'no-trace-time': { type: 'bool', name: 'trace-time', expand: false },
   'ignore-content-length': { type: 'bool' },
-  'no-ignore-content-length': { type: 'bool', name: 'ignore-content-length', expand: false },
+  'no-ignore-content-length': {
+    type: 'bool',
+    name: 'ignore-content-length',
+    expand: false
+  },
   'ftp-skip-pasv-ip': { type: 'bool' },
-  'no-ftp-skip-pasv-ip': { type: 'bool', name: 'ftp-skip-pasv-ip', expand: false },
+  'no-ftp-skip-pasv-ip': {
+    type: 'bool',
+    name: 'ftp-skip-pasv-ip',
+    expand: false
+  },
   'ftp-method': { type: 'string' },
   'local-port': { type: 'string' },
   socks4: { type: 'string' },
@@ -135,7 +235,11 @@ const curlLongOpts = {
   sessionid: { type: 'bool' },
   'no-sessionid': { type: 'bool', name: 'sessionid', expand: false },
   'ftp-ssl-control': { type: 'bool' },
-  'no-ftp-ssl-control': { type: 'bool', name: 'ftp-ssl-control', expand: false },
+  'no-ftp-ssl-control': {
+    type: 'bool',
+    name: 'ftp-ssl-control',
+    expand: false
+  },
   'ftp-ssl-ccc': { type: 'bool' },
   'no-ftp-ssl-ccc': { type: 'bool', name: 'ftp-ssl-ccc', expand: false },
   'ftp-ssl-ccc-mode': { type: 'string' },
@@ -152,7 +256,11 @@ const curlLongOpts = {
   'no-post302': { type: 'bool', name: 'post302', expand: false },
   noproxy: { type: 'string' },
   'socks5-gssapi-nec': { type: 'bool' },
-  'no-socks5-gssapi-nec': { type: 'bool', name: 'socks5-gssapi-nec', expand: false },
+  'no-socks5-gssapi-nec': {
+    type: 'bool',
+    name: 'socks5-gssapi-nec',
+    expand: false
+  },
   'proxy1.0': { type: 'string' },
   'tftp-blksize': { type: 'string' },
   'mail-from': { type: 'string' },
@@ -182,17 +290,29 @@ const curlLongOpts = {
   'proto-default': { type: 'string' },
   'expect100-timeout': { type: 'string' },
   'tftp-no-options': { type: 'bool' },
-  'no-tftp-no-options': { type: 'bool', name: 'tftp-no-options', expand: false },
+  'no-tftp-no-options': {
+    type: 'bool',
+    name: 'tftp-no-options',
+    expand: false
+  },
   'connect-to': { type: 'string' },
   'abstract-unix-socket': { type: 'string' },
   'tls-max': { type: 'string' },
   'suppress-connect-headers': { type: 'bool' },
-  'no-suppress-connect-headers': { type: 'bool', name: 'suppress-connect-headers', expand: false },
+  'no-suppress-connect-headers': {
+    type: 'bool',
+    name: 'suppress-connect-headers',
+    expand: false
+  },
   'compressed-ssh': { type: 'bool' },
   'no-compressed-ssh': { type: 'bool', name: 'compressed-ssh', expand: false },
   'happy-eyeballs-timeout-ms': { type: 'string' },
   'retry-all-errors': { type: 'bool' },
-  'no-retry-all-errors': { type: 'bool', name: 'retry-all-errors', expand: false },
+  'no-retry-all-errors': {
+    type: 'bool',
+    name: 'retry-all-errors',
+    expand: false
+  },
   'http1.0': { type: 'bool' },
   'http1.1': { type: 'bool' },
   http2: { type: 'bool' },
@@ -245,23 +365,43 @@ const curlLongOpts = {
   tlspassword: { type: 'string' },
   tlsauthtype: { type: 'string' },
   'ssl-allow-beast': { type: 'bool' },
-  'no-ssl-allow-beast': { type: 'bool', name: 'ssl-allow-beast', expand: false },
+  'no-ssl-allow-beast': {
+    type: 'bool',
+    name: 'ssl-allow-beast',
+    expand: false
+  },
   'ssl-auto-client-cert': { type: 'bool' },
-  'no-ssl-auto-client-cert': { type: 'bool', name: 'ssl-auto-client-cert', expand: false },
+  'no-ssl-auto-client-cert': {
+    type: 'bool',
+    name: 'ssl-auto-client-cert',
+    expand: false
+  },
   'proxy-ssl-auto-client-cert': { type: 'bool' },
-  'no-proxy-ssl-auto-client-cert': { type: 'bool', name: 'proxy-ssl-auto-client-cert', expand: false },
+  'no-proxy-ssl-auto-client-cert': {
+    type: 'bool',
+    name: 'proxy-ssl-auto-client-cert',
+    expand: false
+  },
   pinnedpubkey: { type: 'string' },
   'proxy-pinnedpubkey': { type: 'string' },
   'cert-status': { type: 'bool' },
   'no-cert-status': { type: 'bool', name: 'cert-status', expand: false },
   'doh-cert-status': { type: 'bool' },
-  'no-doh-cert-status': { type: 'bool', name: 'doh-cert-status', expand: false },
+  'no-doh-cert-status': {
+    type: 'bool',
+    name: 'doh-cert-status',
+    expand: false
+  },
   'false-start': { type: 'bool' },
   'no-false-start': { type: 'bool', name: 'false-start', expand: false },
   'ssl-no-revoke': { type: 'bool' },
   'no-ssl-no-revoke': { type: 'bool', name: 'ssl-no-revoke', expand: false },
   'ssl-revoke-best-effort': { type: 'bool' },
-  'no-ssl-revoke-best-effort': { type: 'bool', name: 'ssl-revoke-best-effort', expand: false },
+  'no-ssl-revoke-best-effort': {
+    type: 'bool',
+    name: 'ssl-revoke-best-effort',
+    expand: false
+  },
   'tcp-fastopen': { type: 'bool' },
   'no-tcp-fastopen': { type: 'bool', name: 'tcp-fastopen', expand: false },
   'proxy-tlsuser': { type: 'string' },
@@ -275,7 +415,11 @@ const curlLongOpts = {
   'proxy-ciphers': { type: 'string' },
   'proxy-crlfile': { type: 'string' },
   'proxy-ssl-allow-beast': { type: 'bool' },
-  'no-proxy-ssl-allow-beast': { type: 'bool', name: 'proxy-ssl-allow-beast', expand: false },
+  'no-proxy-ssl-allow-beast': {
+    type: 'bool',
+    name: 'proxy-ssl-allow-beast',
+    expand: false
+  },
   'login-options': { type: 'string' },
   'proxy-cacert': { type: 'string' },
   'proxy-capath': { type: 'string' },
@@ -296,7 +440,11 @@ const curlLongOpts = {
   'styled-output': { type: 'bool' },
   'no-styled-output': { type: 'bool', name: 'styled-output', expand: false },
   'mail-rcpt-allowfails': { type: 'bool' },
-  'no-mail-rcpt-allowfails': { type: 'bool', name: 'mail-rcpt-allowfails', expand: false },
+  'no-mail-rcpt-allowfails': {
+    type: 'bool',
+    name: 'mail-rcpt-allowfails',
+    expand: false
+  },
   'fail-with-body': { type: 'bool' },
   'no-fail-with-body': { type: 'bool', name: 'fail-with-body', expand: false },
   form: { type: 'string' },
@@ -314,9 +462,17 @@ const curlLongOpts = {
   head: { type: 'bool' },
   'no-head': { type: 'bool', name: 'head', expand: false },
   'junk-session-cookies': { type: 'bool' },
-  'no-junk-session-cookies': { type: 'bool', name: 'junk-session-cookies', expand: false },
+  'no-junk-session-cookies': {
+    type: 'bool',
+    name: 'junk-session-cookies',
+    expand: false
+  },
   'remote-header-name': { type: 'bool' },
-  'no-remote-header-name': { type: 'bool', name: 'remote-header-name', expand: false },
+  'no-remote-header-name': {
+    type: 'bool',
+    name: 'remote-header-name',
+    expand: false
+  },
   insecure: { type: 'bool' },
   'no-insecure': { type: 'bool', name: 'insecure', expand: false },
   'doh-insecure': { type: 'bool' },
@@ -327,7 +483,11 @@ const curlLongOpts = {
   location: { type: 'bool' },
   'no-location': { type: 'bool', name: 'location', expand: false },
   'location-trusted': { type: 'bool' },
-  'no-location-trusted': { type: 'bool', name: 'location-trusted', expand: false },
+  'no-location-trusted': {
+    type: 'bool',
+    name: 'location-trusted',
+    expand: false
+  },
   'max-time': { type: 'string' },
   manual: { type: 'bool' },
   'no-manual': { type: 'bool', name: 'manual', expand: false },
@@ -341,7 +501,11 @@ const curlLongOpts = {
   output: { type: 'string' },
   'remote-name': { type: 'bool' },
   'remote-name-all': { type: 'bool' },
-  'no-remote-name-all': { type: 'bool', name: 'remote-name-all', expand: false },
+  'no-remote-name-all': {
+    type: 'bool',
+    name: 'remote-name-all',
+    expand: false
+  },
   'output-dir': { type: 'string' },
   proxytunnel: { type: 'bool' },
   'no-proxytunnel': { type: 'bool', name: 'proxytunnel', expand: false },
@@ -375,7 +539,11 @@ const curlLongOpts = {
   'no-parallel': { type: 'bool', name: 'parallel', expand: false },
   'parallel-max': { type: 'string' },
   'parallel-immediate': { type: 'bool' },
-  'no-parallel-immediate': { type: 'bool', name: 'parallel-immediate', expand: false },
+  'no-parallel-immediate': {
+    type: 'bool',
+    name: 'parallel-immediate',
+    expand: false
+  },
   'progress-bar': { type: 'bool' },
   'no-progress-bar': { type: 'bool', name: 'progress-bar', expand: false },
   'progress-meter': { type: 'bool' },
@@ -383,7 +551,7 @@ const curlLongOpts = {
   next: { type: 'bool' }
 }
 
-const curlShortOpts = {
+const curlShortOpts: ShortOpts = {
   0: 'http1.0',
   1: 'tlsv1',
   2: 'sslv2',
@@ -454,7 +622,7 @@ const curlShortOpts = {
 // "--blaz" was added, suddenly those 3 shortened options are removed (because
 // they are now ambiguous).
 // https://github.com/curlconverter/curlconverter/pull/280#issuecomment-931241328
-const removedLongOpts = {
+const _removedLongOpts: { [key: string]: _LongShort } = {
   'ftp-ascii': { type: 'bool', name: 'use-ascii', removed: '7.10.7' },
   port: { type: 'string', removed: '7.3' },
   upload: { type: 'bool', removed: '7.7' },
@@ -464,7 +632,11 @@ const removedLongOpts = {
   '3p-quote': { type: 'string', removed: '7.16.0' },
   'http2.0': { type: 'bool', name: 'http2', removed: '7.36.0' },
   'no-http2.0': { type: 'bool', name: 'http2', removed: '7.36.0' },
-  'telnet-options': { type: 'string', name: 'telnet-option', removed: '7.49.0' },
+  'telnet-options': {
+    type: 'string',
+    name: 'telnet-option',
+    removed: '7.49.0'
+  },
   'http-request': { type: 'string', name: 'request', removed: '7.49.0' },
   socks: { type: 'string', name: 'socks5', removed: '7.49.0' },
   'capath ': { type: 'string', name: 'capath', removed: '7.49.0' }, // trailing space
@@ -473,7 +645,11 @@ const removedLongOpts = {
   // These --no-<option> flags were automatically generated and never had any effect
   'no-tlsv1': { type: 'bool', name: 'tlsv1', removed: '7.54.1' },
   'no-tlsv1.2': { type: 'bool', name: 'tlsv1.2', removed: '7.54.1' },
-  'no-http2-prior-knowledge': { type: 'bool', name: 'http2-prior-knowledge', removed: '7.54.1' },
+  'no-http2-prior-knowledge': {
+    type: 'bool',
+    name: 'http2-prior-knowledge',
+    removed: '7.54.1'
+  },
   'no-ipv6': { type: 'bool', name: 'ipv6', removed: '7.54.1' },
   'no-ipv4': { type: 'bool', name: 'ipv4', removed: '7.54.1' },
   'no-sslv2': { type: 'bool', name: 'sslv2', removed: '7.54.1' },
@@ -490,14 +666,15 @@ const removedLongOpts = {
   'no-proxy-tlsv1': { type: 'bool', name: 'proxy-tlsv1', removed: '7.54.1' },
   'no-http2': { type: 'bool', name: 'http2', removed: '7.54.1' }
 }
-for (const [opt, val] of Object.entries(removedLongOpts)) {
+for (const [opt, val] of Object.entries(_removedLongOpts)) {
   if (!has(val, 'name')) {
     val.name = opt
   }
 }
+const removedLongOpts = _removedLongOpts as LongOpts // could be stricter, there's no null values
 // TODO: use this to warn users when they specify a short option that
 // used to be for something else?
-const changedShortOpts = {
+const changedShortOpts: { [key: string]: string } = {
   p: 'used to be short for --port <port> (a since-deleted flag) until curl 7.3',
   // TODO: some of these might be renamed options
   t: 'used to be short for --upload (a since-deleted boolean flag) until curl 7.7',
@@ -524,9 +701,15 @@ const canBeList = new Set([
   // TODO: unlike curl, we don't support multiple
   // URLs and just take the last one.
   'url',
-  'header', 'proxy-header',
+  'header',
+  'proxy-header',
   'form',
-  'data', 'data-binary', 'data-ascii', 'data-raw', 'data-urlencode', 'json',
+  'data',
+  'data-binary',
+  'data-ascii',
+  'data-raw',
+  'data-urlencode',
+  'json',
   'mail-rcpt',
   'resolve',
   'connect-to',
@@ -535,11 +718,14 @@ const canBeList = new Set([
   'telnet-option'
 ])
 
-const shortened = {}
-for (const [opt, val] of Object.entries(curlLongOpts)) {
+const shortened: { [key: string]: LongShort[] } = {}
+for (const [opt, val] of Object.entries(_curlLongOpts)) {
   if (!has(val, 'name')) {
     val.name = opt
   }
+}
+const curlLongOpts = _curlLongOpts as LongOpts
+for (const [opt, val] of Object.entries(_curlLongOpts)) {
   // curl lets you not type the full argument as long as it's unambiguous.
   // So --sil instead of --silent is okay, --s is not.
   // This doesn't apply to options starting with --no-
@@ -556,16 +742,16 @@ for (const [opt, val] of Object.entries(curlLongOpts)) {
 for (const [shortenedOpt, vals] of Object.entries(shortened)) {
   if (!has(curlLongOpts, shortenedOpt)) {
     if (vals.length === 1) {
-      curlLongOpts[shortenedOpt] = vals[0]
+      ;(curlLongOpts[shortenedOpt] as LongShort | null) = vals[0]
     } else if (vals.length > 1) {
       // More than one option shortens to this, it's ambiguous
-      curlLongOpts[shortenedOpt] = null
+      ;(curlLongOpts[shortenedOpt] as LongShort | null) = null
     }
   }
 }
 for (const [removedOpt, val] of Object.entries(removedLongOpts)) {
   if (!has(curlLongOpts, removedOpt)) {
-    curlLongOpts[removedOpt] = val
+    ;(curlLongOpts[removedOpt] as LongShort | null) = val
   } else if (curlLongOpts[removedOpt] === null) {
     // This happens with --socks because it became --socks5 and there are multiple options
     // that start with "--socks"
@@ -580,7 +766,7 @@ for (const [removedOpt, val] of Object.entries(removedLongOpts)) {
   }
 }
 
-const toBoolean = opt => {
+function toBoolean(opt: string): boolean {
   if (opt.startsWith('no-disable-')) {
     return true
   }
@@ -590,19 +776,19 @@ const toBoolean = opt => {
   return true
 }
 
-const parseWord = (str) => {
+const parseWord = (str: string): string => {
   const BACKSLASHES = /\\./gs
-  const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
+  const unescapeChar = (m: string) => (m.charAt(1) === '\n' ? '' : m.charAt(1))
   return str.replace(BACKSLASHES, unescapeChar)
 }
-const parseSingleQuoteString = (str) => {
+const parseSingleQuoteString = (str: string): string => {
   const BACKSLASHES = /\\(\n|')/gs
-  const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
+  const unescapeChar = (m: string) => (m.charAt(1) === '\n' ? '' : m.charAt(1))
   return str.slice(1, -1).replace(BACKSLASHES, unescapeChar)
 }
-const parseDoubleQuoteString = (str) => {
+const parseDoubleQuoteString = (str: string): string => {
   const BACKSLASHES = /\\(\n|\\|")/gs
-  const unescapeChar = (m) => m.charAt(1) === '\n' ? '' : m.charAt(1)
+  const unescapeChar = (m: string) => (m.charAt(1) === '\n' ? '' : m.charAt(1))
   return str.slice(1, -1).replace(BACKSLASHES, unescapeChar)
 }
 // ANSI-C quoted strings look $'like this'.
@@ -610,9 +796,10 @@ const parseDoubleQuoteString = (str) => {
 // https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
 //
 // https://git.savannah.gnu.org/cgit/bash.git/tree/lib/sh/strtrans.c
-const parseAnsiCString = (str) => {
-  const ANSI_BACKSLASHES = /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs
-  const unescapeChar = (m) => {
+const parseAnsiCString = (str: string): string => {
+  const ANSI_BACKSLASHES =
+    /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs
+  const unescapeChar = (m: string) => {
     switch (m.charAt(1)) {
       case '\\':
         return '\\'
@@ -643,13 +830,21 @@ const parseAnsiCString = (str) => {
         // bash handles all characters by considering the first byte
         // of its UTF-8 input and can produce invalid UTF-8, whereas
         // JavaScript stores strings in UTF-16
-        if (m.codePointAt(2) > 127) {
-          throw new CCError("non-ASCII control character in ANSI-C quoted string: '\\u{" + m.codePointAt(2).toString(16) + "}'")
+        if (m.codePointAt(2)! > 127) {
+          throw new CCError(
+            "non-ASCII control character in ANSI-C quoted string: '\\u{" +
+              m.codePointAt(2)!.toString(16) +
+              "}'"
+          )
         }
         // If this produces a 0x00 (null) character, it will cause bash to
         // terminate the string at that character, but we return the null
         // character in the result.
-        return m[2] === '?' ? '\x7F' : String.fromCodePoint(m[2].toUpperCase().codePointAt(0) & 0b00011111)
+        return m[2] === '?'
+          ? '\x7F'
+          : String.fromCodePoint(
+              m[2].toUpperCase().codePointAt(0)! & 0b00011111
+            )
       case 'x':
       case 'u':
       case 'U':
@@ -668,14 +863,17 @@ const parseAnsiCString = (str) => {
         return String.fromCodePoint(parseInt(m.slice(1), 8) % 256)
       default:
         // There must be a mis-match between ANSI_BACKSLASHES and the switch statement
-        throw new CCError('unhandled character in ANSI-C escape code: ' + JSON.stringify(m))
+        throw new CCError(
+          'unhandled character in ANSI-C escape code: ' + JSON.stringify(m)
+        )
     }
   }
 
   return str.slice(2, -1).replace(ANSI_BACKSLASHES, unescapeChar)
 }
 
-const toVal = (node) => {
+function toVal(node: any): string {
+  // TODO: typing node is hard because of the browser/nodejs import difference
   switch (node.type) {
     case 'word':
     case 'simple_expansion': // TODO: handle variables properly downstream
@@ -689,18 +887,29 @@ const toVal = (node) => {
     case 'concatenation':
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
-      if (node.children.every(n => n.type === 'word')) {
+      // TODO: type `n` if you type `node`
+      if (node.children.every((n: any) => n.type === 'word')) {
         return node.text
       }
       return node.children.map(toVal).join('')
     default:
       // console.error(curlCommand)
       // console.error(curlArgs.rootNode.toString())
-      throw new CCError('unexpected argument type ' + JSON.stringify(node.type) + '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"')
+      throw new CCError(
+        'unexpected argument type ' +
+          JSON.stringify(node.type) +
+          '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"'
+      )
   }
 }
 
-const tokenize = (curlCommand) => {
+interface TokenizeResult {
+  cmdName: string
+  args: string[]
+  stdin?: string
+  input?: string
+}
+const tokenize = (curlCommand: string): TokenizeResult => {
   const curlArgs = parser.parse(curlCommand)
   // The AST must be in a nice format, i.e.
   // (program
@@ -718,10 +927,14 @@ const tokenize = (curlCommand) => {
   // TODO: get only named children?
   if (curlArgs.rootNode.type !== 'program') {
     // TODO: better error message.
-    throw new CCError("expected a 'program' top-level AST node, got " + curlArgs.rootNode.type + ' instead')
+    throw new CCError(
+      "expected a 'program' top-level AST node, got " +
+        curlArgs.rootNode.type +
+        ' instead'
+    )
   }
 
-  if (curlArgs.rootNode.childCount < 1) {
+  if (curlArgs.rootNode.childCount < 1 || !curlArgs.rootNode.children) {
     // TODO: better error message.
     throw new CCError('empty "program" node')
   }
@@ -741,12 +954,18 @@ const tokenize = (curlCommand) => {
         throw new CCError("got empty 'redirected_statement' AST node")
       }
       let redirect
-      [command, redirect] = programChildNode.children
+      ;[command, redirect] = programChildNode.children
       if (command.type !== 'command') {
-        throw new CCError("got 'redirected_statement' AST node whose first child is not a 'command', got " + command.type + ' instead')
+        throw new CCError(
+          "got 'redirected_statement' AST node whose first child is not a 'command', got " +
+            command.type +
+            ' instead'
+        )
       }
       if (programChildNode.childCount < 2) {
-        throw new CCError("got 'redirected_statement' AST node with only one child - no redirect")
+        throw new CCError(
+          "got 'redirected_statement' AST node with only one child - no redirect"
+        )
       }
       if (redirect.type === 'file_redirect') {
         stdin = toVal(redirect.namedChildren[0])
@@ -754,16 +973,24 @@ const tokenize = (curlCommand) => {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
         if (redirect.namedChildCount < 1) {
-          throw new CCError("got 'redirected_statement' AST node with heredoc but no heredoc start")
+          throw new CCError(
+            "got 'redirected_statement' AST node with heredoc but no heredoc start"
+          )
         }
         const heredocStart = redirect.namedChildren[0].text
         const heredocBody = programChildNode.nextNamedSibling
         if (!heredocBody) {
-          throw new CCError("got 'redirected_statement' AST node with no heredoc body")
+          throw new CCError(
+            "got 'redirected_statement' AST node with no heredoc body"
+          )
         }
         // TODO: herestrings and heredocs are different
         if (heredocBody.type !== 'heredoc_body') {
-          throw new CCError("got 'redirected_statement' AST node with heredoc but no heredoc body, got " + heredocBody.type + ' instead')
+          throw new CCError(
+            "got 'redirected_statement' AST node with heredoc but no heredoc body, got " +
+              heredocBody.type +
+              ' instead'
+          )
         }
         // TODO: heredocs do variable expansion and stuff
         if (heredocStart.length) {
@@ -775,25 +1002,36 @@ const tokenize = (curlCommand) => {
         // Curl remove newlines when you pass any @filename including @- for stdin
         input = input.replace(/\n/g, '')
       } else if (redirect.type === 'herestring_redirect') {
-        if (redirect.namedChildCount < 1) {
-          throw new CCError("got 'redirected_statement' AST node with empty herestring")
+        if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
+          throw new CCError(
+            "got 'redirected_statement' AST node with empty herestring"
+          )
         }
         // TODO: this just converts bash code to text
         input = redirect.firstNamedChild.text
       } else {
-        throw new CCError("got 'redirected_statement' AST node whose second child is not one of 'file_redirect', 'heredoc_redirect' or 'herestring_redirect', got " + command.type + ' instead')
+        throw new CCError(
+          "got 'redirected_statement' AST node whose second child is not one of 'file_redirect', 'heredoc_redirect' or 'herestring_redirect', got " +
+            command.type +
+            ' instead'
+        )
       }
 
       break
     } else {
       // TODO: better error message.
-      throw new CCError("expected a 'command' or 'redirected_statement' AST node, instead got " + curlArgs.rootNode.firstChild.type)
+      throw new CCError(
+        "expected a 'command' or 'redirected_statement' AST node, instead got " +
+          curlArgs.rootNode.children[0].type
+      )
     }
   }
   if (!command) {
     // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
     // We would probably need to keep track of the node types we've seen.
-    throw new CCError("expected a 'command' or 'redirected_statement' AST node, only found 'comment' nodes")
+    throw new CCError(
+      "expected a 'command' or 'redirected_statement' AST node, only found 'comment' nodes"
+    )
   }
 
   if (command.childCount < 1) {
@@ -807,7 +1045,9 @@ const tokenize = (curlCommand) => {
   const [cmdName, ...args] = command.children
   if (cmdName.type !== 'command_name') {
     // TODO: better error message.
-    throw new CCError("expected a 'command_name' AST node, got " + cmdName.type + ' instead')
+    throw new CCError(
+      "expected a 'command_name' AST node, got " + cmdName.type + ' instead'
+    )
   }
 
   return {
@@ -818,12 +1058,13 @@ const tokenize = (curlCommand) => {
   }
 }
 
-const parseArgs = (args, opts) => {
+const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
   const [longOpts, shortOpts] = opts || [curlLongOpts, curlShortOpts]
 
-  const parsedArguments = {}
+  const parsedArguments: ParsedArguments = {}
   for (let i = 0, stillflags = true; i < args.length; i++) {
-    let arg = args[i]
+    let arg: string | string[] = args[i]
+    let argRepr = arg
     if (stillflags && arg.startsWith('-')) {
       if (arg === '--') {
         /* This indicates the end of the flags and thus enables the
@@ -866,20 +1107,27 @@ const parseArgs = (args, opts) => {
         if (arg.length === 1) {
           if (has(shortOpts, '')) {
             arg = ['-', '']
+            argRepr = '-'
           } else {
-            throw new CCError('option ' + arg + ': is unknown')
+            throw new CCError('option ' + argRepr + ': is unknown')
           }
         }
         for (let j = 1; j < arg.length; j++) {
           if (!has(shortOpts, arg[j])) {
             if (has(changedShortOpts, arg[j])) {
-              throw new CCError('option ' + arg + ': ' + changedShortOpts[arg[j]])
+              throw new CCError(
+                'option ' + argRepr + ': ' + changedShortOpts[arg[j]]
+              )
             }
             // TODO: there are a few deleted short options we could report
-            throw new CCError('option ' + arg + ': is unknown')
+            throw new CCError('option ' + argRepr + ': is unknown')
           }
           const shortFor = shortOpts[arg[j]]
           const longArg = longOpts[shortFor]
+          if (longArg === null) {
+            // This could happen if curlShortOpts points to a renamed option or has a typo
+            throw new CCError('ambiguous short option -' + arg[j])
+          }
           if (longArg.type === 'string') {
             let val
             if (j + 1 < arg.length) {
@@ -890,7 +1138,7 @@ const parseArgs = (args, opts) => {
               i++
               val = args[i]
             } else {
-              throw new CCError('option ' + arg + ': requires parameter')
+              throw new CCError('option ' + argRepr + ': requires parameter')
             }
             pushProp(parsedArguments, longArg.name, val)
           } else {
@@ -913,23 +1161,27 @@ const parseArgs = (args, opts) => {
   return parsedArguments
 }
 
-export const parseQueryString = (s) => {
+export function parseQueryString(
+  s: string | null
+): [Query | null, QueryDict | null] {
   // if url is 'example.com?' => s is ''
   // if url is 'example.com'  => s is null
   if (!s) {
     return [null, null]
   }
 
-  const asList = []
+  const asList: Query = []
   for (const param of s.split('&')) {
-    const [key, val] = param.split(/=(.*)/s, 2)
+    const [key, _val] = param.split(/=(.*)/s, 2)
+    const val = _val === undefined ? null : _val
     let decodedKey
     let decodedVal
     try {
       // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
       // before decoding.
       decodedKey = decodeURIComponent(key.replace(/\+/g, ' '))
-      decodedVal = val === undefined ? null : decodeURIComponent(val.replace(/\+/g, ' '))
+      decodedVal =
+        val === null ? null : decodeURIComponent(val.replace(/\+/g, ' '))
     } catch (e) {
       if (e instanceof URIError) {
         // Query string contains invalid percent encoded characters,
@@ -943,15 +1195,22 @@ export const parseQueryString = (s) => {
       // TODO: this is too strict. Ideally we want to check how each runtime/library
       // percent encodes query strings. For example, a %27 character in the input query
       // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
-      const percentEncodeChar = (c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()
+      const percentEncodeChar = (c: string): string =>
+        '%' + c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()
       // Match Python's urllib.parse.quote() behavior
       // https://stackoverflow.com/questions/946170/equivalent-javascript-functions-for-pythons-urllib-parse-quote-and-urllib-par
-      const percentEncode = (s) => encodeURIComponent(s).replace(/[()*!']/g, percentEncodeChar) // .replace('%20', '+')
+      const percentEncode = (s: string): string =>
+        encodeURIComponent(s).replace(/[()*!']/g, percentEncodeChar) // .replace('%20', '+')
       const roundTripKey = percentEncode(decodedKey)
-      const roundTripVal = percentEncode(decodedVal)
+      const roundTripVal =
+        decodedVal === null ? null : percentEncode(decodedVal)
       // If the original data used %20 instead of + (what requests will send), that's close enough
-      if ((roundTripKey !== key && roundTripKey.replace(/%20/g, '+') !== key) ||
-          (decodedVal && (roundTripVal !== val && roundTripVal.replace(/%20/g, '+') !== val))) {
+      if (
+        (roundTripKey !== key && roundTripKey.replace(/%20/g, '+') !== key) ||
+        (roundTripVal !== null &&
+          roundTripVal !== val &&
+          roundTripVal.replace(/%20/g, '+') !== val)
+      ) {
         return [null, null]
       }
     } catch (e) {
@@ -964,14 +1223,14 @@ export const parseQueryString = (s) => {
   }
 
   // Group keys
-  const asDict = {}
+  const asDict: QueryDict = {}
   let prevKey = null
   for (const [key, val] of asList) {
     if (prevKey === key) {
-      asDict[key].push(val)
+      ;(asDict[key] as Array<string | null>).push(val)
     } else {
       if (!has(asDict, key)) {
-        asDict[key] = [val]
+        ;(asDict[key] as Array<string | null>) = [val]
       } else {
         // If there's a repeated key with a different key between
         // one of its repetitions, there is no way to represent
@@ -984,15 +1243,15 @@ export const parseQueryString = (s) => {
 
   // Convert lists with 1 element to the element
   for (const [key, val] of Object.entries(asDict)) {
-    if (val.length === 1) {
-      asDict[key] = val[0]
+    if ((val as Array<string | null>).length === 1) {
+      asDict[key] = (val as Array<string | null>)[0]
     }
   }
 
   return [asList, asDict]
 }
 
-const buildRequest = parsedArguments => {
+function buildRequest(parsedArguments: ParsedArguments): Request {
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
     // TODO: better error message (could be parsing fail)
@@ -1000,7 +1259,7 @@ const buildRequest = parsedArguments => {
   }
   let url = parsedArguments.url[parsedArguments.url.length - 1]
 
-  const headers = []
+  const headers: Headers = []
   if (parsedArguments.header) {
     for (const header of parsedArguments.header) {
       if (header.includes(':')) {
@@ -1016,11 +1275,12 @@ const buildRequest = parsedArguments => {
       }
     }
   }
-  const lowercase = headers.length && headers.every(h => h[0] === h[0].toLowerCase())
+  const lowercase =
+    headers.length > 0 && headers.every((h) => h[0] === h[0].toLowerCase())
 
   let cookies
-  const cookieHeaders = headers.filter(h => h[0].toLowerCase() === 'cookie')
-  if (cookieHeaders.length === 1) {
+  const cookieHeaders = headers.filter((h) => h[0].toLowerCase() === 'cookie')
+  if (cookieHeaders.length === 1 && cookieHeaders[0][1] !== null) {
     const parsedCookies = parseCookiesStrict(cookieHeaders[0][1])
     if (parsedCookies) {
       cookies = parsedCookies
@@ -1031,12 +1291,17 @@ const buildRequest = parsedArguments => {
       // TODO: a --cookie without a = character reads from it as a filename
       const cookieString = parsedArguments.cookie.join(';')
       _setHeaderIfMissing(headers, 'Cookie', cookieString, lowercase)
-      cookies = parseCookies(cookieString, false)
+      cookies = parseCookies(cookieString)
     }
   }
 
   if (parsedArguments['user-agent']) {
-    _setHeaderIfMissing(headers, 'User-Agent', parsedArguments['user-agent'], lowercase)
+    _setHeaderIfMissing(
+      headers,
+      'User-Agent',
+      parsedArguments['user-agent'],
+      lowercase
+    )
   }
 
   if (parsedArguments.referer) {
@@ -1053,17 +1318,24 @@ const buildRequest = parsedArguments => {
   let method = 'GET'
   if (parsedArguments.head) {
     method = 'HEAD'
-  } else if (has(parsedArguments, 'request') &&
-    parsedArguments.request !== 'null') { // Safari adds `-Xnull` if it can't determine the request type
-    method = parsedArguments.request
-  } else if (parsedArguments['upload-file']) { // --upload-file '' doesn't do anything.
+  } else if (
+    has(parsedArguments, 'request') &&
+    parsedArguments.request !== 'null'
+  ) {
+    // Safari adds `-Xnull` if it can't determine the request type
+    method = parsedArguments.request as string
+  } else if (parsedArguments['upload-file']) {
+    // --upload-file '' doesn't do anything.
     method = 'PUT'
-  } else if ((has(parsedArguments, 'data') ||
-    has(parsedArguments, 'data-ascii') ||
-    has(parsedArguments, 'data-binary') ||
-    has(parsedArguments, 'data-raw') ||
-    has(parsedArguments, 'form') ||
-    has(parsedArguments, 'json')) && !(parsedArguments.get)) {
+  } else if (
+    (has(parsedArguments, 'data') ||
+      has(parsedArguments, 'data-ascii') ||
+      has(parsedArguments, 'data-binary') ||
+      has(parsedArguments, 'data-raw') ||
+      has(parsedArguments, 'form') ||
+      has(parsedArguments, 'json')) &&
+    !parsedArguments.get
+  ) {
     method = 'POST'
   }
 
@@ -1073,7 +1345,7 @@ const buildRequest = parsedArguments => {
   // TODO: this probably has a lot of mismatches with curl
   if (parsedArguments.get) {
     urlObject.query = urlObject.query ? urlObject.query : ''
-    if (has(parsedArguments, 'data')) {
+    if (has(parsedArguments, 'data') && parsedArguments.data !== undefined) {
       let urlQueryString = ''
 
       if (url.indexOf('?') < 0) {
@@ -1095,7 +1367,7 @@ const buildRequest = parsedArguments => {
   const [queryAsList, queryAsDict] = parseQueryString(urlObject.query)
   // Most software libraries don't let you distinguish between a=&b= and a&b,
   // so if we get an `a&b`-type query string, don't bother.
-  const request = { url }
+  const request: Request = { url }
   if (!queryAsList || queryAsList.some((p) => p[1] === null)) {
     request.urlWithoutQuery = url // TODO: rename?
   } else {
@@ -1125,27 +1397,53 @@ const buildRequest = parsedArguments => {
   // TODO: all of these could be specified in the same command.
   // They also need to maintain order.
   // TODO: do all of these allow @file?
+  let data
   if (parsedArguments.data) {
-    request.data = parsedArguments.data
-    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    data = parsedArguments.data
+    _setHeaderIfMissing(
+      headers,
+      'Content-Type',
+      'application/x-www-form-urlencoded',
+      lowercase
+    )
   } else if (parsedArguments['data-binary']) {
-    request.data = parsedArguments['data-binary']
+    data = parsedArguments['data-binary']
     request.isDataBinary = true
-    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(
+      headers,
+      'Content-Type',
+      'application/x-www-form-urlencoded',
+      lowercase
+    )
   } else if (parsedArguments['data-ascii']) {
-    request.data = parsedArguments['data-ascii']
-    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    data = parsedArguments['data-ascii']
+    _setHeaderIfMissing(
+      headers,
+      'Content-Type',
+      'application/x-www-form-urlencoded',
+      lowercase
+    )
   } else if (parsedArguments['data-raw']) {
-    request.data = parsedArguments['data-raw']
+    data = parsedArguments['data-raw']
     request.isDataRaw = true
-    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    _setHeaderIfMissing(
+      headers,
+      'Content-Type',
+      'application/x-www-form-urlencoded',
+      lowercase
+    )
   } else if (parsedArguments['data-urlencode']) {
     // TODO: this doesn't exactly match curl
     // all '&' and all but the first '=' need to be escaped
-    request.data = parsedArguments['data-urlencode']
-    _setHeaderIfMissing(headers, 'Content-Type', 'application/x-www-form-urlencoded', lowercase)
+    data = parsedArguments['data-urlencode']
+    _setHeaderIfMissing(
+      headers,
+      'Content-Type',
+      'application/x-www-form-urlencoded',
+      lowercase
+    )
   } else if (parsedArguments.json) {
-    request.data = parsedArguments.json
+    data = parsedArguments.json
     _setHeaderIfMissing(headers, 'Content-Type', 'application/json', lowercase)
     _setHeaderIfMissing(headers, 'Accept', 'application/json', lowercase)
   } else if (parsedArguments.form) {
@@ -1159,7 +1457,7 @@ const buildRequest = parsedArguments => {
     }
   }
 
-  if (headers.length) {
+  if (headers.length > 0) {
     for (let i = headers.length - 1; i >= 0; i--) {
       if (headers[i][1] === null) {
         // TODO: ideally we should generate code that explicitly unsets the header too
@@ -1176,12 +1474,12 @@ const buildRequest = parsedArguments => {
   if (parsedArguments.digest) {
     request.digest = parsedArguments.digest
   }
-  if (has(request, 'data')) {
-    if (request.data.length > 1) {
-      request.dataArray = request.data
-      request.data = request.data.join(parsedArguments.json ? '' : '&')
+  if (data) {
+    if (data.length > 1) {
+      request.dataArray = data
+      request.data = data.join(parsedArguments.json ? '' : '&')
     } else {
-      request.data = request.data[0]
+      request.data = data[0]
     }
   }
 
@@ -1192,7 +1490,9 @@ const buildRequest = parsedArguments => {
   // certificates, etc.
   if (parsedArguments.cert) {
     // --key has no effect if --cert isn't passed
-    request.cert = parsedArguments.key ? [parsedArguments.cert, parsedArguments.key] : parsedArguments.cert
+    request.cert = parsedArguments.key
+      ? [parsedArguments.cert, parsedArguments.key]
+      : parsedArguments.cert
   }
   if (parsedArguments.cacert) {
     request.cacert = parsedArguments.cacert
@@ -1226,25 +1526,35 @@ const buildRequest = parsedArguments => {
   return request
 }
 
-const parseCurlCommand = (curlCommand) => {
-  let cmdName, args, stdin, input
+const parseCurlCommand = (curlCommand: string | string[]): Request => {
+  let cmdName: string,
+    args: string[],
+    stdin: undefined | string,
+    input: undefined | string
   if (Array.isArray(curlCommand)) {
-    [cmdName, ...args] = curlCommand
+    ;[cmdName, ...args] = curlCommand
     if (typeof cmdName === 'undefined') {
       throw new CCError('no arguments provided')
     }
   } else {
-    ({ cmdName, args, stdin, input } = tokenize(curlCommand))
+    ;({ cmdName, args, stdin, input } = tokenize(curlCommand))
     if (typeof cmdName === 'undefined') {
       throw new CCError('failed to parse input')
     }
   }
   if (cmdName.trim() !== 'curl') {
-    const shortenedCmdName = cmdName.length > 30 ? cmdName.slice(0, 27) + '...' : cmdName
+    const shortenedCmdName =
+      cmdName.length > 30 ? cmdName.slice(0, 27) + '...' : cmdName
     if (cmdName.startsWith('curl ')) {
-      throw new CCError('command should begin with a single token "curl" but instead begins with ' + JSON.stringify(shortenedCmdName))
+      throw new CCError(
+        'command should begin with a single token "curl" but instead begins with ' +
+          JSON.stringify(shortenedCmdName)
+      )
     } else {
-      throw new CCError('command should begin with "curl" but instead begins with ' + JSON.stringify(shortenedCmdName))
+      throw new CCError(
+        'command should begin with "curl" but instead begins with ' +
+          JSON.stringify(shortenedCmdName)
+      )
     }
   }
 
@@ -1259,23 +1569,11 @@ const parseCurlCommand = (curlCommand) => {
   return request
 }
 
-const serializeCookies = cookieDict => {
-  let cookieString = ''
-  let i = 0
-  const cookieCount = Object.keys(cookieDict).length
-  for (const cookieName in cookieDict) {
-    const cookieValue = cookieDict[cookieName]
-    cookieString += cookieName + '=' + cookieValue
-    if (i < cookieCount - 1) {
-      cookieString += '; '
-    }
-    i++
-  }
-  return cookieString
-}
-
 // Gets the first header, matching case-insensitively
-const getHeader = (request, header) => {
+const getHeader = (
+  request: Request,
+  header: string
+): string | null | undefined => {
   if (!request.headers) {
     return undefined
   }
@@ -1288,7 +1586,7 @@ const getHeader = (request, header) => {
   return undefined
 }
 
-const _hasHeader = (headers, header) => {
+const _hasHeader = (headers: Headers, header: string): boolean => {
   const lookup = header.toLowerCase()
   for (const h of headers) {
     if (h[0].toLowerCase() === lookup) {
@@ -1298,28 +1596,38 @@ const _hasHeader = (headers, header) => {
   return false
 }
 
-const hasHeader = (request, header) => {
+const hasHeader = (request: Request, header: string): boolean | undefined => {
   if (!request.headers) {
     return
   }
   return _hasHeader(request.headers, header)
 }
 
-const _setHeaderIfMissing = (headers, header, value, lowercase = false) => {
+const _setHeaderIfMissing = (
+  headers: Headers,
+  header: string,
+  value: string,
+  lowercase: boolean | number = false
+): boolean => {
   if (_hasHeader(headers, header)) {
     return false
   }
   headers.push([lowercase ? header.toLowerCase() : header, value])
   return true
 }
-const setHeaderIfMissing = (request, header, value, lowercase = false) => {
+const setHeaderIfMissing = (
+  request: Request,
+  header: string,
+  value: string,
+  lowercase: boolean | number = false
+) => {
   if (!request.headers) {
     return
   }
   return _setHeaderIfMissing(request.headers, header, value, lowercase)
 }
 
-const _deleteHeader = (headers, header) => {
+const _deleteHeader = (headers: Headers, header: string) => {
   const lookup = header.toLowerCase()
   for (let i = headers.length - 1; i >= 0; i--) {
     if (headers[i][0].toLowerCase() === lookup) {
@@ -1328,17 +1636,17 @@ const _deleteHeader = (headers, header) => {
   }
 }
 
-const deleteHeader = (request, header) => {
+const deleteHeader = (request: Request, header: string) => {
   if (!request.headers) {
     return
   }
   return _deleteHeader(request.headers, header)
 }
 
-const countHeader = (request, header) => {
+const countHeader = (request: Request, header: string) => {
   let count = 0
   const lookup = header.toLowerCase()
-  for (const h of (request.headers || [])) {
+  for (const h of request.headers || []) {
     if (h[0].toLowerCase() === lookup) {
       count += 1
     }
@@ -1346,8 +1654,8 @@ const countHeader = (request, header) => {
   return count
 }
 
-const parseCookiesStrict = (cookieString) => {
-  const cookies = []
+const parseCookiesStrict = (cookieString: string): Cookies | null => {
+  const cookies: Cookies = []
   for (let cookie of cookieString.split(';')) {
     cookie = cookie.replace(/^ /, '')
     const [name, value] = cookie.split(/=(.*)/s, 2)
@@ -1359,8 +1667,8 @@ const parseCookiesStrict = (cookieString) => {
   return cookies
 }
 
-const parseCookies = (cookieString) => {
-  const cookies = []
+const parseCookies = (cookieString: string): Cookies => {
+  const cookies: Cookies = []
   for (let cookie of cookieString.split(';')) {
     cookie = cookie.trim()
     if (!cookie) {
@@ -1375,18 +1683,15 @@ const parseCookies = (cookieString) => {
 export {
   curlLongOpts,
   curlShortOpts,
-
   parseCurlCommand,
   parseArgs,
   buildRequest,
-
-  serializeCookies,
-
   getHeader,
   hasHeader,
   countHeader,
   setHeaderIfMissing,
   deleteHeader,
-
   has
 }
+
+export type { LongOpts, ShortOpts, Request, Cookie, Cookies, Query, QueryDict }

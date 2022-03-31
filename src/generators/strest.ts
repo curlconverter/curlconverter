@@ -1,10 +1,11 @@
 import * as util from '../util.js'
+import type { Request } from '../util.js'
 
 import yaml from 'yamljs'
 import jsesc from 'jsesc'
 import querystring from 'query-string'
 
-function getDataString (request) {
+function getDataString (request: Request) {
   let mimeType = 'application/json'
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data)
@@ -24,7 +25,7 @@ function getDataString (request) {
   }
 
   for (const [paramName, paramValue] of (request.headers || [])) {
-    if (paramName === 'Content-Type') {
+    if (paramName.toLowerCase() === 'content-type' && paramValue !== null) {
       mimeType = paramValue
     }
   }
@@ -34,13 +35,8 @@ function getDataString (request) {
   }
 }
 
-function getQueryList (request) {
-  // Convert nulls to empty string
-  return request.query.map(p => ({ name: p[0], value: p[1] || '' }))
-}
-
-export const _toStrest = request => {
-  const response = { version: 2 }
+export const _toStrest = (request: Request) => {
+  const response: {[key: string]: any} = { version: 2 }
   if (request.insecure) {
     response.allowInsecure = true
   }
@@ -70,7 +66,7 @@ export const _toStrest = request => {
   }
   if (request.auth) {
     const [username, password] = request.auth
-    const basic = {}
+    const basic: {[key: string]: string} = {}
     if (username) {
       basic.username = username
     }
@@ -80,14 +76,15 @@ export const _toStrest = request => {
 
   let queryList
   if (request.query) {
-    queryList = getQueryList(request)
+    // Convert nulls to empty string
+    queryList = request.query.map((p) => ({ name: p[0], value: p[1] || '' }))
     response.requests.curl_converter.request.queryString = queryList
   }
 
   const yamlString = yaml.stringify(response, 100, 2)
   return yamlString
 }
-export const toStrest = curlCommand => {
+export const toStrest = (curlCommand: string | string[]) => {
   const request = util.parseCurlCommand(curlCommand)
   return _toStrest(request)
 }

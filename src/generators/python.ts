@@ -1,8 +1,9 @@
 import * as util from '../util.js'
 
 import jsesc from 'jsesc'
+import type { Request, Query, QueryDict } from '../util.js'
 
-function reprWithVariable (value, hasEnvironmentVariable) {
+function reprWithVariable (value: string, hasEnvironmentVariable: boolean) {
   if (!value) {
     return "''"
   }
@@ -14,12 +15,12 @@ function reprWithVariable (value, hasEnvironmentVariable) {
   return 'f"' + jsesc(value, { quotes: 'double' }) + '"'
 }
 
-function repr (value) {
+function repr (value: string): string {
   // In context of url parameters, don't accept nulls and such.
   return reprWithVariable(value, false)
 }
 
-function objToPython (obj, indent = 0) {
+function objToPython (obj: any, indent = 0): string {
   let s = ''
   switch (typeof obj) {
     case 'string':
@@ -64,7 +65,7 @@ function objToPython (obj, indent = 0) {
   return s
 }
 
-function objToDictOrListOfTuples (obj) {
+function objToDictOrListOfTuples (obj: Query | QueryDict): string {
   if (!Array.isArray(obj)) {
     return objToPython(obj)
   }
@@ -79,7 +80,7 @@ function objToDictOrListOfTuples (obj) {
   return s
 }
 
-function getDataString (request) {
+function getDataString (request: Request) {
   if (!request.isDataRaw && request.data.startsWith('@')) {
     let filePath = request.data.slice(1)
     if (filePath === '-') {
@@ -106,8 +107,8 @@ function getDataString (request) {
 
   const dataString = 'data = ' + repr(request.data) + '\n'
 
-  const isJson = util.hasHeader(request, 'content-type') &&
-        util.getHeader(request, 'content-type').split(';')[0].trim() === 'application/json'
+  const contentTypeHeader = util.getHeader(request, 'content-type')
+  const isJson = contentTypeHeader && contentTypeHeader.split(';')[0].trim() === 'application/json'
   if (isJson) {
     try {
       const dataAsJson = JSON.parse(request.data)
@@ -136,7 +137,10 @@ function getDataString (request) {
   return [dataString, null, null]
 }
 
-function getFilesString (request) {
+function getFilesString (request: Request): string | undefined {
+  if (!request.multipartUploads) {
+    return undefined
+  }
   const multipartUploads = request.multipartUploads.map(m => {
     let multipartValue
     if (m[1].startsWith('@')) {
@@ -170,7 +174,7 @@ function getFilesString (request) {
 
 // convertVarToStringFormat will convert if inputString to f"..." format
 // if inputString has possible variable as its substring
-function detectEnvVar (inputString) {
+function detectEnvVar (inputString: string): [Set<string>, string] {
   // Using state machine to detect environment variable
   // Each character is an edge, state machine:
   // IN_ENV_VAR: means that currently we are iterating inside a possible environment variable
@@ -184,15 +188,15 @@ function detectEnvVar (inputString) {
   const IN_STRING = 1
 
   // We only care for the unique element
-  const detectedVariables = new Set()
+  const detectedVariables: Set<string> = new Set()
   let currState = IN_STRING
   let envVarStartIndex = -1
 
   const whiteSpaceSet = new Set(' \n\t')
 
   const modifiedString = []
-  for (const idx in inputString) {
-    const currIdx = +idx
+  for (let idx = 0; idx < inputString.length; idx++) {
+    const currIdx = idx
     const currChar = inputString[currIdx]
     if (currState === IN_ENV_VAR && whiteSpaceSet.has(currChar)) {
       const newVariable = inputString.substring(envVarStartIndex, currIdx)
@@ -239,11 +243,11 @@ function detectEnvVar (inputString) {
   return [detectedVariables, modifiedString.join('')]
 }
 
-export const _toPython = request => {
+export const _toPython = (request: Request): string => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set()
-  const commentedOutHeaders = {
+  const commentedOutHeaders: {[key: string]: string} = {
     'accept-encoding': '',
     'content-length': ''
   }
@@ -317,6 +321,7 @@ export const _toPython = request => {
     queryStr = 'params = ' + objToDictOrListOfTuples(request.queryDict || request.query) + '\n'
   }
 
+  const contentType = util.getHeader(request, 'content-type')
   let dataString
   let jsonDataString
   let jsonDataStringRoundtrips
@@ -325,7 +330,7 @@ export const _toPython = request => {
     [dataString, jsonDataString, jsonDataStringRoundtrips] = getDataString(request)
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
-    if (jsonDataString && util.getHeader(request, 'content-type').trim() === 'application/json') {
+    if (jsonDataString && contentType && contentType.trim() === 'application/json') {
       commentedOutHeaders['content-type'] = 'Already added when you pass json='
       if (!jsonDataStringRoundtrips) {
         commentedOutHeaders['content-type'] += ' but not when you pass data='
@@ -338,9 +343,9 @@ export const _toPython = request => {
     // wheras curl does, so the request will fail.
     // https://github.com/curlconverter/curlconverter/issues/248
     if (filesString &&
-        util.hasHeader(request, 'content-type') &&
-        util.getHeader(request, 'content-type').trim() === 'multipart/form-data' &&
-        !util.getHeader(request, 'content-type').includes('boundary=')) {
+        contentType &&
+        contentType.trim() === 'multipart/form-data' &&
+        !contentType.includes('boundary=')) {
       // TODO: better wording
       commentedOutHeaders['content-type'] = "requests won't add a boundary if this header is set when you pass files="
     }
@@ -351,6 +356,9 @@ export const _toPython = request => {
     // TODO: what if there are repeat headers
     headerDict = 'headers = {\n'
     for (const [headerName, headerValue] of request.headers) {
+      if (headerValue === null) {
+        continue
+      }
       const [detectedVars, modifiedString] = detectEnvVar(headerValue)
 
       const hasVariable = detectedVars.size > 0
@@ -502,7 +510,7 @@ export const _toPython = request => {
 
   return pythonCode + '\n'
 }
-export const toPython = curlCommand => {
+export const toPython = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toPython(request)
 }

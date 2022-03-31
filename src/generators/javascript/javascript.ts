@@ -1,7 +1,9 @@
 import * as util from '../../util.js'
+import type { Request} from '../../util.js'
+
 import jsesc from 'jsesc'
 
-export const _toJavaScript = request => {
+export const _toJavaScript = (request: Request): string => {
   let jsFetchCode = ''
 
   if (request.data) {
@@ -73,7 +75,7 @@ export const _toJavaScript = request => {
   return jsFetchCode + '\n'
 }
 
-export const toJavaScript = curlCommand => {
+export const toJavaScript = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand)
   return _toJavaScript(request)
 }

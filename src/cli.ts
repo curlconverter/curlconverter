@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { curlLongOpts, curlShortOpts, parseArgs, buildRequest, parseCurlCommand, CCError } from './util.js'
+import { curlLongOpts, curlShortOpts, parseArgs, buildRequest, parseCurlCommand, CCError, has } from './util.js'
+import type { LongOpts, ShortOpts, Request } from './util.js'
 
 import { _toAnsible } from './generators/ansible.js'
 import { _toDart } from './generators/dart.js'
@@ -29,9 +30,9 @@ const defaultLanguage = 'python'
 
 // Maps options for --language to functions
 // NOTE: make sure to update this when adding language support
-const translate = {
+const translate: {[key: string]: (request: Request) => string} = {
   ansible: _toAnsible,
-  browser: _toJavaScript, // backwards compatibility, undocumented
+  browser: _toJavaScript, // for backwards compatibility, undocumented
   dart: _toDart,
   elixir: _toElixir,
   go: _toGo,
@@ -74,29 +75,29 @@ language: the language to convert the curl command to. The choices are
 curl_options: these should be passed exactly as they would be passed to curl.
   see 'curl --help' or 'curl --manual' for which options are allowed here`
 
-const curlConverterLongOpts = {
+const curlConverterLongOpts: LongOpts = {
   language: { type: 'string', name: 'language' },
-  stdin: { type: 'boolean', name: 'stdin' }
+  stdin: { type: 'bool', name: 'stdin' }
 }
-const curlConverterShortOpts = {
+const curlConverterShortOpts: ShortOpts = {
   // a single - (dash) tells curlconverter to read input from stdin
   '': 'stdin'
 }
-const opts = [
+const opts: [LongOpts, ShortOpts] = [
   { ...curlLongOpts, ...curlConverterLongOpts },
   { ...curlShortOpts, ...curlConverterShortOpts }
 ]
 
-const exitWithError = (error, verbose = false) => {
-  let errMsg = error
+function exitWithError (error: unknown, verbose = false): never {
+  let errMsg: Error | string | unknown = error
   if (!verbose) {
     if (error instanceof CCError) {
       errMsg = ''
       for (const line of error.message.toString().split('\n')) {
         errMsg += 'error: ' + line + '\n'
       }
-      errMsg = errMsg.trimEnd()
-    } else {
+      errMsg = (errMsg as string).trimEnd()
+    } else if (error instanceof Error) {
       // .toString() removes the traceback
       errMsg = error.toString()
     }
@@ -124,7 +125,7 @@ if (parsedArguments.version) {
 const argc = Object.keys(parsedArguments).length
 const language = parsedArguments.language || defaultLanguage
 const stdin = parsedArguments.stdin
-if (!Object.prototype.hasOwnProperty.call(translate, language)) {
+if (!has(translate, language)) {
   exitWithError(
     new CCError('unexpected --language: ' + JSON.stringify(language) + '\n' +
     'must be one of: ' + Object.keys(translate).join(', ')),
@@ -168,7 +169,7 @@ if (argc === 0) {
 }
 
 // Warning for users using the pre-4.0 CLI
-if (request.url && request.url.startsWith('curl ')) {
+if (request.url?.startsWith('curl ')) {
   console.error('warning: Passing a whole curl command as a single argument?')
   console.error('warning: Pass options to curlconverter as if it was curl instead:')
   console.error("warning: curlconverter 'curl example.com' -> curlconverter example.com")
