@@ -1,215 +1,237 @@
 // Author: Bob Rudis (bob@rud.is)
 
-import * as util from '../util.js'
-import type { Request, Cookie, QueryDict } from '../util.js'
+import * as util from "../util.js";
+import type { Request, Cookie, QueryDict } from "../util.js";
 
-import jsesc from 'jsesc'
-import querystring from 'query-string'
+import jsesc from "jsesc";
+import querystring from "query-string";
 
-function reprn (value: string | null): string { // back-tick quote names
+function reprn(value: string | null): string {
+  // back-tick quote names
   if (!value) {
-    return '``'
+    return "``";
   } else {
-    return '`' + value + '`'
+    return "`" + value + "`";
   }
 }
 
-function repr (value: string): string {
+function repr(value: string): string {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
-    return "''"
+    return "''";
   } else {
-    return "'" + jsesc(value, { quotes: 'single' }) + "'"
+    return "'" + jsesc(value, { quotes: "single" }) + "'";
   }
 }
 
-function getQueryDict (request: Request): string | undefined {
+function getQueryDict(request: Request): string | undefined {
   if (request.queryDict === undefined) {
-    return undefined
+    return undefined;
   }
 
-  let queryDict = 'params = list(\n'
-  queryDict += Object.keys(request.queryDict).map((paramName) => {
-    const rawValue = (request.queryDict as QueryDict)[paramName]
-    let paramValue
-    if (Array.isArray(rawValue)) {
-      paramValue = 'c(' + (rawValue as string[]).map(repr).join(', ') + ')'
-    } else {
-      paramValue = repr(rawValue as string)
-    }
-    return ('  ' + reprn(paramName) + ' = ' + paramValue)
-  }).join(',\n')
-  queryDict += '\n)\n'
-  return queryDict
+  let queryDict = "params = list(\n";
+  queryDict += Object.keys(request.queryDict)
+    .map((paramName) => {
+      const rawValue = (request.queryDict as QueryDict)[paramName];
+      let paramValue;
+      if (Array.isArray(rawValue)) {
+        paramValue = "c(" + (rawValue as string[]).map(repr).join(", ") + ")";
+      } else {
+        paramValue = repr(rawValue as string);
+      }
+      return "  " + reprn(paramName) + " = " + paramValue;
+    })
+    .join(",\n");
+  queryDict += "\n)\n";
+  return queryDict;
 }
 
-function getDataString (request: Request) {
-  if (!request.isDataRaw && request.data.startsWith('@')) {
-    const filePath = request.data.slice(1)
-    return 'data = upload_file(\'' + filePath + '\')'
+function getDataString(request: Request) {
+  if (!request.isDataRaw && request.data.startsWith("@")) {
+    const filePath = request.data.slice(1);
+    return "data = upload_file('" + filePath + "')";
   }
 
-  const parsedQueryString = querystring.parse(request.data, { sort: false })
-  const keyCount = Object.keys(parsedQueryString).length
-  const singleKeyOnly = keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  const singularData = request.isDataBinary || singleKeyOnly
+  const parsedQueryString = querystring.parse(request.data, { sort: false });
+  const keyCount = Object.keys(parsedQueryString).length;
+  const singleKeyOnly =
+    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]];
+  const singularData = request.isDataBinary || singleKeyOnly;
   if (singularData) {
-    return 'data = ' + repr(request.data) + '\n'
+    return "data = " + repr(request.data) + "\n";
   } else {
-    return getMultipleDataString(request, parsedQueryString)
+    return getMultipleDataString(request, parsedQueryString);
   }
 }
 
-function getMultipleDataString (request: Request, parsedQueryString: querystring.ParsedQuery<string> ) {
-  let repeatedKey = false
+function getMultipleDataString(
+  request: Request,
+  parsedQueryString: querystring.ParsedQuery<string>
+) {
+  let repeatedKey = false;
   for (const key in parsedQueryString) {
-    const value = parsedQueryString[key]
+    const value = parsedQueryString[key];
     if (Array.isArray(value)) {
-      repeatedKey = true
+      repeatedKey = true;
     }
   }
 
-  let dataString
+  let dataString;
   if (repeatedKey) {
-    const els = []
-    dataString = 'data = list(\n'
+    const els = [];
+    dataString = "data = list(\n";
     for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
+      const value = parsedQueryString[key];
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
-          const val = value[i]
-          els.push('  ' + reprn(key) + ' = ' + repr(val === null ? '' : val))
+          const val = value[i];
+          els.push("  " + reprn(key) + " = " + repr(val === null ? "" : val));
         }
       } else {
-        els.push('  ' + reprn(key) + ' = ' + repr(value === null ? '' : value))
+        els.push("  " + reprn(key) + " = " + repr(value === null ? "" : value));
       }
     }
-    dataString += els.join(',\n')
-    dataString += '\n)\n'
+    dataString += els.join(",\n");
+    dataString += "\n)\n";
   } else {
-    dataString = 'data = list(\n'
-    dataString += Object.keys(parsedQueryString).map((key) => {
-      const value = parsedQueryString[key]
-      return ('  ' + reprn(key) + ' = ' + repr(value === null ? '' : value as string))
-    }).join(',\n')
-    dataString += '\n)\n'
+    dataString = "data = list(\n";
+    dataString += Object.keys(parsedQueryString)
+      .map((key) => {
+        const value = parsedQueryString[key];
+        return (
+          "  " +
+          reprn(key) +
+          " = " +
+          repr(value === null ? "" : (value as string))
+        );
+      })
+      .join(",\n");
+    dataString += "\n)\n";
   }
 
-  return dataString
+  return dataString;
 }
 
-function getFilesString (request: Request): string | undefined {
+function getFilesString(request: Request): string | undefined {
   if (!request.multipartUploads) {
-    return undefined
+    return undefined;
   }
   // http://docs.rstats-requests.org/en/master/user/quickstart/#post-a-multipart-encoded-file
-  let filesString = 'files = list(\n'
-  filesString += request.multipartUploads.map((m) => {
-    const [multipartKey, multipartValue] = m
-    let fileParam
-    if (multipartValue.startsWith('@')) {
-      const fileName = multipartValue.slice(1)
-      // filesString += '    ' + reprn(multipartKey) + ' (' + repr(fileName) + ', upload_file(' + repr(fileName) + '))'
-      fileParam = '  ' + reprn(multipartKey) + ' = upload_file(' + repr(fileName) + ')'
-    } else {
-      fileParam = '  ' + reprn(multipartKey) + ' = ' + repr(multipartValue) + ''
-    }
-    return (fileParam)
-  }).join(',\n')
-  filesString += '\n)\n'
+  let filesString = "files = list(\n";
+  filesString += request.multipartUploads
+    .map((m) => {
+      const [multipartKey, multipartValue] = m;
+      let fileParam;
+      if (multipartValue.startsWith("@")) {
+        const fileName = multipartValue.slice(1);
+        // filesString += '    ' + reprn(multipartKey) + ' (' + repr(fileName) + ', upload_file(' + repr(fileName) + '))'
+        fileParam =
+          "  " + reprn(multipartKey) + " = upload_file(" + repr(fileName) + ")";
+      } else {
+        fileParam =
+          "  " + reprn(multipartKey) + " = " + repr(multipartValue) + "";
+      }
+      return fileParam;
+    })
+    .join(",\n");
+  filesString += "\n)\n";
 
-  return filesString
+  return filesString;
 }
 
 export const _toR = (request: Request) => {
-  let cookieDict
+  let cookieDict;
   if (request.cookies) {
-    cookieDict = 'cookies = c(\n'
-    cookieDict += request.cookies.map((c: Cookie) => '  ' + repr(c[0]) + ' = ' + repr(c[1])).join(',\n')
+    cookieDict = "cookies = c(\n";
+    cookieDict += request.cookies
+      .map((c: Cookie) => "  " + repr(c[0]) + " = " + repr(c[1]))
+      .join(",\n");
     // TODO: isn't this an extra \n?
-    cookieDict += '\n)\n'
-    util.deleteHeader(request, 'Cookie')
+    cookieDict += "\n)\n";
+    util.deleteHeader(request, "Cookie");
   }
-  let headerDict
+  let headerDict;
   if (request.headers) {
-    const hels = []
-    headerDict = 'headers = c(\n'
+    const hels = [];
+    headerDict = "headers = c(\n";
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue !== null) {
-        hels.push('  ' + reprn(headerName) + ' = ' + repr(headerValue))
+        hels.push("  " + reprn(headerName) + " = " + repr(headerValue));
       }
     }
-    headerDict += hels.join(',\n')
-    headerDict += '\n)\n'
+    headerDict += hels.join(",\n");
+    headerDict += "\n)\n";
   }
 
-  const queryDict = getQueryDict(request)
+  const queryDict = getQueryDict(request);
 
-  let dataString
-  let filesString
-  if (request.data && typeof request.data === 'string') {
-    dataString = getDataString(request)
+  let dataString;
+  let filesString;
+  if (request.data && typeof request.data === "string") {
+    dataString = getDataString(request);
   } else if (request.multipartUploads) {
-    filesString = getFilesString(request)
+    filesString = getFilesString(request);
   }
   // curl automatically prepends 'http' if the scheme is missing, but rstats fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
-    request.url = 'http://' + request.url
+    request.url = "http://" + request.url;
   }
   if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
+    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
   }
-  const url = request.queryDict ? request.urlWithoutQuery : request.url
-  let requestLine = 'res <- httr::' + request.method.toUpperCase() + '(url = \'' + url + '\''
+  const url = request.queryDict ? request.urlWithoutQuery : request.url;
+  let requestLine =
+    "res <- httr::" + request.method.toUpperCase() + "(url = '" + url + "'";
 
-  let requestLineBody = ''
+  let requestLineBody = "";
   if (request.headers) {
-    requestLineBody += ', httr::add_headers(.headers=headers)'
+    requestLineBody += ", httr::add_headers(.headers=headers)";
   }
   if (request.queryDict) {
-    requestLineBody += ', query = params'
+    requestLineBody += ", query = params";
   }
   if (request.cookies) {
-    requestLineBody += ', httr::set_cookies(.cookies = cookies)'
+    requestLineBody += ", httr::set_cookies(.cookies = cookies)";
   }
-  if (request.data && typeof request.data === 'string') {
-    requestLineBody += ', body = data'
+  if (request.data && typeof request.data === "string") {
+    requestLineBody += ", body = data";
   } else if (request.multipartUploads) {
-    requestLineBody += ', body = files'
+    requestLineBody += ", body = files";
   }
   if (request.insecure) {
-    requestLineBody += ', config = httr::config(ssl_verifypeer = FALSE)'
+    requestLineBody += ", config = httr::config(ssl_verifypeer = FALSE)";
   }
   if (request.auth) {
-    const [user, password] = request.auth
-    requestLineBody += ', httr::authenticate(' + repr(user) + ', ' + repr(password) + ')'
+    const [user, password] = request.auth;
+    requestLineBody +=
+      ", httr::authenticate(" + repr(user) + ", " + repr(password) + ")";
   }
-  requestLineBody += ')'
+  requestLineBody += ")";
 
-  requestLine += requestLineBody
+  requestLine += requestLineBody;
 
-  let rstatsCode = ''
-  rstatsCode += 'require(httr)\n\n'
+  let rstatsCode = "";
+  rstatsCode += "require(httr)\n\n";
   if (cookieDict) {
-    rstatsCode += cookieDict + '\n'
+    rstatsCode += cookieDict + "\n";
   }
   if (headerDict) {
-    rstatsCode += headerDict + '\n'
+    rstatsCode += headerDict + "\n";
   }
   if (queryDict !== undefined) {
-    rstatsCode += queryDict + '\n'
+    rstatsCode += queryDict + "\n";
   }
   if (dataString) {
-    rstatsCode += dataString + '\n'
+    rstatsCode += dataString + "\n";
   } else if (filesString) {
-    rstatsCode += filesString + '\n'
+    rstatsCode += filesString + "\n";
   }
-  rstatsCode += requestLine
+  rstatsCode += requestLine;
 
-  return rstatsCode + '\n'
-}
+  return rstatsCode + "\n";
+};
 export const toR = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand)
-  return _toR(request)
-}
+  const request = util.parseCurlCommand(curlCommand);
+  return _toR(request);
+};

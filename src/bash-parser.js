@@ -1,7 +1,7 @@
-import Parser from 'tree-sitter'
-import Bash from '@curlconverter/tree-sitter-bash'
+import Parser from "tree-sitter";
+import Bash from "@curlconverter/tree-sitter-bash";
 
-const parser = new Parser()
-parser.setLanguage(Bash)
+const parser = new Parser();
+parser.setLanguage(Bash);
 
-export default parser
+export default parser;

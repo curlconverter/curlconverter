@@ -1,85 +1,96 @@
-import * as util from '../../util.js'
-import type { Request} from '../../util.js'
+import * as util from "../../util.js";
+import type { Request } from "../../util.js";
 
-import querystring from 'query-string'
-import jsesc from 'jsesc'
+import querystring from "query-string";
+import jsesc from "jsesc";
 
 // TODO: only string
-const quote = (str: string | null | (string | null)[]): string => jsesc(str, { quotes: 'single' })
+const quote = (str: string | null | (string | null)[]): string =>
+  jsesc(str, { quotes: "single" });
 
 export const _toPhpRequests = (request: Request): string => {
-  let headerString: string
+  let headerString: string;
   if (request.headers) {
-    headerString = '$headers = array(\n'
-    let i = 0
-    const headerCount = request.headers ? request.headers.length : 0
+    headerString = "$headers = array(\n";
+    let i = 0;
+    const headerCount = request.headers ? request.headers.length : 0;
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
-        continue // TODO: this could miss not adding a trailing comma
+        continue; // TODO: this could miss not adding a trailing comma
       }
-      headerString += "    '" + headerName + "' => '" + quote(headerValue) + "'"
+      headerString +=
+        "    '" + headerName + "' => '" + quote(headerValue) + "'";
       if (i < headerCount - 1) {
-        headerString += ',\n'
+        headerString += ",\n";
       }
-      i++
+      i++;
     }
-    headerString += '\n);'
+    headerString += "\n);";
   } else {
-    headerString = '$headers = array();'
+    headerString = "$headers = array();";
   }
 
-  let optionsString
+  let optionsString;
   if (request.auth) {
-    const [user, password] = request.auth
-    optionsString = "$options = array('auth' => array('" + user + "', '" + password + "'));"
+    const [user, password] = request.auth;
+    optionsString =
+      "$options = array('auth' => array('" + user + "', '" + password + "'));";
   }
 
-  let dataString
+  let dataString;
   if (request.data) {
-    const parsedQueryString = querystring.parse(request.data, { sort: false })
-    dataString = '$data = array(\n'
-    const dataCount = Object.keys(parsedQueryString).length
-    if (dataCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]) {
-      dataString = "$data = '" + quote(request.data) + "';"
+    const parsedQueryString = querystring.parse(request.data, { sort: false });
+    dataString = "$data = array(\n";
+    const dataCount = Object.keys(parsedQueryString).length;
+    if (
+      dataCount === 1 &&
+      !parsedQueryString[Object.keys(parsedQueryString)[0]]
+    ) {
+      dataString = "$data = '" + quote(request.data) + "';";
     } else {
-      let dataIndex = 0
+      let dataIndex = 0;
       for (const key in parsedQueryString) {
-        const value = parsedQueryString[key]
-        dataString += "    '" + key + "' => '" + quote(value) + "'"
+        const value = parsedQueryString[key];
+        dataString += "    '" + key + "' => '" + quote(value) + "'";
         if (dataIndex < dataCount - 1) {
-          dataString += ',\n'
+          dataString += ",\n";
         }
-        dataIndex++
+        dataIndex++;
       }
-      dataString += '\n);'
+      dataString += "\n);";
     }
   }
-  let requestLine = '$response = Requests::' + request.method.toLowerCase() + '(\'' + request.url + '\''
-  requestLine += ', $headers'
+  let requestLine =
+    "$response = Requests::" +
+    request.method.toLowerCase() +
+    "('" +
+    request.url +
+    "'";
+  requestLine += ", $headers";
   if (dataString) {
-    requestLine += ', $data'
+    requestLine += ", $data";
   }
   if (optionsString) {
-    requestLine += ', $options'
+    requestLine += ", $options";
   }
-  requestLine += ');'
+  requestLine += ");";
 
-  let phpCode = '<?php\n'
-  phpCode += 'include(\'vendor/rmccue/requests/library/Requests.php\');\n'
-  phpCode += 'Requests::register_autoloader();\n'
-  phpCode += headerString + '\n'
+  let phpCode = "<?php\n";
+  phpCode += "include('vendor/rmccue/requests/library/Requests.php');\n";
+  phpCode += "Requests::register_autoloader();\n";
+  phpCode += headerString + "\n";
   if (dataString) {
-    phpCode += dataString + '\n'
+    phpCode += dataString + "\n";
   }
   if (optionsString) {
-    phpCode += optionsString + '\n'
+    phpCode += optionsString + "\n";
   }
 
-  phpCode += requestLine
+  phpCode += requestLine;
 
-  return phpCode + '\n'
-}
+  return phpCode + "\n";
+};
 export const toPhpRequests = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand)
-  return _toPhpRequests(request)
-}
+  const request = util.parseCurlCommand(curlCommand);
+  return _toPhpRequests(request);
+};

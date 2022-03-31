@@ -28,4 +28,4 @@ export const ansibleTemplate = `-
     validate_certs: no
 {%- endif %}
   register: result
-`
+`;
