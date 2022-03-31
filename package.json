@@ -1,14 +1,17 @@
 {
   "name": "curlconverter",
   "version": "4.0.0-alpha.10",
-  "description": "convert curl commands to Python, JavaScript, Go, PHP and other languages",
-  "homepage": "https://github.com/curlconverter/curlconverter",
+  "description": "convert Curl commands to Python, JavaScript, Go, PHP and other languages",
+  "homepage": "https://curlconverter.com",
   "author": {
     "name": "Nick Carneiro",
     "email": "nickc@trillworks.com",
-    "url": "http://trillworks.com"
+    "url": "https://trillworks.com"
   },
-  "repository": "curlconverter/curlconverter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/curlconverter/curlconverter.git"
+  },
   "license": "MIT",
   "keywords": [
     "curl",
@@ -17,11 +20,10 @@
     "python",
     "converter"
   ],
+  "main": "dist/src/index.js",
   "type": "module",
-  "main": "index.js",
   "dependencies": {
     "@curlconverter/tree-sitter-bash": "^0.0.2",
-    "cookie": "^0.4.2",
     "jsesc": "^3.0.2",
     "nunjucks": "^3.2.3",
     "query-string": "^7.1.1",
@@ -30,30 +32,44 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/diff": "^5.0.2",
+    "@types/glob": "^7.2.0",
+    "@types/jsesc": "^3.0.1",
+    "@types/nunjucks": "^3.2.1",
+    "@types/tape": "^4.13.2",
+    "@types/yamljs": "^0.2.31",
+    "@types/yargs": "^17.0.10",
+    "@typescript-eslint/eslint-plugin": "^5.17.0",
+    "@typescript-eslint/parser": "^5.17.0",
     "colors": "^1.4.0",
     "diff": "^5.0.0",
-    "standard": "^17.0.0-2",
+    "eslint": "^8.12.0",
+    "eslint-config-prettier": "^8.5.0",
+    "glob": "^7.2.0",
+    "mocha": "^9.2.2",
+    "prettier": "^2.6.1",
     "tape": "^5.5.2",
     "tree-sitter-cli": "^0.20.6",
-    "yargs": "^17.3.1"
+    "typescript": "^4.6.3",
+    "yargs": "^17.4.0"
   },
   "scripts": {
-    "test": "tape test.js",
-    "lint": "standard",
-    "lint:fix": "standard --fix",
-    "prepare": "tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash",
-    "gen-test": "./tools/gen-test.js",
-    "compare-requests": "./tools/compare-requests.js",
-    "compare-request": "./tools/compare-requests.js"
+    "compile": "tsc",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "NODE_OPTIONS=--enable-source-maps npx tape dist/test/test.js",
+    "prelint": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "prefix": "npm run compile",
+    "fix": "eslint src --ext ts --fix",
+    "prepare": "npm run compile && tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash && mv tree-sitter-bash.wasm dist/",
+    "pregen-test": "npm run compile",
+    "gen-test": "node --enable-source-maps ./dist/tools/gen-test.js",
+    "compare-requests": "npm run compile && node --enable-source-maps ./dist/tools/compare-requests.js",
+    "compare-request": "npm run compile && node --enable-source-maps ./dist/tools/compare-requests.js"
   },
-  "standard": {
-    "ignore": [
-      "/fixtures/",
-      "/dist/"
-    ]
-  },
-  "bin": "bin/cli.js",
+  "bin": "dist/src/cli.js",
   "browser": {
-    "./parser.js": "./browser-parser.js"
+    "./dist/src/bash-parser.js": "./dist/src/bash-parser-web.js"
   }
 }

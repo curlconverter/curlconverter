@@ -5,12 +5,11 @@ Standard.xml
 
 .github/*
 .gitattributes
-
-docs/*
+.gitmodules
 
 extract_curl_args.py
 
-fixtures/*
-tools/*
-test.js
-test-utils.js
+src/tools
+test
+dist/test
+dist/tools
