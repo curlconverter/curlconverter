@@ -46,6 +46,8 @@
     "eslint": "^8.12.0",
     "eslint-config-prettier": "^8.5.0",
     "glob": "^7.2.0",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.7",
     "mocha": "^9.2.2",
     "prettier": "^2.6.1",
     "tape": "^5.5.2",
@@ -62,11 +64,14 @@
     "lint": "eslint src --ext ts",
     "prefix": "npm run compile",
     "fix": "eslint src --ext ts --fix",
-    "prepare": "npm run compile && tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash && mv tree-sitter-bash.wasm dist/",
+    "prepare": "husky install && npm run compile && tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash && mv tree-sitter-bash.wasm dist/",
     "pregen-test": "npm run compile",
     "gen-test": "node --enable-source-maps ./dist/tools/gen-test.js",
     "compare-requests": "npm run compile && node --enable-source-maps ./dist/tools/compare-requests.js",
     "compare-request": "npm run compile && node --enable-source-maps ./dist/tools/compare-requests.js"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   },
   "bin": "dist/src/cli.js",
   "browser": {

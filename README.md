@@ -97,7 +97,7 @@ The parser generates a generic data structure consumed by code generator functio
 
 You can run a specific test with:
 
-``` sh
+```sh
 npm test -- test_name
 ```
 
@@ -105,7 +105,7 @@ where `test_name` is a file (without the `.sh` extension) in `test/fixtures/curl
 
 You can run only the tests for a specific language generator with:
 
-``` sh
+```sh
 npm test -- --language=python
 ```
 

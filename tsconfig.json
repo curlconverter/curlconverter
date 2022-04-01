@@ -14,11 +14,7 @@
     "strictNullChecks": true,
     "noImplicitReturns": true
   },
-  "include": [
-    "src/**/*",
-    "test/**/*",
-    "tools/**/*"
-  ],
+  "include": ["src/**/*", "test/**/*", "tools/**/*"],
   "exclude": [
     "tools/extract_curl_args.py",
     "test/fixtures/**/*.*",

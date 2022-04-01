@@ -1,213 +1,216 @@
-import * as util from '../util.js'
-import type { Request} from '../util.js'
+import * as util from "../util.js";
+import type { Request } from "../util.js";
 
-import jsesc from 'jsesc'
-import querystring from 'query-string'
+import jsesc from "jsesc";
+import querystring from "query-string";
 
-// TODO: I bet elixir's array syntax is different and if the query string 
+// TODO: I bet elixir's array syntax is different and if the query string
 // values are arrays that actually generates broken code.
-function repr (value: string | null | (string | null)[]): string {
+function repr(value: string | null | (string | null)[]): string {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
-    return '""'
+    return '""';
   } else {
-    return `~s|${jsesc(value, { quotes: 'backtick' })}|`
+    return `~s|${jsesc(value, { quotes: "backtick" })}|`;
   }
 }
 
-function getCookies (request: Request): string {
+function getCookies(request: Request): string {
   if (!request.cookies) {
-    return ''
+    return "";
   }
 
-  const cookies = []
+  const cookies = [];
   for (const [cookieName, cookieValue] of request.cookies) {
-    cookies.push(`${cookieName}=${cookieValue}`)
+    cookies.push(`${cookieName}=${cookieValue}`);
   }
-  return `cookies: [~s|${cookies.join('; ')}|]`
+  return `cookies: [~s|${cookies.join("; ")}|]`;
 }
 
-function getOptions (request: Request): string {
-  const hackneyOptions = []
+function getOptions(request: Request): string {
+  const hackneyOptions = [];
 
-  const auth = getBasicAuth(request)
+  const auth = getBasicAuth(request);
   if (auth) {
-    hackneyOptions.push(auth)
+    hackneyOptions.push(auth);
   }
 
   if (request.insecure) {
-    hackneyOptions.push(':insecure')
+    hackneyOptions.push(":insecure");
   }
 
-  const cookies = getCookies(request)
+  const cookies = getCookies(request);
   if (cookies) {
-    hackneyOptions.push(cookies)
+    hackneyOptions.push(cookies);
   }
 
-  let hackneyOptionsString = ''
+  let hackneyOptionsString = "";
   if (hackneyOptions.length) {
-    hackneyOptionsString = `hackney: [${hackneyOptions.join(', ')}]`
+    hackneyOptionsString = `hackney: [${hackneyOptions.join(", ")}]`;
   }
 
-  return `[${hackneyOptionsString}]`
+  return `[${hackneyOptionsString}]`;
 }
 
-function getBasicAuth (request: Request): string {
+function getBasicAuth(request: Request): string {
   if (!request.auth) {
-    return ''
+    return "";
   }
 
-  const [user, password] = request.auth
-  return `basic_auth: {${repr(user)}, ${repr(password)}}`
+  const [user, password] = request.auth;
+  return `basic_auth: {${repr(user)}, ${repr(password)}}`;
 }
 
-function getQueryDict (request: Request): string {
+function getQueryDict(request: Request): string {
   if (!request.query) {
-    return '[]'
+    return "[]";
   }
-  let queryDict = '[\n'
+  let queryDict = "[\n";
   for (const [paramName, rawValue] of request.query) {
-    queryDict += `    {${repr(paramName)}, ${repr(rawValue)}},\n`
+    queryDict += `    {${repr(paramName)}, ${repr(rawValue)}},\n`;
   }
-  queryDict += '  ]'
-  return queryDict
+  queryDict += "  ]";
+  return queryDict;
 }
 
-function getHeadersDict (request: Request): string {
+function getHeadersDict(request: Request): string {
   if (!request.headers) {
-    return '[]'
+    return "[]";
   }
-  let dict = '[\n'
+  let dict = "[\n";
   for (const [headerName, headerValue] of request.headers) {
-    dict += `    {${repr(headerName)}, ${repr(headerValue)}},\n`
+    dict += `    {${repr(headerName)}, ${repr(headerValue)}},\n`;
   }
-  dict += '  ]'
-  return dict
+  dict += "  ]";
+  return dict;
 }
 
-function getBody (request: Request): string {
-  const formData = getFormDataString(request)
+function getBody(request: Request): string {
+  const formData = getFormDataString(request);
 
   if (formData) {
-    return formData
+    return formData;
   }
 
-  return '""'
+  return '""';
 }
 
-function getFormDataString (request: Request): string {
-  if (request.data && typeof request.data === 'string') {
-    return getDataString(request)
+function getFormDataString(request: Request): string {
+  if (request.data && typeof request.data === "string") {
+    return getDataString(request);
   }
 
   if (!request.multipartUploads) {
-    return ''
+    return "";
   }
 
-  let fileArgs: string[] | string = []
-  let dataArgs: string[] | string = []
+  let fileArgs: string[] | string = [];
+  let dataArgs: string[] | string = [];
   for (const [multipartKey, multipartValue] of request.multipartUploads) {
-    if (multipartValue.startsWith('@')) {
-      const fileName = multipartValue.slice(1)
-      fileArgs.push(`    {:file, ~s|${fileName}|}`)
+    if (multipartValue.startsWith("@")) {
+      const fileName = multipartValue.slice(1);
+      fileArgs.push(`    {:file, ~s|${fileName}|}`);
     } else {
-      dataArgs.push(`    {${repr(multipartKey)}, ${repr(multipartValue)}}`)
+      dataArgs.push(`    {${repr(multipartKey)}, ${repr(multipartValue)}}`);
     }
   }
 
-  let content: string[] | string = []
-  fileArgs = fileArgs.join(',\n')
+  let content: string[] | string = [];
+  fileArgs = fileArgs.join(",\n");
   if (fileArgs) {
-    content.push(fileArgs)
+    content.push(fileArgs);
   }
 
-  dataArgs = dataArgs.join(',\n')
+  dataArgs = dataArgs.join(",\n");
   if (dataArgs) {
-    content.push(dataArgs)
+    content.push(dataArgs);
   }
 
-  content = content.join(',\n')
+  content = content.join(",\n");
   if (content) {
     return `{:multipart, [
 ${content}
-]}`
+]}`;
   }
 
-  return ''
+  return "";
 }
 
-function getDataString (request: Request): string {
-  if (!request.isDataRaw && request.data.startsWith('@')) {
-    const filePath = request.data.slice(1)
+function getDataString(request: Request): string {
+  if (!request.isDataRaw && request.data.startsWith("@")) {
+    const filePath = request.data.slice(1);
     if (request.isDataBinary) {
-      return `File.read!("${filePath}")`
+      return `File.read!("${filePath}")`;
     } else {
-      return `{:file, ~s|${filePath}|}`
+      return `{:file, ~s|${filePath}|}`;
     }
   }
 
-  const parsedQueryString = querystring.parse(request.data, { sort: false })
-  const keyCount = Object.keys(parsedQueryString).length
+  const parsedQueryString = querystring.parse(request.data, { sort: false });
+  const keyCount = Object.keys(parsedQueryString).length;
   const singleKeyOnly =
-    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]]
-  const singularData = request.isDataBinary || singleKeyOnly
+    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]];
+  const singularData = request.isDataBinary || singleKeyOnly;
   if (singularData) {
-    return `~s|${request.data}|`
+    return `~s|${request.data}|`;
   } else {
-    return getMultipleDataString(request, parsedQueryString)
+    return getMultipleDataString(request, parsedQueryString);
   }
 }
 
-function getMultipleDataString (request: Request, parsedQueryString: querystring.ParsedQuery<string>): string {
-  let repeatedKey = false
+function getMultipleDataString(
+  request: Request,
+  parsedQueryString: querystring.ParsedQuery<string>
+): string {
+  let repeatedKey = false;
   for (const key in parsedQueryString) {
-    const value = parsedQueryString[key]
+    const value = parsedQueryString[key];
     if (Array.isArray(value)) {
-      repeatedKey = true
+      repeatedKey = true;
     }
   }
 
-  let dataString
+  let dataString;
   if (repeatedKey) {
-    const data = []
+    const data = [];
     for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
+      const value = parsedQueryString[key];
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
-          data.push(`    {${repr(key)}, ${repr(value[i])}}`)
+          data.push(`    {${repr(key)}, ${repr(value[i])}}`);
         }
       } else {
-        data.push(`    {${repr(key)}, ${repr(value)}}`)
+        data.push(`    {${repr(key)}, ${repr(value)}}`);
       }
     }
     dataString = `[
-${data.join(',\n')}
-  ]`
+${data.join(",\n")}
+  ]`;
   } else {
-    const data = []
+    const data = [];
     for (const key in parsedQueryString) {
-      const value = parsedQueryString[key]
-      data.push(`    {${repr(key)}, ${repr(value)}}`)
+      const value = parsedQueryString[key];
+      data.push(`    {${repr(key)}, ${repr(value)}}`);
     }
     dataString = `[
-${data.join(',\n')}
-  ]`
+${data.join(",\n")}
+  ]`;
   }
 
-  return dataString
+  return dataString;
 }
 
 export const _toElixir = (request: Request): string => {
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
-    request.url = 'http://' + request.url
+    request.url = "http://" + request.url;
   }
   if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = 'http://' + request.urlWithoutQuery
+    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
   }
   if (request.cookies) {
-    util.deleteHeader(request, 'cookie')
+    util.deleteHeader(request, "cookie");
   }
 
   const template = `request = %HTTPoison.Request{
@@ -220,11 +223,11 @@ export const _toElixir = (request: Request): string => {
 }
 
 response = HTTPoison.request(request)
-`
+`;
 
-  return template
-}
+  return template;
+};
 export const toElixir = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand)
-  return _toElixir(request)
-}
+  const request = util.parseCurlCommand(curlCommand);
+  return _toElixir(request);
+};
