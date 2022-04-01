@@ -9,12 +9,11 @@
     "lib": ["es2018"],
     "moduleResolution": "node",
     "module": "es2022",
-    "allowJs": true,
     "esModuleInterop": true,
     "strictNullChecks": true,
     "noImplicitReturns": true
   },
-  "include": ["src/**/*", "test/**/*", "tools/**/*"],
+  "include": ["src/**/*", "test/**/*", "tools/**/*", "index.d.ts"],
   "exclude": [
     "tools/extract_curl_args.py",
     "test/fixtures/**/*.*",

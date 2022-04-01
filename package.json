@@ -51,6 +51,7 @@
     "mocha": "^9.2.2",
     "prettier": "^2.6.1",
     "tape": "^5.5.2",
+    "tree-sitter-bash": "^0.19.0",
     "tree-sitter-cli": "^0.20.6",
     "typescript": "^4.6.3",
     "yargs": "^17.4.0"
@@ -62,6 +63,7 @@
     "test": "NODE_OPTIONS=--enable-source-maps npx tape dist/test/test.js",
     "prelint": "npm run compile",
     "lint": "eslint src --ext ts",
+    "format": "prettier --write .",
     "prefix": "npm run compile",
     "fix": "eslint src --ext ts --fix",
     "prepare": "husky install && npm run compile && tree-sitter build-wasm --docker node_modules/@curlconverter/tree-sitter-bash && mv tree-sitter-bash.wasm dist/",
