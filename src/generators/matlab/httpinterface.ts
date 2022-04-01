@@ -205,7 +205,7 @@ const prepareData = (request: Request) => {
     response = callFunction("body", "FormProvider", data);
   } else if (Object.prototype.hasOwnProperty.call(request, "data")) {
     response = prepareDataProvider(
-      request.data,
+      request.data as string,
       "body",
       ";",
       0,
@@ -221,7 +221,7 @@ const prepareData = (request: Request) => {
 
 const prepareRequestMessage = (request: Request): string => {
   let reqMessage: string[] | string = [repr(request.method.toLowerCase())];
-  if (request.cookie || request.headers) {
+  if (request.cookies || request.headers) {
     reqMessage.push("header");
   } else if (request.method.toLowerCase() === "get") {
     reqMessage = "";

@@ -5,7 +5,13 @@ import yaml from "yamljs";
 import jsesc from "jsesc";
 import querystring from "query-string";
 
-function getDataString(request: Request) {
+function getDataString(request: Request): {
+  mimeType: string;
+  text: object | string;
+} | null {
+  if (!request.data) {
+    return null;
+  }
   let mimeType = "application/json";
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data);
@@ -52,7 +58,7 @@ export const _toStrest = (request: Request) => {
       },
     },
   };
-  if (request.data && typeof request.data === "string") {
+  if (request.data) {
     response.requests.curl_converter.request.postData = getDataString(request);
   }
 

@@ -46,7 +46,10 @@ function getQueryDict(request: Request): string | undefined {
   return queryDict;
 }
 
-function getDataString(request: Request) {
+function getDataString(request: Request): string {
+  if (!request.data) {
+    return "";
+  }
   if (!request.isDataRaw && request.data.startsWith("@")) {
     const filePath = request.data.slice(1);
     return "data = upload_file('" + filePath + "')";
@@ -167,7 +170,7 @@ export const _toR = (request: Request) => {
 
   let dataString;
   let filesString;
-  if (request.data && typeof request.data === "string") {
+  if (request.data) {
     dataString = getDataString(request);
   } else if (request.multipartUploads) {
     filesString = getFilesString(request);

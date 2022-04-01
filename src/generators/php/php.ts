@@ -81,11 +81,16 @@ export const _toPhp = (request: Request): string => {
         }
       }
       requestDataCode += "]";
-    } else if (request.isDataBinary && request.data.charAt(0) === "@") {
+    } else if (
+      request.isDataBinary &&
+      (request.data as string).charAt(0) === "@"
+    ) {
       requestDataCode =
-        "file_get_contents('" + quote(request.data.substring(1)) + "')";
+        "file_get_contents('" +
+        quote((request.data as string).substring(1)) +
+        "')";
     } else {
-      requestDataCode = "'" + quote(request.data) + "'";
+      requestDataCode = "'" + quote(request.data as string) + "'";
     }
     phpCode +=
       "curl_setopt($ch, CURLOPT_POSTFIELDS, " + requestDataCode + ");\n";

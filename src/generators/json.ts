@@ -20,7 +20,12 @@ type JSONOutput = {
   auth?: { user: string; password: string };
 };
 
-function getDataString(request: Request) {
+function getDataString(request: Request): {
+  data?: { [key: string]: string | string[] };
+} {
+  if (!request.data) {
+    return {};
+  }
   /*
     if ( !request.isDataRaw && request.data.startsWith('@') ) {
    var filePath = request.data.slice(1);

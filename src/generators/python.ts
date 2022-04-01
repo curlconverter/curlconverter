@@ -20,7 +20,10 @@ function repr(value: string): string {
   return reprWithVariable(value, false);
 }
 
-function objToPython(obj: any, indent = 0): string {
+function objToPython(
+  obj: string | number | boolean | object | null,
+  indent = 0
+): string {
   let s = "";
   switch (typeof obj) {
     case "string":
@@ -87,7 +90,12 @@ function objToDictOrListOfTuples(obj: Query | QueryDict): string {
   return s;
 }
 
-function getDataString(request: Request) {
+function getDataString(
+  request: Request
+): [string | null, string | null, boolean | null] {
+  if (!request.data) {
+    return [null, null, null];
+  }
   if (!request.isDataRaw && request.data.startsWith("@")) {
     let filePath = request.data.slice(1);
     if (filePath === "-") {
@@ -505,7 +513,8 @@ export const _toPython = (request: Request): string => {
   if (request.insecure) {
     requestLineBody += ", verify=False";
   } else if (request.cacert || request.capath) {
-    requestLineBody += ", verify=" + repr(request.cacert || request.capath);
+    requestLineBody +=
+      ", verify=" + repr((request.cacert || request.capath) as string);
   }
 
   if (request.auth) {

@@ -96,7 +96,7 @@ function getBody(request: Request): string {
 }
 
 function getFormDataString(request: Request): string {
-  if (request.data && typeof request.data === "string") {
+  if (request.data) {
     return getDataString(request);
   }
 
@@ -137,6 +137,10 @@ ${content}
 }
 
 function getDataString(request: Request): string {
+  if (!request.data) {
+    return "";
+  }
+
   if (!request.isDataRaw && request.data.startsWith("@")) {
     const filePath = request.data.slice(1);
     if (request.isDataBinary) {

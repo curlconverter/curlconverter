@@ -75,7 +75,7 @@ export const _toDart = (r: Request): string => {
   }
 
   const hasData = r.data;
-  if (hasData) {
+  if (r.data) {
     // escape single quotes if there're not already escaped
     if (r.data.indexOf("'") !== -1 && r.data.indexOf("\\'") === -1)
       r.data = jsesc(r.data);
