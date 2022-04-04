@@ -38,7 +38,7 @@ export const _toJavaScript = (request: Request): string => {
     request.method.toUpperCase() !== "GET" ||
     request.headers ||
     request.auth ||
-    request.body
+    request.data
   ) {
     jsFetchCode += ", {\n";
 

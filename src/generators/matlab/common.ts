@@ -115,7 +115,10 @@ const addCellArray = (
   return response;
 };
 
-const structify = (obj: any, indentLevel?: number) => {
+const structify = (
+  obj: number[] | string[] | { [key: string]: string } | string | number | null,
+  indentLevel?: number
+) => {
   let response = "";
   indentLevel = !indentLevel ? 1 : ++indentLevel;
   const indent = " ".repeat(4 * indentLevel);

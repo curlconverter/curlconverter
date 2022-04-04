@@ -152,9 +152,13 @@ const prepareBasicData = (request: Request): string | string[] => {
   if (Object.prototype.hasOwnProperty.call(request, "data")) {
     if (request.data === "") {
       response = setVariableValue("body", repr());
-    } else if (request.data[0] === "@") {
+    } else if ((request.data as string)[0] === "@") {
       response.push(
-        callFunction("body", "fileread", repr(request.data.slice(1)))
+        callFunction(
+          "body",
+          "fileread",
+          repr((request.data as string).slice(1))
+        )
       );
 
       if (!request.isDataBinary) {
@@ -164,7 +168,7 @@ const prepareBasicData = (request: Request): string | string[] => {
       // if the data is in JSON, store it as struct in MATLAB
       // otherwise just keep it as a char vector
       try {
-        const jsonData = JSON.parse(request.data);
+        const jsonData = JSON.parse(request.data as string);
         if (typeof jsonData === "object") {
           let jsonText = structify(jsonData);
           if (!jsonText.startsWith("struct")) jsonText = repr(jsonText);

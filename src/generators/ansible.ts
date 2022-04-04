@@ -5,7 +5,10 @@ import { ansibleTemplate } from "../templates/ansible.js";
 import nunjucks from "nunjucks";
 import querystring from "query-string";
 
-function getDataString(request: Request): any {
+function getDataString(request: Request): string | object {
+  if (!request.data) {
+    return "";
+  }
   const parsedQueryString = querystring.parse(request.data, { sort: false });
   const keyCount = Object.keys(parsedQueryString).length;
   const singleKeyOnly =

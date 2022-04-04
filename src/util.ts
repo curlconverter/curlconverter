@@ -86,14 +86,33 @@ interface ParsedArguments {
 
 interface Request {
   url: string;
+  urlWithoutQuery: string;
   query?: Query;
   queryDict?: QueryDict;
+  method: string;
   headers?: Headers;
   stdin?: string;
   input?: string;
   multipartUploads?: [string, string][];
   auth?: [string, string];
-  [key: string]: any;
+  cookies?: Cookies;
+  compressed?: boolean;
+  isDataBinary?: boolean;
+  isDataRaw?: boolean;
+  digest?: boolean;
+  dataArray?: string[];
+  data?: string;
+  insecure?: boolean;
+  cert?: string | [string, string];
+  cacert?: string;
+  capath?: string;
+  proxy?: string;
+  proxyAuth?: string;
+  timeout?: string;
+  followRedirects?: boolean;
+  output?: string;
+  http2?: boolean;
+  http3?: boolean;
 }
 
 // BEGIN GENERATED CURL OPTIONS
@@ -1365,20 +1384,25 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
     urlObject.query = urlObject.query.slice(0, -1);
   }
   const [queryAsList, queryAsDict] = parseQueryString(urlObject.query);
+  const useParsedQuery =
+    queryAsList &&
+    queryAsList.length &&
+    queryAsList.every((p) => p[1] !== null);
   // Most software libraries don't let you distinguish between a=&b= and a&b,
   // so if we get an `a&b`-type query string, don't bother.
-  const request: Request = { url };
-  if (!queryAsList || queryAsList.some((p) => p[1] === null)) {
-    request.urlWithoutQuery = url; // TODO: rename?
-  } else {
+  let urlWithoutQuery;
+  if (useParsedQuery) {
     urlObject.search = null; // Clean out the search/query portion.
-    request.urlWithoutQuery = URL.format(urlObject);
+    urlWithoutQuery = URL.format(urlObject);
+  } else {
+    urlWithoutQuery = url; // TODO: rename?
+  }
 
-    if (queryAsList.length > 0) {
-      request.query = queryAsList;
-      if (queryAsDict) {
-        request.queryDict = queryAsDict;
-      }
+  const request: Request = { url, method, urlWithoutQuery };
+  if (useParsedQuery) {
+    request.query = queryAsList;
+    if (queryAsDict) {
+      request.queryDict = queryAsDict;
     }
   }
 
@@ -1391,8 +1415,6 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
   if (parsedArguments.compressed) {
     request.compressed = true;
   }
-
-  request.method = method;
 
   // TODO: all of these could be specified in the same command.
   // They also need to maintain order.

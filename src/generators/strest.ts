@@ -5,7 +5,10 @@ import yaml from "yamljs";
 import jsesc from "jsesc";
 import querystring from "query-string";
 
-function getDataString(request: Request) {
+function getDataString(request: Request): PostData | null {
+  if (!request.data) {
+    return null;
+  }
   let mimeType = "application/json";
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data);
@@ -36,8 +39,40 @@ function getDataString(request: Request) {
   };
 }
 
-export const _toStrest = (request: Request) => {
-  const response: { [key: string]: any } = { version: 2 };
+type PostData = {
+  mimeType: string;
+  text: object | string;
+};
+
+type BasicAuth = {
+  username?: string;
+  password: string;
+};
+
+type StrestOutput = {
+  version: number;
+  allowInsecure?: boolean;
+  requests?: {
+    curl_converter: {
+      request: {
+        url: string;
+        method: string;
+        postData?: PostData | null;
+        headers?: {
+          name: string;
+          value: string | null;
+        }[];
+        queryString?: { name: string; value: string }[];
+      };
+      auth?: {
+        basic: BasicAuth;
+      };
+    };
+  };
+};
+
+export const _toStrest = (request: Request): string => {
+  const response: StrestOutput = { version: 2 };
   if (request.insecure) {
     response.allowInsecure = true;
   }
@@ -52,7 +87,7 @@ export const _toStrest = (request: Request) => {
       },
     },
   };
-  if (request.data && typeof request.data === "string") {
+  if (request.data) {
     response.requests.curl_converter.request.postData = getDataString(request);
   }
 
@@ -67,12 +102,12 @@ export const _toStrest = (request: Request) => {
   }
   if (request.auth) {
     const [username, password] = request.auth;
-    const basic: { [key: string]: string } = {};
+    const basic: { username?: string; password?: string } = {};
     if (username) {
       basic.username = username;
     }
     basic.password = password;
-    response.requests.curl_converter.auth = { basic };
+    response.requests.curl_converter.auth = { basic: basic as BasicAuth };
   }
 
   let queryList;
@@ -85,7 +120,7 @@ export const _toStrest = (request: Request) => {
   const yamlString = yaml.stringify(response, 100, 2);
   return yamlString;
 };
-export const toStrest = (curlCommand: string | string[]) => {
+export const toStrest = (curlCommand: string | string[]): string => {
   const request = util.parseCurlCommand(curlCommand);
   return _toStrest(request);
 };
