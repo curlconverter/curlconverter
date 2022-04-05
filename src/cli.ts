@@ -13,6 +13,7 @@ import type { LongOpts, ShortOpts, Request } from "./util.js";
 
 import { _toAnsible } from "./generators/ansible.js";
 import { _toDart } from "./generators/dart.js";
+import { _toCFML } from "./generators/cfml.js";
 import { _toElixir } from "./generators/elixir.js";
 import { _toGo } from "./generators/go.js";
 import { _toJava } from "./generators/java.js";
@@ -40,6 +41,7 @@ const defaultLanguage = "python";
 // NOTE: make sure to update this when adding language support
 const translate: { [key: string]: (request: Request) => string } = {
   ansible: _toAnsible,
+  cfml: _toCFML,
   browser: _toJavaScript, // for backwards compatibility, undocumented
   dart: _toDart,
   elixir: _toElixir,
@@ -62,6 +64,7 @@ const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...
 
 language: the language to convert the curl command to. The choices are
   ansible
+  cfml
   dart
   elixir
   go
