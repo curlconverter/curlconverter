@@ -13,7 +13,7 @@ data = {
 response = requests.post('http://example.com', data=data)
 ```
 
-You can choose the output language by passing `--language <language>`. The options are `python` (the default), `javascript`/`node`/`node-request`, `php`, `go`, `java`, `r`, `rust`, `elixir`, `dart`, `matlab` and a few more.
+You can choose the output language by passing `--language <language>`. The options are `python` (the default), `javascript`/`node`/`node-request`, `php`, `go`, `java`, `r`, `rust`, `elixir`, `dart`, `matlab`,`cfml` and a few more.
 
 [![NPM version][npm-image]][npm-url]
 
@@ -154,6 +154,7 @@ If you get stuck, please reach out via email. I am always willing to hop on a Go
 - cf512 (bugfixes and feature requests)
 - DainisGorbunovs (MATLAB support)
 - TennyZhuang (data-raw support)
+- scottsteinbeck (CFML support)
 
 ## License
 
