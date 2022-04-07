@@ -13,7 +13,7 @@ data = {
 response = requests.post('http://example.com', data=data)
 ```
 
-You can choose the output language by passing `--language <language>`. The options are `python` (the default), `javascript`/`node`/`node-request`, `php`, `go`, `java`, `r`, `rust`, `elixir`, `dart`, `matlab`,`cfml` and a few more.
+You can choose the output language by passing `--language <language>`. The options are `python` (the default), `javascript`/`node`/`node-request`, `php`, `go`, `java`, `r`, `rust`, `elixir`, `dart`, `matlab`, `cfml` and a few more.
 
 [![NPM version][npm-image]][npm-url]
 
