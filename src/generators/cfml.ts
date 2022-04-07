@@ -15,7 +15,7 @@ export const _toCFML = (request: Request): string => {
   cfmlCode += 'httpService.setCharset("utf-8");\n';
 
   cfmlCode +=
-    'httpService.setMethod("' + quote(request.method.toUpperCase()) + '");\n';
+    'httpService.setMethod("' + quote(request.method) + '");\n';
 
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers) {
