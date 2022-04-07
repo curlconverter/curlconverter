@@ -51,7 +51,7 @@ export const _toCFML = (request: Request): string => {
   if (request.cookies) {
     for (const [headerName, headerValue] of request.cookies) {
       cfmlCode +=
-        'httpService.addParam(type="cookie",name="' +
+        'httpService.addParam(type="cookie", name="' +
         quote(headerName) +
         '", value="' +
         quote(headerValue) +
