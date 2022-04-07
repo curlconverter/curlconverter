@@ -101,7 +101,7 @@ export const _toCFML = (request: Request): string => {
     }
   }
 
-  cfmlCode += "result = httpService.send().getPrefix();\n";
+  cfmlCode += "\nresult = httpService.send().getPrefix();\n";
   cfmlCode += "writeDump(result);\n";
 
   return cfmlCode;
