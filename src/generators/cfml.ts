@@ -25,11 +25,11 @@ export const _toCFML = (request: Request): string => {
     }
   }
 
-  if (request.hasOwnProperty("cookie")) {
+  if (request.cookie) {
     util.deleteHeader(request, "Cookie");
   }
 
-  if (request.headers) {
+  if (request.headers && request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       cfmlCode +=
         'httpService.addParam(type="header", name="' +
