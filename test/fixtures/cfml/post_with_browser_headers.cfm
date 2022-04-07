@@ -1,7 +1,9 @@
 httpService = new http();
 httpService.setUrl("http://www.w3schools.com/ajax/demo_post.asp");
-httpService.setCharset("utf-8");
 httpService.setMethod("POST");
+httpService.addParam(type="cookie", name="_gat", value="1");
+httpService.addParam(type="cookie", name="ASPSESSIONIDACCRDTDC", value="MCMDKFMBLLLHGKCGNMKNGPKI");
+httpService.addParam(type="cookie", name="_ga", value="GA1.2.1424920226.1419478126");
 httpService.addParam(type="header", name="Origin", value="http://www.w3schools.com");
 httpService.addParam(type="header", name="Accept-Encoding", value="gzip, deflate");
 httpService.addParam(type="header", name="Accept-Language", value="en-US,en;q=0.8");
@@ -11,8 +13,6 @@ httpService.addParam(type="header", name="Referer", value="http://www.w3schools.
 httpService.addParam(type="header", name="Cookie", value="_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126");
 httpService.addParam(type="header", name="Connection", value="keep-alive");
 httpService.addParam(type="header", name="Content-Length", value="0");
-httpService.addParam(type="cookie",name="_gat", value="1");
-httpService.addParam(type="cookie",name="ASPSESSIONIDACCRDTDC", value="MCMDKFMBLLLHGKCGNMKNGPKI");
-httpService.addParam(type="cookie",name="_ga", value="GA1.2.1424920226.1419478126");
+
 result = httpService.send().getPrefix();
 writeDump(result);

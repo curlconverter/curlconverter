@@ -1,6 +1,5 @@
 httpService = new http();
 httpService.setUrl("http://fiddle.jshell.net/echo/html/");
-httpService.setCharset("utf-8");
 httpService.setMethod("POST");
 httpService.addParam(type="header", name="Origin", value="http://fiddle.jshell.net");
 httpService.addParam(type="header", name="Accept-Encoding", value="gzip, deflate");
@@ -12,5 +11,6 @@ httpService.addParam(type="header", name="Referer", value="http://fiddle.jshell.
 httpService.addParam(type="header", name="X-Requested-With", value="XMLHttpRequest");
 httpService.addParam(type="header", name="Connection", value="keep-alive");
 httpService.addParam(type="body", value="msg1=wow&msg2=such");
+
 result = httpService.send().getPrefix();
 writeDump(result);

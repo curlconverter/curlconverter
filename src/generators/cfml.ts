@@ -12,10 +12,24 @@ export const _toCFML = (request: Request): string => {
 
   cfmlCode += "httpService = new http();\n";
   cfmlCode += 'httpService.setUrl("' + quote(request.url as string)  + '");\n';
-  cfmlCode += 'httpService.setCharset("utf-8");\n';
 
   cfmlCode +=
     'httpService.setMethod("' + quote(request.method) + '");\n';
+
+  if (request.cookies) {
+    for (const [headerName, headerValue] of request.cookies) {
+      cfmlCode +=
+        'httpService.addParam(type="cookie", name="' +
+        quote(headerName) +
+        '", value="' +
+        quote(headerValue) +
+        '");\n';
+    }
+  }
+
+  if (request.hasOwnProperty('cookie')) {
+    util.deleteHeader(request, "Cookie");
+  }
 
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers) {
@@ -48,16 +62,6 @@ export const _toCFML = (request: Request): string => {
     }
   }
 
-  if (request.cookies) {
-    for (const [headerName, headerValue] of request.cookies) {
-      cfmlCode +=
-        'httpService.addParam(type="cookie", name="' +
-        quote(headerName) +
-        '", value="' +
-        quote(headerValue) +
-        '");\n';
-    }
-  }
 
   if (request.auth) {
     cfmlCode +=
@@ -73,9 +77,9 @@ export const _toCFML = (request: Request): string => {
           cfmlCode +=
             'httpService.addParam(type="file" ,name="' +
             quote(multipartKey) +
-            '", file="' +
+            '", file="#expandPath("' +
             quote(multipartValue.substring(1)) +
-            '");\n';
+            '")#");\n';
         } else {
           cfmlCode +=
             'httpService.addParam(type="formfield", name="' +
@@ -90,9 +94,9 @@ export const _toCFML = (request: Request): string => {
       (request.data as string).charAt(0) === "@"
     ) {
       cfmlCode +=
-        'httpService.addParam(type="body", value="' +
+        'httpService.addParam(type="body", value="#fileReadBinary(expandPath("' +
         quote((request.data as string).substring(1)) +
-        '");\n';
+        '"))#");\n';
     } else {
       cfmlCode +=
         'httpService.addParam(type="body", value="' +
