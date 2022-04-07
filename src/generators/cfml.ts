@@ -51,7 +51,9 @@ export const _toCFML = (request: Request): string => {
     const proxy = request.proxy.replace(":" + proxyPort, "");
 
     cfmlCode += 'httpService.setProxyServer("' + quote(proxy) + '");\n';
-    cfmlCode += 'httpService.setProxyPort("' + quote(proxyPort) + '");\n';
+    if (proxyPort) {
+      cfmlCode += 'httpService.setProxyPort("' + quote(proxyPort) + '");\n';
+    }
 
     if (request.proxyAuth) {
       const proxyauth = request.proxyAuth.split(":");
