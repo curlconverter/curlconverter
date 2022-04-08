@@ -53,10 +53,10 @@ export const _toCFML = (request: Request): string => {
     }
 
     if (request.proxyAuth) {
-      const proxyauth = request.proxyAuth.split(":");
-      cfmlCode += 'httpService.setProxyUser("' + quote(proxyauth[0]) + '");\n';
+      const [proxyUser, proxyPassword] = request.proxyAuth.split(/:(.*)/s, 2);
+      cfmlCode += 'httpService.setProxyUser("' + quote(proxyUser) + '");\n';
       cfmlCode +=
-        'httpService.setProxyPassword("' + quote(proxyauth[1]) + '");\n';
+        'httpService.setProxyPassword("' + quote(proxyPassword || "") + '");\n';
     }
   }
 
