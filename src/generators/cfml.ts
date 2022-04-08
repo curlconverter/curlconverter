@@ -23,9 +23,6 @@ export const _toCFML = (request: Request): string => {
         quote(headerValue) +
         '");\n';
     }
-  }
-
-  if (request.cookie) {
     util.deleteHeader(request, "Cookie");
   }
 
@@ -51,7 +48,9 @@ export const _toCFML = (request: Request): string => {
     const proxy = request.proxy.replace(":" + proxyPort, "");
 
     cfmlCode += 'httpService.setProxyServer("' + quote(proxy) + '");\n';
-    cfmlCode += 'httpService.setProxyPort("' + quote(proxyPort) + '");\n';
+    if (proxyPort) {
+      cfmlCode += 'httpService.setProxyPort("' + quote(proxyPort) + '");\n';
+    }
 
     if (request.proxyAuth) {
       const proxyauth = request.proxyAuth.split(":");
@@ -71,7 +70,7 @@ export const _toCFML = (request: Request): string => {
   if (request.data || request.multipartUploads) {
     if (request.multipartUploads) {
       for (const [multipartKey, multipartValue] of request.multipartUploads) {
-        if (multipartValue.charAt(0) === "@") {
+        if (multipartValue.charAt(0) === "@" && !request.isDataRaw) {
           cfmlCode +=
             'httpService.addParam(type="file", name="' +
             quote(multipartKey) +
