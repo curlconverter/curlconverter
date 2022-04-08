@@ -43,9 +43,13 @@ export const _toCFML = (request: Request): string => {
   }
 
   if (request.proxy) {
-    const proxyPart = (request.proxy as string).match(/:([0-9]{2,})/);
-    const proxyPort = proxyPart && proxyPart.length > 1 ? proxyPart[1] : "";
-    const proxy = request.proxy.replace(":" + proxyPort, "");
+    let proxy = request.proxy
+    let proxyPort = "";
+    const proxyPart = (request.proxy as string).match(/:([0-9]+)/);
+    if (proxyPart) {
+      proxy = request.proxy.slice(0, proxyPort.index);
+      proxyPort = proxyPart[1]
+    }
 
     cfmlCode += 'httpService.setProxyServer("' + quote(proxy) + '");\n';
     if (proxyPort) {
