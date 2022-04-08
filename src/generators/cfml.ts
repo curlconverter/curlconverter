@@ -70,7 +70,7 @@ export const _toCFML = (request: Request): string => {
   if (request.data || request.multipartUploads) {
     if (request.multipartUploads) {
       for (const [multipartKey, multipartValue] of request.multipartUploads) {
-        if (!data.isDataRaw && multipartValue.charAt(0) === "@") {
+        if (multipartValue.charAt(0) === "@" && !request.isDataRaw) {
           cfmlCode +=
             'httpService.addParam(type="file", name="' +
             quote(multipartKey) +
