@@ -42,7 +42,7 @@ export const _toCFML = (request: Request): string => {
 
   if (request.timeout) {
     cfmlCode +=
-      'httpService.setTimeout("' + (parseInt(request.timeout) || 0) + '");\n';
+      'httpService.setTimeout(' + (parseInt(request.timeout) || 0) + ');\n';
   }
 
   if (request.proxy) {
