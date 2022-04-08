@@ -47,7 +47,7 @@ export const _toCFML = (request: Request): string => {
     let proxyPort = '1080';
     const proxyPart = (request.proxy as string).match(/:([0-9]+)/);
     if (proxyPart) {
-      proxy = request.proxy.slice(0, proxyPort.index);
+      proxy = request.proxy.slice(0, proxyPart.index);
       proxyPort = proxyPart[1]
     }
 
