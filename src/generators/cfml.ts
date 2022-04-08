@@ -23,9 +23,6 @@ export const _toCFML = (request: Request): string => {
         quote(headerValue) +
         '");\n';
     }
-  }
-
-  if (request.cookie) {
     util.deleteHeader(request, "Cookie");
   }
 
