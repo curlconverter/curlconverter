@@ -1,1 +1,1 @@
-curl -X POST -F 'username=davidwalsh' -F 'password=something' http://domain.tld/post-to-me.php
+curl -X POST -F 'username=davidwalsh' -F 'password=something' http://localhost:28139/post-to-me.php

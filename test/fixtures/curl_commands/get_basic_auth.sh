@@ -1,1 +1,1 @@
-curl "https://api.test.com/" -u "some_username:some_password"
+curl "https://localhost:28139/" -u "some_username:some_password"

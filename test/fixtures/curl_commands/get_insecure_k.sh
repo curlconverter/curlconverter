@@ -1,1 +1,1 @@
-curl -k -X GET https://example.com
+curl -k -X GET http://localhost:28139

@@ -1,1 +1,1 @@
-curl -v -H "Content-Type: application/json" -H "X-API-Version: 200" -d '{"userName":"username123","password":"password123", "authLoginDomain":"local"}' -X POST -k https://0.0.0.0/rest/login-sessions
+curl -v -H "Content-Type: application/json" -H "X-API-Version: 200" -d '{"userName":"username123","password":"password123", "authLoginDomain":"local"}' -X POST -k https://localhost:28139/rest/login-sessions

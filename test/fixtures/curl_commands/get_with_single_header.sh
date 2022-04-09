@@ -1,1 +1,1 @@
-curl http://example.com/ -H 'foo: bar'
+curl http://localhost:28139/ -H 'foo: bar'

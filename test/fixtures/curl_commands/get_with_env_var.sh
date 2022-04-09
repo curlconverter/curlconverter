@@ -1,1 +1,1 @@
-curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_API_TOKEN" "https://api.digitalocean.com/v2/images?type=distribution"
+curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_API_TOKEN" "http://localhost:28139/v2/images?type=distribution"

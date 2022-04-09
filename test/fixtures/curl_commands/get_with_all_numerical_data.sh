@@ -1,1 +1,1 @@
-curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '18233982904' 'http://198.30.191.00:8309/CurlToNode'
+curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '18233982904' 'http://localhost:28139/CurlToNode'

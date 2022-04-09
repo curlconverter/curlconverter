@@ -1,1 +1,1 @@
-curl --insecure -X GET https://example.com
+curl --insecure -X GET http://localhost:28139
