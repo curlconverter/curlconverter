@@ -1,6 +1,6 @@
 <?php
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'http://localhost:5984/test/_security');
+curl_setopt($ch, CURLOPT_URL, 'http://localhost:28139/test/_security');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
 curl_setopt($ch, CURLOPT_HTTPHEADER, [

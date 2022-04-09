@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'http://us.jooble.org/api/xxxxxxxxxxxxxxxx'
+      url: 'http://localhost:28139/api/xxxxxxxxxxxxxxxx'
       method: POST
       postData:
         mimeType: application/json

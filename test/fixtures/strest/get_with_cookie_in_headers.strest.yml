@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'https://httpbin.org/cookies'
+      url: 'http://localhost:28139/cookies'
       method: GET
       headers:
         -

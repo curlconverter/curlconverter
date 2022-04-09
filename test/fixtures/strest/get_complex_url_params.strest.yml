@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'https://www.nomador.com/house-sitting/'
+      url: 'https://localhost:28139/house-sitting/'
       method: GET
       queryString:
         -

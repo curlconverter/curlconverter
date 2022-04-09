@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .text("text", "Testing the converter!");
 
     let res = reqwest::Client::new()
-        .post("https://api.net/v3")
+        .post("http://localhost:28139/v3")
         .basic_auth("test", Some(""))
         .multipart(form)
         .send()?

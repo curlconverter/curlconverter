@@ -1,3 +1,3 @@
 require(httr)
 
-res <- httr::GET(url = 'https://api.test.com/', httr::authenticate('', 'some_password'))
+res <- httr::GET(url = 'http://localhost:28139/', httr::authenticate('', 'some_password'))

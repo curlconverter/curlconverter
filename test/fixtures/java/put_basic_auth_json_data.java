@@ -9,7 +9,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://localhost:5984/test/_security");
+		URL url = new URL("http://localhost:28139/test/_security");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("PUT");
 

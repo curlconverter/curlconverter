@@ -1,6 +1,6 @@
 <?php
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'http://api.ipify.org/?format=json&');
+curl_setopt($ch, CURLOPT_URL, 'http://localhost:28139/?format=json&');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
 curl_setopt($ch, CURLOPT_HTTPHEADER, [

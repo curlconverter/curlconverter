@@ -3,5 +3,5 @@ allowInsecure: true
 requests:
   curl_converter:
     request:
-      url: 'https://example.com'
+      url: 'http://localhost:28139'
       method: GET

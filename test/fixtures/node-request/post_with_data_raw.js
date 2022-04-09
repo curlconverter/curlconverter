@@ -7,7 +7,7 @@ var headers = {
 var dataString = 'msg1=wow&msg2=such&msg3=@rawmsg';
 
 var options = {
-    url: 'http://example.com/post',
+    url: 'http://localhost:28139/post',
     method: 'POST',
     headers: headers,
     body: dataString

@@ -10,4 +10,4 @@ params = {
     'w': '4',
 }
 
-response = requests.get('https://synthetics.newrelic.com/synthetics/api/v3/monitors', headers=headers, params=params)
+response = requests.get('http://localhost:28139/synthetics/api/v3/monitors', headers=headers, params=params)

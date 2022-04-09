@@ -7,4 +7,4 @@ headers = {
 with open('new_file') as f:
     data = f.read().replace('\n', '')
 
-response = requests.put('http://awesomeurl.com/upload', headers=headers, data=data)
+response = requests.put('http://localhost:28139/upload', headers=headers, data=data)

@@ -1,6 +1,6 @@
 %% Web Access using Data Import and Export API
 params = {'format' 'json'};
-baseURI = 'http://api.ipify.org/';
+baseURI = 'http://localhost:28139/';
 uri = [baseURI '?' char(join(join(params, '='), '&'))];
 options = weboptions(...
     'UserAgent', 'GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)',...
@@ -23,5 +23,5 @@ header = [
     HeaderField('User-Agent', 'GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)')
     HeaderField('Accept-Language', 'en-CN;q=1, zh-Hans-CN;q=0.9')
 ]';
-uri = URI('http://api.ipify.org/', QueryParameter(params'));
+uri = URI('http://localhost:28139/', QueryParameter(params'));
 response = RequestMessage('get', header).send(uri.EncodedURI);

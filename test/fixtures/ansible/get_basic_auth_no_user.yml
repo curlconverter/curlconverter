@@ -1,7 +1,7 @@
 -
-  name: 'https://api.test.com/'
+  name: 'http://localhost:28139/'
   uri:
-    url: 'https://api.test.com/'
+    url: 'http://localhost:28139/'
     method: GET
     url_password: some_password
   register: result

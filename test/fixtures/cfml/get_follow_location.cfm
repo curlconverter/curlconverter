@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://example.net");
+httpService.setUrl("http://localhost:28139");
 httpService.setMethod("GET");
 
 result = httpService.send().getPrefix();

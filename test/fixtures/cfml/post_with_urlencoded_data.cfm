@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://fiddle.jshell.net/echo/html/");
+httpService.setUrl("http://localhost:28139/echo/html/");
 httpService.setMethod("POST");
 httpService.addParam(type="header", name="Origin", value="http://fiddle.jshell.net");
 httpService.addParam(type="header", name="Accept-Encoding", value="gzip, deflate");

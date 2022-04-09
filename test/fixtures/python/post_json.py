@@ -10,9 +10,9 @@ json_data = {
     'drink': 'coffe',
 }
 
-response = requests.post('https://example.com', headers=headers, json=json_data)
+response = requests.post('https://localhost:28139', headers=headers, json=json_data)
 
 # Note: json_data will not be serialized by requests
 # exactly as it was in the original request.
 #data = '{ "drink": "coffe" }'
-#response = requests.post('https://example.com', headers=headers, data=data)
+#response = requests.post('https://localhost:28139', headers=headers, data=data)

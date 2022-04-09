@@ -6,4 +6,4 @@ headers = c(
 )
 
 data = upload_file('./sample.sparql')
-res <- httr::POST(url = 'http://lodstories.isi.edu:3030/american-art/query', httr::add_headers(.headers=headers), body = data)
+res <- httr::POST(url = 'http://localhost:28139/american-art/query', httr::add_headers(.headers=headers), body = data)

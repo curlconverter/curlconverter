@@ -1,6 +1,6 @@
 {
-    "url": "http://httpbin.org/patch",
-    "raw_url": "http://httpbin.org/patch",
+    "url": "http://localhost:28139/patch",
+    "raw_url": "http://localhost:28139/patch",
     "method": "patch",
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"

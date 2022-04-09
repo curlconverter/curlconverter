@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://www.url.com/page");
+httpService.setUrl("http://localhost:28139/page");
 httpService.setMethod("DELETE");
 
 result = httpService.send().getPrefix();

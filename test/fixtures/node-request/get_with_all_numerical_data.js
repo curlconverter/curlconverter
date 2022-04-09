@@ -8,7 +8,7 @@ var headers = {
 var dataString = '18233982904';
 
 var options = {
-    url: 'http://198.30.191.00:8309/CurlToNode',
+    url: 'http://localhost:28139/CurlToNode',
     method: 'POST',
     headers: headers,
     body: dataString

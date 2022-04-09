@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :options,
-  url: "https://layla.amazon.de/api/tunein/queue-and-play",
+  url: "https://localhost:28139/api/tunein/queue-and-play",
   options: [],
   headers: [
     {~s|Pragma|, ~s|no-cache|},

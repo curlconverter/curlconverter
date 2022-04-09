@@ -24,4 +24,4 @@ params = list(
   `mediaOwnerCustomerId` = 'xxx'
 )
 
-res <- httr::OPTIONS(url = 'https://layla.amazon.de/api/tunein/queue-and-play', httr::add_headers(.headers=headers), query = params)
+res <- httr::OPTIONS(url = 'https://localhost:28139/api/tunein/queue-and-play', httr::add_headers(.headers=headers), query = params)

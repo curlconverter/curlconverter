@@ -10,4 +10,4 @@ params = {
     'channel_ids': 'channel_id',
 }
 
-response = requests.put('https://api.newrelic.com/v2/alerts_policy_channels.json', headers=headers, params=params)
+response = requests.put('http://localhost:28139/v2/alerts_policy_channels.json', headers=headers, params=params)

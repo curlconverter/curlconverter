@@ -7,7 +7,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("https://layla.amazon.de/api/tunein/queue-and-play?deviceSerialNumber=xxx^&deviceType=xxx^&guideId=s56876^&contentType=station^&callSign=^&mediaOwnerCustomerId=xxx");
+		URL url = new URL("https://localhost:28139/api/tunein/queue-and-play?deviceSerialNumber=xxx^&deviceType=xxx^&guideId=s56876^&contentType=station^&callSign=^&mediaOwnerCustomerId=xxx");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("OPTIONS");
 

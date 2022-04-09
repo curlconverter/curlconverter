@@ -6,4 +6,4 @@ headers = {
 
 data = 'msg1=wow&msg2=such&msg3=@rawmsg'
 
-response = requests.post('http://example.com/post', headers=headers, data=data)
+response = requests.post('http://localhost:28139/post', headers=headers, data=data)

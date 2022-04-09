@@ -1,4 +1,4 @@
-fetch('http://fiddle.jshell.net/echo/html/', {
+fetch('http://localhost:28139/echo/html/', {
     method: 'POST',
     headers: {
         'Origin': 'http://fiddle.jshell.net',

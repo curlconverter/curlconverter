@@ -7,7 +7,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://205.147.98.6/vc/moviesmagic?p=5&pub=testmovie&tkn=817263812");
+		URL url = new URL("http://localhost:28139/vc/moviesmagic?p=5&pub=testmovie&tkn=817263812");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("GET");
 

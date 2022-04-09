@@ -13,7 +13,7 @@ void main() async {
 
   var data = '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}';
 
-  var url = Uri.parse('http://localhost:5984/test/_security');
+  var url = Uri.parse('http://localhost:28139/test/_security');
   var res = await http.put(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.put error: statusCode= ${res.statusCode}');
   print(res.body);

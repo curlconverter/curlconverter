@@ -1,6 +1,6 @@
 {
-    "url": "http://us.jooble.org/api/xxxxxxxxxxxxxxxx",
-    "raw_url": "http://us.jooble.org/api/xxxxxxxxxxxxxxxx",
+    "url": "http://localhost:28139/api/xxxxxxxxxxxxxxxx",
+    "raw_url": "http://localhost:28139/api/xxxxxxxxxxxxxxxx",
     "method": "post",
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"

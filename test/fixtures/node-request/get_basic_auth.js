@@ -1,7 +1,7 @@
 var request = require('request');
 
 var options = {
-    url: 'https://api.test.com/',
+    url: 'https://localhost:28139/',
     auth: {
         'user': 'some_username',
         'pass': 'some_password'

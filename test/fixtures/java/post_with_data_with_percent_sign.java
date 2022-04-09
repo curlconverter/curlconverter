@@ -8,7 +8,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("https://postman-echo.com/post");
+		URL url = new URL("https://localhost:28139/post");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 

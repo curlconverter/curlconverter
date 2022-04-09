@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "http://example.com/targetservice",
+  url: "http://localhost:28139/targetservice",
   options: [],
   headers: [],
   params: [],

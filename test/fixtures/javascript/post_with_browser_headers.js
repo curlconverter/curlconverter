@@ -1,4 +1,4 @@
-fetch('http://www.w3schools.com/ajax/demo_post.asp', {
+fetch('http://localhost:28139/ajax/demo_post.asp', {
     method: 'POST',
     headers: {
         'Origin': 'http://www.w3schools.com',

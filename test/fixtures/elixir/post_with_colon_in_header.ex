@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "http://1.2.3.4/endpoint",
+  url: "http://localhost:28139/endpoint",
   options: [],
   headers: [
     {~s|Content-Type|, ~s|application/json|},

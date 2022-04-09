@@ -1,3 +1,3 @@
 require(httr)
 
-res <- httr::GET(url = 'http://www.google.com')
+res <- httr::GET(url = 'http://localhost:28139')

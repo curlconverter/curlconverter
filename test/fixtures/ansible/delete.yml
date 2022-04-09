@@ -1,6 +1,6 @@
 -
-  name: 'http://www.url.com/page'
+  name: 'http://localhost:28139/page'
   uri:
-    url: 'http://www.url.com/page'
+    url: 'http://localhost:28139/page'
     method: DELETE
   register: result

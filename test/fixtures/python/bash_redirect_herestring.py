@@ -8,4 +8,4 @@ headers = {
 
 data = '$MYVARIABLE'
 
-response = requests.post('https://plex.tv/api/servers/00000000000/shared_servers/', headers=headers, data=data)
+response = requests.post('http://localhost:28139/api/servers/00000000000/shared_servers/', headers=headers, data=data)

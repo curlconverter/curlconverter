@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :put,
-  url: "https://api.newrelic.com/v2/alerts_policy_channels.json",
+  url: "http://localhost:28139/v2/alerts_policy_channels.json",
   options: [],
   headers: [
     {~s|X-Api-Key|, ~s|{admin_api_key}|},

@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "https://synthetics.newrelic.com/synthetics/api/v3/monitors",
+  url: "http://localhost:28139/synthetics/api/v3/monitors",
   options: [],
   headers: [
     {~s|X-Api-Key|, ~s|123456789|},

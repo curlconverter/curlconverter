@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://en.wikipedia.org/");
+httpService.setUrl("http://localhost:28139/");
 httpService.setMethod("GET");
 httpService.addParam(type="cookie", name="GeoIP", value="US:Albuquerque:35.1241:-106.7675:v4");
 httpService.addParam(type="cookie", name="uls-previous-languages", value="%5B%22en%22%5D");

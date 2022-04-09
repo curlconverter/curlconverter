@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "http://api.ipify.org/",
+  url: "http://localhost:28139/",
   options: [],
   headers: [
     {~s|Host|, ~s|api.ipify.org|},

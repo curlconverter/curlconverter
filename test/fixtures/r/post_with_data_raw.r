@@ -10,4 +10,4 @@ data = list(
   `msg3` = '@rawmsg'
 )
 
-res <- httr::POST(url = 'http://example.com/post', httr::add_headers(.headers=headers), body = data)
+res <- httr::POST(url = 'http://localhost:28139/post', httr::add_headers(.headers=headers), body = data)

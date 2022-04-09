@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "http://localhost:8080/api/retail/books/list",
+  url: "http://localhost:28139/api/retail/books/list",
   options: [],
   headers: [
     {~s|Accept|, ~s|application/json|},

@@ -6,4 +6,4 @@ headers = c(
 
 data = '{"keywords":"php","page":1,"searchMode":1}'
 
-res <- httr::POST(url = 'http://us.jooble.org/api/xxxxxxxxxxxxxxxx', httr::add_headers(.headers=headers), body = data)
+res <- httr::POST(url = 'http://localhost:28139/api/xxxxxxxxxxxxxxxx', httr::add_headers(.headers=headers), body = data)

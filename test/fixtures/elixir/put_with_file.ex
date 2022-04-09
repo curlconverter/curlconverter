@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :put,
-  url: "http://awesomeurl.com/upload",
+  url: "http://localhost:28139/upload",
   options: [],
   headers: [
     {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},

@@ -2,4 +2,4 @@ import requests
 
 cert = '/path/to/the/cert'
 
-response = requests.get('https://example.com', cert=cert, verify='/path/to/ca-bundle.crt')
+response = requests.get('http://localhost:28139/', cert=cert, verify='/path/to/ca-bundle.crt')

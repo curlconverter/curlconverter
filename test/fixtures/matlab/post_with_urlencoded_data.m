@@ -1,5 +1,5 @@
 %% Web Access using Data Import and Export API
-uri = 'http://fiddle.jshell.net/echo/html/';
+uri = 'http://localhost:28139/echo/html/';
 body = 'msg1=wow&msg2=such';
 options = weboptions(...
     'UserAgent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',...
@@ -32,6 +32,6 @@ header = [
     HeaderField('X-Requested-With', 'XMLHttpRequest')
     HeaderField('Connection', 'keep-alive')
 ]';
-uri = URI('http://fiddle.jshell.net/echo/html/');
+uri = URI('http://localhost:28139/echo/html/');
 body = FormProvider('msg1', 'wow', 'msg2', 'such');
 response = RequestMessage('post', header, body).send(uri.EncodedURI);

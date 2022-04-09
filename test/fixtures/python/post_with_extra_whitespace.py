@@ -14,4 +14,4 @@ files = {
     'deleteOldRevisions': (None, '1'),
 }
 
-response = requests.post('http://129.12.19.62/api/library', headers=headers, files=files)
+response = requests.post('http://localhost:28139/api/library', headers=headers, files=files)

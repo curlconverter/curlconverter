@@ -12,4 +12,4 @@ params = {
     'type': 'distribution',
 }
 
-response = requests.get('https://api.digitalocean.com/v2/images', headers=headers, params=params)
+response = requests.get('http://localhost:28139/v2/images', headers=headers, params=params)

@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "http://205.147.98.6/vc/moviesmagic",
+  url: "http://localhost:28139/vc/moviesmagic",
   options: [],
   headers: [
     {~s|x-msisdn|, ~s|XXXXXXXXXXXXX|},

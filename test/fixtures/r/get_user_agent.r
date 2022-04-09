@@ -11,4 +11,4 @@ params = list(
   `tkn` = '817263812'
 )
 
-res <- httr::GET(url = 'http://205.147.98.6/vc/moviesmagic', httr::add_headers(.headers=headers), query = params)
+res <- httr::GET(url = 'http://localhost:28139/vc/moviesmagic', httr::add_headers(.headers=headers), query = params)

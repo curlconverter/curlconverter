@@ -5,4 +5,4 @@ files = {
     'password': (None, 'something'),
 }
 
-response = requests.post('http://domain.tld/post-to-me.php', files=files)
+response = requests.post('http://localhost:28139/post-to-me.php', files=files)

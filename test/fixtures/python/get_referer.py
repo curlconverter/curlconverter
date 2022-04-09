@@ -6,4 +6,4 @@ headers = {
     'Referer': 'https://website.com',
 }
 
-response = requests.get('https://website.com/api', headers=headers)
+response = requests.get('http://localhost:28139', headers=headers)

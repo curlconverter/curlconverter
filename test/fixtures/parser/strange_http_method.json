@@ -1,5 +1,5 @@
 {
-  "url": "example.com",
-  "urlWithoutQuery": "example.com",
-  "method": "wHat"
+  "url": "localhost:28139",
+  "method": "wHat",
+  "urlWithoutQuery": "localhost:28139"
 }

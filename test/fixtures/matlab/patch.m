@@ -1,5 +1,5 @@
 %% Web Access using Data Import and Export API
-uri = 'https://ci.example.com/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da';
+uri = 'http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da';
 body = struct(...
     'hostname', 'agent02.example.com',...
     'agent_config_state', 'Enabled',...
@@ -29,7 +29,7 @@ header = [
     field.AcceptField(MediaType('application/vnd.go.cd.v4+json'))
     HeaderField('Content-Type', 'application/json')
 ]';
-uri = URI('https://ci.example.com/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da');
+uri = URI('http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da');
 cred = Credentials('Username', 'username', 'Password', 'password');
 options = HTTPOptions('Credentials', cred);
 body = JSONProvider(struct(...

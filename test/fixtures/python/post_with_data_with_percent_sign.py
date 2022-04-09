@@ -6,4 +6,4 @@ headers = {
 
 data = 'secret=*%5*!'
 
-response = requests.post('https://postman-echo.com/post', headers=headers, data=data)
+response = requests.post('https://localhost:28139/post', headers=headers, data=data)

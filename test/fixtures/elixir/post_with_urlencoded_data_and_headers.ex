@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "http://www.realtor.ca/api/Listing.svc/PropertySearch_Post",
+  url: "http://localhost:28139/api/Listing.svc/PropertySearch_Post",
   options: [],
   headers: [
     {~s|Origin|, ~s|http://www.realtor.ca|},

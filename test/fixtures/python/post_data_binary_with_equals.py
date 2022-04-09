@@ -96,4 +96,4 @@ json_data = {
     },
 }
 
-response = requests.post('https://localhost/api/service.svc', headers=headers, params=params, cookies=cookies, json=json_data)
+response = requests.post('http://localhost:28139/api/service.svc', headers=headers, params=params, cookies=cookies, json=json_data)

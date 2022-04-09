@@ -8,7 +8,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://198.30.191.00:8309/CurlToNode");
+		URL url = new URL("http://localhost:28139/CurlToNode");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 

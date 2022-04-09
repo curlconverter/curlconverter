@@ -9,7 +9,7 @@ import (
 
 func main() {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "http://api.ipify.org/?format=json&", nil)
+	req, err := http.NewRequest("GET", "http://localhost:28139/?format=json&", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

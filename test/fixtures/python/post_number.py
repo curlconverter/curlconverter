@@ -6,4 +6,4 @@ headers = {
 
 data = '123'
 
-response = requests.post('http://a.com', headers=headers, data=data)
+response = requests.post('http://localhost:28139', headers=headers, data=data)

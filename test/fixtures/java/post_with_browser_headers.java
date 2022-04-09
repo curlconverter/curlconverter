@@ -7,7 +7,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://www.w3schools.com/ajax/demo_post.asp");
+		URL url = new URL("http://localhost:28139/ajax/demo_post.asp");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 

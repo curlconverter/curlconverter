@@ -1,4 +1,4 @@
-fetch('http://www.realtor.ca/api/Listing.svc/PropertySearch_Post', {
+fetch('http://localhost:28139/api/Listing.svc/PropertySearch_Post', {
     method: 'POST',
     headers: {
         'Origin': 'http://www.realtor.ca',
