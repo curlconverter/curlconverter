@@ -89,7 +89,7 @@ export const _toCFML = (request: Request): string => {
         }
       }
     } else if (
-      request.isDataBinary &&
+      !request.isDataRaw &&
       (request.data as string).charAt(0) === "@"
     ) {
       cfmlCode +=
