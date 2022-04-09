@@ -14,7 +14,6 @@ export const _toCFML = (request: Request): string => {
   cfmlCode += 'httpService.setUrl("' + quote(request.url as string) + '");\n';
   cfmlCode += 'httpService.setMethod("' + quote(request.method) + '");\n';
 
-
   if (request.cookies) {
     for (const [headerName, headerValue] of request.cookies) {
       cfmlCode +=
@@ -40,9 +39,8 @@ export const _toCFML = (request: Request): string => {
 
   if (request.timeout) {
     cfmlCode +=
-      'httpService.setTimeout(' + (parseInt(request.timeout) || 0) + ');\n';
+      "httpService.setTimeout(" + (parseInt(request.timeout) || 0) + ");\n";
   }
-
 
   if (request.auth) {
     const [authUser, authPassword] = request.auth;
@@ -51,18 +49,17 @@ export const _toCFML = (request: Request): string => {
       'httpService.setPassword("' + quote(authPassword || "") + '");\n';
   }
 
-
   if (request.proxy) {
-    let proxy = request.proxy
-    let proxyPort = '1080';
+    let proxy = request.proxy;
+    let proxyPort = "1080";
     const proxyPart = (request.proxy as string).match(/:([0-9]+)/);
     if (proxyPart) {
       proxy = request.proxy.slice(0, proxyPart.index);
-      proxyPort = proxyPart[1]
+      proxyPort = proxyPart[1];
     }
 
     cfmlCode += 'httpService.setProxyServer("' + quote(proxy) + '");\n';
-    cfmlCode += 'httpService.setProxyPort(' + quote(proxyPort) + ');\n';
+    cfmlCode += "httpService.setProxyPort(" + quote(proxyPort) + ");\n";
 
     if (request.proxyAuth) {
       const [proxyUser, proxyPassword] = request.proxyAuth.split(/:(.*)/s, 2);
