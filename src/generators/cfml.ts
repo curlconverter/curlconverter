@@ -14,6 +14,7 @@ export const _toCFML = (request: Request): string => {
   cfmlCode += 'httpService.setUrl("' + quote(request.url as string) + '");\n';
   cfmlCode += 'httpService.setMethod("' + quote(request.method) + '");\n';
 
+
   if (request.cookies) {
     for (const [headerName, headerValue] of request.cookies) {
       cfmlCode +=
@@ -42,6 +43,15 @@ export const _toCFML = (request: Request): string => {
       'httpService.setTimeout(' + (parseInt(request.timeout) || 0) + ');\n';
   }
 
+
+  if (request.auth) {
+    const [authUser, authPassword] = request.auth;
+    cfmlCode += 'httpService.setUsername("' + quote(authUser) + '");\n';
+    cfmlCode +=
+      'httpService.setPassword("' + quote(authPassword || "") + '");\n';
+  }
+
+
   if (request.proxy) {
     let proxy = request.proxy
     let proxyPort = '1080';
@@ -60,13 +70,6 @@ export const _toCFML = (request: Request): string => {
       cfmlCode +=
         'httpService.setProxyPassword("' + quote(proxyPassword || "") + '");\n';
     }
-  }
-
-  if (request.auth) {
-    cfmlCode +=
-      'httpService.addParam(type="header", name="Authorization", value="' +
-      quote(request.auth.join(":")) +
-      '");\n';
   }
 
   if (request.data || request.multipartUploads) {
