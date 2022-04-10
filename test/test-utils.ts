@@ -19,6 +19,7 @@ const toParser = (curl: string | string[]): string => {
 // TODO: 'parser' ?
 type Converter =
   | "ansible"
+  | "cfml"
   | "dart"
   | "elixir"
   | "go"
@@ -39,6 +40,11 @@ const converters = {
     name: "Ansible",
     extension: ".yml",
     converter: curlconverter.toAnsible,
+  },
+  cfml: {
+    name: "ColdFusion",
+    extension: ".cfm",
+    converter: curlconverter.toCFML,
   },
   dart: {
     name: "Dart",

@@ -1,4 +1,5 @@
 export { toAnsible } from "./generators/ansible.js";
+export { toCFML } from "./generators/cfml.js";
 export { toJavaScript } from "./generators/javascript/javascript.js";
 // backwards compatibility alias
 export { toJavaScript as toBrowser } from "./generators/javascript/javascript.js";
