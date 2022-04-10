@@ -93,7 +93,7 @@ export const _toCFML = (request: Request): string => {
       (request.data as string).charAt(0) === "@"
     ) {
       cfmlCode +=
-        'httpService.addParam(type="body", value="#' + 
+        'httpService.addParam(type="body", value="#' +
         (request.isDataBinary ? "fileReadBinary" : "fileRead") +
         '(expandPath("' +
         quote((request.data as string).substring(1)) +
