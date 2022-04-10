@@ -1,1 +1,1 @@
-curl -X wHat example.com
+curl -X wHat localhost:28139

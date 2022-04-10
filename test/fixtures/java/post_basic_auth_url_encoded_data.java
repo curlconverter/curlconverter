@@ -9,7 +9,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://localhost/api/oauth/token/");
+		URL url = new URL("http://localhost:28139/api/oauth/token/");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 

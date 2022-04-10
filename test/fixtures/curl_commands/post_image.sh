@@ -1,1 +1,1 @@
-curl -F "image=@image.jpg" http://example.com/targetservice
+curl -F "image=@image.jpg" http://localhost:28139/targetservice

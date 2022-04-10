@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "https://www.nomador.com/house-sitting/",
+  url: "https://localhost:28139/house-sitting/",
   options: [],
   headers: [],
   params: [

@@ -1,1 +1,0 @@
-fetch('http://indeed.com');

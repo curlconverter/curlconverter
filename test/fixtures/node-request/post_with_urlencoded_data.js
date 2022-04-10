@@ -15,7 +15,7 @@ var headers = {
 var dataString = 'msg1=wow&msg2=such';
 
 var options = {
-    url: 'http://fiddle.jshell.net/echo/html/',
+    url: 'http://localhost:28139/echo/html/',
     method: 'POST',
     headers: headers,
     body: dataString

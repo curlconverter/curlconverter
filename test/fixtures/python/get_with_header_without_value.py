@@ -5,4 +5,4 @@ headers = {
     'getWorkOrderCancel': '',
 }
 
-response = requests.get('http://postman-echo.com/get', headers=headers)
+response = requests.get('http://localhost:28139/get', headers=headers)

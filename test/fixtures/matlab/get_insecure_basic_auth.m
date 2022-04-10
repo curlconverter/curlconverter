@@ -5,7 +5,7 @@
 import matlab.net.*
 import matlab.net.http.*
 
-uri = URI('https://api.test.com/');
+uri = URI('https://localhost:28139/');
 cred = Credentials('Username', 'some_username', 'Password', 'some_password');
 options = HTTPOptions('Credentials', cred, 'VerifyServerName', false);
 response = RequestMessage().send(uri.EncodedURI, options);

@@ -9,7 +9,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("https://ci.example.com/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da");
+		URL url = new URL("http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("PATCH");
 

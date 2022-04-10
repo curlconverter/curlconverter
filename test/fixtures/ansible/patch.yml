@@ -1,7 +1,7 @@
 -
-  name: 'https://ci.example.com/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da'
+  name: 'http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da'
   uri:
-    url: 'https://ci.example.com/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da'
+    url: 'http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da'
     method: PATCH
     body:
       {"hostname":"agent02.example.com","agent_config_state":"Enabled","resources":["Java","Linux"],"environments":["Dev"]}

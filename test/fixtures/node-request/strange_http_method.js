@@ -1,7 +1,7 @@
 var request = require('request');
 
 var options = {
-    url: 'example.com',
+    url: 'localhost:28139',
     method: 'WHAT'
 };
 

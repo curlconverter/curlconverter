@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "http://www.google.com",
+  url: "http://localhost:28139",
   options: [],
   headers: [],
   params: [],

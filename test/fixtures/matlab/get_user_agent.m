@@ -4,7 +4,7 @@ params = {
     'pub' 'testmovie'
     'tkn' '817263812'
 };
-baseURI = 'http://205.147.98.6/vc/moviesmagic';
+baseURI = 'http://localhost:28139/vc/moviesmagic';
 uri = [baseURI '?' char(join(join(params, '='), '&'))];
 options = weboptions(...
     'UserAgent', 'Mozilla Android6.1',...
@@ -25,5 +25,5 @@ header = [
     HeaderField('x-msisdn', 'XXXXXXXXXXXXX')
     HeaderField('user-agent', 'Mozilla Android6.1')
 ]';
-uri = URI('http://205.147.98.6/vc/moviesmagic', QueryParameter(params'));
+uri = URI('http://localhost:28139/vc/moviesmagic', QueryParameter(params'));
 response = RequestMessage('get', header).send(uri.EncodedURI);

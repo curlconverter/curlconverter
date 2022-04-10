@@ -1,4 +1,4 @@
-fetch('http://en.wikipedia.org/', {
+fetch('http://localhost:28139/', {
     headers: {
         'Accept-Encoding': 'gzip, deflate, sdch',
         'Accept-Language': 'en-US,en;q=0.8',

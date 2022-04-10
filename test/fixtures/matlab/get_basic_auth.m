@@ -1,5 +1,5 @@
 %% Web Access using Data Import and Export API
-uri = 'https://api.test.com/';
+uri = 'https://localhost:28139/';
 options = weboptions(...
     'Username', 'some_username',...
     'Password', 'some_password'...
@@ -10,7 +10,7 @@ response = webread(uri, options);
 import matlab.net.*
 import matlab.net.http.*
 
-uri = URI('https://api.test.com/');
+uri = URI('https://localhost:28139/');
 cred = Credentials('Username', 'some_username', 'Password', 'some_password');
 options = HTTPOptions('Credentials', cred);
 response = RequestMessage().send(uri.EncodedURI, options);

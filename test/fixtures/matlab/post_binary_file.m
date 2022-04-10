@@ -1,5 +1,5 @@
 %% Web Access using Data Import and Export API
-uri = 'http://lodstories.isi.edu:3030/american-art/query';
+uri = 'http://localhost:28139/american-art/query';
 body = fileread('./sample.sparql');
 options = weboptions('HeaderFields', {
     'Content-type' 'application/sparql-query'
@@ -16,6 +16,6 @@ header = [
     HeaderField('Content-type', 'application/sparql-query')
     field.AcceptField(MediaType('application/sparql-results+json'))
 ]';
-uri = URI('http://lodstories.isi.edu:3030/american-art/query');
+uri = URI('http://localhost:28139/american-art/query');
 body = FileProvider('./sample.sparql');
 response = RequestMessage('post', header, body).send(uri.EncodedURI);

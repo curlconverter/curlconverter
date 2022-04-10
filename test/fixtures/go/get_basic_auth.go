@@ -9,7 +9,7 @@ import (
 
 func main() {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://api.test.com/", nil)
+	req, err := http.NewRequest("GET", "https://localhost:28139/", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

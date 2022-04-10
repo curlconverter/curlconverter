@@ -1,7 +1,7 @@
 var request = require('request');
 
 var options = {
-    url: 'http://www.google.com'
+    url: 'http://localhost:28139'
 };
 
 function callback(error, response, body) {

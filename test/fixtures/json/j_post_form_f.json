@@ -1,6 +1,6 @@
 {
-    "url": "http://httpbin.org/post",
-    "raw_url": "http://httpbin.org/post",
+    "url": "http://localhost:28139/post",
+    "raw_url": "http://localhost:28139/post",
     "method": "post",
     "data": {
         "d1": "data1",

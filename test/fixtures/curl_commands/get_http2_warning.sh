@@ -1,1 +1,1 @@
-curl --http2 example.com
+curl --http2 localhost:28139

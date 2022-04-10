@@ -11,7 +11,7 @@ import (
 func main() {
 	client := &http.Client{}
 	var data = strings.NewReader(`msg1=wow&msg2=such&msg3=@rawmsg`)
-	req, err := http.NewRequest("POST", "http://example.com/post", data)
+	req, err := http.NewRequest("POST", "http://localhost:28139/post", data)
 	if err != nil {
 		log.Fatal(err)
 	}

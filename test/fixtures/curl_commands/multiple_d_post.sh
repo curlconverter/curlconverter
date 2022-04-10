@@ -1,1 +1,1 @@
-curl -s 'https://cmdb.litop.local/webservices/rest.php' -d 'version=1.2' -d "auth_user=fdgxf" -d "auth_pwd=oxfdscds" -d 'json_data={ "operation": "core/get", "class": "Software", "key": "key" }'
+curl -s 'https://localhost:28139/webservices/rest.php' -d 'version=1.2' -d "auth_user=fdgxf" -d "auth_pwd=oxfdscds" -d 'json_data={ "operation": "core/get", "class": "Software", "key": "key" }'

@@ -1,6 +1,7 @@
 {
-  "url": "http://www.w3schools.com/ajax/demo_post.asp",
-  "urlWithoutQuery": "http://www.w3schools.com/ajax/demo_post.asp",
+  "url": "http://localhost:28139/ajax/demo_post.asp",
+  "method": "POST",
+  "urlWithoutQuery": "http://localhost:28139/ajax/demo_post.asp",
   "cookies": [
     [
       "_gat",
@@ -16,7 +17,6 @@
     ]
   ],
   "compressed": true,
-  "method": "POST",
   "headers": [
     [
       "Origin",

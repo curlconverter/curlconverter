@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://api.ipify.org/?format=json&");
+httpService.setUrl("http://localhost:28139/?format=json&");
 httpService.setMethod("GET");
 httpService.addParam(type="header", name="Host", value="api.ipify.org");
 httpService.addParam(type="header", name="Accept", value="*/*");

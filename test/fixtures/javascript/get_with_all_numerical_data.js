@@ -1,4 +1,4 @@
-fetch('http://198.30.191.00:8309/CurlToNode', {
+fetch('http://localhost:28139/CurlToNode', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',

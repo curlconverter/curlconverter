@@ -1,7 +1,7 @@
 -
-  name: 'http://example.com/'
+  name: 'http://localhost:28139/'
   uri:
-    url: 'http://example.com/'
+    url: 'http://localhost:28139/'
     method: GET
     headers:
       foo: 'bar'

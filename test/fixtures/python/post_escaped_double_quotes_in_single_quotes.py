@@ -6,4 +6,4 @@ headers = {
 
 data = 'foo=\\"bar\\"'
 
-response = requests.post('http://example.com/', headers=headers, data=data)
+response = requests.post('http://localhost:28139/', headers=headers, data=data)

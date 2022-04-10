@@ -3,7 +3,7 @@ params = {
     'policy_id' 'policy_id'
     'channel_ids' 'channel_id'
 };
-baseURI = 'https://api.newrelic.com/v2/alerts_policy_channels.json';
+baseURI = 'http://localhost:28139/v2/alerts_policy_channels.json';
 uri = [baseURI '?' char(join(join(params, '='), '&'))];
 options = weboptions(...
     'RequestMethod', 'put',...
@@ -24,5 +24,5 @@ header = [
     HeaderField('X-Api-Key', '{admin_api_key}')
     HeaderField('Content-Type', 'application/json')
 ]';
-uri = URI('https://api.newrelic.com/v2/alerts_policy_channels.json', QueryParameter(params'));
+uri = URI('http://localhost:28139/v2/alerts_policy_channels.json', QueryParameter(params'));
 response = RequestMessage('put', header).send(uri.EncodedURI);

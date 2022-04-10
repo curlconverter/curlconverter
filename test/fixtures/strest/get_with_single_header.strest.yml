@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'http://example.com/'
+      url: 'http://localhost:28139/'
       method: GET
       headers:
         -

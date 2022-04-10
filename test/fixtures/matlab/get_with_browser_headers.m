@@ -7,7 +7,7 @@ cookies = {
     'centralnotice_bannercount_fr12' '22'
     'centralnotice_bannercount_fr12-wait' '14'
 };
-uri = 'http://en.wikipedia.org/';
+uri = 'http://localhost:28139/';
 options = weboptions(...
     'UserAgent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',...
     'HeaderFields', {
@@ -48,5 +48,5 @@ header = [
     HeaderField('Connection', 'keep-alive')
     field.CookieField(cellfun(@(x) Cookie(x{:}), num2cell(cookies, 2)))
 ]';
-uri = URI('http://en.wikipedia.org/');
+uri = URI('http://localhost:28139/');
 response = RequestMessage('get', header).send(uri.EncodedURI);

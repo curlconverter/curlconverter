@@ -7,7 +7,7 @@ var headers = {
 var dataString = 'foo=\'bar\'';
 
 var options = {
-    url: 'http://example.com/',
+    url: 'http://localhost:28139/',
     method: 'POST',
     headers: headers,
     body: dataString

@@ -6,6 +6,6 @@ import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
-uri = URI('http://domain.tld/post-to-me.php');
+uri = URI('http://localhost:28139/post-to-me.php');
 body = MultipartFormProvider('username', FormProvider('davidwalsh'), 'password', FormProvider('something'));
 response = RequestMessage('post', [], body).send(uri.EncodedURI);

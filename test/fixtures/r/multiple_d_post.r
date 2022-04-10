@@ -11,4 +11,4 @@ data = list(
   `json_data` = '{ "operation": "core/get", "class": "Software", "key": "key" }'
 )
 
-res <- httr::POST(url = 'https://cmdb.litop.local/webservices/rest.php', httr::add_headers(.headers=headers), body = data)
+res <- httr::POST(url = 'https://localhost:28139/webservices/rest.php', httr::add_headers(.headers=headers), body = data)

@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("https://api.test.com/");
+httpService.setUrl("http://localhost:28139/");
 httpService.setMethod("GET");
 httpService.setUsername("");
 httpService.setPassword("some_password");

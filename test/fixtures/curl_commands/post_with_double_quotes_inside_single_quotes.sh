@@ -1,1 +1,1 @@
-curl -X POST http://example.com/ --data 'foo="bar"'
+curl -X POST http://localhost:28139/ --data 'foo="bar"'

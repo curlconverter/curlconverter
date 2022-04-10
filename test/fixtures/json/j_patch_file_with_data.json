@@ -1,6 +1,6 @@
 {
-    "url": "http://httpbin.org/patch",
-    "raw_url": "http://httpbin.org/patch",
+    "url": "http://localhost:28139/patch",
+    "raw_url": "http://localhost:28139/patch",
     "method": "patch",
     "files": {
         "file1": "./fixtures/curl_commands/delete.sh"

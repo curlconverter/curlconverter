@@ -1,4 +1,4 @@
-fetch('http://localhost:5984/test/_security', {
+fetch('http://localhost:28139/test/_security', {
     method: 'PUT',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

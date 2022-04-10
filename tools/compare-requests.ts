@@ -17,7 +17,7 @@ import { fixturesDir } from "../test/test-utils.js";
 const awaitableExec = promisify(exec);
 
 const DEFAULT_PORT = 28139; // chosen randomly
-const EXPECTED_URL = "http://localhost:" + DEFAULT_PORT;
+const EXPECTED_URL = "localhost:" + DEFAULT_PORT;
 
 // Only Python is supported currently.
 const extension = {
@@ -130,7 +130,7 @@ const testFile = async (testFilename: string): Promise<void> => {
   }
   const curlCommand = fs.readFileSync(inputFile, "utf8");
   const requestedUrl = utils.parseCurlCommand(curlCommand).url;
-  if (!requestedUrl.startsWith(EXPECTED_URL)) {
+  if (!requestedUrl.replace("http://", "").startsWith(EXPECTED_URL)) {
     throw new Error(
       inputFile +
         " requests " +

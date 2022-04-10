@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :get,
-  url: "https://www.site.com",
+  url: "http://localhost:28139/",
   options: [hackney: [:insecure]],
   headers: [],
   params: [],

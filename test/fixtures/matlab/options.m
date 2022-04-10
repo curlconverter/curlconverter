@@ -27,5 +27,5 @@ header = [
     HeaderField('DNT', '1')
     HeaderField('Access-Control-Request-Headers', 'content-type,csrf')
 ]';
-uri = URI('https://layla.amazon.de/api/tunein/queue-and-play', QueryParameter(params'));
+uri = URI('https://localhost:28139/api/tunein/queue-and-play', QueryParameter(params'));
 response = RequestMessage('options', header).send(uri.EncodedURI);

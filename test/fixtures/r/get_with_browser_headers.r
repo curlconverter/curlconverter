@@ -18,4 +18,4 @@ headers = c(
   `Connection` = 'keep-alive'
 )
 
-res <- httr::GET(url = 'http://en.wikipedia.org/', httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))
+res <- httr::GET(url = 'http://localhost:28139/', httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))

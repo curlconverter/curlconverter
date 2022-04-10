@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :put,
-  url: "http://localhost:5984/test/_security",
+  url: "http://localhost:28139/test/_security",
   options: [hackney: [basic_auth: {~s|admin|, ~s|123|}]],
   headers: [
     {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},

@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file("file", "myfile.jpg")?;
 
     let res = reqwest::Client::new()
-        .post("https://upload.box.com/api/2.0/files/content")
+        .post("https://localhost:28139/api/2.0/files/content")
         .headers(headers)
         .multipart(form)
         .send()?

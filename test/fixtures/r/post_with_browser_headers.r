@@ -17,4 +17,4 @@ headers = c(
   `Content-Length` = '0'
 )
 
-res <- httr::POST(url = 'http://www.w3schools.com/ajax/demo_post.asp', httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))
+res <- httr::POST(url = 'http://localhost:28139/ajax/demo_post.asp', httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))

@@ -9,7 +9,7 @@ import (
 
 func main() {
 	client := &http.Client{}
-	req, err := http.NewRequest("DELETE", "http://www.url.com/page", nil)
+	req, err := http.NewRequest("DELETE", "http://localhost:28139/page", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

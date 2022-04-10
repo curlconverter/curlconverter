@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'http://fiddle.jshell.net/echo/html/'
+      url: 'http://localhost:28139/echo/html/'
       method: POST
       postData:
         mimeType: 'application/x-www-form-urlencoded; charset=UTF-8'

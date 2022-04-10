@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://www.w3schools.com/ajax/demo_post.asp");
+httpService.setUrl("http://localhost:28139/ajax/demo_post.asp");
 httpService.setMethod("POST");
 httpService.addParam(type="cookie", name="_gat", value="1");
 httpService.addParam(type="cookie", name="ASPSESSIONIDACCRDTDC", value="MCMDKFMBLLLHGKCGNMKNGPKI");

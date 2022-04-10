@@ -1,7 +1,7 @@
 -
-  name: 'http://en.wikipedia.org/'
+  name: 'http://localhost:28139/'
   uri:
-    url: 'http://en.wikipedia.org/'
+    url: 'http://localhost:28139/'
     method: GET
     headers:
       Accept-Encoding: 'gzip, deflate, sdch'

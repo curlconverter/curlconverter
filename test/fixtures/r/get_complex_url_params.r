@@ -43,4 +43,4 @@ params = list(
   `stopover` = ''
 )
 
-res <- httr::GET(url = 'https://www.nomador.com/house-sitting/', query = params)
+res <- httr::GET(url = 'https://localhost:28139/house-sitting/', query = params)

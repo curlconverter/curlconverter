@@ -1,1 +1,1 @@
-curl -XPOST 'http://us.jooble.org/api/xxxxxxxxxxxxxxxx' --data '{"keywords":"php","page":1,"searchMode":1}'
+curl -XPOST 'http://localhost:28139/api/xxxxxxxxxxxxxxxx' --data '{"keywords":"php","page":1,"searchMode":1}'

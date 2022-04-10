@@ -1,5 +1,5 @@
 %% Web Access using Data Import and Export API
-uri = 'http://www.url.com/page';
+uri = 'http://localhost:28139/page';
 options = weboptions('RequestMethod', 'delete');
 response = webread(uri, options);
 
@@ -7,5 +7,5 @@ response = webread(uri, options);
 import matlab.net.*
 import matlab.net.http.*
 
-uri = URI('http://www.url.com/page');
+uri = URI('http://localhost:28139/page');
 response = RequestMessage('delete').send(uri.EncodedURI);

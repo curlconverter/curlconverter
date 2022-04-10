@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://httpbin.org/patch");
+httpService.setUrl("http://localhost:28139/patch");
 httpService.setMethod("PATCH");
 httpService.addParam(type="file", name="file1", file="#expandPath("./fixtures/curl_commands/delete.sh")#");
 httpService.addParam(type="formfield", name="form1", value="form+data+1");

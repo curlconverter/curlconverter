@@ -11,7 +11,7 @@ var headers = {
 };
 
 var options = {
-    url: 'http://en.wikipedia.org/',
+    url: 'http://localhost:28139/',
     headers: headers
 };
 

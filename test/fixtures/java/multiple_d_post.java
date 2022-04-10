@@ -8,7 +8,7 @@ import java.util.Scanner;
 class Main {
 
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("https://cmdb.litop.local/webservices/rest.php");
+		URL url = new URL("https://localhost:28139/webservices/rest.php");
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setRequestMethod("POST");
 

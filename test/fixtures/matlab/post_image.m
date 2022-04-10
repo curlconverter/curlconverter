@@ -6,6 +6,6 @@ import matlab.net.*
 import matlab.net.http.*
 import matlab.net.http.io.*
 
-uri = URI('http://example.com/targetservice');
+uri = URI('http://localhost:28139/targetservice');
 body = MultipartFormProvider('image', ImageProvider('image.jpg'));
 response = RequestMessage('post', [], body).send(uri.EncodedURI);

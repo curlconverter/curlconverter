@@ -1,1 +1,1 @@
-curl -X "DELETE" "http://www.url.com/page"
+curl -X "DELETE" "http://localhost:28139/page"

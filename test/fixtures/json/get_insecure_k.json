@@ -1,6 +1,6 @@
 {
-    "url": "https://example.com",
-    "raw_url": "https://example.com",
+    "url": "http://localhost:28139",
+    "raw_url": "http://localhost:28139",
     "method": "get",
     "insecure": false
 }

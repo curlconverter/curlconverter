@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "https://upload.box.com/api/2.0/files/content",
+  url: "https://localhost:28139/api/2.0/files/content",
   options: [],
   headers: [
     {~s|Authorization|, ~s|Bearer ACCESS_TOKEN|},

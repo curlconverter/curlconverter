@@ -5,4 +5,4 @@ headers = c(
   `key` = 'abcdefg'
 )
 
-res <- httr::POST(url = 'http://1.2.3.4/endpoint', httr::add_headers(.headers=headers))
+res <- httr::POST(url = 'http://localhost:28139/endpoint', httr::add_headers(.headers=headers))

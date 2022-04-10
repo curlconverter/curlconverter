@@ -1,4 +1,4 @@
-curl 'https://example.com' \
+curl 'https://localhost:28139' \
     -d "a=b&c=\"&d='" \
     -u "ol':asd\"" \
     -H "A: ''a'" \

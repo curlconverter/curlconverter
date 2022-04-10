@@ -1,7 +1,7 @@
 -
-  name: 'http://fiddle.jshell.net/echo/html/'
+  name: 'http://localhost:28139/echo/html/'
   uri:
-    url: 'http://fiddle.jshell.net/echo/html/'
+    url: 'http://localhost:28139/echo/html/'
     method: POST
     body:
       "msg1=wow&msg2=such"

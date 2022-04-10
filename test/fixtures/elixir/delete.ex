@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :delete,
-  url: "http://www.url.com/page",
+  url: "http://localhost:28139/page",
   options: [],
   headers: [],
   params: [],

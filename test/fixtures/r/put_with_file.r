@@ -5,4 +5,4 @@ headers = c(
 )
 
 data = upload_file('new_file')
-res <- httr::PUT(url = 'http://awesomeurl.com/upload', httr::add_headers(.headers=headers), body = data)
+res <- httr::PUT(url = 'http://localhost:28139/upload', httr::add_headers(.headers=headers), body = data)

@@ -1,1 +1,1 @@
-curl 'http://example.com' -m 20
+curl 'http://localhost:28139' -m 20

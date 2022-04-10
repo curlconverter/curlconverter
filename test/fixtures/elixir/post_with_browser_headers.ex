@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "http://www.w3schools.com/ajax/demo_post.asp",
+  url: "http://localhost:28139/ajax/demo_post.asp",
   options: [hackney: [cookies: [~s|_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126|]]],
   headers: [
     {~s|Origin|, ~s|http://www.w3schools.com|},

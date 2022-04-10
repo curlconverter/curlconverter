@@ -1,1 +1,1 @@
-curl --head http://www.url.com/page
+curl --head http://localhost:28139/page

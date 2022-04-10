@@ -19,4 +19,4 @@ headers = {
     # 'Content-Length': '0',
 }
 
-response = requests.post('http://www.w3schools.com/ajax/demo_post.asp', headers=headers, cookies=cookies)
+response = requests.post('http://localhost:28139/ajax/demo_post.asp', headers=headers, cookies=cookies)

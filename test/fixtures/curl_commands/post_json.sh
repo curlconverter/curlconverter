@@ -1,1 +1,1 @@
-curl --json '{ "drink":' --json ' "coffe" }' https://example.com
+curl --json '{ "drink":' --json ' "coffe" }' https://localhost:28139

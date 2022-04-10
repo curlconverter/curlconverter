@@ -8,4 +8,4 @@ headers = {
 with open('./sample.sparql', 'rb') as f:
     data = f.read().replace(b'\n', b'')
 
-response = requests.post('http://lodstories.isi.edu:3030/american-art/query', headers=headers, data=data)
+response = requests.post('http://localhost:28139/american-art/query', headers=headers, data=data)

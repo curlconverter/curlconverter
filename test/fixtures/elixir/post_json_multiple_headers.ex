@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "https://0.0.0.0/rest/login-sessions",
+  url: "https://localhost:28139/rest/login-sessions",
   options: [hackney: [:insecure]],
   headers: [
     {~s|Content-Type|, ~s|application/json|},

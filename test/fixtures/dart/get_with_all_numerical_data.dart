@@ -8,7 +8,7 @@ void main() async {
 
   var data = '18233982904';
 
-  var url = Uri.parse('http://198.30.191.00:8309/CurlToNode');
+  var url = Uri.parse('http://localhost:28139/CurlToNode');
   var res = await http.post(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);

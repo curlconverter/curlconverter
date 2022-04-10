@@ -7,7 +7,7 @@ var headers = {
 var dataString = '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}';
 
 var options = {
-    url: 'http://localhost:5984/test/_security',
+    url: 'http://localhost:28139/test/_security',
     method: 'PUT',
     headers: headers,
     body: dataString,

@@ -1,6 +1,7 @@
 {
-  "url": "http://en.wikipedia.org/",
-  "urlWithoutQuery": "http://en.wikipedia.org/",
+  "url": "http://localhost:28139/",
+  "method": "GET",
+  "urlWithoutQuery": "http://localhost:28139/",
   "cookies": [
     [
       "GeoIP",
@@ -28,7 +29,6 @@
     ]
   ],
   "compressed": true,
-  "method": "GET",
   "headers": [
     [
       "Accept-Encoding",

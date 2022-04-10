@@ -1,1 +1,1 @@
-curl --data 'secret=*%5*!' https://postman-echo.com/post
+curl --data 'secret=*%5*!' https://localhost:28139/post

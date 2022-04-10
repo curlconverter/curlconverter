@@ -2,7 +2,7 @@ extern crate reqwest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let res = reqwest::Client::new()
-        .get("https://api.test.com/")
+        .get("http://localhost:28139/")
         .basic_auth("", Some("some_password"))
         .send()?
         .text()?;

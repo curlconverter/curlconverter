@@ -1,7 +1,7 @@
 -
-  name: 'https://example.com'
+  name: 'http://localhost:28139'
   uri:
-    url: 'https://example.com'
+    url: 'http://localhost:28139'
     method: GET
     validate_certs: no
   register: result

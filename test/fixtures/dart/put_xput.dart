@@ -7,7 +7,7 @@ void main() async {
 
   var data = '{"properties": {"email": {"type": "keyword"}}}';
 
-  var url = Uri.parse('http://localhost:9200/twitter/_mapping/user?pretty');
+  var url = Uri.parse('http://localhost:28139/twitter/_mapping/user?pretty');
   var res = await http.put(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.put error: statusCode= ${res.statusCode}');
   print(res.body);

@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     headers.insert("Content-Type", "application/x-www-form-urlencoded".parse().unwrap());
 
     let res = reqwest::Client::new()
-        .post("https://example.com")
+        .post("https://localhost:28139")
         .basic_auth("ol'", Some("asd\""))
         .headers(headers)
         .body("a=b&c=\"&d='")

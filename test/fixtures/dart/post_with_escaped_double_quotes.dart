@@ -7,7 +7,7 @@ void main() async {
 
   var data = 'foo="bar"';
 
-  var url = Uri.parse('http://example.com/');
+  var url = Uri.parse('http://localhost:28139/');
   var res = await http.post(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);

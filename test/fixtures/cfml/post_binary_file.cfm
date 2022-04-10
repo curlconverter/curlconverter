@@ -1,5 +1,5 @@
 httpService = new http();
-httpService.setUrl("http://lodstories.isi.edu:3030/american-art/query");
+httpService.setUrl("http://localhost:28139/american-art/query");
 httpService.setMethod("POST");
 httpService.addParam(type="header", name="Content-type", value="application/sparql-query");
 httpService.addParam(type="header", name="Accept", value="application/sparql-results+json");

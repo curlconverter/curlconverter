@@ -24,4 +24,4 @@ params = {
     'mediaOwnerCustomerId': 'xxx',
 }
 
-response = requests.options('https://layla.amazon.de/api/tunein/queue-and-play', headers=headers, params=params)
+response = requests.options('https://localhost:28139/api/tunein/queue-and-play', headers=headers, params=params)

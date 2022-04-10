@@ -1,7 +1,7 @@
 -
-  name: 'http://a.com'
+  name: 'http://localhost:28139'
   uri:
-    url: 'http://a.com'
+    url: 'http://localhost:28139'
     method: POST
     body:
       123

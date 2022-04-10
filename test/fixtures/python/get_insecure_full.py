@@ -1,3 +1,3 @@
 import requests
 
-response = requests.get('https://example.com', verify=False)
+response = requests.get('http://localhost:28139', verify=False)

@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "http://domain.tld/post-to-me.php",
+  url: "http://localhost:28139/post-to-me.php",
   options: [],
   headers: [],
   params: [],

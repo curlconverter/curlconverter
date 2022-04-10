@@ -2,7 +2,7 @@ version: 2
 requests:
   curl_converter:
     request:
-      url: 'http://example.com/post'
+      url: 'http://localhost:28139/post'
       method: POST
       postData:
         mimeType: application/x-www-form-urlencoded
