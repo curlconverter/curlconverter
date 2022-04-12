@@ -9,4 +9,4 @@ files = list(
   `file` = upload_file('myfile.jpg')
 )
 
-res <- httr::POST(url = 'https://localhost:28139/api/2.0/files/content', httr::add_headers(.headers=headers), body = files)
+res <- httr::POST(url = 'https://localhost:28139/api/2.0/files/content', httr::add_headers(.headers=headers), body = files, encode = 'multipart')

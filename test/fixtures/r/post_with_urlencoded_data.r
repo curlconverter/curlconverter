@@ -17,4 +17,4 @@ data = list(
   `msg2` = 'such'
 )
 
-res <- httr::POST(url = 'http://localhost:28139/echo/html/', httr::add_headers(.headers=headers), body = data)
+res <- httr::POST(url = 'http://localhost:28139/echo/html/', httr::add_headers(.headers=headers), body = data, encode = 'form')
