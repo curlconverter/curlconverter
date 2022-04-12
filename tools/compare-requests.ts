@@ -19,7 +19,7 @@ const awaitableExec = promisify(exec);
 const DEFAULT_PORT = 28139; // chosen randomly
 const EXPECTED_URL = "localhost:" + DEFAULT_PORT;
 
-// Only Python is supported currently.
+// Only Python and R are supported currently.
 const extension = {
   // ansible: 'yml',
   // browser: 'js',
@@ -32,7 +32,7 @@ const extension = {
   // node: 'js',
   // php: 'php',
   python: "py",
-  // r: 'R',
+  r: "r",
   // rust: 'rs',
   // strest: 'strest.yml'
 };
@@ -50,8 +50,8 @@ const executable = {
   // because curlconverter is an ES6 module.
   // node: 'node',
   // php: '',
-  python: "python3",
-  // r: '',
+  python: "python3 <file>",
+  r: "r < <file> --no-save",
   // rust: '',
   // strest: ''
 };
@@ -151,7 +151,7 @@ const testFile = async (testFilename: string): Promise<void> => {
       testFilename + "." + extension[language]
     );
     if (fs.existsSync(languageFile)) {
-      const command = executable[language] + " " + languageFile;
+      const command = executable[language].replace("<file>", languageFile);
       try {
         await awaitableExec(command);
       } catch (e) {
