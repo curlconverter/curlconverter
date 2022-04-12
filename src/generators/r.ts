@@ -4,7 +4,6 @@ import * as util from "../util.js";
 import type { Request, Cookie, QueryDict } from "../util.js";
 
 import jsesc from "jsesc";
-import querystring from "query-string";
 
 function reprn(value: string | null): string {
   // back-tick quote names
@@ -44,75 +43,6 @@ function getQueryDict(request: Request): string | undefined {
     .join(",\n");
   queryDict += "\n)\n";
   return queryDict;
-}
-
-function getDataString(request: Request): string {
-  if (!request.data) {
-    return "";
-  }
-  if (!request.isDataRaw && request.data.startsWith("@")) {
-    const filePath = request.data.slice(1);
-    return "data = upload_file('" + filePath + "')";
-  }
-
-  const parsedQueryString = querystring.parse(request.data, { sort: false });
-  const keyCount = Object.keys(parsedQueryString).length;
-  const singleKeyOnly =
-    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]];
-  const singularData = request.isDataBinary || singleKeyOnly;
-  if (singularData) {
-    return "data = " + repr(request.data) + "\n";
-  } else {
-    return getMultipleDataString(request, parsedQueryString);
-  }
-}
-
-function getMultipleDataString(
-  request: Request,
-  parsedQueryString: querystring.ParsedQuery<string>
-) {
-  let repeatedKey = false;
-  for (const key in parsedQueryString) {
-    const value = parsedQueryString[key];
-    if (Array.isArray(value)) {
-      repeatedKey = true;
-    }
-  }
-
-  let dataString;
-  if (repeatedKey) {
-    const els = [];
-    dataString = "data = list(\n";
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key];
-      if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) {
-          const val = value[i];
-          els.push("  " + reprn(key) + " = " + repr(val === null ? "" : val));
-        }
-      } else {
-        els.push("  " + reprn(key) + " = " + repr(value === null ? "" : value));
-      }
-    }
-    dataString += els.join(",\n");
-    dataString += "\n)\n";
-  } else {
-    dataString = "data = list(\n";
-    dataString += Object.keys(parsedQueryString)
-      .map((key) => {
-        const value = parsedQueryString[key];
-        return (
-          "  " +
-          reprn(key) +
-          " = " +
-          repr(value === null ? "" : (value as string))
-        );
-      })
-      .join(",\n");
-    dataString += "\n)\n";
-  }
-
-  return dataString;
 }
 
 function getFilesString(request: Request): string | undefined {
@@ -169,9 +99,39 @@ export const _toR = (request: Request) => {
   const queryDict = getQueryDict(request);
 
   let dataString;
+  let dataIsList;
   let filesString;
   if (request.data) {
-    dataString = getDataString(request);
+    if (request.data.startsWith("@") && !request.isDataRaw) {
+      const filePath = request.data.slice(1);
+      dataString = "data = upload_file('" + filePath + "')";
+    } else {
+      const [parsedQueryString] = util.parseQueryString(request.data);
+      // repeat to satisfy type checker
+      dataIsList =
+        parsedQueryString &&
+        parsedQueryString.length &&
+        (parsedQueryString.length > 1 || parsedQueryString[0][1] !== null);
+      if (dataIsList) {
+        dataString = "data = list(\n";
+        dataString += (parsedQueryString as util.Query)
+          .map((q) => {
+            const [key, value] = q;
+            // Converting null to "" causes the generated code to send a different request,
+            // with a = where there was none. This is hopefully more useful though than just
+            // outputing the data as a string in the generated code.
+            // TODO: add the orginal data commented out as a string explaining the above
+            // situation.
+            return (
+              "  " + reprn(key) + " = " + repr(value === null ? "" : value)
+            );
+          })
+          .join(",\n");
+        dataString += "\n)\n";
+      } else {
+        dataString = "data = " + repr(request.data) + "\n";
+      }
+    }
   } else if (request.multipartUploads) {
     filesString = getFilesString(request);
   }
@@ -184,8 +144,20 @@ export const _toR = (request: Request) => {
     request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
   }
   const url = request.queryDict ? request.urlWithoutQuery : request.url;
-  let requestLine =
-    "res <- httr::" + request.method.toUpperCase() + "(url = '" + url + "'";
+
+  let requestLine = "res <- httr::";
+
+  // TODO: GET() doesn't support sending data, detect and use VERB() instead
+  if (
+    ["GET", "HEAD", "PATCH", "PUT", "DELETE", "POST"].includes(
+      request.method.toUpperCase()
+    )
+  ) {
+    requestLine += request.method.toUpperCase() + "(";
+  } else {
+    requestLine += "VERB(" + repr(request.method) + ", ";
+  }
+  requestLine += "url = '" + url + "'";
 
   let requestLineBody = "";
   if (request.headers) {
@@ -197,10 +169,13 @@ export const _toR = (request: Request) => {
   if (request.cookies) {
     requestLineBody += ", httr::set_cookies(.cookies = cookies)";
   }
-  if (request.data && typeof request.data === "string") {
+  if (request.data) {
     requestLineBody += ", body = data";
+    if (dataIsList) {
+      requestLineBody += ", encode = 'form'";
+    }
   } else if (request.multipartUploads) {
-    requestLineBody += ", body = files";
+    requestLineBody += ", body = files, encode = 'multipart'";
   }
   if (request.insecure) {
     requestLineBody += ", config = httr::config(ssl_verifypeer = FALSE)";

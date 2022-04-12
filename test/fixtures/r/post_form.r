@@ -5,4 +5,4 @@ files = list(
   `password` = 'something'
 )
 
-res <- httr::POST(url = 'http://localhost:28139/post-to-me.php', body = files)
+res <- httr::POST(url = 'http://localhost:28139/post-to-me.php', body = files, encode = 'multipart')
