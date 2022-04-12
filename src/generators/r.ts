@@ -4,7 +4,6 @@ import * as util from "../util.js";
 import type { Request, Cookie, QueryDict } from "../util.js";
 
 import jsesc from "jsesc";
-import querystring from "query-string";
 
 function reprn(value: string | null): string {
   // back-tick quote names
