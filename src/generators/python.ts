@@ -105,6 +105,7 @@ function getDataString(
         request.data = request.input;
       } else {
         if (request.isDataBinary) {
+          // TODO: import sys
           return [
             "data = sys.stdin.buffer.read().replace(b'\\n', b'')\n",
             null,
@@ -399,7 +400,18 @@ export const _toPython = (request: Request): string => {
   let jsonDataString;
   let jsonDataStringRoundtrips;
   let filesString;
-  if (request.data) {
+  if (request.uploadFile) {
+    // If you mix --data and --upload-file, it gets weird. content-length will
+    // be from --data but the data will be from --upload-file
+    if (request.uploadFile === "-" || request.uploadFile === ".") {
+      // TODO: import sys
+      dataString = "data = sys.stdin.read()\n";
+    } else {
+      dataString = "with open(" + repr(request.uploadFile) + ", 'rb') as f:\n";
+      dataString += "    data = f.read()\n";
+      // TODO: add request.uploadFile to url in certain circumstances
+    }
+  } else if (request.data) {
     [dataString, jsonDataString, jsonDataStringRoundtrips] =
       getDataString(request);
     // Remove "Content-Type" from the headers dict
@@ -508,7 +520,7 @@ export const _toPython = (request: Request): string => {
   if (request.cookies) {
     requestLineBody += ", cookies=cookies";
   }
-  if (request.data && typeof request.data === "string") {
+  if (request.data || request.uploadFile) {
     if (jsonDataString) {
       requestLineBody += ", json=json_data";
     } else {

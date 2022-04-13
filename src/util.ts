@@ -120,6 +120,7 @@ interface Request {
   digest?: boolean;
   dataArray?: string[];
   data?: string;
+  uploadFile?: string;
   insecure?: boolean;
   cert?: string | [string, string];
   cacert?: string;
@@ -1432,6 +1433,10 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
 
   if (parsedArguments.compressed) {
     request.compressed = true;
+  }
+
+  if (parsedArguments["upload-file"]) {
+    request.uploadFile = parsedArguments["upload-file"];
   }
 
   // TODO: all of these could be specified in the same command.
