@@ -3,43 +3,58 @@ import type { Request } from "../util.js";
 
 import jsesc from "jsesc";
 
+const reprMaybeBacktick = (s: string): string => {
+  return s.includes('"') && !s.includes("`") ? reprBacktick(s) : repr(s);
+};
+const reprBacktick = (s: string): string => {
+  return "`" + s + "`";
+};
+const repr = (s: string): string => {
+  return '"' + jsesc(s, { quotes: "double" }) + '"';
+};
+
 export const _toGo = (request: Request): string => {
   let goCode = "package main\n\n";
-  goCode += 'import (\n\t"fmt"\n\t"io/ioutil"\n\t"log"\n\t"net/http"\n)\n\n';
+  goCode += "import (\n";
+  goCode += '\t"fmt"\n';
+  goCode += '\t"io/ioutil"\n';
+  goCode += '\t"log"\n';
+  goCode += '\t"net/http"\n';
+  if (request.data) {
+    goCode += '\t"strings"\n';
+  }
+  goCode += ")\n\n";
   goCode += "func main() {\n";
   goCode += "\tclient := &http.Client{}\n";
   if (request.data) {
-    if (request.data.indexOf("'") > -1) {
-      request.data = jsesc(request.data);
-    }
-    // import strings
-    goCode = goCode.replace("\n)", '\n\t"strings"\n)');
-    goCode += "\tvar data = strings.NewReader(`" + request.data + "`)\n";
     goCode +=
-      '\treq, err := http.NewRequest("' +
-      request.method +
-      '", "' +
-      request.url +
-      '", data)\n';
-  } else {
-    goCode +=
-      '\treq, err := http.NewRequest("' +
-      request.method +
-      '", "' +
-      request.url +
-      '", nil)\n';
+      "\tvar data = strings.NewReader(" + reprBacktick(request.data) + ")\n";
   }
-  goCode += "\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n";
+  goCode +=
+    "\treq, err := http.NewRequest(" +
+    repr(request.method) +
+    ", " +
+    repr(request.url);
+  goCode += ", " + (request.data ? "data" : "nil") + ")\n";
+
+  goCode += "\tif err != nil {\n";
+  goCode += "\t\tlog.Fatal(err)\n";
+  goCode += "\t}\n";
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers || []) {
       goCode +=
-        '\treq.Header.Set("' + headerName + '", "' + headerValue + '")\n';
+        "\treq.Header.Set(" +
+        repr(headerName) +
+        ", " +
+        reprMaybeBacktick(headerValue ?? "") +
+        ")\n";
     }
   }
 
   if (request.auth) {
     const [user, password] = request.auth;
-    goCode += '\treq.SetBasicAuth("' + user + '", "' + password + '")\n';
+    goCode +=
+      "\treq.SetBasicAuth(" + repr(user) + ", " + repr(password) + ")\n";
   }
   goCode += "\tresp, err := client.Do(req)\n";
   goCode += "\tif err != nil {\n";
