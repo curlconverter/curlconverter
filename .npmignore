@@ -7,8 +7,6 @@ Standard.xml
 .gitattributes
 .gitmodules
 
-extract_curl_args.py
-
 src/tools
 test
 dist/test
