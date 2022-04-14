@@ -73,6 +73,8 @@ type Headers = Array<[string, string | null]>;
 type Cookie = [string, string];
 type Cookies = Array<Cookie>;
 
+type FormParam = { value: string; type: "string" | "form" };
+
 interface ParsedArguments {
   request?: string; // the HTTP method
   data?: string[];
@@ -81,7 +83,18 @@ interface ParsedArguments {
   "data-raw"?: string[];
   "data-urlencode"?: string[];
   json?: string[];
+  form?: FormParam[];
   [key: string]: any;
+}
+
+function pushArgValue(obj: ParsedArguments, argName: string, value: string) {
+  if (argName === "form-string") {
+    return pushProp(obj, "form", { value, type: "string" });
+  } else if (argName === "form") {
+    return pushProp(obj, "form", { value, type: "form" });
+  }
+  // TODO: --data-*
+  return pushProp(obj, argName, value);
 }
 
 interface Request {
@@ -93,7 +106,12 @@ interface Request {
   headers?: Headers;
   stdin?: string;
   input?: string;
-  multipartUploads?: [string, string][];
+  multipartUploads?: {
+    name: string;
+    filename?: string;
+    content?: string;
+    contentFile?: string;
+  }[];
   auth?: [string, string];
   cookies?: Cookies;
   compressed?: boolean;
@@ -1102,7 +1120,7 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
         if (longArg.type === "string") {
           if (i + 1 < args.length) {
             i++;
-            pushProp(parsedArguments, longArg.name, args[i]);
+            pushArgValue(parsedArguments, longArg.name, args[i]);
           } else {
             throw new CCError("option " + arg + ": requires parameter");
           }
@@ -1159,7 +1177,7 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
             } else {
               throw new CCError("option " + argRepr + ": requires parameter");
             }
-            pushProp(parsedArguments, longArg.name, val);
+            pushArgValue(parsedArguments, longArg.name, val as string);
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
@@ -1168,7 +1186,7 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
         }
       }
     } else {
-      pushProp(parsedArguments, "url", arg);
+      pushArgValue(parsedArguments, "url", arg);
     }
   }
 
@@ -1471,11 +1489,22 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
   } else if (parsedArguments.form) {
     request.multipartUploads = [];
     for (const multipartArgument of parsedArguments.form) {
-      // -F is the most complicated option, we just assume it looks
-      // like key=value and some generators handle value being @filepath
       // TODO: https://curl.se/docs/manpage.html#-F
-      const [key, value] = multipartArgument.split(/=(.*)/s, 2);
-      request.multipartUploads.push([key, value || ""]);
+      // -F is the most complicated option, we only handle
+      // name=value and name=@file and name=<file
+      const [name, value] = multipartArgument.value.split(/=(.*)/s, 2);
+      const isString = multipartArgument.type === "string";
+
+      let filename, content, contentFile;
+      if (value.charAt(0) === "@" && !isString) {
+        filename = value.slice(1);
+        contentFile = filename;
+      } else if (value.charAt(0) === "<" && !isString) {
+        contentFile = value.slice(1);
+      } else {
+        content = value;
+      }
+      request.multipartUploads.push({ name, filename, content, contentFile });
     }
   }
 

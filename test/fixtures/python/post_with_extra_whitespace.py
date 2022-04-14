@@ -7,7 +7,7 @@ headers = {
 }
 
 files = {
-    'files': ('47.htz', open('47.htz', 'rb')),
+    'files': open('47.htz', 'rb'),
     'name': (None, '47'),
     'oldMediaId': (None, '47'),
     'updateInLayouts': (None, '1'),

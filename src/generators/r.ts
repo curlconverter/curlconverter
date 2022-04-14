@@ -53,16 +53,14 @@ function getFilesString(request: Request): string | undefined {
   let filesString = "files = list(\n";
   filesString += request.multipartUploads
     .map((m) => {
-      const [multipartKey, multipartValue] = m;
+      const { name, content, contentFile } = m;
       let fileParam;
-      if (multipartValue.startsWith("@")) {
-        const fileName = multipartValue.slice(1);
+      if (contentFile) {
         // filesString += '    ' + reprn(multipartKey) + ' (' + repr(fileName) + ', upload_file(' + repr(fileName) + '))'
         fileParam =
-          "  " + reprn(multipartKey) + " = upload_file(" + repr(fileName) + ")";
+          "  " + reprn(name) + " = upload_file(" + repr(contentFile) + ")";
       } else {
-        fileParam =
-          "  " + reprn(multipartKey) + " = " + repr(multipartValue) + "";
+        fileParam = "  " + reprn(name) + " = " + repr(content as string) + "";
       }
       return fileParam;
     })

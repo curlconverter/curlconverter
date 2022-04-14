@@ -71,20 +71,20 @@ export const _toCFML = (request: Request): string => {
 
   if (request.data || request.multipartUploads) {
     if (request.multipartUploads) {
-      for (const [multipartKey, multipartValue] of request.multipartUploads) {
-        if (multipartValue.charAt(0) === "@") {
+      for (const { name, content, contentFile } of request.multipartUploads) {
+        if (contentFile) {
           cfmlCode +=
             'httpService.addParam(type="file", name="' +
-            quote(multipartKey) +
+            quote(name) +
             '", file="#expandPath("' +
-            quote(multipartValue.substring(1)) +
+            quote(contentFile) +
             '")#");\n';
         } else {
           cfmlCode +=
             'httpService.addParam(type="formfield", name="' +
-            quote(multipartKey) +
+            quote(name) +
             '", value="' +
-            quote(multipartValue) +
+            quote(content as string) +
             '");\n';
         }
       }

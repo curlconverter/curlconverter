@@ -183,15 +183,30 @@ function getFilesString(request: Request): string | undefined {
     return undefined;
   }
   const multipartUploads = request.multipartUploads.map((m) => {
-    let multipartValue;
-    if (m[1].startsWith("@")) {
-      const fileName = m[1].slice(1);
-      multipartValue =
-        "(" + repr(fileName) + ", open(" + repr(fileName) + ", 'rb'))";
-    } else {
-      multipartValue = "(None, " + repr(m[1]) + ")";
+    // https://github.com/psf/requests/blob/2d5517682b3b38547634d153cea43d48fbc8cdb5/requests/models.py#L117
+    //
+    // Requests's multipart syntax looks like this:
+    // (name/filename, content)
+    // (name, open(filename/contentFile))
+    // (name, (filename, open(contentFile))
+    // (name, (filename, open(contentFile), contentType, headers)) // this isn't parsed from --form yet
+    const { filename, content, contentFile } = m;
+    const name = m.name ? repr(m.name) : "None";
+    const sentFilename = filename ? repr(filename) : "None";
+    if (contentFile) {
+      if (contentFile === filename) {
+        return [name, "open(" + repr(contentFile) + ", 'rb')"];
+      }
+      return [
+        name,
+        "(" + sentFilename + ", open(" + repr(contentFile) + ", 'rb'))",
+      ];
     }
-    return [m[0], multipartValue];
+    // We should always either have .content or .contentFile
+    if (filename && name === filename) {
+      return [name, repr(content as string)];
+    }
+    return [name, "(" + sentFilename + ", " + repr(content as string) + ")"];
   });
 
   const multipartUploadsAsDict = Object.fromEntries(multipartUploads);
@@ -200,15 +215,13 @@ function getFilesString(request: Request): string | undefined {
   if (Object.keys(multipartUploadsAsDict).length === multipartUploads.length) {
     filesString += "{\n";
     for (const [multipartKey, multipartValue] of multipartUploads) {
-      filesString +=
-        "    " + repr(multipartKey) + ": " + multipartValue + ",\n";
+      filesString += "    " + multipartKey + ": " + multipartValue + ",\n";
     }
     filesString += "}\n";
   } else {
     filesString += "[\n";
     for (const [multipartKey, multipartValue] of multipartUploads) {
-      filesString +=
-        "    (" + repr(multipartKey) + ", " + multipartValue + "),\n";
+      filesString += "    (" + multipartKey + ", " + multipartValue + "),\n";
     }
     filesString += "]\n";
   }
