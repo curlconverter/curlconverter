@@ -109,10 +109,6 @@ You can run only the tests for a specific language generator with:
 npm test -- --language=python
 ```
 
-I recommend setting this up with a debugger so you can see exactly what the parser is passing to the generator.
-Here's my Intellij run configuration for a single test:
-![Screenshot of intellij debug configuration](/docs/intellijconfig.png)
-
 Before submitting a PR, please check that your JS code conforms to our code style with
 
 ```sh
