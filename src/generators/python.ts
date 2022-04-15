@@ -423,7 +423,6 @@ export const _toPython = (request: Request): string => {
     } else {
       dataString = "with open(" + repr(request.uploadFile) + ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
-      // TODO: add request.uploadFile to url in certain circumstances
     }
   } else if (request.data) {
     [dataString, usesStdin, jsonDataString, jsonDataStringRoundtrips] =
