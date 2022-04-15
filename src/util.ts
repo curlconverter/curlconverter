@@ -1380,7 +1380,7 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
   let urlObject = URL.parse(url); // eslint-disable-line
   if (parsedArguments["upload-file"]) {
     // TODO: it's more complicated
-    if (!urlObject.path && !urlObject.hash) {
+    if ((!urlObject.path || urlObject.path === "/") && !urlObject.hash) {
       url += "/" + parsedArguments["upload-file"];
     } else if (url.endsWith("/")) {
       url += parsedArguments["upload-file"];
