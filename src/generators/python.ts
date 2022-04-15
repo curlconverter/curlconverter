@@ -92,9 +92,9 @@ function objToDictOrListOfTuples(obj: Query | QueryDict): string {
 
 function getDataString(
   request: Request
-): [string | null, string | null, boolean | null] {
+): [string | null, boolean, string | null, boolean | null] {
   if (!request.data) {
-    return [null, null, null];
+    return [null, false, null, null];
   }
   if (!request.isDataRaw && request.data.startsWith("@")) {
     let filePath = request.data.slice(1);
@@ -107,11 +107,17 @@ function getDataString(
         if (request.isDataBinary) {
           return [
             "data = sys.stdin.buffer.read().replace(b'\\n', b'')\n",
+            true,
             null,
             null,
           ];
         } else {
-          return ["data = sys.stdin.read().replace('\\n', '')\n", null, null];
+          return [
+            "data = sys.stdin.read().replace('\\n', '')\n",
+            true,
+            null,
+            null,
+          ];
         }
       }
     }
@@ -121,6 +127,7 @@ function getDataString(
           "with open(" +
             repr(filePath) +
             ", 'rb') as f:\n    data = f.read().replace(b'\\n', b'')\n",
+          false,
           null,
           null,
         ];
@@ -129,6 +136,7 @@ function getDataString(
           "with open(" +
             repr(filePath) +
             ") as f:\n    data = f.read().replace('\\n', '')\n",
+          false,
           null,
           null,
         ];
@@ -152,7 +160,7 @@ function getDataString(
       // but this is hopefully good enough.
       const roundtrips = JSON.stringify(dataAsJson) === request.data;
       const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
-      return [dataString, jsonDataString, roundtrips];
+      return [dataString, false, jsonDataString, roundtrips];
     } catch {}
   }
 
@@ -173,15 +181,17 @@ function getDataString(
     ) {
       util.deleteHeader(request, "content-type");
     }
-    return [dataPythonObj, null, null];
+    return [dataPythonObj, false, null, null];
   }
-  return [dataString, null, null];
+  return [dataString, false, null, null];
 }
 
-function getFilesString(request: Request): string | undefined {
+function getFilesString(request: Request): [string, boolean] {
+  let usesStdin = false;
   if (!request.multipartUploads) {
-    return undefined;
+    return ["", usesStdin];
   }
+
   const multipartUploads = request.multipartUploads.map((m) => {
     // https://github.com/psf/requests/blob/2d5517682b3b38547634d153cea43d48fbc8cdb5/requests/models.py#L117
     //
@@ -194,7 +204,10 @@ function getFilesString(request: Request): string | undefined {
     const name = m.name ? repr(m.name) : "None";
     const sentFilename = filename ? repr(filename) : "None";
     if (contentFile) {
-      if (contentFile === filename) {
+      if (contentFile === "-") {
+        usesStdin = true;
+        return [name, "(" + sentFilename + ", sys.stdin.buffer.read())"];
+      } else if (contentFile === filename) {
         return [name, "open(" + repr(contentFile) + ", 'rb')"];
       }
       return [
@@ -226,7 +239,7 @@ function getFilesString(request: Request): string | undefined {
     filesString += "]\n";
   }
 
-  return filesString;
+  return [filesString, usesStdin];
 }
 
 // convertVarToStringFormat will convert if inputString to f"..." format
@@ -307,6 +320,7 @@ export const _toPython = (request: Request): string => {
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set();
+  let importSys = false;
   const commentedOutHeaders: { [key: string]: string } = {
     "accept-encoding": "",
     "content-length": "",
@@ -396,11 +410,22 @@ export const _toPython = (request: Request): string => {
 
   const contentType = util.getHeader(request, "content-type");
   let dataString;
+  let usesStdin = false;
   let jsonDataString;
   let jsonDataStringRoundtrips;
   let filesString;
-  if (request.data) {
-    [dataString, jsonDataString, jsonDataStringRoundtrips] =
+  if (request.uploadFile) {
+    // If you mix --data and --upload-file, it gets weird. content-length will
+    // be from --data but the data will be from --upload-file
+    if (request.uploadFile === "-" || request.uploadFile === ".") {
+      dataString = "data = sys.stdin.buffer.read()\n";
+      usesStdin = true;
+    } else {
+      dataString = "with open(" + repr(request.uploadFile) + ", 'rb') as f:\n";
+      dataString += "    data = f.read()\n";
+    }
+  } else if (request.data) {
+    [dataString, usesStdin, jsonDataString, jsonDataStringRoundtrips] =
       getDataString(request);
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
@@ -415,7 +440,7 @@ export const _toPython = (request: Request): string => {
       }
     }
   } else if (request.multipartUploads) {
-    filesString = getFilesString(request);
+    [filesString, usesStdin] = getFilesString(request);
     // If you pass files= then Requests adds this header and a `boundary`
     // If you manually pass a Content-Type header it won't set a `boundary`
     // wheras curl does, so the request will fail.
@@ -431,6 +456,7 @@ export const _toPython = (request: Request): string => {
         "requests won't add a boundary if this header is set when you pass files=";
     }
   }
+  importSys ||= usesStdin;
 
   let headerDict;
   if (request.headers && request.headers.length) {
@@ -508,7 +534,7 @@ export const _toPython = (request: Request): string => {
   if (request.cookies) {
     requestLineBody += ", cookies=cookies";
   }
-  if (request.data && typeof request.data === "string") {
+  if (request.data || request.uploadFile) {
     if (jsonDataString) {
       requestLineBody += ", json=json_data";
     } else {
@@ -545,6 +571,9 @@ export const _toPython = (request: Request): string => {
   // Sort import by name
   if (osVariables.size > 0) {
     pythonCode += "import os\n";
+  }
+  if (importSys) {
+    pythonCode += "import sys\n";
   }
 
   pythonCode += "import requests\n";
