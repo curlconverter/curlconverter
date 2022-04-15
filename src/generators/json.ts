@@ -82,12 +82,11 @@ function getFilesString(
     data: {},
   };
 
-  for (const [multipartKey, multipartValue] of request.multipartUploads) {
-    if (multipartValue.startsWith("@")) {
-      const fileName = multipartValue.slice(1);
-      data.files[multipartKey] = fileName;
+  for (const { name, content, contentFile } of request.multipartUploads) {
+    if (contentFile) {
+      data.files[name] = contentFile;
     } else {
-      data.data[multipartKey] = multipartValue;
+      data.data[name] = content as string;
     }
   }
 

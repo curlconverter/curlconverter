@@ -106,12 +106,11 @@ function getFormDataString(request: Request): string {
 
   let fileArgs: string[] | string = [];
   let dataArgs: string[] | string = [];
-  for (const [multipartKey, multipartValue] of request.multipartUploads) {
-    if (multipartValue.startsWith("@")) {
-      const fileName = multipartValue.slice(1);
-      fileArgs.push(`    {:file, ~s|${fileName}|}`);
+  for (const { name, content, contentFile } of request.multipartUploads) {
+    if (contentFile) {
+      fileArgs.push(`    {:file, ~s|${contentFile}|}`);
     } else {
-      dataArgs.push(`    {${repr(multipartKey)}, ${repr(multipartValue)}}`);
+      dataArgs.push(`    {${repr(name)}, ${repr(content as string)}}`);
     }
   }
 
