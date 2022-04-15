@@ -1377,7 +1377,16 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
     method = "POST";
   }
 
-  const urlObject = URL.parse(url); // eslint-disable-line
+  let urlObject = URL.parse(url); // eslint-disable-line
+  if (parsedArguments["upload-file"]) {
+    // TODO: it's more complicated
+    if (!urlObject.path && !urlObject.hash) {
+      url += "/" + parsedArguments["upload-file"];
+    } else if (url.endsWith("/")) {
+      url += parsedArguments["upload-file"];
+    }
+    urlObject = URL.parse(url); // eslint-disable-line
+  }
   // if GET request with data, convert data to query string
   // NB: the -G flag does not change the http verb. It just moves the data into the url.
   // TODO: this probably has a lot of mismatches with curl
