@@ -8,6 +8,6 @@ export const _toNode = (request: Request): string => {
   return importStatement + _toJavaScript(request);
 };
 export const toNode = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toNode(request);
 };

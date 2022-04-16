@@ -35,6 +35,6 @@ export const _toAnsible = (request: Request): string => {
   return result;
 };
 export const toAnsible = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toAnsible(request);
 };

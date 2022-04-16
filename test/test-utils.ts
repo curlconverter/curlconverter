@@ -10,7 +10,7 @@ export const fixturesDir = path.resolve(__dirname, "../../test/fixtures");
 
 // Special case that returns the parsed argument object
 const toParser = (curl: string | string[]): string => {
-  const parserOutput = utils.parseCurlCommand(curl);
+  const [parserOutput, warnings] = utils.parseCurlCommand(curl);
   const code = JSON.stringify(parserOutput, null, 2);
   return code + "\n";
 };

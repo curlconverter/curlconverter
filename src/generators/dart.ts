@@ -121,6 +121,6 @@ export const _toDart = (r: Request): string => {
   return s + "\n";
 };
 export const toDart = (curlCommand: string | string[]): string => {
-  const r = util.parseCurlCommand(curlCommand);
+  const [r, w] = util.parseCurlCommand(curlCommand);
   return _toDart(r);
 };

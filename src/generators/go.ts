@@ -71,6 +71,6 @@ export const _toGo = (request: Request): string => {
   return goCode + "\n";
 };
 export const toGo = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toGo(request);
 };

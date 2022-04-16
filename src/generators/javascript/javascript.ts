@@ -89,6 +89,6 @@ export const _toJavaScript = (request: Request): string => {
 };
 
 export const toJavaScript = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toJavaScript(request);
 };

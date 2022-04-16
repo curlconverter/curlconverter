@@ -130,6 +130,6 @@ export const _toPhp = (request: Request): string => {
 };
 
 export const toPhp = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toPhp(request);
 };

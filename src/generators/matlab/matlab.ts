@@ -12,6 +12,6 @@ export const _toMATLAB = (request: Request): string => {
     .join("\n");
 };
 export const toMATLAB = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toMATLAB(request);
 };

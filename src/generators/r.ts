@@ -208,6 +208,6 @@ export const _toR = (request: Request) => {
   return rstatsCode + "\n";
 };
 export const toR = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toR(request);
 };

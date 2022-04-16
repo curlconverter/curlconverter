@@ -165,7 +165,7 @@ export const _toJsonString = (request: Request) => {
     ) + "\n"
   );
 };
-export const toJsonString = (curlCommand: string | string[]) => {
-  const request = util.parseCurlCommand(curlCommand);
+export const toJsonString = (curlCommand: string | string[]): string => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toJsonString(request);
 };

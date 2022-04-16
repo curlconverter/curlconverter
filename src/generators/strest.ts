@@ -121,6 +121,6 @@ export const _toStrest = (request: Request): string => {
   return yamlString;
 };
 export const toStrest = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toStrest(request);
 };

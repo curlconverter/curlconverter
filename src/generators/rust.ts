@@ -100,6 +100,6 @@ export const _toRust = (request: Request) => {
   return lines.join("\n") + "\n";
 };
 export const toRust = (curlCommand: string | string[]) => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toRust(request);
 };

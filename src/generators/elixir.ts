@@ -231,6 +231,6 @@ response = HTTPoison.request(request)
   return template;
 };
 export const toElixir = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toElixir(request);
 };

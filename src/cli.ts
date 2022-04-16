@@ -24,7 +24,7 @@ import { _toNode } from "./generators/javascript/node-fetch.js";
 import { _toNodeRequest } from "./generators/javascript/node-request.js";
 import { _toPhp } from "./generators/php/php.js";
 import { _toPhpRequests } from "./generators/php/php-requests.js";
-import { _toPython } from "./generators/python.js";
+import { _toPython, toPythonWarn } from "./generators/python.js";
 import { _toR } from "./generators/r.js";
 import { _toRust } from "./generators/rust.js";
 import { _toStrest } from "./generators/strest.js";
@@ -39,25 +39,30 @@ const defaultLanguage = "python";
 
 // Maps options for --language to functions
 // NOTE: make sure to update this when adding language support
-const translate: { [key: string]: (request: Request) => string } = {
-  ansible: _toAnsible,
-  cfml: _toCFML,
-  browser: _toJavaScript, // for backwards compatibility, undocumented
-  dart: _toDart,
-  elixir: _toElixir,
-  go: _toGo,
-  java: _toJava,
-  javascript: _toJavaScript,
-  json: _toJsonString,
-  matlab: _toMATLAB,
-  node: _toNode,
-  "node-request": _toNodeRequest,
-  php: _toPhp,
-  "php-requests": _toPhpRequests,
-  python: _toPython,
-  r: _toR,
-  rust: _toRust,
-  strest: _toStrest,
+const translate: {
+  [key: string]: [
+    (request: Request) => string,
+    (curlCommand: string | string[]) => [string, [string, string][]]
+  ];
+} = {
+  // ansible: _toAnsible,
+  // cfml: _toCFML,
+  // browser: _toJavaScript, // for backwards compatibility, undocumented
+  // dart: _toDart,
+  // elixir: _toElixir,
+  // go: _toGo,
+  // java: _toJava,
+  // javascript: _toJavaScript,
+  // json: _toJsonString,
+  // matlab: _toMATLAB,
+  // node: _toNode,
+  // "node-request": _toNodeRequest,
+  // php: _toPhp,
+  // "php-requests": _toPhpRequests,
+  python: [_toPython, toPythonWarn],
+  // r: _toR,
+  // rust: _toRust,
+  // strest: _toStrest,
 };
 
 const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...]
@@ -94,10 +99,8 @@ const curlConverterShortOpts: ShortOpts = {
   // a single - (dash) tells curlconverter to read input from stdin
   "": "stdin",
 };
-const opts: [LongOpts, ShortOpts] = [
-  { ...curlLongOpts, ...curlConverterLongOpts },
-  { ...curlShortOpts, ...curlConverterShortOpts },
-];
+const longOpts: LongOpts = { ...curlLongOpts, ...curlConverterLongOpts };
+const shortOpts: ShortOpts = { ...curlShortOpts, ...curlConverterShortOpts };
 
 function exitWithError(error: unknown, verbose = false): never {
   let errMsg: Error | string | unknown = error;
@@ -118,9 +121,9 @@ function exitWithError(error: unknown, verbose = false): never {
 }
 
 const argv = process.argv.slice(2);
-let parsedArguments;
+let parsedArguments, warnings;
 try {
-  parsedArguments = parseArgs(argv, opts);
+  [parsedArguments, warnings] = parseArgs(argv, longOpts, shortOpts);
 } catch (e) {
   exitWithError(e);
 }
@@ -152,12 +155,14 @@ for (const opt of Object.keys(curlConverterLongOpts)) {
   delete parsedArguments[opt];
 }
 
-let request;
+const [generator, warnGenerator] = translate[language];
+let code;
 if (argc === 0) {
   console.log(USAGE.trim());
   process.exit(2);
-} else if (stdin) {
-  // This lets you do something like
+}
+if (stdin) {
+  // This lets you do
   // echo curl example.com | curlconverter --verbose
   const extraArgs = Object.keys(parsedArguments).filter((a) => a !== "verbose");
   if (extraArgs.length > 0) {
@@ -174,34 +179,39 @@ if (argc === 0) {
   }
   const input = fs.readFileSync(0, "utf8");
   try {
-    request = parseCurlCommand(input);
+    [code, warnings] = warnGenerator(input);
   } catch (e) {
     exitWithError(e, parsedArguments.verbose);
   }
 } else {
+  let request;
   try {
     request = buildRequest(parsedArguments);
   } catch (e) {
     exitWithError(e, parsedArguments.verbose);
   }
+  // Warning for users using the pre-4.0 CLI
+  if (request.url?.startsWith("curl ")) {
+    console.error(
+      "warning: Passing a whole curl command as a single argument?"
+    );
+    console.error(
+      "warning: Pass options to curlconverter as if it was curl instead:"
+    );
+    console.error(
+      "warning: curlconverter 'curl example.com' -> curlconverter example.com"
+    );
+  }
+  try {
+    code = generator(request);
+  } catch (e) {
+    exitWithError(e, parsedArguments.verbose);
+  }
 }
 
-// Warning for users using the pre-4.0 CLI
-if (request.url?.startsWith("curl ")) {
-  console.error("warning: Passing a whole curl command as a single argument?");
-  console.error(
-    "warning: Pass options to curlconverter as if it was curl instead:"
-  );
-  console.error(
-    "warning: curlconverter 'curl example.com' -> curlconverter example.com"
-  );
-}
-
-const generator = translate[language];
-let code;
-try {
-  code = generator(request);
-} catch (e) {
-  exitWithError(e, parsedArguments.verbose);
+if (warnings && parsedArguments.verbose) {
+  for (const w of warnings) {
+    console.error("warning: " + w[1]);
+  }
 }
 process.stdout.write(code);

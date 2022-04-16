@@ -65,6 +65,6 @@ export const _toNodeRequest = (request: Request): string => {
   return nodeRequestCode + "\n";
 };
 export const toNodeRequest = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toNodeRequest(request);
 };
