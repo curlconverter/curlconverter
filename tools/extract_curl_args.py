@@ -3,10 +3,10 @@
 # This script assumes ../curl/ is a git repo containing curl's source code
 # and extracts the list of arguments curl accepts and writes the result as
 # two JS objects (one for --long-options and one for -s (short) options)
-# to util.js.
+# to ../src/util.ts.
 #
 # curl defines its arguments in src/tool_getparam.c:
-# https://github.com/curl/curl/blob/master/src/tool_getparam.c#L73
+# https://github.com/curl/curl/blob/master/src/tool_getparam.c#L72
 #
 # Each argument definition is composed of
 # letter - a 1 or 2 character string which acts as both a unique identifier
@@ -40,15 +40,15 @@ NEW_INPUT_FILE = CURL_REPO / "src" / "tool_getparam.c"
 FILE_MOVED_TAG = "curl-7_23_0"  # when the above change happened
 
 # Originally there were only two arg "types": TRUE/FALSE which signified
-# whether the option expected a value or was a boolean (respectively).
+# whether the option expected a value or was a boolean, respectively.
 # Then in
 # 5abfdc0140df0977b02506d16796f616158bfe88
 # which was released as
 NO_OPTIONS_TAG = "curl-7_19_0"
 # all boolean (i.e. FALSE "type") options got an implicit --no-OPTION.
 # Then TRUE/FALSE was changed to ARG_STRING/ARG_BOOL.
-# Then it was realized that not all options should have a --no-OPTION
-# counterpart, so a new ARG_NONE type was added for those in
+# Then it was realized that not all boolean options should have a
+# --no-OPTION counterpart, so a new ARG_NONE type was added for those in
 # 913c3c8f5476bd7bc4d8d00509396bd4b525b8fc
 
 OPTS_START = "struct LongShort aliases[]= {"
@@ -59,14 +59,13 @@ STR_TYPES = ["string", "filename"]
 ALIAS_TYPES = BOOL_TYPES + STR_TYPES
 RAW_ALIAS_TYPES = ALIAS_TYPES + ["true", "false"]
 
-
-OUTPUT_FILE = Path(__file__).parent / "util.js"
+OUTPUT_FILE = Path(__file__).parent.parent / "src" / "util.ts"
 
 JS_PARAMS_START = "BEGIN GENERATED CURL OPTIONS"
 JS_PARAMS_END = "END GENERATED CURL OPTIONS"
 
-PACKAGE_JSON = Path(__file__).parent / "package.json"
-CLI_FILE = Path(__file__).parent / "bin" / "cli.js"
+PACKAGE_JSON = Path(__file__).parent.parent / "package.json"
+CLI_FILE = Path(__file__).parent.parent / "src" / "cli.ts"
 CLI_VERSION_LINE_START = "const VERSION = "
 
 # These are options with the same `letter`, which are options that were
@@ -171,7 +170,7 @@ def parse_aliases(lines):
     return list(aliases.values())
 
 
-def fill_out_aliases(aliases, add_no_options=True):
+def fill_out_aliases(aliases, add_no_options=True, assumptions=set()):
     # If both --option and --other-option have "oO" (for example) as their `letter`,
     # add a "name" property with the main option's `lname`
     letter_count = Counter(a["letter"] for a in aliases)
@@ -188,7 +187,10 @@ def fill_out_aliases(aliases, add_no_options=True):
         if alias["type"] in BOOL_TYPES:
             without_no = alias["lname"].removeprefix("no-").removeprefix("disable-")
             if alias["lname"] != without_no:
-                print(f"Assuming --{alias['lname']} is {without_no!r}", file=sys.stderr)
+                assumption = f"Assuming --{alias['lname']} is {without_no!r}"
+                if assumption not in assumptions:
+                    assumptions.add(assumption)
+                    print(assumption, file=sys.stderr)
                 alias["name"] = without_no
 
         if letter_count[alias["letter"]] > 1:
@@ -459,14 +461,16 @@ if __name__ == "__main__":
                 break
             new_cli_lines.append(line)
         else:
-            raise ValueError(f"no line in {CLI_FILE} starts with {CLI_VERSION_LINE_START!r}")
+            raise ValueError(
+                f"no line in {CLI_FILE} starts with {CLI_VERSION_LINE_START!r}"
+            )
 
         new_cli_lines.append(cli_version_line)
 
         for line in f:
             new_cli_lines.append(line)
 
-    with open(OUTPUT_FILE, "w", newline="\n") as f:
-        f.write("".join(new_lines))
-    with open(CLI_FILE, "w", newline="\n") as f:
-        f.write("".join(new_cli_lines))
+    # with open(OUTPUT_FILE, "w", newline="\n") as f:
+    #     f.write("".join(new_lines))
+    # with open(CLI_FILE, "w", newline="\n") as f:
+    #     f.write("".join(new_cli_lines))

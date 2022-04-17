@@ -1,7 +1,31 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+  "proxy-user",
+  "proxy",
+  "max-time",
+]);
 
 const quote = (str: string): string => {
   return jsesc(str, { quotes: "single" }).replace(/"/g, '""');
@@ -112,7 +136,14 @@ export const _toCFML = (request: Request): string => {
   return cfmlCode;
 };
 
+export const toCFMLWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toCFML(request), warnings];
+};
+
 export const toCFML = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toCFML(request);
 };

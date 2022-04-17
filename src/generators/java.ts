@@ -1,7 +1,29 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  // TODO
+  // "form",
+  // "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+]);
 
 const doubleQuotes = (str: string): string => jsesc(str, { quotes: "double" });
 
@@ -92,7 +114,14 @@ export const _toJava = (request: Request): string => {
 
   return javaCode + "\n";
 };
+export const toJavaWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toJava(request), warnings];
+};
+
 export const toJava = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toJava(request);
 };

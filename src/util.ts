@@ -63,6 +63,12 @@ interface ShortOpts {
   [key: string]: string;
 }
 
+interface PossibleArgs {
+  supported: string[];
+  unsupported: string[];
+  ignored: string[];
+}
+
 type Query = Array<[string, string | null]>;
 interface QueryDict {
   [key: string]: string | null | Array<string | null>;
@@ -86,6 +92,8 @@ interface ParsedArguments {
   form?: FormParam[];
   [key: string]: any;
 }
+
+type Warnings = [string, string][];
 
 function pushArgValue(obj: ParsedArguments, argName: string, value: string) {
   if (argName === "form-string") {
@@ -730,6 +738,24 @@ const changedShortOpts: { [key: string]: string } = {
   "~": "used to be short for --xattr until curl 7.49.0",
 };
 
+// These are args that users wouldn't expect to be warned about
+const ignoredArgs = new Set([
+  "help",
+  "no-help",
+  "silent",
+  "no-silent",
+  "verbose",
+  "no-verbose",
+  "version",
+  "no-version",
+  "progress-bar",
+  "no-progress-bar",
+  "progress-meter",
+  "no-progress-meter",
+  "show-error",
+  "no-show-error",
+]);
+
 // These options can be specified more than once, they
 // are always returned as a list.
 // Normally, if you specify some option more than once,
@@ -1096,9 +1122,37 @@ const tokenize = (curlCommand: string): TokenizeResult => {
   };
 };
 
-const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
-  const [longOpts, shortOpts] = opts || [curlLongOpts, curlShortOpts];
+const checkLongOpt = (
+  lookup: string,
+  longArgName: string,
+  supportedOpts: Set<string>,
+  warnings: Warnings
+) => {
+  if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
+    // TODO: better message. include generator name?
+    warnings.push([longArgName, "--" + lookup + " is not a supported option"]);
+  }
+};
 
+const checkShortOpt = (
+  lookup: string,
+  longArgName: string,
+  supportedOpts: Set<string>,
+  warnings: Warnings
+) => {
+  if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
+    // TODO: better message. include generator name?
+    warnings.push([longArgName, "-" + lookup + " is not a supported option"]);
+  }
+};
+
+const parseArgs = (
+  args: string[],
+  longOpts: LongOpts,
+  shortOpts: ShortOpts,
+  supportedOpts?: Set<string>
+): [ParsedArguments, Warnings] => {
+  const warnings: Warnings = [];
   const parsedArguments: ParsedArguments = {};
   for (let i = 0, stillflags = true; i < args.length; i++) {
     let arg: string | string[] = args[i];
@@ -1109,7 +1163,8 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
            following (URL) argument to start with -. */
         stillflags = false;
       } else if (arg.startsWith("--")) {
-        const longArg = longOpts[arg.slice(2)];
+        const lookup = arg.slice(2);
+        const longArg = longOpts[lookup];
         if (longArg === null) {
           throw new CCError("option " + arg + ": is ambiguous");
         }
@@ -1128,6 +1183,9 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
         } else {
           parsedArguments[longArg.name] = toBoolean(arg.slice(2)); // TODO: all shortened args work correctly?
         }
+        if (supportedOpts) {
+          checkLongOpt(lookup, longArg.name, supportedOpts, warnings);
+        }
       } else {
         // Short option. These can look like
         // -X POST -> {request: 'POST'}
@@ -1140,7 +1198,7 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
         // -ABCXPOST
         // -> {A: true, B: true, C: true, request: 'POST'}
 
-        // "-" passed to curl on its own raises an error,
+        // "-" passed to curl as an argument raises an error,
         // curlconverter's command line uses it to read from stdin
         if (arg.length === 1) {
           if (has(shortOpts, "")) {
@@ -1160,7 +1218,8 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
             // TODO: there are a few deleted short options we could report
             throw new CCError("option " + argRepr + ": is unknown");
           }
-          const shortFor = shortOpts[arg[j]];
+          const lookup = arg[j];
+          const shortFor = shortOpts[lookup];
           const longArg = longOpts[shortFor];
           if (longArg === null) {
             // This could happen if curlShortOpts points to a renamed option or has a typo
@@ -1184,6 +1243,9 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
             // and we want to end up with {buffer: false}
             parsedArguments[longArg.name] = toBoolean(shortFor);
           }
+          if (supportedOpts && lookup) {
+            checkShortOpt(lookup, longArg.name, supportedOpts, warnings);
+          }
         }
       }
     } else {
@@ -1196,7 +1258,7 @@ const parseArgs = (args: string[], opts?: [LongOpts, ShortOpts]) => {
       parsedArguments[arg] = values[values.length - 1];
     }
   }
-  return parsedArguments;
+  return [parsedArguments, warnings];
 };
 
 export function parseQueryString(
@@ -1591,7 +1653,10 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
   return request;
 }
 
-const parseCurlCommand = (curlCommand: string | string[]): Request => {
+function parseCurlCommand(
+  curlCommand: string | string[],
+  supportedArgs?: Set<string>
+): [Request, Warnings] {
   let cmdName: string,
     args: string[],
     stdin: undefined | string,
@@ -1623,7 +1688,12 @@ const parseCurlCommand = (curlCommand: string | string[]): Request => {
     }
   }
 
-  const parsedArguments = parseArgs(args);
+  const [parsedArguments, warnings] = parseArgs(
+    args,
+    curlLongOpts,
+    curlShortOpts,
+    supportedArgs
+  );
   const request = buildRequest(parsedArguments);
   if (stdin) {
     request.stdin = stdin;
@@ -1631,8 +1701,8 @@ const parseCurlCommand = (curlCommand: string | string[]): Request => {
   if (input) {
     request.input = input;
   }
-  return request;
-};
+  return [request, warnings];
+}
 
 // Gets the first header, matching case-insensitively
 const getHeader = (
@@ -1759,4 +1829,13 @@ export {
   has,
 };
 
-export type { LongOpts, ShortOpts, Request, Cookie, Cookies, Query, QueryDict };
+export type {
+  LongOpts,
+  ShortOpts,
+  Request,
+  Cookie,
+  Cookies,
+  Query,
+  QueryDict,
+  Warnings,
+};

@@ -1,9 +1,32 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from "../util.js";
-import type { Request, QueryDict } from "../util.js";
+import type { Request, QueryDict, Warnings } from "../util.js";
 
 import querystring from "query-string";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "insecure",
+  "no-insecure",
+  "user",
+]);
 
 type JSONOutput = {
   url: string;
@@ -165,7 +188,13 @@ export const _toJsonString = (request: Request) => {
     ) + "\n"
   );
 };
-export const toJsonString = (curlCommand: string | string[]) => {
-  const request = util.parseCurlCommand(curlCommand);
+export const toJsonStringWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toJsonString(request), warnings];
+};
+export const toJsonString = (curlCommand: string | string[]): string => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toJsonString(request);
 };

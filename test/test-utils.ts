@@ -10,7 +10,7 @@ export const fixturesDir = path.resolve(__dirname, "../../test/fixtures");
 
 // Special case that returns the parsed argument object
 const toParser = (curl: string | string[]): string => {
-  const parserOutput = utils.parseCurlCommand(curl);
+  const [parserOutput, warnings] = utils.parseCurlCommand(curl);
   const code = JSON.stringify(parserOutput, null, 2);
   return code + "\n";
 };
@@ -132,7 +132,7 @@ const availableConverters = Object.entries(curlconverter)
   .map((c) => c[1].name)
   .filter((n) => n !== "CCError");
 const missing = availableConverters.filter(
-  (c) => !testedConverters.includes(c)
+  (c) => !testedConverters.includes(c) && !c.endsWith("Warn")
 );
 const extra = testedConverters.filter(
   (c) => !availableConverters.includes(c) && c !== "toParser"

@@ -1,7 +1,28 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+]);
 
 const INDENTATION = " ".repeat(4);
 const indent = (line: string, level = 1): string =>
@@ -99,7 +120,13 @@ export const _toRust = (request: Request) => {
 
   return lines.join("\n") + "\n";
 };
-export const toRust = (curlCommand: string | string[]) => {
-  const request = util.parseCurlCommand(curlCommand);
+export const toRustWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toRust(request), warnings];
+};
+export const toRust = (curlCommand: string | string[]): string => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toRust(request);
 };

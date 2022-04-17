@@ -1,7 +1,28 @@
 import * as util from "../../util.js";
-import type { Request } from "../../util.js";
+import type { Request, Warnings } from "../../util.js";
 
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  // "form",
+  // "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+]);
 
 export const _toNodeRequest = (request: Request): string => {
   let nodeRequestCode = "var request = require('request');\n\n";
@@ -64,7 +85,13 @@ export const _toNodeRequest = (request: Request): string => {
 
   return nodeRequestCode + "\n";
 };
+export const toNodeRequestWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toNodeRequest(request), warnings];
+};
 export const toNodeRequest = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toNodeRequest(request);
 };

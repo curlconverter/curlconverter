@@ -129,7 +129,7 @@ const testFile = async (testFilename: string): Promise<void> => {
     throw new Error("input file doesn't exist: " + inputFile);
   }
   const curlCommand = fs.readFileSync(inputFile, "utf8");
-  const requestedUrl = utils.parseCurlCommand(curlCommand).url;
+  const requestedUrl = utils.parseCurlCommand(curlCommand)[0].url;
   if (!requestedUrl.replace("http://", "").startsWith(EXPECTED_URL)) {
     throw new Error(
       inputFile +

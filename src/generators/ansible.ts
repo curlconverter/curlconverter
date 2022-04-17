@@ -1,9 +1,32 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 import { ansibleTemplate } from "../templates/ansible.js";
 
 import nunjucks from "nunjucks";
 import querystring from "query-string";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  // "form",
+  // "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "insecure",
+  "no-insecure",
+  "user",
+]);
 
 function getDataString(request: Request): string | object {
   if (!request.data) {
@@ -34,7 +57,13 @@ export const _toAnsible = (request: Request): string => {
   });
   return result;
 };
+export const toAnsibleWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toAnsible(request), warnings];
+};
 export const toAnsible = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toAnsible(request);
 };

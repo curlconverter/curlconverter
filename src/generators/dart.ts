@@ -1,8 +1,30 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
 
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "compressed",
+  "no-compressed",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  // "form",
+  // "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+]);
 function repr(value: string): string {
   // In context of url parameters, don't accept nulls and such.
   if (!value) {
@@ -120,7 +142,13 @@ export const _toDart = (r: Request): string => {
 
   return s + "\n";
 };
+export const toDartWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toDart(request), warnings];
+};
 export const toDart = (curlCommand: string | string[]): string => {
-  const r = util.parseCurlCommand(curlCommand);
-  return _toDart(r);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
+  return _toDart(request);
 };

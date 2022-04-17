@@ -1,8 +1,29 @@
 import * as util from "../../util.js";
-import type { Request } from "../../util.js";
+import type { Request, Warnings } from "../../util.js";
 
 import querystring from "query-string";
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  // "form",
+  // "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+]);
 
 // TODO: only string
 const quote = (str: string | null | (string | null)[]): string =>
@@ -90,7 +111,13 @@ export const _toPhpRequests = (request: Request): string => {
 
   return phpCode + "\n";
 };
+export const toPhpRequestsWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toPhpRequests(request), warnings];
+};
 export const toPhpRequests = (curlCommand: string | string[]): string => {
-  const request = util.parseCurlCommand(curlCommand);
+  const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toPhpRequests(request);
 };
