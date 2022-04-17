@@ -1,8 +1,31 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
 import querystring from "query-string";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "insecure",
+  "no-insecure",
+  "user",
+]);
 
 // TODO: I bet elixir's array syntax is different and if the query string
 // values are arrays that actually generates broken code.
@@ -230,6 +253,13 @@ response = HTTPoison.request(request)
 
   return template;
 };
+export const toElixirWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toElixir(request), warnings];
+};
+
 export const toElixir = (curlCommand: string | string[]): string => {
   const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toElixir(request);

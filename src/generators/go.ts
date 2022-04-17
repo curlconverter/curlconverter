@@ -1,7 +1,29 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  // TODO
+  // "form",
+  // "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+]);
 
 const reprMaybeBacktick = (s: string): string => {
   return s.includes('"') && !s.includes("`") ? reprBacktick(s) : repr(s);
@@ -69,6 +91,12 @@ export const _toGo = (request: Request): string => {
   goCode += "}";
 
   return goCode + "\n";
+};
+export const toGoWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toGo(request), warnings];
 };
 export const toGo = (curlCommand: string | string[]): string => {
   const [request, warnings] = util.parseCurlCommand(curlCommand);

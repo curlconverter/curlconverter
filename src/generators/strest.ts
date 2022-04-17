@@ -1,9 +1,30 @@
 import * as util from "../util.js";
-import type { Request } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import yaml from "yamljs";
 import jsesc from "jsesc";
 import querystring from "query-string";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "user-agent",
+  "cookie",
+  "referer",
+  "header",
+  "get",
+  "head",
+  "no-head",
+  "user",
+  "insecure",
+  "no-insecure",
+]);
 
 function getDataString(request: Request): PostData | null {
   if (!request.data) {
@@ -119,6 +140,12 @@ export const _toStrest = (request: Request): string => {
 
   const yamlString = yaml.stringify(response, 100, 2);
   return yamlString;
+};
+export const toStrestWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toStrest(request), warnings];
 };
 export const toStrest = (curlCommand: string | string[]): string => {
   const [request, warnings] = util.parseCurlCommand(curlCommand);

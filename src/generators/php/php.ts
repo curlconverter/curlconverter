@@ -1,7 +1,38 @@
 import * as util from "../../util.js";
-import type { Request } from "../../util.js";
+import type { Request, Warnings } from "../../util.js";
 
 import jsesc from "jsesc";
+
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "compressed",
+  "no-compressed",
+  "digest",
+  "no-digest",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "insecure",
+  "no-insecure",
+  "user",
+  "proxy-user",
+  "proxy",
+  "max-time",
+  "location",
+]);
 
 const quote = (str: string): string => jsesc(str, { quotes: "single" });
 
@@ -129,6 +160,12 @@ export const _toPhp = (request: Request): string => {
   return phpCode;
 };
 
+export const toPhpWarn = (
+  curlCommand: string | string[]
+): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toPhp(request), warnings];
+};
 export const toPhp = (curlCommand: string | string[]): string => {
   const [request, warnings] = util.parseCurlCommand(curlCommand);
   return _toPhp(request);

@@ -1,10 +1,32 @@
 // Author: Bob Rudis (bob@rud.is)
 
 import * as util from "../util.js";
-import type { Request, Cookie, QueryDict } from "../util.js";
+import type { Request, Cookie, QueryDict, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
 
+const supportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "insecure",
+  "no-insecure",
+  "user",
+]);
 function reprn(value: string | null): string {
   // back-tick quote names
   if (!value) {
@@ -206,6 +228,10 @@ export const _toR = (request: Request) => {
   rstatsCode += requestLine;
 
   return rstatsCode + "\n";
+};
+export const toRWarn = (curlCommand: string | string[]): [string, Warnings] => {
+  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  return [_toR(request), warnings];
 };
 export const toR = (curlCommand: string | string[]): string => {
   const [request, warnings] = util.parseCurlCommand(curlCommand);

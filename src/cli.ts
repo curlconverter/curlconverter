@@ -11,23 +11,32 @@ import {
 } from "./util.js";
 import type { LongOpts, ShortOpts, Request } from "./util.js";
 
-import { _toAnsible } from "./generators/ansible.js";
-import { _toDart } from "./generators/dart.js";
-import { _toCFML } from "./generators/cfml.js";
-import { _toElixir } from "./generators/elixir.js";
-import { _toGo } from "./generators/go.js";
-import { _toJava } from "./generators/java.js";
-import { _toJavaScript } from "./generators/javascript/javascript.js";
-import { _toJsonString } from "./generators/json.js";
-import { _toMATLAB } from "./generators/matlab/matlab.js";
-import { _toNode } from "./generators/javascript/node-fetch.js";
-import { _toNodeRequest } from "./generators/javascript/node-request.js";
-import { _toPhp } from "./generators/php/php.js";
-import { _toPhpRequests } from "./generators/php/php-requests.js";
+import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
+import { _toDart, toDartWarn } from "./generators/dart.js";
+import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
+import { _toElixir, toElixirWarn } from "./generators/elixir.js";
+import { _toGo, toGoWarn } from "./generators/go.js";
+import { _toJava, toJavaWarn } from "./generators/java.js";
+import {
+  _toJavaScript,
+  toJavaScriptWarn,
+} from "./generators/javascript/javascript.js";
+import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
+import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
+import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
+import {
+  _toNodeRequest,
+  toNodeRequestWarn,
+} from "./generators/javascript/node-request.js";
+import { _toPhp, toPhpWarn } from "./generators/php/php.js";
+import {
+  _toPhpRequests,
+  toPhpRequestsWarn,
+} from "./generators/php/php-requests.js";
 import { _toPython, toPythonWarn } from "./generators/python.js";
-import { _toR } from "./generators/r.js";
-import { _toRust } from "./generators/rust.js";
-import { _toStrest } from "./generators/strest.js";
+import { _toR, toRWarn } from "./generators/r.js";
+import { _toRust, toRustWarn } from "./generators/rust.js";
+import { _toStrest, toStrestWarn } from "./generators/strest.js";
 
 import fs from "fs";
 
@@ -45,24 +54,24 @@ const translate: {
     (curlCommand: string | string[]) => [string, [string, string][]]
   ];
 } = {
-  // ansible: _toAnsible,
-  // cfml: _toCFML,
-  // browser: _toJavaScript, // for backwards compatibility, undocumented
-  // dart: _toDart,
-  // elixir: _toElixir,
-  // go: _toGo,
-  // java: _toJava,
-  // javascript: _toJavaScript,
-  // json: _toJsonString,
-  // matlab: _toMATLAB,
-  // node: _toNode,
-  // "node-request": _toNodeRequest,
-  // php: _toPhp,
-  // "php-requests": _toPhpRequests,
+  ansible: [_toAnsible, toAnsibleWarn],
+  cfml: [_toCFML, toCFMLWarn],
+  browser: [_toJavaScript, toJavaScriptWarn], // for backwards compatibility, undocumented
+  dart: [_toDart, toDartWarn],
+  elixir: [_toElixir, toElixirWarn],
+  go: [_toGo, toGoWarn],
+  java: [_toJava, toJavaWarn],
+  javascript: [_toJavaScript, toJavaScriptWarn],
+  json: [_toJsonString, toJsonStringWarn],
+  matlab: [_toMATLAB, toMATLABWarn],
+  node: [_toNode, toNodeWarn],
+  "node-request": [_toNodeRequest, toNodeRequestWarn],
+  php: [_toPhp, toPhpWarn],
+  "php-requests": [_toPhpRequests, toPhpRequestsWarn],
   python: [_toPython, toPythonWarn],
-  // r: _toR,
-  // rust: _toRust,
-  // strest: _toStrest,
+  r: [_toR, toRWarn],
+  rust: [_toRust, toRustWarn],
+  strest: [_toStrest, toStrestWarn],
 };
 
 const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...]
