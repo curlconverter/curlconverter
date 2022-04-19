@@ -10,7 +10,7 @@ import {
   cookieString,
   paramsString,
 } from "./common.js";
-import type { Request } from "../../util.js";
+import type { Request, Warnings } from "../../util.js";
 
 const isSupportedByWebServices = (request: Request): boolean => {
   if (
@@ -204,15 +204,16 @@ const prepareWebCall = (
 };
 
 export const toWebServices = (
-  request: Request
-): (string | string[] | null)[] => {
+  request: Request,
+  warnings: Warnings
+): [(string | string[] | null)[], Warnings] => {
   let lines: (string | string[] | null)[] = [
     "%% Web Access using Data Import and Export API",
   ];
 
   if (!isSupportedByWebServices(request)) {
     lines.push("% This is not possible with the webread/webwrite API");
-    return lines;
+    return [lines, warnings];
   }
 
   const options = parseWebOptions(request);
@@ -225,5 +226,5 @@ export const toWebServices = (
     prepareWebCall(request, options),
   ]);
 
-  return lines;
+  return [lines, warnings];
 };

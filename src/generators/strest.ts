@@ -92,7 +92,11 @@ type StrestOutput = {
   };
 };
 
-export const _toStrest = (request: Request): string => {
+export const _toStrest = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   const response: StrestOutput = { version: 2 };
   if (request.insecure) {
     response.allowInsecure = true;
@@ -139,15 +143,14 @@ export const _toStrest = (request: Request): string => {
   }
 
   const yamlString = yaml.stringify(response, 100, 2);
-  return yamlString;
+  return [yamlString, warnings];
 };
 export const toStrestWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toStrest(request), warnings];
+  return _toStrest(request, warnings);
 };
 export const toStrest = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toStrest(request);
+  return toStrestWarn(curlCommand)[0];
 };

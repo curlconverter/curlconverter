@@ -24,7 +24,11 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-export const _toNodeRequest = (request: Request): string => {
+export const _toNodeRequest = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let nodeRequestCode = "var request = require('request');\n\n";
   if (request.headers) {
     nodeRequestCode += "var headers = {\n";
@@ -83,15 +87,14 @@ export const _toNodeRequest = (request: Request): string => {
   nodeRequestCode += "}\n\n";
   nodeRequestCode += "request(options, callback);";
 
-  return nodeRequestCode + "\n";
+  return [nodeRequestCode + "\n", warnings];
 };
 export const toNodeRequestWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toNodeRequest(request), warnings];
+  return _toNodeRequest(request, warnings);
 };
 export const toNodeRequest = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toNodeRequest(request);
+  return toNodeRequestWarn(curlCommand)[0];
 };

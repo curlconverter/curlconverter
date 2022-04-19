@@ -46,7 +46,11 @@ function getDataString(request: Request): string | object {
   return request.data;
 }
 
-export const _toAnsible = (request: Request): string => {
+export const _toAnsible = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let convertedData;
   if (request.data && typeof request.data === "string") {
     convertedData = getDataString(request);
@@ -55,15 +59,14 @@ export const _toAnsible = (request: Request): string => {
     request,
     data: convertedData,
   });
-  return result;
+  return [result, warnings];
 };
 export const toAnsibleWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toAnsible(request), warnings];
+  return _toAnsible(request, warnings);
 };
 export const toAnsible = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toAnsible(request);
+  return toAnsibleWarn(curlCommand)[0];
 };

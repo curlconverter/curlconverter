@@ -25,7 +25,11 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-export const _toJavaScript = (request: Request): string => {
+export const _toJavaScript = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let jsFetchCode = "";
 
   if (request.data) {
@@ -107,34 +111,37 @@ export const _toJavaScript = (request: Request): string => {
 
   jsFetchCode += ");";
 
-  return jsFetchCode + "\n";
+  return [jsFetchCode + "\n", warnings];
 };
 
 export const toJavaScriptWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toJavaScript(request), warnings];
+  return _toJavaScript(request, warnings);
 };
 
 export const toJavaScript = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toJavaScript(request);
+  return toJavaScriptWarn(curlCommand)[0];
 };
 
 const importStatement = "var fetch = require('node-fetch');\n\n";
 
-export const _toNode = (request: Request): string => {
-  return importStatement + _toJavaScript(request);
+export const _toNode = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  let jsCode;
+  [jsCode, warnings] = _toJavaScript(request, warnings);
+  return [importStatement + jsCode, warnings];
 };
 
 export const toNodeWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toNode(request), warnings];
+  return _toNode(request, warnings);
 };
 export const toNode = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toNode(request);
+  return toNodeWarn(curlCommand)[0];
 };

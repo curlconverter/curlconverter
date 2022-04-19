@@ -36,7 +36,11 @@ const supportedArgs = new Set([
 
 const quote = (str: string): string => jsesc(str, { quotes: "single" });
 
-export const _toPhp = (request: Request): string => {
+export const _toPhp = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let cookieString;
   if (util.hasHeader(request, "cookie")) {
     cookieString = util.getHeader(request, "cookie");
@@ -157,16 +161,15 @@ export const _toPhp = (request: Request): string => {
   phpCode += "\n$response = curl_exec($ch);\n\n";
 
   phpCode += "curl_close($ch);\n";
-  return phpCode;
+  return [phpCode, warnings];
 };
 
 export const toPhpWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toPhp(request), warnings];
+  return _toPhp(request, warnings);
 };
 export const toPhp = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toPhp(request);
+  return toPhpWarn(curlCommand)[0];
 };

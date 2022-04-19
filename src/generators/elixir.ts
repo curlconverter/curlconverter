@@ -226,7 +226,11 @@ ${data.join(",\n")}
   return dataString;
 }
 
-export const _toElixir = (request: Request): string => {
+export const _toElixir = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -251,16 +255,15 @@ export const _toElixir = (request: Request): string => {
 response = HTTPoison.request(request)
 `;
 
-  return template;
+  return [template, warnings];
 };
 export const toElixirWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toElixir(request), warnings];
+  return _toElixir(request, warnings);
 };
 
 export const toElixir = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toElixir(request);
+  return toElixirWarn(curlCommand)[0];
 };

@@ -27,6 +27,7 @@ const supportedArgs = new Set([
   "no-insecure",
   "user",
 ]);
+
 function reprn(value: string | null): string {
   // back-tick quote names
   if (!value) {
@@ -92,7 +93,11 @@ function getFilesString(request: Request): string | undefined {
   return filesString;
 }
 
-export const _toR = (request: Request) => {
+export const _toR = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let cookieDict;
   if (request.cookies) {
     cookieDict = "cookies = c(\n";
@@ -227,13 +232,12 @@ export const _toR = (request: Request) => {
   }
   rstatsCode += requestLine;
 
-  return rstatsCode + "\n";
+  return [rstatsCode + "\n", warnings];
 };
 export const toRWarn = (curlCommand: string | string[]): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toR(request), warnings];
+  return _toR(request, warnings);
 };
 export const toR = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toR(request);
+  return toRWarn(curlCommand)[0];
 };

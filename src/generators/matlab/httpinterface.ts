@@ -7,7 +7,7 @@ import {
   prepareQueryString,
   prepareCookies,
 } from "./common.js";
-import type { Request } from "../../util.js";
+import type { Request, Warnings } from "../../util.js";
 
 const prepareHeaders = (request: Request): string | null => {
   let response = null;
@@ -261,22 +261,26 @@ const prepareRequestMessage = (request: Request): string => {
 };
 
 export const toHTTPInterface = (
-  request: Request
-): (string | string[] | null)[] => {
+  request: Request,
+  warnings: Warnings
+): [(string | string[] | null)[], Warnings] => {
   return [
-    "%% HTTP Interface",
-    "import matlab.net.*",
-    "import matlab.net.http.*",
-    containsBody(request) ? "import matlab.net.http.io.*" : null,
-    "",
-    prepareQueryString(request),
-    prepareCookies(request),
-    prepareHeaders(request),
-    prepareURI(request),
-    prepareAuth(request),
-    prepareMultipartUploads(request),
-    prepareData(request),
-    prepareRequestMessage(request),
-    "",
+    [
+      "%% HTTP Interface",
+      "import matlab.net.*",
+      "import matlab.net.http.*",
+      containsBody(request) ? "import matlab.net.http.io.*" : null,
+      "",
+      prepareQueryString(request),
+      prepareCookies(request),
+      prepareHeaders(request),
+      prepareURI(request),
+      prepareAuth(request),
+      prepareMultipartUploads(request),
+      prepareData(request),
+      prepareRequestMessage(request),
+      "",
+    ],
+    warnings,
   ];
 };

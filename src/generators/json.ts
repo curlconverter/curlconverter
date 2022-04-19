@@ -119,7 +119,11 @@ function getFilesString(
   };
 }
 
-export const _toJsonString = (request: Request) => {
+export const _toJsonString = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
   // we tack it on here to mimic curl
   if (!request.url.match(/https?:/)) {
@@ -180,21 +184,21 @@ export const _toJsonString = (request: Request) => {
     };
   }
 
-  return (
+  return [
     JSON.stringify(
       Object.keys(requestJson).length ? requestJson : "{}",
       null,
       4
-    ) + "\n"
-  );
+    ) + "\n",
+    warnings,
+  ];
 };
 export const toJsonStringWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toJsonString(request), warnings];
+  return _toJsonString(request, warnings);
 };
 export const toJsonString = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toJsonString(request);
+  return toJsonStringWarn(curlCommand)[0];
 };
