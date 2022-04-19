@@ -29,7 +29,11 @@ const supportedArgs = new Set([
 const quote = (str: string | null | (string | null)[]): string =>
   jsesc(str, { quotes: "single" });
 
-export const _toPhpRequests = (request: Request): string => {
+export const _toPhpRequests = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let headerString: string;
   if (request.headers) {
     headerString = "$headers = array(\n";
@@ -109,15 +113,14 @@ export const _toPhpRequests = (request: Request): string => {
 
   phpCode += requestLine;
 
-  return phpCode + "\n";
+  return [phpCode + "\n", warnings];
 };
 export const toPhpRequestsWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toPhpRequests(request), warnings];
+  return _toPhpRequests(request, warnings);
 };
 export const toPhpRequests = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toPhpRequests(request);
+  return toPhpRequestsWarn(curlCommand)[0];
 };

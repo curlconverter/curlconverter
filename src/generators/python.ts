@@ -359,10 +359,11 @@ function reprWithVariable(value: string, hasEnvironmentVariable: boolean) {
   }
 
   if (!hasEnvironmentVariable) {
-    return "'" + jsesc(value, { quotes: "single" }) + "'";
+    return "'" + jsesc(value, { quotes: "single", minimal: true }) + "'";
   }
 
-  return 'f"' + jsesc(value, { quotes: "double" }) + '"';
+  // TODO: escape {} in the string
+  return 'f"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
 }
 
 function repr(value: string): string {
@@ -666,7 +667,11 @@ function detectEnvVar(inputString: string): [Set<string>, string] {
   return [detectedVariables, modifiedString.join("")];
 }
 
-export const _toPython = (request: Request): string => {
+export const _toPython = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set();
@@ -965,11 +970,6 @@ export const _toPython = (request: Request): string => {
     pythonCode += filesString + "\n";
   }
 
-  if (request.http2 || request.http3) {
-    // TODO: warn users out of band, not in the generated code
-    const version = request.http2 ? "2" : "3";
-    pythonCode += `# Warning: this was an HTTP/${version} request but requests only supports HTTP/1.1\n`;
-  }
   pythonCode += requestLine;
 
   if (jsonDataString && !jsonDataStringRoundtrips) {
@@ -992,17 +992,30 @@ export const _toPython = (request: Request): string => {
     }
   }
 
-  return pythonCode + "\n";
+  if (request.http2) {
+    warnings.push([
+      "http2",
+      "this was an HTTP/2 request but requests only supports HTTP/1.1",
+    ]);
+  }
+  if (request.http3) {
+    warnings.push([
+      "http3",
+      "this was an HTTP/3 request but requests only supports HTTP/1.1",
+    ]);
+  }
+
+  return [pythonCode + "\n", warnings];
 };
 
 export const toPythonWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toPython(request), warnings];
+  return _toPython(request, warnings);
 };
 
 export const toPython = (curlCommand: string | string[]): string => {
   const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toPython(request);
+  return _toPython(request, warnings)[0];
 };

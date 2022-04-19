@@ -1572,10 +1572,10 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
       const isString = multipartArgument.type === "string";
 
       let filename, content, contentFile;
-      if (value.charAt(0) === "@" && !isString) {
+      if (!isString && value.charAt(0) === "@") {
         filename = value.slice(1);
         contentFile = filename;
-      } else if (value.charAt(0) === "<" && !isString) {
+      } else if (!isString && value.charAt(0) === "<") {
         contentFile = value.slice(1);
       } else {
         content = value;

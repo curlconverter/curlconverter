@@ -5,9 +5,9 @@ import {
   curlShortOpts,
   parseArgs,
   buildRequest,
-  parseCurlCommand,
   CCError,
   has,
+  Warnings,
 } from "./util.js";
 import type { LongOpts, ShortOpts, Request } from "./util.js";
 
@@ -50,7 +50,7 @@ const defaultLanguage = "python";
 // NOTE: make sure to update this when adding language support
 const translate: {
   [key: string]: [
-    (request: Request) => string,
+    (request: Request, warnings?: Warnings) => [string, Warnings],
     (curlCommand: string | string[]) => [string, [string, string][]]
   ];
 } = {
@@ -212,7 +212,7 @@ if (stdin) {
     );
   }
   try {
-    code = generator(request);
+    [code, warnings] = generator(request, warnings);
   } catch (e) {
     exitWithError(e, parsedArguments.verbose);
   }

@@ -34,18 +34,22 @@ function repr(value: string): string {
   }
 }
 
-export const _toDart = (r: Request): string => {
+export const _toDart = (
+  request: Request,
+  warnings?: Warnings
+): [string, Warnings] => {
+  warnings = warnings || [];
   let s = "";
 
-  if (r.auth || r.isDataBinary) s += "import 'dart:convert';\n";
+  if (request.auth || request.isDataBinary) s += "import 'dart:convert';\n";
 
   s +=
     "import 'package:http/http.dart' as http;\n" +
     "\n" +
     "void main() async {\n";
 
-  if (r.auth) {
-    const [uname, pword] = r.auth;
+  if (request.auth) {
+    const [uname, pword] = request.auth;
 
     s +=
       "  var uname = '" +
@@ -59,21 +63,21 @@ export const _toDart = (r: Request): string => {
   }
 
   const hasHeaders =
-    r.headers ||
-    r.compressed ||
-    r.isDataBinary ||
-    r.method.toLowerCase() === "put";
+    request.headers ||
+    request.compressed ||
+    request.isDataBinary ||
+    request.method.toLowerCase() === "put";
   if (hasHeaders) {
     s += "  var headers = {\n";
-    for (const [hname, hval] of r.headers || []) {
+    for (const [hname, hval] of request.headers || []) {
       s += "    '" + hname + "': '" + hval + "',\n";
     }
 
-    if (r.auth) s += "    'Authorization': authn,\n";
-    if (r.compressed) s += "    'Accept-Encoding': 'gzip',\n";
+    if (request.auth) s += "    'Authorization': authn,\n";
+    if (request.compressed) s += "    'Accept-Encoding': 'gzip',\n";
     if (
-      !util.hasHeader(r, "content-type") &&
-      (r.isDataBinary || r.method.toLowerCase() === "put")
+      !util.hasHeader(request, "content-type") &&
+      (request.isDataBinary || request.method.toLowerCase() === "put")
     ) {
       s += "    'Content-Type': 'application/x-www-form-urlencoded',\n";
     }
@@ -82,10 +86,10 @@ export const _toDart = (r: Request): string => {
     s += "\n";
   }
 
-  if (r.query) {
+  if (request.query) {
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
-    for (const [paramName, rawValue] of r.query) {
+    for (const [paramName, rawValue] of request.query) {
       const paramValue = repr(rawValue === null ? "" : rawValue);
       s += "    " + repr(paramName) + ": " + paramValue + ",\n";
     }
@@ -96,16 +100,16 @@ export const _toDart = (r: Request): string => {
     s += "\n";
   }
 
-  const hasData = r.data;
-  if (r.data) {
+  const hasData = request.data;
+  if (request.data) {
     // escape single quotes if there're not already escaped
-    if (r.data.indexOf("'") !== -1 && r.data.indexOf("\\'") === -1)
-      r.data = jsesc(r.data);
+    if (request.data.indexOf("'") !== -1 && request.data.indexOf("\\'") === -1)
+      request.data = jsesc(request.data);
 
-    if (r.dataArray) {
+    if (request.dataArray) {
       s += "  var data = {\n";
-      for (let i = 0; i !== r.dataArray.length; ++i) {
-        const kv = r.dataArray[i];
+      for (let i = 0; i !== request.dataArray.length; ++i) {
+        const kv = request.dataArray[i];
         const splitKv = kv.replace(/\\"/g, '"').split("=");
         const key = splitKv[0] || "";
         const val = splitKv[1] || "";
@@ -113,42 +117,41 @@ export const _toDart = (r: Request): string => {
       }
       s += "  };\n";
       s += "\n";
-    } else if (r.isDataBinary) {
-      s += `  var data = utf8.encode('${r.data}');\n\n`;
+    } else if (request.isDataBinary) {
+      s += `  var data = utf8.encode('${request.data}');\n\n`;
     } else {
-      s += `  var data = '${r.data}';\n\n`;
+      s += `  var data = '${request.data}';\n\n`;
     }
   }
 
-  if (r.query) {
-    s += "  var url = Uri.parse('" + r.urlWithoutQuery + "?$query');\n";
+  if (request.query) {
+    s += "  var url = Uri.parse('" + request.urlWithoutQuery + "?$query');\n";
   } else {
-    s += "  var url = Uri.parse('" + r.url + "');\n";
+    s += "  var url = Uri.parse('" + request.url + "');\n";
   }
-  s += "  var res = await http." + r.method.toLowerCase() + "(url";
+  s += "  var res = await http." + request.method.toLowerCase() + "(url";
 
   if (hasHeaders) s += ", headers: headers";
-  else if (r.auth) s += ", headers: {'Authorization': authn}";
+  else if (request.auth) s += ", headers: {'Authorization': authn}";
   if (hasData) s += ", body: data";
 
   /* eslint-disable no-template-curly-in-string */
   s +=
     ");\n" +
     "  if (res.statusCode != 200) throw Exception('http." +
-    r.method.toLowerCase() +
+    request.method.toLowerCase() +
     " error: statusCode= ${res.statusCode}');\n" +
     "  print(res.body);\n" +
     "}";
 
-  return s + "\n";
+  return [s + "\n", warnings];
 };
 export const toDartWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return [_toDart(request), warnings];
+  return _toDart(request, warnings);
 };
 export const toDart = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toDart(request);
+  return toDartWarn(curlCommand)[0];
 };
