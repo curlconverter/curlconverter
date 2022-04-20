@@ -1722,6 +1722,17 @@ const getHeader = (
   return undefined;
 };
 
+const getContentType = (request: Request): string | null | undefined => {
+  if (!request.headers) {
+    return undefined;
+  }
+  const contentTypeHeader = getHeader(request, "content-type");
+  if (!contentTypeHeader) {
+    return contentTypeHeader;
+  }
+  return contentTypeHeader.split(";")[0].trim();
+};
+
 const _hasHeader = (headers: Headers, header: string): boolean => {
   const lookup = header.toLowerCase();
   for (const h of headers) {
@@ -1823,6 +1834,7 @@ export {
   parseArgs,
   buildRequest,
   getHeader,
+  getContentType,
   hasHeader,
   countHeader,
   setHeaderIfMissing,

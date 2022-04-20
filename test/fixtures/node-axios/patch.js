@@ -9,5 +9,16 @@ const response = await axios.patch('http://localhost:28139/go/api/agents/adb9540
         username: 'username',
         password: 'password'
     },
-    data: '{\n        "hostname": "agent02.example.com",\n        "agent_config_state": "Enabled",\n        "resources": ["Java","Linux"],\n        "environments": ["Dev"]\n        }'
+    // data: '{\n        "hostname": "agent02.example.com",\n        "agent_config_state": "Enabled",\n        "resources": ["Java","Linux"],\n        "environments": ["Dev"]\n        }',
+    data: JSON.stringify({
+        'hostname': 'agent02.example.com',
+        'agent_config_state': 'Enabled',
+        'resources': [
+            'Java',
+            'Linux'
+        ],
+        'environments': [
+            'Dev'
+        ]
+    })
 });

@@ -5,5 +5,5 @@ const response = await axios.post('http://localhost:28139/CurlToNode', {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    data: '18233982904'
+    data: JSON.stringify(18233982904)
 });

@@ -5,5 +5,10 @@ const response = await axios.post('https://localhost:28139/rest/login-sessions',
         'Content-Type': 'application/json',
         'X-API-Version': '200'
     },
-    data: '{"userName":"username123","password":"password123", "authLoginDomain":"local"}'
+    // data: '{"userName":"username123","password":"password123", "authLoginDomain":"local"}',
+    data: JSON.stringify({
+        'userName': 'username123',
+        'password': 'password123',
+        'authLoginDomain': 'local'
+    })
 });

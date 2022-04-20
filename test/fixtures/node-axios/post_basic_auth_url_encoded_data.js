@@ -8,5 +8,7 @@ const response = await axios.post('http://localhost:28139/api/oauth/token/', {
         username: 'foo',
         password: 'bar'
     },
-    data: 'grant_type=client_credentials'
+    data: {
+        'grant_type': 'client_credentials'
+    }
 });

@@ -41,6 +41,40 @@ const repr = (value: string | object, indentLevel?: number): string => {
   return escaped;
 };
 
+// TODO: @
+const getDataString = (request: Request): string | null => {
+  if (!request.data) {
+    return null;
+  }
+
+  const contentType = util.getContentType(request);
+  if (contentType === "application/json") {
+    const originalStringRepr = repr(request.data);
+
+    const parsed = JSON.parse(request.data);
+    const backToString = JSON.stringify(parsed);
+    const jsonAsJavaScriptString = repr(parsed, 1);
+
+    let result = "";
+    if (request.data !== backToString) {
+      result += "    // data: " + originalStringRepr + ",\n";
+    }
+    result += "    data: JSON.stringify(" + jsonAsJavaScriptString + "),\n";
+    return result;
+  }
+  if (contentType === "application/x-www-form-urlencoded") {
+    const query = util.parseQueryString(request.data);
+    const queryDict = query[1];
+    if (
+      queryDict &&
+      Object.values(queryDict).every((v) => typeof v === "string")
+    ) {
+      return "    data: " + repr(queryDict, 1) + ",\n";
+    }
+  }
+  return null;
+};
+
 export const _toNodeAxios = (
   request: Request,
   warnings?: Warnings
@@ -74,7 +108,7 @@ export const _toNodeAxios = (
     request.query &&
     (!request.queryDict ||
       // https://stackoverflow.com/questions/42898009/multiple-fields-with-same-key-in-query-params-axios-request
-      Object.entries(request.queryDict).some((q) => Array.isArray(q[1])));
+      Object.values(request.queryDict).some((qv) => Array.isArray(qv)));
   if (hasSearchParams && request.query) {
     code += "const params = new URLSearchParams();\n";
     for (const [key, value] of request.query) {
@@ -93,14 +127,14 @@ export const _toNodeAxios = (
       contentFile,
     } of request.multipartUploads) {
       code += "formData.append(" + repr(name) + ", ";
-      if (content) {
-        code += repr(content);
-      } else if (contentFile === "-") {
+      if (contentFile === "-") {
         code += "fs.readFileSync(0).toString()";
         imports.add("fs");
-      } else {
-        code += "fs.readFileSync(" + repr(contentFile as string) + ")";
+      } else if (contentFile) {
+        code += "fs.readFileSync(" + repr(contentFile) + ")";
         imports.add("fs");
+      } else {
+        code += repr(content as string);
       }
       if (filename && filename !== name) {
         code += ", " + repr(filename);
@@ -138,10 +172,6 @@ export const _toNodeAxios = (
 
     if (request.auth) {
       const [username, password] = request.auth;
-      const auth = { username, password };
-      if (password) {
-        auth.password = password;
-      }
       code += "    auth: {\n";
       code += "        username: " + repr(username);
       if (password) {
@@ -153,15 +183,22 @@ export const _toNodeAxios = (
       code += "    },\n";
     }
 
-    if (request.multipartUploads) {
+    if (request.data) {
+      try {
+        const dataString = getDataString(request);
+        if (dataString) {
+          code += dataString;
+        } else {
+          code += "    data: " + repr(request.data) + ",\n";
+        }
+      } catch {
+        code += "    data: " + repr(request.data) + ",\n";
+      }
+    } else if (request.multipartUploads) {
       code += "    data: formData,\n";
-    } else if (request.data) {
-      // TODO: make this a dict if possible
-      // TODO: JSON.stringify(request.data) if it's JSON
-      code += "    data: " + repr(request.data) + ",\n";
     }
 
-    if (request.timeout && parseFloat(request.timeout) > 0) {
+    if (request.timeout) {
       const timeout = parseFloat(request.timeout);
       if (!isNaN(timeout) && timeout > 0) {
         code += "    timeout: " + timeout * 1000 + ",\n";
@@ -169,22 +206,25 @@ export const _toNodeAxios = (
     }
 
     if (request.proxy === "") {
-      code += "    proxy: false,\n"; // TODO: could have --socks5 proxy
+      // TODO: this probably won't be set if it's empty
+      // TODO: could have --socks5 proxy
+      code += "    proxy: false,\n";
     } else if (request.proxy) {
+      // TODO: do this parsing in utils.ts
       const proxy = request.proxy.includes("://")
         ? request.proxy
         : "http://" + request.proxy;
       let [protocol, host] = proxy.split(/:\/\/(.*)/s, 2);
       protocol =
         protocol.toLowerCase() === "socks" ? "socks4" : protocol.toLowerCase();
+      host = host ? host : "";
 
       let port = "1080";
-      const proxyPart = (host as string).match(/:([0-9]+$)/);
+      const proxyPart = host.match(/:([0-9]+$)/);
       if (proxyPart) {
         host = host.slice(0, proxyPart.index);
         port = proxyPart[1];
       }
-
       const portInt = parseInt(port);
 
       code += "    proxy: {\n";

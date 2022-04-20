@@ -4,5 +4,5 @@ const response = await axios.post('localhost:28139', {
     headers: {
         'Content-Type': 'application/json'
     },
-    data: '{}'
+    data: JSON.stringify({})
 });

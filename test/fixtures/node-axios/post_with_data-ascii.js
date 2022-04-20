@@ -12,5 +12,8 @@ const response = await axios.post('http://localhost:28139/echo/html/', {
         'X-Requested-With': 'XMLHttpRequest',
         'Connection': 'keep-alive'
     },
-    data: 'msg1=wow&msg2=such'
+    data: {
+        'msg1': 'wow',
+        'msg2': 'such'
+    }
 });
