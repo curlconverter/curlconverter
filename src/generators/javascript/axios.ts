@@ -61,9 +61,24 @@ export const _toNodeAxios = (
     request.timeout ||
     request.proxy;
 
+  // TODO: need to add http:// to URL?
   if (request.method.toLowerCase() === "get" && !needsConfig) {
     code = "const response = await axios(" + repr(request.url) + ");\n";
     return [importCode + "\n" + code, warnings];
+  }
+
+  const hasSearchParams =
+    request.query &&
+    (!request.queryDict ||
+      // https://stackoverflow.com/questions/42898009/multiple-fields-with-same-key-in-query-params-axios-request
+      Object.entries(request.queryDict).some((q) => Array.isArray(q[1])));
+  if (hasSearchParams && request.query) {
+    code += "const params = new URLSearchParams();\n";
+    for (const [key, value] of request.query) {
+      const val = value ? value : "";
+      code += "params.append(" + repr(key) + ", " + repr(val) + ");\n";
+    }
+    code += "\n";
   }
 
   if (request.multipartUploads) {
@@ -99,7 +114,9 @@ export const _toNodeAxios = (
   }
 
   code += "const response = await axios." + fn + "(";
-  code += repr(request.queryDict ? request.urlWithoutQuery : request.url);
+  code += repr(
+    request.queryDict || hasSearchParams ? request.urlWithoutQuery : request.url
+  );
 
   if (fn === "request" || needsConfig) {
     code += ", {\n";
@@ -107,7 +124,10 @@ export const _toNodeAxios = (
       // Axios probably uppercases methods
       code += "    method: " + repr(request.method.toLowerCase()) + ",\n";
     }
-    if (request.queryDict) {
+    if (hasSearchParams) {
+      // code += "    params,\n";
+      code += "    params: params,\n";
+    } else if (request.queryDict) {
       code += "    params: " + repr(request.queryDict, 1) + ",\n";
     }
 
@@ -126,7 +146,7 @@ export const _toNodeAxios = (
       code += "        username: " + repr(username);
       if (password) {
         code += ",\n";
-        code += "        password: " + repr(password) + ",\n";
+        code += "        password: " + repr(password) + "\n";
       } else {
         code += "\n";
       }
