@@ -87,6 +87,7 @@ for (const inPath of inPaths) {
     const newFilename = path
       .basename(inPath)
       .replace(/\.sh$/, converter.extension);
+    // TODO: make directory when doesn't exist? happens when adding a new generator
     const outPath = path.resolve(inPath, "../..", language, newFilename);
 
     let code;
