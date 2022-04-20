@@ -1628,6 +1628,7 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
     request.capath = parsedArguments.capath;
   }
   if (parsedArguments.proxy) {
+    // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = parsedArguments.proxy;
     if (parsedArguments["proxy-user"]) {
       request.proxyAuth = parsedArguments["proxy-user"];

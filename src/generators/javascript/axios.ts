@@ -14,14 +14,17 @@ const supportedArgs = new Set([
   "data-binary",
   "data-urlencode",
   "json",
+  "form",
+  "form-string",
   "referer",
   "get",
   "header",
   "head",
   "no-head",
   "user",
-  // TODO: proxy
-  // TODO: timeout?
+  "proxy",
+  "proxy-user",
+  "max-time",
 ]);
 
 const repr = (value: string | object, indentLevel?: number): string => {
@@ -43,18 +46,44 @@ export const _toJavaScriptAxios = (
   warnings?: Warnings
 ): [string, Warnings] => {
   warnings = warnings || [];
-  warnings = warnings || [];
   let code = "const axios = require('axios');\n\n";
 
-  if (
-    request.method.toLowerCase() === "get" &&
-    !request.queryDict &&
-    !request.headers &&
-    !request.auth &&
-    !request.data
-  ) {
+  const needsConfig =
+    request.queryDict ||
+    request.headers ||
+    request.auth ||
+    request.data ||
+    request.multipartUploads ||
+    request.timeout ||
+    request.proxy;
+
+  if (request.method.toLowerCase() === "get" && !needsConfig) {
     code += "const response = await axios(" + repr(request.url) + ");\n";
     return [code, warnings];
+  }
+
+  if (request.multipartUploads) {
+    code += "const formData = new FormData();\n";
+    for (const {
+      name,
+      filename,
+      content,
+      contentFile,
+    } of request.multipartUploads) {
+      code += "formData.append(" + repr(name) + ", ";
+      if (content) {
+        code += repr(content);
+      } else {
+        // TODO: users need to implement this function, we could read it with fs
+        // for them if we're on Node and fetch() it in the browser
+        code += "readFile(" + repr(contentFile as string) + ")";
+      }
+      if (filename && filename !== name) {
+        code += ", " + repr(filename);
+      }
+      code += ");\n";
+    }
+    code += "\n";
   }
 
   // TODO: keep JSON as-is
@@ -89,17 +118,10 @@ export const _toJavaScriptAxios = (
   code += "const response = await axios." + fn + "(";
   code += repr(request.queryDict ? request.urlWithoutQuery : request.url);
 
-  if (
-    fn === "request" ||
-    request.queryDict ||
-    request.headers ||
-    request.auth ||
-    request.data
-    // TODO: proxy
-  ) {
+  if (fn === "request" || needsConfig) {
     code += ", {\n";
     if (fn === "request") {
-      // Axios uppercases methods
+      // Axios probably uppercases methods
       code += "    method: " + repr(request.method.toLowerCase()) + ",\n";
     }
     if (request.queryDict) {
@@ -128,9 +150,64 @@ export const _toJavaScriptAxios = (
       code += "    },\n";
     }
 
-    if (request.data) {
+    if (request.multipartUploads) {
+      code += "    data: formData,\n";
+    } else if (request.data) {
       // TODO: make this a dict if possible
       code += "    data: " + repr(request.data) + ",\n";
+    }
+
+    if (request.timeout && parseFloat(request.timeout) > 0) {
+      const timeout = parseFloat(request.timeout);
+      if (!isNaN(timeout) && timeout > 0) {
+        code += "    timeout: " + timeout * 1000 + ",\n";
+      }
+    }
+
+    if (request.proxy === "") {
+      code += "    proxy: false,\n"; // TODO: could have --socks5 proxy
+    } else if (request.proxy) {
+      const proxy = request.proxy.includes("://")
+        ? request.proxy
+        : "http://" + request.proxy;
+      let [protocol, host] = proxy.split(/:\/\/(.*)/s, 2);
+      protocol =
+        protocol.toLowerCase() === "socks" ? "socks4" : protocol.toLowerCase();
+
+      let port = "1080";
+      const proxyPart = (host as string).match(/:([0-9]+$)/);
+      if (proxyPart) {
+        host = host.slice(0, proxyPart.index);
+        port = proxyPart[1];
+      }
+
+      const portInt = parseInt(port);
+
+      code += "    proxy: {\n";
+      code += "        protocol: " + repr(protocol) + ",\n";
+      code += "        host: " + repr(host) + ",\n";
+      if (!isNaN(portInt)) {
+        code += "        port: " + port + ",\n";
+      } else {
+        code += "        port: " + repr(port) + ",\n";
+      }
+      if (request.proxyAuth) {
+        const [proxyUser, proxyPassword] = request.proxyAuth.split(/:(.*)/s, 2);
+        code += "        auth: {\n";
+        code += "            user: " + repr(proxyUser);
+        if (proxyPassword !== undefined) {
+          code += ",\n";
+          code += "            password: " + repr(proxyPassword) + "\n";
+        } else {
+          code += "\n";
+        }
+        code += "        },\n";
+      }
+      if (code.endsWith(",\n")) {
+        code = code.slice(0, -2);
+        code += "\n";
+      }
+      code += "    },\n";
     }
 
     if (code.endsWith(",\n")) {
