@@ -25,6 +25,10 @@ import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 import {
+  _toJavaScriptAxios,
+  toJavaScriptAxiosWarn,
+} from "./generators/javascript/axios.js";
+import {
   _toNodeRequest,
   toNodeRequestWarn,
 } from "./generators/javascript/node-request.js";
@@ -62,6 +66,7 @@ const translate: {
   go: [_toGo, toGoWarn],
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
+  "javascript-axios": [_toJavaScriptAxios, toJavaScriptAxiosWarn],
   json: [_toJsonString, toJsonStringWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
@@ -84,6 +89,7 @@ language: the language to convert the curl command to. The choices are
   go
   java
   javascript
+  javascript-axios
   json
   matlab
   node
