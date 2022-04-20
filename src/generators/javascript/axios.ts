@@ -53,6 +53,7 @@ export const _toNodeAxios = (
   let code = "";
 
   const needsConfig =
+    request.query ||
     request.queryDict ||
     request.headers ||
     request.auth ||
@@ -62,7 +63,9 @@ export const _toNodeAxios = (
     request.proxy;
 
   // TODO: need to add http:// to URL?
-  if (request.method.toLowerCase() === "get" && !needsConfig) {
+  const method = request.method.toLowerCase();
+  if (method === "get" && !needsConfig) {
+    // TODO: is this actually helpful?
     code = "const response = await axios(" + repr(request.url) + ");\n";
     return [importCode + "\n" + code, warnings];
   }
@@ -108,12 +111,9 @@ export const _toNodeAxios = (
   }
 
   const methods = ["get", "delete", "head", "options", "post", "put", "patch"];
-  let fn = "request";
-  if (methods.includes(request.method.toLowerCase())) {
-    fn = request.method.toLowerCase();
-  }
-
+  const fn = methods.includes(method) ? method : "request";
   code += "const response = await axios." + fn + "(";
+
   code += repr(
     request.queryDict || hasSearchParams ? request.urlWithoutQuery : request.url
   );

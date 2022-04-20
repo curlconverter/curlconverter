@@ -71,6 +71,7 @@ const translate: {
   json: [_toJsonString, toJsonStringWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
+  "node-fetch": [_toNode, toNodeWarn], // undocument alias
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],
   "node-request": [_toNodeRequest, toNodeRequestWarn],
   php: [_toPhp, toPhpWarn],
