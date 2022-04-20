@@ -25,6 +25,10 @@ import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 import {
+  _toNodeAxios,
+  toNodeAxiosWarn,
+} from "./generators/javascript/axios.js";
+import {
   _toNodeRequest,
   toNodeRequestWarn,
 } from "./generators/javascript/node-request.js";
@@ -62,9 +66,13 @@ const translate: {
   go: [_toGo, toGoWarn],
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
+  "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
+  "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
   json: [_toJsonString, toJsonStringWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
+  "node-fetch": [_toNode, toNodeWarn], // undocument alias
+  "node-axios": [_toNodeAxios, toNodeAxiosWarn],
   "node-request": [_toNodeRequest, toNodeRequestWarn],
   php: [_toPhp, toPhpWarn],
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],
@@ -87,6 +95,7 @@ language: the language to convert the curl command to. The choices are
   json
   matlab
   node
+  node-axios
   node-request
   php
   php-requests
