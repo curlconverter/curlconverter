@@ -41,12 +41,16 @@ const repr = (value: string | object, indentLevel?: number): string => {
   return escaped;
 };
 
-export const _toJavaScriptAxios = (
+export const _toNodeAxios = (
   request: Request,
   warnings?: Warnings
 ): [string, Warnings] => {
   warnings = warnings || [];
-  let code = "const axios = require('axios');\n\n";
+
+  let importCode = "const axios = require('axios');\n";
+  const imports = new Set();
+
+  let code = "";
 
   const needsConfig =
     request.queryDict ||
@@ -58,8 +62,8 @@ export const _toJavaScriptAxios = (
     request.proxy;
 
   if (request.method.toLowerCase() === "get" && !needsConfig) {
-    code += "const response = await axios(" + repr(request.url) + ");\n";
-    return [code, warnings];
+    code = "const response = await axios(" + repr(request.url) + ");\n";
+    return [importCode + "\n" + code, warnings];
   }
 
   if (request.multipartUploads) {
@@ -73,10 +77,12 @@ export const _toJavaScriptAxios = (
       code += "formData.append(" + repr(name) + ", ";
       if (content) {
         code += repr(content);
+      } else if (contentFile === "-") {
+        code += "fs.readFileSync(0).toString()";
+        imports.add("fs");
       } else {
-        // TODO: users need to implement this function, we could read it with fs
-        // for them if we're on Node and fetch() it in the browser
-        code += "readFile(" + repr(contentFile as string) + ")";
+        code += "fs.readFileSync(" + repr(contentFile as string) + ")";
+        imports.add("fs");
       }
       if (filename && filename !== name) {
         code += ", " + repr(filename);
@@ -85,29 +91,6 @@ export const _toJavaScriptAxios = (
     }
     code += "\n";
   }
-
-  // TODO: keep JSON as-is
-  // if (request.data) {
-  //   // escape single quotes if there are any in there
-  //   if (request.data.indexOf("'") > -1) {
-  //     request.data = jsesc(request.data);
-  //   }
-  //   try {
-  //     JSON.parse(request.data);
-  //     if (!request.headers) {
-  //       request.headers = [];
-  //     }
-  //     if (!util.hasHeader(request, "Content-Type")) {
-  //       request.headers.push([
-  //         "Content-Type",
-  //         "application/json; charset=UTF-8",
-  //       ]);
-  //     }
-  //     request.data = "JSON.stringify(" + request.data.trim() + ")";
-  //   } catch {
-  //     request.data = repr(request.data);
-  //   }
-  // }
 
   const methods = ["get", "delete", "head", "options", "post", "put", "patch"];
   let fn = "request";
@@ -154,6 +137,7 @@ export const _toJavaScriptAxios = (
       code += "    data: formData,\n";
     } else if (request.data) {
       // TODO: make this a dict if possible
+      // TODO: JSON.stringify(request.data) if it's JSON
       code += "    data: " + repr(request.data) + ",\n";
     }
 
@@ -218,14 +202,18 @@ export const _toJavaScriptAxios = (
 
   code += ");\n";
 
-  return [code, warnings];
+  for (const imp of Array.from(imports).sort()) {
+    importCode += "const " + imp + " = require(" + repr(imp as string) + ");\n";
+  }
+
+  return [importCode + "\n" + code, warnings];
 };
-export const toJavaScriptAxiosWarn = (
+export const toNodeAxiosWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
   const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toJavaScriptAxios(request, warnings);
+  return _toNodeAxios(request, warnings);
 };
-export const toJavaScriptAxios = (curlCommand: string | string[]): string => {
-  return toJavaScriptAxiosWarn(curlCommand)[0];
+export const toNodeAxios = (curlCommand: string | string[]): string => {
+  return toNodeAxiosWarn(curlCommand)[0];
 };
