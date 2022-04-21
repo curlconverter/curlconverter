@@ -103,7 +103,7 @@ const buildConfigObject = (
   if ((request.headers && request.headers.length) || request.multipartUploads) {
     code += "    headers: {\n";
     if (request.multipartUploads) {
-      code += "        ...formData.getHeaders(),\n";
+      code += "        ...form.getHeaders(),\n";
     }
     for (const [key, value] of request.headers || []) {
       code += "        " + repr(key) + ": " + repr(value || "") + ",\n";
@@ -144,7 +144,8 @@ const buildConfigObject = (
       }
       code += "    data: " + dataString + ",\n";
     } else if (request.multipartUploads) {
-      code += "    data: formData,\n";
+      // TODO: warn if method dosen't send data
+      code += "    data: form,\n";
     }
   }
 
@@ -238,14 +239,14 @@ export const _toNodeAxios = (
 
   if (request.multipartUploads) {
     imports.add(["form-data", "FormData"]);
-    code += "const formData = new FormData();\n";
+    code += "const form = new FormData();\n";
     for (const {
       name,
       filename,
       content,
       contentFile,
     } of request.multipartUploads) {
-      code += "formData.append(" + repr(name) + ", ";
+      code += "form.append(" + repr(name) + ", ";
       if (contentFile === "-") {
         code += "fs.readFileSync(0).toString()";
         imports.add(["fs", "fs"]);
@@ -311,7 +312,7 @@ export const _toNodeAxios = (
       }
       code += "    " + dataString;
     } else if (request.multipartUploads) {
-      code += "    formData";
+      code += "    form";
     } else if (needsConfig) {
       // TODO: right way to pass "no data"?
       code += "    ''";
