@@ -2,10 +2,10 @@ const axios = require('axios');
 
 const response = await axios.post(
     'http://localhost:28139/echo/html/',
-    {
+    new URLSearchParams({
         'msg1': 'wow',
         'msg2': 'such'
-    },
+    }),
     {
         headers: {
             'Origin': 'http://fiddle.jshell.net',

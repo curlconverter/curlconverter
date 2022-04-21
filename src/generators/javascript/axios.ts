@@ -42,7 +42,7 @@ const repr = (value: string | object, indentLevel?: number): string => {
 };
 
 // TODO: @
-const getDataString = (request: Request): [string | null, string | null] => {
+const _getDataString = (request: Request): [string | null, string | null] => {
   if (!request.data) {
     return [null, null];
   }
@@ -50,13 +50,26 @@ const getDataString = (request: Request): [string | null, string | null] => {
   const originalStringRepr = repr(request.data);
 
   const contentType = util.getContentType(request);
+  // can have things like ; charset=utf-8 which we want to preserve
+  const exactContentType = util.getHeader(request, "content-type");
   if (contentType === "application/json") {
     const parsed = JSON.parse(request.data);
-    const backToString = JSON.stringify(parsed);
-    const jsonAsJavaScriptString = repr(parsed, 1);
-
-    const result = "JSON.stringify(" + jsonAsJavaScriptString + ")";
-    return [result, request.data !== backToString ? originalStringRepr : null];
+    // Only arrays and {} can be passed to axios to be encoded as JSON
+    // TODO: check this in other generators
+    if (typeof parsed !== "object" || parsed === null) {
+      return [originalStringRepr, null];
+    }
+    const roundtrips = JSON.stringify(parsed) === request.data;
+    const jsonAsJavaScript = repr(parsed, 1);
+    if (
+      roundtrips &&
+      exactContentType === "application/json" &&
+      util.getHeader(request, "accept") === "application/json, text/plain, */*"
+    ) {
+      util.deleteHeader(request, "content-type");
+      util.deleteHeader(request, "accept");
+    }
+    return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
     const query = util.parseQueryString(request.data);
@@ -65,19 +78,33 @@ const getDataString = (request: Request): [string | null, string | null] => {
       queryDict &&
       Object.values(queryDict).every((v) => typeof v === "string")
     ) {
-      // check for exact match
-      if (
-        util.getHeader(request, "content-type") ===
-        "application/x-www-form-urlencoded"
-      ) {
+      // Technically axios sends
+      // application/x-www-form-urlencoded;charset=utf-8
+      if (exactContentType === "application/x-www-form-urlencoded") {
         util.deleteHeader(request, "content-type");
       }
-      return [repr(queryDict, 1), null];
+      // TODO: check roundtrip, add a comment
+      return ["new URLSearchParams(" + repr(queryDict, 1) + ")", null];
     } else {
       return [originalStringRepr, null];
     }
   }
   return [null, null];
+};
+const getDataString = (request: Request): [string | null, string | null] => {
+  if (!request.data) {
+    return [null, null];
+  }
+
+  let dataString = null;
+  let commentedOutDataString = null;
+  try {
+    [dataString, commentedOutDataString] = _getDataString(request);
+  } catch {}
+  if (!dataString) {
+    dataString = repr(request.data);
+  }
+  return [dataString, commentedOutDataString];
 };
 
 const buildConfigObject = (
@@ -100,6 +127,8 @@ const buildConfigObject = (
   } else if (request.queryDict) {
     code += "    params: " + repr(request.queryDict, 1) + ",\n";
   }
+
+  const [dataString, commentedOutDataString] = getDataString(request); // can delete headers
 
   if ((request.headers && request.headers.length) || request.multipartUploads) {
     code += "    headers: {\n";
@@ -131,15 +160,6 @@ const buildConfigObject = (
 
   if (!dataMethods.includes(method)) {
     if (request.data) {
-      let dataString, commentedOutDataString;
-      try {
-        [dataString, commentedOutDataString] = getDataString(request);
-        if (!dataString) {
-          dataString = repr(request.data);
-        }
-      } catch {
-        dataString = repr(request.data);
-      }
       if (commentedOutDataString) {
         code += "    // data: " + commentedOutDataString + ",\n";
       }

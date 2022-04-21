@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const response = await axios.post(
     'http://localhost:28139/api/Listing.svc/PropertySearch_Post',
-    {
+    new URLSearchParams({
         'CultureId': '1',
         'ApplicationId': '1',
         'RecordsPerPage': '200',
@@ -24,7 +24,7 @@ const response = await axios.post(
         'Latitude': '43.6552047278685',
         'ZoomLevel': '13',
         'CurrentPage': '1'
-    },
+    }),
     {
         headers: {
             'Origin': 'http://www.realtor.ca',

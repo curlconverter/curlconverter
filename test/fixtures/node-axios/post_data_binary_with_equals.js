@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const response = await axios.post(
     'http://localhost:28139/api/service.svc',
-    JSON.stringify({
+    {
         '__type': 'CreateItemJsonRequest:#Exchange',
         'Header': {
             '__type': 'JsonRequestHeaders:#Exchange',
@@ -50,7 +50,7 @@ const response = await axios.post(
             'MessageDisposition': 'SendAndSaveCopy',
             'ComposeOperation': 'newMail'
         }
-    }),
+    },
     {
         params: {
             'action': 'CreateItem',
