@@ -82,7 +82,7 @@ export const _toNodeAxios = (
   warnings = warnings || [];
 
   let importCode = "const axios = require('axios');\n";
-  const imports = new Set();
+  const imports: Set<[string, string]> = new Set();
 
   let code = "";
 
@@ -119,6 +119,7 @@ export const _toNodeAxios = (
   }
 
   if (request.multipartUploads) {
+    imports.add(["form-data", "FormData"]);
     code += "const formData = new FormData();\n";
     for (const {
       name,
@@ -129,10 +130,10 @@ export const _toNodeAxios = (
       code += "formData.append(" + repr(name) + ", ";
       if (contentFile === "-") {
         code += "fs.readFileSync(0).toString()";
-        imports.add("fs");
+        imports.add(["fs", "fs"]);
       } else if (contentFile) {
         code += "fs.readFileSync(" + repr(contentFile) + ")";
-        imports.add("fs");
+        imports.add(["fs", "fs"]);
       } else {
         code += repr(content as string);
       }
@@ -262,8 +263,9 @@ export const _toNodeAxios = (
 
   code += ");\n";
 
-  for (const imp of Array.from(imports).sort()) {
-    importCode += "const " + imp + " = require(" + repr(imp as string) + ");\n";
+  for (const [imp, varName] of Array.from(imports).sort()) {
+    importCode +=
+      "const " + varName + " = require(" + repr(imp as string) + ");\n";
   }
 
   return [importCode + "\n" + code, warnings];

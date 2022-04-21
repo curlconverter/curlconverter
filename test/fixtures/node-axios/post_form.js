@@ -1,4 +1,5 @@
 const axios = require('axios');
+const FormData = require('form-data');
 
 const formData = new FormData();
 formData.append('username', 'davidwalsh');
