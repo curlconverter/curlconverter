@@ -85,7 +85,8 @@ const buildConfigObject = (
   method: string,
   methods: string[],
   dataMethods: string[],
-  hasSearchParams: boolean
+  hasSearchParams: boolean,
+  warnings: Warnings
 ): string => {
   let code = "{\n";
 
@@ -144,8 +145,13 @@ const buildConfigObject = (
       }
       code += "    data: " + dataString + ",\n";
     } else if (request.multipartUploads) {
-      // TODO: warn if method dosen't send data
       code += "    data: form,\n";
+    }
+    if (method !== "options") {
+      warnings.push([
+        "bad-method",
+        "axios doesn't send data: with " + method + " requests",
+      ]);
     }
   }
 
@@ -339,7 +345,8 @@ export const _toNodeAxios = (
       method,
       methods,
       dataMethods,
-      !!hasSearchParams
+      !!hasSearchParams,
+      warnings
     );
     if (needsData) {
       code += ",\n";
