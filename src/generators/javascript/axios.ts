@@ -264,8 +264,7 @@ export const _toNodeAxios = (
   code += ");\n";
 
   for (const [imp, varName] of Array.from(imports).sort()) {
-    importCode +=
-      "const " + varName + " = require(" + repr(imp as string) + ");\n";
+    importCode += "const " + varName + " = require(" + repr(imp) + ");\n";
   }
 
   return [importCode + "\n" + code, warnings];
