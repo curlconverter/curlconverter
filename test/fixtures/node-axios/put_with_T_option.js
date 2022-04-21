@@ -1,15 +1,18 @@
 const axios = require('axios');
 
-const response = await axios.put('http://localhost:28139/twitter/_mapping/user?pretty', {
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    // data: '{"properties": {"email": {"type": "keyword"}}}',
-    data: JSON.stringify({
+const response = await axios.put(
+    'http://localhost:28139/twitter/_mapping/user?pretty',
+    // '{"properties": {"email": {"type": "keyword"}}}',
+    JSON.stringify({
         'properties': {
             'email': {
                 'type': 'keyword'
             }
         }
-    })
-});
+    }),
+    {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }
+);

@@ -7,6 +7,12 @@ formData.append('file1', fs.readFileSync('./fixtures/curl_commands/delete.sh'), 
 formData.append('form1', 'form+data+1');
 formData.append('form2', 'form_data_2');
 
-const response = await axios.patch('http://localhost:28139/patch', {
-    data: formData
-});
+const response = await axios.patch(
+    'http://localhost:28139/patch',
+    formData,
+    {
+        headers: {
+            ...formData.getHeaders()
+        }
+    }
+);

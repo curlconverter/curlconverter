@@ -1,3 +1,3 @@
 const axios = require('axios');
 
-const response = await axios('httpbin.org/test');
+const response = await axios.get('httpbin.org/test');

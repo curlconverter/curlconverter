@@ -1,8 +1,11 @@
 const axios = require('axios');
 
-const response = await axios.post('http://localhost:28139', {
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    data: '123'
-});
+const response = await axios.post(
+    'http://localhost:28139',
+    '123',
+    {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }
+);
