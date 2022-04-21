@@ -1,15 +1,21 @@
 const axios = require('axios');
 const FormData = require('form-data');
 
-const formData = new FormData();
-formData.append('from', 'test@tester.com');
-formData.append('to', 'devs@tester.net');
-formData.append('subject', 'Hello');
-formData.append('text', 'Testing the converter!');
+const form = new FormData();
+form.append('from', 'test@tester.com');
+form.append('to', 'devs@tester.net');
+form.append('subject', 'Hello');
+form.append('text', 'Testing the converter!');
 
-const response = await axios.post('http://localhost:28139/v3', {
-    auth: {
-        username: 'test'
-    },
-    data: formData
-});
+const response = await axios.post(
+    'http://localhost:28139/v3',
+    form,
+    {
+        headers: {
+            ...form.getHeaders()
+        },
+        auth: {
+            username: 'test'
+        }
+    }
+);

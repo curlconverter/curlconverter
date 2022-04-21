@@ -1,17 +1,8 @@
 const axios = require('axios');
 
-const response = await axios.post('http://localhost:28139/api/Listing.svc/PropertySearch_Post', {
-    headers: {
-        'Origin': 'http://www.realtor.ca',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'en-US,en;q=0.8',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Accept': '*/*',
-        'Referer': 'http://www.realtor.ca/Residential/Map.aspx',
-        'Connection': 'keep-alive'
-    },
-    data: {
+const response = await axios.post(
+    'http://localhost:28139/api/Listing.svc/PropertySearch_Post',
+    new URLSearchParams({
         'CultureId': '1',
         'ApplicationId': '1',
         'RecordsPerPage': '200',
@@ -33,5 +24,17 @@ const response = await axios.post('http://localhost:28139/api/Listing.svc/Proper
         'Latitude': '43.6552047278685',
         'ZoomLevel': '13',
         'CurrentPage': '1'
+    }),
+    {
+        headers: {
+            'Origin': 'http://www.realtor.ca',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Accept': '*/*',
+            'Referer': 'http://www.realtor.ca/Residential/Map.aspx',
+            'Connection': 'keep-alive'
+        }
     }
-});
+);
