@@ -91,7 +91,7 @@ const buildConfigObject = (
   let code = "{\n";
 
   if (!methods.includes(method)) {
-    // Axios probably uppercases methods
+    // Axios uppercases methods
     code += "    method: " + repr(method) + ",\n";
   }
   if (hasSearchParams) {
@@ -147,6 +147,7 @@ const buildConfigObject = (
     } else if (request.multipartUploads) {
       code += "    data: form,\n";
     }
+    // the only other http method that sends data
     if (method !== "options") {
       warnings.push([
         "bad-method",
@@ -320,7 +321,7 @@ export const _toNodeAxios = (
     } else if (request.multipartUploads) {
       code += "    form";
     } else if (needsConfig) {
-      // TODO: right way to pass "no data"?
+      // TODO: this works but maybe undefined would be more correct?
       code += "    ''";
     }
   } else {
