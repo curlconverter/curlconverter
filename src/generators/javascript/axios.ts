@@ -245,7 +245,7 @@ export const _toNodeAxios = (
   }
 
   if (request.multipartUploads) {
-    imports.add(["form-data", "FormData"]);
+    imports.add(["FormData", "form-data"]);
     code += "const form = new FormData();\n";
     for (const {
       name,
@@ -364,7 +364,9 @@ export const _toNodeAxios = (
 
   code += ");\n";
 
-  for (const [imp, varName] of Array.from(imports).sort()) {
+  const bySecondElem = (a: [string, string], b: [string, string]): number =>
+    a[1].localeCompare(b[1]);
+  for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
     importCode += "const " + varName + " = require(" + repr(imp) + ");\n";
   }
 
