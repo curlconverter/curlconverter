@@ -109,17 +109,17 @@ const prepareMultipartUploads = (request: Request): string | null => {
   let response = null;
   if (request.multipartUploads) {
     const params: [string, string][] = [];
-    for (const { name, content, contentFile } of request.multipartUploads) {
-      const value = contentFile ? "@" + contentFile : (content as string); // TODO: something nicer
+    for (const m of request.multipartUploads) {
+      const value = "contentFile" in m ? "@" + m.contentFile : m.content; // TODO: something nicer
       const fileProvider = prepareDataProvider(
         value,
         null,
         "",
         1,
         true,
-        !contentFile
+        !("contentFile" in m)
       );
-      params.push([repr(name), fileProvider as string]); // TODO: can this be not a string?
+      params.push([repr(m.name), fileProvider as string]); // TODO: can this be not a string?
     }
     response = callFunction("body", "MultipartFormProvider", params);
   }

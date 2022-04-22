@@ -1,7 +1,6 @@
 import * as util from "../../util.js";
+import { repr, bySecondElem } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
-
-import jsesc from "jsesc";
 
 const supportedArgs = new Set([
   "url",
@@ -26,20 +25,6 @@ const supportedArgs = new Set([
   "proxy-user",
   "max-time",
 ]);
-
-const repr = (value: string | object, indentLevel?: number): string => {
-  const escaped = jsesc(value, {
-    quotes: "single",
-    minimal: false,
-    compact: false,
-    indent: "    ",
-    indentLevel: indentLevel ? indentLevel : 0,
-  });
-  if (typeof value === "string") {
-    return "'" + escaped + "'";
-  }
-  return escaped;
-};
 
 // TODO: @
 const _getDataString = (request: Request): [string | null, string | null] => {
@@ -164,15 +149,23 @@ const buildConfigObject = (
         code += "    // data: " + commentedOutDataString + ",\n";
       }
       code += "    data: " + dataString + ",\n";
+
+      // OPTIONS is the only other http method that sends data
+      if (method !== "options") {
+        warnings.push([
+          "no-data-method",
+          "axios doesn't send data: with " + method + " requests",
+        ]);
+      }
     } else if (request.multipartUploads) {
       code += "    data: form,\n";
-    }
-    // the only other http method that sends data
-    if (method !== "options") {
-      warnings.push([
-        "bad-method",
-        "axios doesn't send data: with " + method + " requests",
-      ]);
+
+      if (method !== "options") {
+        warnings.push([
+          "no-data-method",
+          "axios doesn't send data: with " + method + " requests",
+        ]);
+      }
     }
   }
 
@@ -267,24 +260,20 @@ export const _toNodeAxios = (
   if (request.multipartUploads) {
     imports.add(["FormData", "form-data"]);
     code += "const form = new FormData();\n";
-    for (const {
-      name,
-      filename,
-      content,
-      contentFile,
-    } of request.multipartUploads) {
-      code += "form.append(" + repr(name) + ", ";
-      if (contentFile === "-") {
-        code += "fs.readFileSync(0).toString()";
+    for (const m of request.multipartUploads) {
+      code += "form.append(" + repr(m.name) + ", ";
+      if ("contentFile" in m) {
         imports.add(["fs", "fs"]);
-      } else if (contentFile) {
-        code += "fs.readFileSync(" + repr(contentFile) + ")";
-        imports.add(["fs", "fs"]);
+        if (m.contentFile === "-") {
+          code += "fs.readFileSync(0).toString()";
+        } else {
+          code += "fs.readFileSync(" + repr(m.contentFile) + ")";
+        }
+        if ("filename" in m && m.filename) {
+          code += ", " + repr(m.filename);
+        }
       } else {
-        code += repr(content as string);
-      }
-      if (filename && filename !== name) {
-        code += ", " + repr(filename);
+        code += repr(m.content);
       }
       code += ");\n";
     }
@@ -384,8 +373,6 @@ export const _toNodeAxios = (
 
   code += ");\n";
 
-  const bySecondElem = (a: [string, string], b: [string, string]): number =>
-    a[1].localeCompare(b[1]);
   for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
     importCode += "const " + varName + " = require(" + repr(imp) + ");\n";
   }

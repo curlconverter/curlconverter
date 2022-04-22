@@ -4,5 +4,5 @@ fetch('http://localhost:28139/test/_security', {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': 'Basic ' + btoa('admin:123')
     },
-    body: JSON.stringify({"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}})
+    body: '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}'
 });

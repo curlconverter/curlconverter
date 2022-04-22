@@ -1,5 +1,5 @@
-var fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 fetch('localhost:28139', {
-    method: 'WHAT'
+    method: 'wHat'
 });

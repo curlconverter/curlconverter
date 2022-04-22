@@ -4,5 +4,8 @@ fetch('https://localhost:28139', {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    body: JSON.stringify({ "drink": "coffe" })
+    // body: '{ "drink": "coffe" }',
+    body: JSON.stringify({
+        'drink': 'coffe'
+    })
 });

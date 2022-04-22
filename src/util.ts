@@ -114,12 +114,9 @@ interface Request {
   headers?: Headers;
   stdin?: string;
   input?: string;
-  multipartUploads?: {
+  multipartUploads?: ({
     name: string;
-    filename?: string;
-    content?: string;
-    contentFile?: string;
-  }[];
+  } & ({ content: string } | { contentFile: string; filename?: string }))[];
   auth?: [string, string];
   cookies?: Cookies;
   compressed?: boolean;
@@ -1571,16 +1568,17 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
       const [name, value] = multipartArgument.value.split(/=(.*)/s, 2);
       const isString = multipartArgument.type === "string";
 
-      let filename, content, contentFile;
       if (!isString && value.charAt(0) === "@") {
-        filename = value.slice(1);
-        contentFile = filename;
+        const contentFile = value.slice(1);
+        const filename = contentFile;
+        request.multipartUploads.push({ name, contentFile, filename });
       } else if (!isString && value.charAt(0) === "<") {
-        contentFile = value.slice(1);
+        const contentFile = value.slice(1);
+        request.multipartUploads.push({ name, contentFile });
       } else {
-        content = value;
+        const content = value;
+        request.multipartUploads.push({ name, content });
       }
-      request.multipartUploads.push({ name, filename, content, contentFile });
     }
   }
 

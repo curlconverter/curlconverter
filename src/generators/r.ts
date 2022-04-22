@@ -76,14 +76,13 @@ function getFilesString(request: Request): string | undefined {
   let filesString = "files = list(\n";
   filesString += request.multipartUploads
     .map((m) => {
-      const { name, content, contentFile } = m;
       let fileParam;
-      if (contentFile) {
+      if ("contentFile" in m) {
         // filesString += '    ' + reprn(multipartKey) + ' (' + repr(fileName) + ', upload_file(' + repr(fileName) + '))'
         fileParam =
-          "  " + reprn(name) + " = upload_file(" + repr(contentFile) + ")";
+          "  " + reprn(m.name) + " = upload_file(" + repr(m.contentFile) + ")";
       } else {
-        fileParam = "  " + reprn(name) + " = " + repr(content as string) + "";
+        fileParam = "  " + reprn(m.name) + " = " + repr(m.content) + "";
       }
       return fileParam;
     })

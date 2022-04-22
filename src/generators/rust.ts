@@ -74,11 +74,10 @@ export const _toRust = (
   if (request.multipartUploads) {
     lines.push(indent("let form = multipart::Form::new()"));
     const parts = request.multipartUploads.map((m) => {
-      const { name, content, contentFile } = m;
-      if (contentFile) {
-        return indent(`.file("${name}", "${quote(contentFile)}")?`, 2);
+      if ("contentFile" in m) {
+        return indent(`.file("${m.name}", "${quote(m.contentFile)}")?`, 2);
       }
-      return indent(`.text("${name}", "${quote(content as string)}")`, 2);
+      return indent(`.text("${m.name}", "${quote(m.content)}")`, 2);
     });
     parts[parts.length - 1] += ";";
     lines.push(...parts, "");

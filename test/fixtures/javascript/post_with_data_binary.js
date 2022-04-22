@@ -3,5 +3,5 @@ fetch('http://localhost:28139/post', {
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: JSON.stringify({"title":"china1"})
+    body: '{"title":"china1"}'
 });
