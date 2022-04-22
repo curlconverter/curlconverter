@@ -98,17 +98,17 @@ export const _toPhp = (
     let requestDataCode = "";
     if (request.multipartUploads) {
       requestDataCode = "[\n";
-      for (const f of request.multipartUploads) {
-        if ("contentFile" in f) {
+      for (const m of request.multipartUploads) {
+        if ("contentFile" in m) {
           requestDataCode +=
             "    '" +
-            quote(f.name) +
+            quote(m.name) +
             "' => new CURLFile('" +
-            quote(f.contentFile) +
+            quote(m.contentFile) +
             "'),\n";
         } else {
           requestDataCode +=
-            "    '" + quote(f.name) + "' => '" + quote(f.content) + "',\n";
+            "    '" + quote(m.name) + "' => '" + quote(m.content) + "',\n";
         }
       }
       requestDataCode += "]";

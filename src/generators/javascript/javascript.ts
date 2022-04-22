@@ -134,25 +134,25 @@ export const _toJavaScriptOrNode = (
       fetchImports.add("FormData");
     }
     code += "const form = new FormData();\n";
-    for (const f of request.multipartUploads) {
+    for (const m of request.multipartUploads) {
       // TODO: use .set() if all names are unique?
-      code += "form.append(" + repr(f.name) + ", ";
-      if ("contentFile" in f) {
+      code += "form.append(" + repr(m.name) + ", ";
+      if ("contentFile" in m) {
         if (isNode) {
-          if (f.contentFile === "-") {
+          if (m.contentFile === "-") {
             imports.add(["fs", "fs"]);
             code += "fs.readFileSync(0).toString()";
-            if (f.filename) {
-              code += ", " + repr(f.filename);
+            if (m.filename) {
+              code += ", " + repr(m.filename);
             }
           } else {
             fetchImports.add("fileFromSync");
             // TODO: do this in a way that doesn't set filename="" if we don't have filename
-            code += "fileFromSync(" + repr(f.contentFile) + ")";
+            code += "fileFromSync(" + repr(m.contentFile) + ")";
           }
         } else {
           // TODO: does the second argument get sent as filename="" ?
-          code += "File(['<data goes here>'], " + repr(f.contentFile) + ")";
+          code += "File(['<data goes here>'], " + repr(m.contentFile) + ")";
           // TODO: (massive todo) we could read the file if we're running in the command line
           warnings.push([
             "--form",
@@ -160,7 +160,7 @@ export const _toJavaScriptOrNode = (
           ]);
         }
       } else {
-        code += repr(f.content);
+        code += repr(m.content);
       }
       code += ");\n";
     }

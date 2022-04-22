@@ -260,20 +260,20 @@ export const _toNodeAxios = (
   if (request.multipartUploads) {
     imports.add(["FormData", "form-data"]);
     code += "const form = new FormData();\n";
-    for (const f of request.multipartUploads) {
-      code += "form.append(" + repr(f.name) + ", ";
-      if ("contentFile" in f) {
+    for (const m of request.multipartUploads) {
+      code += "form.append(" + repr(m.name) + ", ";
+      if ("contentFile" in m) {
         imports.add(["fs", "fs"]);
-        if (f.contentFile === "-") {
+        if (m.contentFile === "-") {
           code += "fs.readFileSync(0).toString()";
         } else {
-          code += "fs.readFileSync(" + repr(f.contentFile) + ")";
+          code += "fs.readFileSync(" + repr(m.contentFile) + ")";
         }
-        if ("filename" in f && f.filename) {
-          code += ", " + repr(f.filename);
+        if ("filename" in m && m.filename) {
+          code += ", " + repr(m.filename);
         }
       } else {
-        code += repr(f.content);
+        code += repr(m.content);
       }
       code += ");\n";
     }
