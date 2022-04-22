@@ -115,20 +115,22 @@ export const _toJavaScriptOrNode = (
           if (f.contentFile === "-") {
             imports.add("fs");
             code += "fs.readFileSync(0).toString()";
+            if (f.filename) {
+              code += ", " + repr(f.filename);
+            }
           } else {
             fetchImports.add("fileFromSync");
+            // TODO: do this in a way that doesn't set filename="" if we don't have filename
             code += "fileFromSync(" + repr(f.contentFile) + ")";
           }
         } else {
+          // TODO: does the second argument get sent as filename="" ?
           code += "File(['<data goes here>'], " + repr(f.contentFile) + ")";
           // TODO: (massive todo) we could read the file if we're running in the command line
           warnings.push([
             "--form",
             "you can't read a file for --form/-F in the browser",
           ]);
-        }
-        if (f.filename && f.filename !== f.name) {
-          code += ", " + repr(f.filename);
         }
       } else {
         code += repr(f.content);
@@ -215,6 +217,8 @@ export const _toJavaScriptOrNode = (
     code += "\n}";
   }
   code += ");";
+
+  // TODO: generate some code for the output, like .json() if 'Accept': 'application/json'
 
   let importCode = "";
   if (isNode) {
