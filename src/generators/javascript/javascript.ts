@@ -258,7 +258,6 @@ export const _toJavaScriptOrNode = (
       }
 
       switch (protocol) {
-        case "socks":
         case "socks4":
         case "socks5":
         case "socks5h":
