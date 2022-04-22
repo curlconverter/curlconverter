@@ -11,5 +11,8 @@ fetch('http://localhost:28139/echo/html/', {
         'X-Requested-With': 'XMLHttpRequest',
         'Connection': 'keep-alive'
     },
-    body: 'msg1=wow&msg2=such'
+    body: new URLSearchParams({
+        'msg1': 'wow',
+        'msg2': 'such'
+    })
 });

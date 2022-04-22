@@ -129,11 +129,12 @@ function getFormDataString(request: Request): string {
 
   let fileArgs: string[] | string = [];
   let dataArgs: string[] | string = [];
-  for (const { name, content, contentFile } of request.multipartUploads) {
-    if (contentFile) {
-      fileArgs.push(`    {:file, ~s|${contentFile}|}`);
+  for (const f of request.multipartUploads) {
+    if ("contentFile" in f) {
+      // TODO: quote
+      fileArgs.push(`    {:file, ~s|${f.contentFile}|}`);
     } else {
-      dataArgs.push(`    {${repr(name)}, ${repr(content as string)}}`);
+      dataArgs.push(`    {${repr(f.name)}, ${repr(f.content)}}`);
     }
   }
 

@@ -551,26 +551,23 @@ function getFilesString(request: Request): [string, boolean] {
     // (name, open(filename/contentFile))
     // (name, (filename, open(contentFile))
     // (name, (filename, open(contentFile), contentType, headers)) // this isn't parsed from --form yet
-    const { filename, content, contentFile } = m;
     const name = m.name ? repr(m.name) : "None";
-    const sentFilename = filename ? repr(filename) : "None";
-    if (contentFile) {
-      if (contentFile === "-") {
+    const sentFilename =
+      "filename" in m && m.filename ? repr(m.filename) : "None";
+    if ("contentFile" in m) {
+      if (m.contentFile === "-") {
+        // TODO: use piped stdin if we have it
         usesStdin = true;
         return [name, "(" + sentFilename + ", sys.stdin.buffer.read())"];
-      } else if (contentFile === filename) {
-        return [name, "open(" + repr(contentFile) + ", 'rb')"];
+      } else if (m.contentFile === m.filename) {
+        return [name, "open(" + repr(m.contentFile) + ", 'rb')"];
       }
       return [
         name,
-        "(" + sentFilename + ", open(" + repr(contentFile) + ", 'rb'))",
+        "(" + sentFilename + ", open(" + repr(m.contentFile) + ", 'rb'))",
       ];
     }
-    // We should always either have .content or .contentFile
-    if (filename && name === filename) {
-      return [name, repr(content as string)];
-    }
-    return [name, "(" + sentFilename + ", " + repr(content as string) + ")"];
+    return [name, "(" + sentFilename + ", " + repr(m.content) + ")"];
   });
 
   const multipartUploadsAsDict = Object.fromEntries(multipartUploads);

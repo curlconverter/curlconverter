@@ -99,20 +99,20 @@ export const _toCFML = (
 
   if (request.data || request.multipartUploads) {
     if (request.multipartUploads) {
-      for (const { name, content, contentFile } of request.multipartUploads) {
-        if (contentFile) {
+      for (const f of request.multipartUploads) {
+        if ("contentFile" in f) {
           cfmlCode +=
             'httpService.addParam(type="file", name="' +
-            quote(name) +
+            quote(f.name) +
             '", file="#expandPath("' +
-            quote(contentFile) +
+            quote(f.contentFile) +
             '")#");\n';
         } else {
           cfmlCode +=
             'httpService.addParam(type="formfield", name="' +
-            quote(name) +
+            quote(f.name) +
             '", value="' +
-            quote(content as string) +
+            quote(f.content) +
             '");\n';
         }
       }

@@ -4,5 +4,5 @@ fetch('http://localhost:28139/CurlToNode', {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    body: JSON.stringify(18233982904)
+    body: '18233982904'
 });

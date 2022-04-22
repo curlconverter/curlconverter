@@ -105,11 +105,12 @@ function getFilesString(
     data: {},
   };
 
-  for (const { name, content, contentFile } of request.multipartUploads) {
-    if (contentFile) {
-      data.files[name] = contentFile;
+  // TODO: this isn't great.
+  for (const f of request.multipartUploads) {
+    if ("contentFile" in f) {
+      data.files[f.name] = f.contentFile;
     } else {
-      data.data[name] = content as string;
+      data.data[f.name] = f.content;
     }
   }
 
