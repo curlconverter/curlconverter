@@ -4,7 +4,7 @@ import type { Request } from "../../util.js";
 
 import jsesc from "jsesc";
 
-const supportedArgs = new Set([
+const javaScriptSupportedArgs = new Set([
   "url",
   "request",
   "user-agent",
@@ -26,6 +26,29 @@ const supportedArgs = new Set([
   "upload-file",
 ]);
 
+const nodeSupportedArgs = new Set([
+  "url",
+  "request",
+  "user-agent",
+  "cookie",
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "referer",
+  "form",
+  "form-string",
+  "get",
+  "header",
+  "head",
+  "no-head",
+  "user",
+  "upload-file",
+  "proxy",
+]);
+
 export const repr = (value: string | object, indentLevel?: number): string => {
   const escaped = jsesc(value, {
     quotes: "single",
@@ -39,6 +62,11 @@ export const repr = (value: string | object, indentLevel?: number): string => {
   }
   return escaped;
 };
+
+export const bySecondElem = (
+  a: [string, string],
+  b: [string, string]
+): number => a[1].localeCompare(b[1]);
 
 const getDataString = (request: Request): [string, string | null] => {
   if (!request.data) {
@@ -98,7 +126,7 @@ export const _toJavaScriptOrNode = (
   isNode: boolean
 ): [string, Warnings] => {
   const fetchImports: Set<string> = new Set();
-  const imports: Set<string> = new Set();
+  const imports: Set<[string, string]> = new Set();
 
   let code = "";
 
@@ -113,7 +141,7 @@ export const _toJavaScriptOrNode = (
       if ("contentFile" in f) {
         if (isNode) {
           if (f.contentFile === "-") {
-            imports.add("fs");
+            imports.add(["fs", "fs"]);
             code += "fs.readFileSync(0).toString()";
             if (f.filename) {
               code += ", " + repr(f.filename);
@@ -152,7 +180,8 @@ export const _toJavaScriptOrNode = (
     (request.headers && request.headers.length) ||
     request.auth ||
     request.data ||
-    request.multipartUploads
+    request.multipartUploads ||
+    (isNode && request.proxy)
   ) {
     code += ", {\n";
 
@@ -211,6 +240,45 @@ export const _toJavaScriptOrNode = (
       }
     }
 
+    if (isNode && request.proxy) {
+      // TODO: do this parsing in utils.ts
+      const proxy = request.proxy.includes("://")
+        ? request.proxy
+        : "http://" + request.proxy;
+      // TODO: could be more accurate
+      let [protocol] = proxy.split(/:\/\/(.*)/s, 2);
+      protocol = protocol.toLowerCase();
+
+      if (!protocol) {
+        protocol = "http";
+      }
+      if (protocol === "socks") {
+        protocol = "socks4";
+        proxy.replace(/^socks/, "socks4");
+      }
+
+      switch (protocol) {
+        case "socks":
+        case "socks4":
+        case "socks5":
+        case "socks5h":
+        case "socks4a":
+          imports.add(["{ SocksProxyAgent }", "socks-proxy-agent"]);
+          code += "    agent: new SocksProxyAgent(" + repr(proxy) + "),\n";
+          break;
+        case "http":
+        case "https":
+          imports.add(["HttpsProxyAgent", "https-proxy-agent"]);
+          code += "    agent: new HttpsProxyAgent(" + repr(proxy) + "),\n";
+          break;
+        default:
+          warnings.push(["--proxy", "unknown --proxy protocol " + protocol]);
+          break;
+        // default:
+        //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
+      }
+    }
+
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
     }
@@ -229,8 +297,8 @@ export const _toJavaScriptOrNode = (
     importCode += " from 'node-fetch';\n";
   }
   if (imports.size) {
-    for (const imp of Array.from(imports).sort()) {
-      importCode += "import " + imp + " from " + repr(imp) + ";\n";
+    for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
+      importCode += "import " + varName + " from " + repr(imp) + ";\n";
     }
   }
 
@@ -251,7 +319,10 @@ export const _toJavaScript = (
 export const toJavaScriptWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  const [request, warnings] = util.parseCurlCommand(
+    curlCommand,
+    javaScriptSupportedArgs
+  );
   return _toJavaScript(request, warnings);
 };
 
@@ -270,7 +341,10 @@ export const _toNode = (
 export const toNodeWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  const [request, warnings] = util.parseCurlCommand(
+    curlCommand,
+    nodeSupportedArgs
+  );
   return _toNode(request, warnings);
 };
 export const toNode = (curlCommand: string | string[]): string => {

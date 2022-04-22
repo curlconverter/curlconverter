@@ -1,5 +1,5 @@
 import * as util from "../../util.js";
-import { repr } from "./javascript.js";
+import { repr, bySecondElem } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
 
 const supportedArgs = new Set([
@@ -373,8 +373,6 @@ export const _toNodeAxios = (
 
   code += ");\n";
 
-  const bySecondElem = (a: [string, string], b: [string, string]): number =>
-    a[1].localeCompare(b[1]);
   for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
     importCode += "const " + varName + " = require(" + repr(imp) + ");\n";
   }
