@@ -110,9 +110,8 @@ const getDataString = (request: Request): [string, string | null] => {
         }
         // TODO: check roundtrip, add a comment
         return ["new URLSearchParams(" + repr(queryDict, 1) + ")", null];
-      } else {
-        return [originalStringRepr, null];
       }
+      return [originalStringRepr, null];
     } catch {
       return [originalStringRepr, null];
     }
@@ -203,6 +202,7 @@ export const _toJavaScriptOrNode = (
           ",\n";
       }
       if (request.auth) {
+        // TODO: if -H 'Authorization:' is passed, don't set this
         const [user, password] = request.auth;
         code +=
           "        'Authorization': 'Basic ' + btoa(" +
@@ -271,7 +271,10 @@ export const _toJavaScriptOrNode = (
           code += "    agent: new HttpsProxyAgent(" + repr(proxy) + "),\n";
           break;
         default:
-          warnings.push(["--proxy", "unknown --proxy protocol " + protocol]);
+          warnings.push([
+            "--proxy",
+            "failed to parse --proxy/-x or unknown protocol: " + protocol,
+          ]);
           break;
         // default:
         //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
