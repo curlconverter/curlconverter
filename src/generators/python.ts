@@ -669,10 +669,10 @@ export const _toPython = (
   warnings?: Warnings
 ): [string, Warnings] => {
   warnings = warnings || [];
+  const imports: Set<string> = new Set();
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set();
-  let importSys = false;
   const commentedOutHeaders: { [key: string]: string } = {
     "accept-encoding": "",
     "content-length": "",
@@ -682,10 +682,10 @@ export const _toPython = (
     commentedOutHeaders.te = "Requests doesn't support trailers";
   }
 
-  let cookieDict;
+  let cookieStr;
   if (request.cookies) {
     // TODO: could have repeat cookies
-    cookieDict = "cookies = {\n";
+    cookieStr = "cookies = {\n";
     for (const [cookieName, cookieValue] of request.cookies) {
       const [detectedVars, modifiedString] = detectEnvVar(cookieValue);
 
@@ -695,19 +695,35 @@ export const _toPython = (
         osVariables.add(newVar);
       }
 
-      cookieDict +=
+      cookieStr +=
         "    " +
         repr(cookieName) +
         ": " +
         reprWithVariable(modifiedString, hasEnvironmentVariable) +
         ",\n";
     }
-    cookieDict += "}\n";
-    // TODO: cookieDict should too, to avoid surprises.
+    cookieStr += "}\n";
+    // TODO: cookieStr should too, to avoid surprises.
+    // This will stop being the case in Python 3.11
+    // https://github.com/python/cpython/issues/86232
     commentedOutHeaders.cookie =
       request.cookies.length > 1
         ? "Requests sorts cookies= alphabetically"
         : "";
+    if (request.cookieFiles) {
+      warnings.push([
+        "cookie-files",
+        "passing both cookies and cookie files is not supported",
+      ]);
+    }
+  } else if (request.cookieFiles && request.cookieFiles.length) {
+    // TODO: what if user passes multiple cookie files?
+    // TODO: what if user passes cookies and cookie files?
+    const cookieFile = request.cookieFiles[request.cookieFiles.length - 1];
+    imports.add("http");
+    // TODO: do we need to .load()?
+    cookieStr =
+      "cookies = http.cookiejar.MozillaCookieJar(" + repr(cookieFile) + ")\n";
   }
 
   let proxyDict;
@@ -808,7 +824,9 @@ export const _toPython = (
         "requests won't add a boundary if this header is set when you pass files=";
     }
   }
-  importSys ||= usesStdin;
+  if (usesStdin) {
+    imports.add("sys");
+  }
 
   let headerDict;
   if (request.headers && request.headers.length) {
@@ -877,14 +895,14 @@ export const _toPython = (
   }
 
   let requestLineBody = "";
-  if (request.headers && request.headers.length) {
-    requestLineBody += ", headers=headers";
-  }
   if (request.query) {
     requestLineBody += ", params=params";
   }
-  if (request.cookies) {
+  if (cookieStr) {
     requestLineBody += ", cookies=cookies";
+  }
+  if (request.headers && request.headers.length) {
+    requestLineBody += ", headers=headers";
   }
   if (request.data || request.uploadFile) {
     if (jsonDataString) {
@@ -920,12 +938,14 @@ export const _toPython = (
 
   let pythonCode = "";
 
-  // Sort import by name
   if (osVariables.size > 0) {
-    pythonCode += "import os\n";
+    imports.add("os");
   }
-  if (importSys) {
-    pythonCode += "import sys\n";
+  if (imports.size) {
+    for (const imp of Array.from(imports).sort()) {
+      pythonCode += "import " + imp + "\n";
+    }
+    pythonCode += "\n";
   }
 
   pythonCode += "import requests\n";
@@ -947,8 +967,8 @@ export const _toPython = (
     pythonCode += proxyDict + "\n";
   }
 
-  if (cookieDict) {
-    pythonCode += cookieDict + "\n";
+  if (cookieStr) {
+    pythonCode += cookieStr + "\n";
   }
   if (headerDict) {
     pythonCode += headerDict + "\n";

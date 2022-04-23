@@ -120,7 +120,7 @@ interface Request {
   auth?: [string, string];
   cookies?: Cookies;
   cookieFiles?: string[];
-
+  cookieJar?: string;
   compressed?: boolean;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
@@ -1398,10 +1398,6 @@ function buildRequest(
         cookieStrings.push(c);
       } else {
         cookieFiles.push(c);
-        warnings.push([
-          "--cookie",
-          '"' + c + '" looks like a file to read cookies from, ignoring',
-        ]);
       }
     }
     if (cookieStrings.length) {
@@ -1517,8 +1513,14 @@ function buildRequest(
     // deleteHeader(request, 'cookie')
     request.cookies = cookies;
   }
+  // TODO: most generators support passing cookies with --cookie but don't
+  // support reading cookies from a file. We need to somehow warn users
+  // when that is the case.
   if (cookieFiles.length) {
     request.cookieFiles = cookieFiles;
+  }
+  if (parsedArguments["cookie-jar"]) {
+    request.cookieJar = parsedArguments["cookie-jar"];
   }
 
   if (parsedArguments.compressed) {
