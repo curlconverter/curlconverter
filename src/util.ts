@@ -119,6 +119,8 @@ interface Request {
   } & ({ content: string } | { contentFile: string; filename?: string }))[];
   auth?: [string, string];
   cookies?: Cookies;
+  cookieFiles?: string[];
+  cookieJar?: string;
   compressed?: boolean;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
@@ -1348,7 +1350,11 @@ export function parseQueryString(
   return [asList, asDict];
 }
 
-function buildRequest(parsedArguments: ParsedArguments): Request {
+function buildRequest(
+  parsedArguments: ParsedArguments,
+  warnings?: Warnings
+): Request {
+  warnings = warnings || [];
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
     // TODO: better error message (could be parsing fail)
@@ -1376,16 +1382,25 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
     headers.length > 0 && headers.every((h) => h[0] === h[0].toLowerCase());
 
   let cookies;
+  const cookieFiles: string[] = [];
   const cookieHeaders = headers.filter((h) => h[0].toLowerCase() === "cookie");
   if (cookieHeaders.length === 1 && cookieHeaders[0][1] !== null) {
     const parsedCookies = parseCookiesStrict(cookieHeaders[0][1]);
     if (parsedCookies) {
       cookies = parsedCookies;
     }
-  } else if (cookieHeaders.length === 0) {
+  } else if (cookieHeaders.length === 0 && parsedArguments.cookie) {
     // If there is a Cookie header, --cookies is ignored
-    if (parsedArguments.cookie) {
-      // TODO: a --cookie without a = character reads from it as a filename
+    const cookieStrings: string[] = [];
+    for (const c of parsedArguments.cookie) {
+      // a --cookie without a = character reads from it as a filename
+      if (c.includes("=")) {
+        cookieStrings.push(c);
+      } else {
+        cookieFiles.push(c);
+      }
+    }
+    if (cookieStrings.length) {
       const cookieString = parsedArguments.cookie.join(";");
       _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
       cookies = parseCookies(cookieString);
@@ -1497,6 +1512,15 @@ function buildRequest(parsedArguments: ParsedArguments): Request {
     // generators that use .cookies need to do
     // deleteHeader(request, 'cookie')
     request.cookies = cookies;
+  }
+  // TODO: most generators support passing cookies with --cookie but don't
+  // support reading cookies from a file. We need to somehow warn users
+  // when that is the case.
+  if (cookieFiles.length) {
+    request.cookieFiles = cookieFiles;
+  }
+  if (parsedArguments["cookie-jar"]) {
+    request.cookieJar = parsedArguments["cookie-jar"];
   }
 
   if (parsedArguments.compressed) {
@@ -1693,7 +1717,7 @@ function parseCurlCommand(
     curlShortOpts,
     supportedArgs
   );
-  const request = buildRequest(parsedArguments);
+  const request = buildRequest(parsedArguments, warnings);
   if (stdin) {
     request.stdin = stdin;
   }

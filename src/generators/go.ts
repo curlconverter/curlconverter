@@ -29,10 +29,10 @@ const reprMaybeBacktick = (s: string): string => {
   return s.includes('"') && !s.includes("`") ? reprBacktick(s) : repr(s);
 };
 const reprBacktick = (s: string): string => {
-  return "`" + s + "`";
+  return !s.includes("`") ? "`" + s + "`" : repr(s);
 };
 const repr = (s: string): string => {
-  return '"' + jsesc(s, { quotes: "double" }) + '"';
+  return '"' + jsesc(s, { quotes: "double", minimal: true }) + '"';
 };
 
 export const _toGo = (
