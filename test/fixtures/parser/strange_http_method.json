@@ -1,5 +1,5 @@
 {
-  "url": "localhost:28139",
+  "url": "http://localhost:28139",
   "method": "wHat",
-  "urlWithoutQuery": "localhost:28139"
+  "urlWithoutQuery": "http://localhost:28139"
 }
