@@ -204,7 +204,7 @@ if (stdin) {
 } else {
   let request;
   try {
-    request = buildRequest(parsedArguments);
+    request = buildRequest(parsedArguments, warnings);
   } catch (e) {
     exitWithError(e, parsedArguments.verbose);
   }
