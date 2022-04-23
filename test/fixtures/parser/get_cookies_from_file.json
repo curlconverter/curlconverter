@@ -1,0 +1,8 @@
+{
+  "url": "http://localhost:28139/",
+  "method": "GET",
+  "urlWithoutQuery": "http://localhost:28139/",
+  "cookieFiles": [
+    "cookie.txt"
+  ]
+}
