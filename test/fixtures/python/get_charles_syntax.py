@@ -11,4 +11,4 @@ params = {
     'format': 'json',
 }
 
-response = requests.get('http://localhost:28139/', headers=headers, params=params)
+response = requests.get('http://localhost:28139/', params=params, headers=headers)
