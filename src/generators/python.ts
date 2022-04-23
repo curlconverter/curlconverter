@@ -474,6 +474,7 @@ function getDataString(
     }
     if (!request.input) {
       if (request.isDataBinary) {
+        // TODO: I bet the way python treats file paths is not identical to curl's
         return [
           "with open(" +
             repr(filePath) +
@@ -674,6 +675,7 @@ export const _toPython = (
   // the value part of cookies, params, or body
   const osVariables = new Set();
   const commentedOutHeaders: { [key: string]: string } = {
+    // TODO: add a warning why this should be commented out?
     "accept-encoding": "",
     "content-length": "",
   };
@@ -862,6 +864,16 @@ export const _toPython = (
         ",\n";
     }
     headerDict += "}\n";
+    if (
+      request.headers.length > 1 &&
+      request.headers.every((h) => h[0] === h[0].toLowerCase()) &&
+      !(request.http2 || request.http3)
+    ) {
+      warnings.push([
+        "--header",
+        "all the --header/-H names are lowercase, which means this may have been an HTTP/2 or HTTP/3 request. Requests only sends HTTP/1.1",
+      ]);
+    }
   }
 
   let requestLine;
