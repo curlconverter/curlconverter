@@ -1451,6 +1451,27 @@ function buildRequest(
     method = "POST";
   }
 
+  // curl automatically prepends 'http' if the scheme is missing,
+  // but many libraries fail if your URL doesn't have it,
+  // we tack it on here to mimic curl
+  //
+  // RFC 3986 3.1 says
+  //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  // but curl will accept a digit/plus/minus/dot in the first character
+  // curl will also accept a url with one / like http:/localhost
+  const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/?/);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    if (scheme !== "http" && scheme !== "https") {
+      warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
+    }
+    url = scheme + "://" + url.slice(schemeMatch[0].length);
+  } else {
+    // curl's default scheme is actually https://
+    // but we don't do that because, unlike curl, most libraries won't downgrade to http if you ask for https
+    url = "http://" + url;
+  }
+
   let urlObject = URL.parse(url); // eslint-disable-line
   if (parsedArguments["upload-file"]) {
     // TODO: it's more complicated

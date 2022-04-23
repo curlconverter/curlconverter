@@ -101,9 +101,6 @@ export const _toStrest = (
   if (request.insecure) {
     response.allowInsecure = true;
   }
-  if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
-  }
   response.requests = {
     curl_converter: {
       request: {

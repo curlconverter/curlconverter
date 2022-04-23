@@ -159,14 +159,6 @@ export const _toR = (
   } else if (request.multipartUploads) {
     filesString = getFilesString(request);
   }
-  // curl automatically prepends 'http' if the scheme is missing, but rstats fails and returns an error
-  // we tack it on here to mimic curl
-  if (!request.url.match(/https?:/)) {
-    request.url = "http://" + request.url;
-  }
-  if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
-  }
   const url = request.queryDict ? request.urlWithoutQuery : request.url;
 
   let requestLine = "res <- httr::";

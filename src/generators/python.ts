@@ -864,16 +864,6 @@ export const _toPython = (
     headerDict += "}\n";
   }
 
-  // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
-  // we tack it on here to mimic curl
-  // TODO: warn users about unsupported schemes
-  if (!request.url.match(/https?:/)) {
-    request.url = "http://" + request.url;
-  }
-  if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
-  }
-
   let requestLine;
   if (
     ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"].includes(

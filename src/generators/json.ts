@@ -125,14 +125,6 @@ export const _toJsonString = (
   warnings?: Warnings
 ): [string, Warnings] => {
   warnings = warnings || [];
-  // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
-  // we tack it on here to mimic curl
-  if (!request.url.match(/https?:/)) {
-    request.url = "http://" + request.url;
-  }
-  if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
-  }
 
   const requestJson: JSONOutput = {
     url: (request.queryDict ? request.urlWithoutQuery : request.url).replace(
