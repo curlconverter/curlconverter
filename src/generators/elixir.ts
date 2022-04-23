@@ -232,14 +232,7 @@ export const _toElixir = (
   warnings?: Warnings
 ): [string, Warnings] => {
   warnings = warnings || [];
-  // curl automatically prepends 'http' if the scheme is missing, but python fails and returns an error
-  // we tack it on here to mimic curl
-  if (!request.url.match(/https?:/)) {
-    request.url = "http://" + request.url;
-  }
-  if (!request.urlWithoutQuery.match(/https?:/)) {
-    request.urlWithoutQuery = "http://" + request.urlWithoutQuery;
-  }
+
   if (request.cookies) {
     util.deleteHeader(request, "cookie");
   }

@@ -1,3 +1,3 @@
-fetch('localhost:28139', {
+fetch('http://localhost:28139', {
     method: 'wHat'
 });

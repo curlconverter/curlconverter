@@ -5,5 +5,5 @@
 import matlab.net.*
 import matlab.net.http.*
 
-uri = URI('localhost:28139');
+uri = URI('http://localhost:28139');
 response = RequestMessage('what').send(uri.EncodedURI);

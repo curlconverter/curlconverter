@@ -1,6 +1,6 @@
 -
-  name: 'localhost:28139'
+  name: 'http://localhost:28139'
   uri:
-    url: 'localhost:28139'
+    url: 'http://localhost:28139'
     method: WHAT
   register: result
