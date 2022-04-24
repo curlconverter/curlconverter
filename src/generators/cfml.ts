@@ -31,11 +31,7 @@ const quote = (str: string): string => {
   return jsesc(str, { quotes: "single" }).replace(/"/g, '""');
 };
 
-export const _toCFML = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+export const _toCFML = (request: Request, warnings: Warnings = []): string => {
   let cfmlCode = "";
 
   cfmlCode += "httpService = new http();\n";
@@ -137,14 +133,16 @@ export const _toCFML = (
   cfmlCode += "\nresult = httpService.send().getPrefix();\n";
   cfmlCode += "writeDump(result);\n";
 
-  return [cfmlCode, warnings];
+  return cfmlCode;
 };
 
 export const toCFMLWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toCFML(request, warnings);
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const cfml = _toCFML(request, warnings);
+  return [cfml, warnings];
 };
 
 export const toCFML = (curlCommand: string | string[]): string => {

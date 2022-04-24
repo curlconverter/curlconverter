@@ -29,11 +29,7 @@ const indent = (line: string, level = 1): string =>
   INDENTATION.repeat(level) + line;
 const quote = (str: string): string => jsesc(str, { quotes: "double" });
 
-export const _toRust = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+export const _toRust = (request: Request, warnings: Warnings = []): string => {
   const lines = ["extern crate reqwest;"];
   {
     // Generate imports.
@@ -121,13 +117,15 @@ export const _toRust = (
     "}"
   );
 
-  return [lines.join("\n") + "\n", warnings];
+  return lines.join("\n") + "\n";
 };
 export const toRustWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toRust(request, warnings);
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const rust = _toRust(request, warnings);
+  return [rust, warnings];
 };
 export const toRust = (curlCommand: string | string[]): string => {
   return toRustWarn(curlCommand)[0];

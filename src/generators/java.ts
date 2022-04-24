@@ -27,11 +27,7 @@ const supportedArgs = new Set([
 
 const doubleQuotes = (str: string): string => jsesc(str, { quotes: "double" });
 
-export const _toJava = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+export const _toJava = (request: Request, warnings: Warnings = []): string => {
   let javaCode = "";
 
   if (request.auth) {
@@ -116,13 +112,15 @@ export const _toJava = (
   javaCode += "\t}\n";
   javaCode += "}";
 
-  return [javaCode + "\n", warnings];
+  return javaCode + "\n";
 };
 export const toJavaWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toJava(request, warnings);
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const java = _toJava(request, warnings);
+  return [java, warnings];
 };
 
 export const toJava = (curlCommand: string | string[]): string => {

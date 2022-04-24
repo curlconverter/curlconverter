@@ -35,10 +35,7 @@ const repr = (s: string): string => {
   return '"' + jsesc(s, { quotes: "double", minimal: true }) + '"';
 };
 
-export const _toGo = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
+export const _toGo = (request: Request, warnings: Warnings = []): string => {
   warnings = warnings || [];
   let goCode = "package main\n\n";
   goCode += "import (\n";
@@ -94,13 +91,15 @@ export const _toGo = (
   goCode += '\tfmt.Printf("%s\\n", bodyText)\n';
   goCode += "}";
 
-  return [goCode + "\n", warnings];
+  return goCode + "\n";
 };
 export const toGoWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toGo(request, warnings);
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const go = _toGo(request, warnings);
+  return [go, warnings];
 };
 export const toGo = (curlCommand: string | string[]): string => {
   return toGoWarn(curlCommand)[0];

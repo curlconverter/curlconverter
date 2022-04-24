@@ -48,9 +48,8 @@ function getDataString(request: Request): string | object {
 
 export const _toAnsible = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+  warnings: Warnings = [] // eslint-disable-line @typescript-eslint/no-unused-vars
+): string => {
   let convertedData;
   if (request.data && typeof request.data === "string") {
     convertedData = getDataString(request);
@@ -59,13 +58,15 @@ export const _toAnsible = (
     request,
     data: convertedData,
   });
-  return [result, warnings];
+  return result;
 };
 export const toAnsibleWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toAnsible(request, warnings);
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const ansible = _toAnsible(request, warnings);
+  return [ansible, warnings];
 };
 export const toAnsible = (curlCommand: string | string[]): string => {
   return toAnsibleWarn(curlCommand)[0];

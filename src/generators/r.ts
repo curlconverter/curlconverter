@@ -92,11 +92,7 @@ function getFilesString(request: Request): string | undefined {
   return filesString;
 }
 
-export const _toR = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+export const _toR = (request: Request, warnings: Warnings = []): string => {
   let cookieDict;
   if (request.cookies) {
     cookieDict = "cookies = c(\n";
@@ -223,11 +219,15 @@ export const _toR = (
   }
   rstatsCode += requestLine;
 
-  return [rstatsCode + "\n", warnings];
+  return rstatsCode + "\n";
 };
-export const toRWarn = (curlCommand: string | string[]): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toR(request, warnings);
+export const toRWarn = (
+  curlCommand: string | string[],
+  warnings: Warnings = []
+): [string, Warnings] => {
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const r = _toR(request, warnings);
+  return [r, warnings];
 };
 export const toR = (curlCommand: string | string[]): string => {
   return toRWarn(curlCommand)[0];
