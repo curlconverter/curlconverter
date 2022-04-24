@@ -1027,9 +1027,9 @@ export const _toPython = (
 };
 
 export const toPythonWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const python = _toPython(request, warnings);
   return [python, warnings];

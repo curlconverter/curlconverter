@@ -141,9 +141,9 @@ export const _toStrest = (
   return yaml.stringify(response, 100, 2);
 };
 export const toStrestWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const strest = _toStrest(request, warnings);
   return [strest, warnings];

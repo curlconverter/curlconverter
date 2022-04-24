@@ -221,8 +221,10 @@ export const _toR = (request: Request, warnings: Warnings = []): string => {
 
   return rstatsCode + "\n";
 };
-export const toRWarn = (curlCommand: string | string[]): [string, Warnings] => {
-  const warnings: Warnings = [];
+export const toRWarn = (
+  curlCommand: string | string[],
+  warnings: Warnings = []
+): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const r = _toR(request, warnings);
   return [r, warnings];

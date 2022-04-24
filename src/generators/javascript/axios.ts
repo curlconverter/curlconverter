@@ -378,9 +378,9 @@ export const _toNodeAxios = (
   return importCode + "\n" + code;
 };
 export const toNodeAxiosWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeAxios = _toNodeAxios(request, warnings);
   return [nodeAxios, warnings];

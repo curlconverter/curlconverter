@@ -143,9 +143,9 @@ export const _toDart = (request: Request, warnings: Warnings = []): string => {
   return s + "\n";
 };
 export const toDartWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const dart = _toDart(request, warnings);
   return [dart, warnings];

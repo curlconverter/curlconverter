@@ -115,9 +115,9 @@ export const _toJava = (request: Request, warnings: Warnings = []): string => {
   return javaCode + "\n";
 };
 export const toJavaWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const java = _toJava(request, warnings);
   return [java, warnings];

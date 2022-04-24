@@ -250,9 +250,9 @@ response = HTTPoison.request(request)
   return template;
 };
 export const toElixirWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const elixir = _toElixir(request, warnings);
   return [elixir, warnings];

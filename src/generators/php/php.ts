@@ -157,9 +157,9 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
 };
 
 export const toPhpWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const php = _toPhp(request, warnings);
   return [php, warnings];

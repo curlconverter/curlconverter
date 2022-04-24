@@ -184,9 +184,9 @@ export const _toJsonString = (
   );
 };
 export const toJsonStringWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const json = _toJsonString(request, warnings);
   return [json, warnings];

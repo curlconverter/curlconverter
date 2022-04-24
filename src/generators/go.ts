@@ -94,9 +94,9 @@ export const _toGo = (request: Request, warnings: Warnings = []): string => {
   return goCode + "\n";
 };
 export const toGoWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const go = _toGo(request, warnings);
   return [go, warnings];

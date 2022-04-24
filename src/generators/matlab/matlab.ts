@@ -41,9 +41,9 @@ export const _toMATLAB = (
     .join("\n");
 };
 export const toMATLABWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const matlab = _toMATLAB(request, warnings);
   return [matlab, warnings];

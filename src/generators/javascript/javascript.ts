@@ -321,9 +321,9 @@ export const _toNode = (request: Request, warnings: Warnings = []): string => {
 };
 
 export const toJavaScriptWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(
     curlCommand,
     javaScriptSupportedArgs,
@@ -336,9 +336,9 @@ export const toJavaScript = (curlCommand: string | string[]): string => {
 };
 
 export const toNodeWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(
     curlCommand,
     nodeSupportedArgs,

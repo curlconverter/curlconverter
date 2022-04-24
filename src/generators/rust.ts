@@ -120,9 +120,9 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
   return lines.join("\n") + "\n";
 };
 export const toRustWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const rust = _toRust(request, warnings);
   return [rust, warnings];

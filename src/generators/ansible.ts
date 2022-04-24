@@ -61,9 +61,9 @@ export const _toAnsible = (
   return result;
 };
 export const toAnsibleWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const ansible = _toAnsible(request, warnings);
   return [ansible, warnings];

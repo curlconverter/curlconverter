@@ -55,7 +55,7 @@ const defaultLanguage = "python";
 const translate: {
   [key: string]: [
     (request: Request, warnings?: Warnings) => string,
-    (curlCommand: string | string[]) => [string, Warnings]
+    (curlCommand: string | string[], warnings?: Warnings) => [string, Warnings]
   ];
 } = {
   ansible: [_toAnsible, toAnsibleWarn],
@@ -210,8 +210,9 @@ if (stdin) {
   }
   const input = fs.readFileSync(0, "utf8");
   try {
-    [code, warnings] = warnGenerator(input);
+    [code, warnings] = warnGenerator(input, warnings);
   } catch (e) {
+    printWarnings(warnings, true); // print warnings to help figure out the error
     exitWithError(e, verbose);
   }
   warnings = printWarnings(warnings, verbose);

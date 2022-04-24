@@ -115,9 +115,9 @@ export const _toPhpRequests = (
   return phpCode + "\n";
 };
 export const toPhpRequestsWarn = (
-  curlCommand: string | string[]
+  curlCommand: string | string[],
+  warnings: Warnings = []
 ): [string, Warnings] => {
-  const warnings: Warnings = [];
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const php = _toPhpRequests(request, warnings);
   return [php, warnings];
