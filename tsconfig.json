@@ -11,6 +11,8 @@
     "module": "es2022",
     "esModuleInterop": true,
     "strictNullChecks": true,
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
     "noImplicitReturns": true
   },
   "include": ["src/**/*", "test/**/*", "tools/**/*", "index.d.ts"],

@@ -34,11 +34,7 @@ function repr(value: string): string {
   }
 }
 
-export const _toDart = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+export const _toDart = (request: Request, warnings: Warnings = []): string => {
   let s = "";
 
   if (request.auth || request.isDataBinary) s += "import 'dart:convert';\n";
@@ -144,13 +140,15 @@ export const _toDart = (
     "  print(res.body);\n" +
     "}";
 
-  return [s + "\n", warnings];
+  return s + "\n";
 };
 export const toDartWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toDart(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const dart = _toDart(request, warnings);
+  return [dart, warnings];
 };
 export const toDart = (curlCommand: string | string[]): string => {
   return toDartWarn(curlCommand)[0];

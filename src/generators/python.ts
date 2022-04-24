@@ -667,9 +667,8 @@ function detectEnvVar(inputString: string): [Set<string>, string] {
 
 export const _toPython = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+  warnings: Warnings = []
+): string => {
   const imports: Set<string> = new Set();
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
@@ -1024,17 +1023,18 @@ export const _toPython = (
     ]);
   }
 
-  return [pythonCode + "\n", warnings];
+  return pythonCode + "\n";
 };
 
 export const toPythonWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toPython(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const python = _toPython(request, warnings);
+  return [python, warnings];
 };
 
 export const toPython = (curlCommand: string | string[]): string => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand);
-  return _toPython(request, warnings)[0];
+  return toPythonWarn(curlCommand)[0];
 };

@@ -26,9 +26,8 @@ const supportedArgs = new Set([
 
 export const _toNodeRequest = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+  warnings: Warnings = []
+): string => {
   let nodeRequestCode = "var request = require('request');\n\n";
   if (request.headers) {
     nodeRequestCode += "var headers = {\n";
@@ -87,14 +86,17 @@ export const _toNodeRequest = (
   nodeRequestCode += "}\n\n";
   nodeRequestCode += "request(options, callback);";
 
-  return [nodeRequestCode + "\n", warnings];
+  return nodeRequestCode + "\n";
 };
 export const toNodeRequestWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   warnings.unshift(["node-request", "the request package is deprecated"]);
-  return _toNodeRequest(request, warnings);
+
+  const nodeRequests = _toNodeRequest(request, warnings);
+  return [nodeRequests, warnings];
 };
 export const toNodeRequest = (curlCommand: string | string[]): string => {
   return toNodeRequestWarn(curlCommand)[0];

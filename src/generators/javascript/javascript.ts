@@ -123,7 +123,7 @@ export const _toJavaScriptOrNode = (
   request: Request,
   warnings: Warnings,
   isNode: boolean
-): [string, Warnings] => {
+): string => {
   const fetchImports: Set<string> = new Set();
   const imports: Set<[string, string]> = new Set();
 
@@ -307,47 +307,44 @@ export const _toJavaScriptOrNode = (
   if (importCode) {
     code = importCode + "\n" + code;
   }
-  return [code + "\n", warnings];
+  return code + "\n";
 };
 
 export const _toJavaScript = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+  warnings: Warnings = []
+): string => {
   return _toJavaScriptOrNode(request, warnings, false);
+};
+export const _toNode = (request: Request, warnings: Warnings = []): string => {
+  return _toJavaScriptOrNode(request, warnings, true);
 };
 
 export const toJavaScriptWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(
     curlCommand,
-    javaScriptSupportedArgs
+    javaScriptSupportedArgs,
+    warnings
   );
-  return _toJavaScript(request, warnings);
+  return [_toJavaScript(request, warnings), warnings];
 };
-
 export const toJavaScript = (curlCommand: string | string[]): string => {
   return toJavaScriptWarn(curlCommand)[0];
-};
-
-export const _toNode = (
-  request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
-  return _toJavaScriptOrNode(request, warnings, true);
 };
 
 export const toNodeWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(
     curlCommand,
-    nodeSupportedArgs
+    nodeSupportedArgs,
+    warnings
   );
-  return _toNode(request, warnings);
+  return [_toNode(request, warnings), warnings];
 };
 export const toNode = (curlCommand: string | string[]): string => {
   return toNodeWarn(curlCommand)[0];

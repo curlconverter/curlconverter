@@ -122,10 +122,8 @@ function getFilesString(
 
 export const _toJsonString = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
-
+  warnings: Warnings = []
+): string => {
   const requestJson: JSONOutput = {
     url: (request.queryDict ? request.urlWithoutQuery : request.url).replace(
       /\/$/,
@@ -177,20 +175,21 @@ export const _toJsonString = (
     };
   }
 
-  return [
+  return (
     JSON.stringify(
       Object.keys(requestJson).length ? requestJson : "{}",
       null,
       4
-    ) + "\n",
-    warnings,
-  ];
+    ) + "\n"
+  );
 };
 export const toJsonStringWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toJsonString(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const json = _toJsonString(request, warnings);
+  return [json, warnings];
 };
 export const toJsonString = (curlCommand: string | string[]): string => {
   return toJsonStringWarn(curlCommand)[0];

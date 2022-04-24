@@ -29,26 +29,24 @@ const supportedArgs = new Set([
 
 export const _toMATLAB = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+  warnings: Warnings = []
+): string => {
   let webServicesLines, httpInterfaceLines;
   [webServicesLines, warnings] = toWebServices(request, warnings);
   [httpInterfaceLines, warnings] = toHTTPInterface(request, warnings);
   const lines = webServicesLines.concat("", httpInterfaceLines);
-  return [
-    lines
-      .flat()
-      .filter((line) => line !== null)
-      .join("\n"),
-    warnings,
-  ];
+  return lines
+    .flat()
+    .filter((line) => line !== null)
+    .join("\n");
 };
 export const toMATLABWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toMATLAB(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const matlab = _toMATLAB(request, warnings);
+  return [matlab, warnings];
 };
 export const toMATLAB = (curlCommand: string | string[]): string => {
   return toMATLABWarn(curlCommand)[0];

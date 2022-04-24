@@ -229,10 +229,8 @@ ${data.join(",\n")}
 
 export const _toElixir = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
-
+  warnings: Warnings = []
+): string => {
   if (request.cookies) {
     util.deleteHeader(request, "cookie");
   }
@@ -249,13 +247,15 @@ export const _toElixir = (
 response = HTTPoison.request(request)
 `;
 
-  return [template, warnings];
+  return template;
 };
 export const toElixirWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toElixir(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const elixir = _toElixir(request, warnings);
+  return [elixir, warnings];
 };
 
 export const toElixir = (curlCommand: string | string[]): string => {

@@ -31,9 +31,8 @@ const quote = (str: string | null | (string | null)[]): string =>
 
 export const _toPhpRequests = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
+  warnings: Warnings = []
+): string => {
   let headerString: string;
   if (request.headers) {
     headerString = "$headers = array(\n";
@@ -113,13 +112,15 @@ export const _toPhpRequests = (
 
   phpCode += requestLine;
 
-  return [phpCode + "\n", warnings];
+  return phpCode + "\n";
 };
 export const toPhpRequestsWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toPhpRequests(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const php = _toPhpRequests(request, warnings);
+  return [php, warnings];
 };
 export const toPhpRequests = (curlCommand: string | string[]): string => {
   return toPhpRequestsWarn(curlCommand)[0];

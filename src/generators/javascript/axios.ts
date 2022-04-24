@@ -234,10 +234,8 @@ const buildConfigObject = (
 
 export const _toNodeAxios = (
   request: Request,
-  warnings?: Warnings
-): [string, Warnings] => {
-  warnings = warnings || [];
-
+  warnings: Warnings = []
+): string => {
   let importCode = "const axios = require('axios');\n";
   const imports: Set<[string, string]> = new Set();
 
@@ -377,13 +375,15 @@ export const _toNodeAxios = (
     importCode += "const " + varName + " = require(" + repr(imp) + ");\n";
   }
 
-  return [importCode + "\n" + code, warnings];
+  return importCode + "\n" + code;
 };
 export const toNodeAxiosWarn = (
   curlCommand: string | string[]
 ): [string, Warnings] => {
-  const [request, warnings] = util.parseCurlCommand(curlCommand, supportedArgs);
-  return _toNodeAxios(request, warnings);
+  const warnings: Warnings = [];
+  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const nodeAxios = _toNodeAxios(request, warnings);
+  return [nodeAxios, warnings];
 };
 export const toNodeAxios = (curlCommand: string | string[]): string => {
   return toNodeAxiosWarn(curlCommand)[0];

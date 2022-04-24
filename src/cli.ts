@@ -54,8 +54,8 @@ const defaultLanguage = "python";
 // NOTE: make sure to update this when adding language support
 const translate: {
   [key: string]: [
-    (request: Request, warnings?: Warnings) => [string, Warnings],
-    (curlCommand: string | string[]) => [string, [string, string][]]
+    (request: Request, warnings?: Warnings) => string,
+    (curlCommand: string | string[]) => [string, Warnings]
   ];
 } = {
   ansible: [_toAnsible, toAnsibleWarn],
@@ -120,6 +120,17 @@ const curlConverterShortOpts: ShortOpts = {
 const longOpts: LongOpts = { ...curlLongOpts, ...curlConverterLongOpts };
 const shortOpts: ShortOpts = { ...curlShortOpts, ...curlConverterShortOpts };
 
+function printWarnings(warnings: Warnings, verbose: boolean): Warnings {
+  if (!verbose) {
+    return warnings;
+  }
+  for (const w of warnings) {
+    for (const line of w[1].trim().split("\n")) {
+      console.error("warning: " + line);
+    }
+  }
+  return [];
+}
 function exitWithError(error: unknown, verbose = false): never {
   let errMsg: Error | string | unknown = error;
   if (!verbose) {
@@ -139,9 +150,10 @@ function exitWithError(error: unknown, verbose = false): never {
 }
 
 const argv = process.argv.slice(2);
-let parsedArguments, warnings;
+let parsedArguments;
+let warnings: Warnings = [];
 try {
-  [parsedArguments, warnings] = parseArgs(argv, longOpts, shortOpts);
+  parsedArguments = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
 } catch (e) {
   exitWithError(e);
 }
@@ -153,6 +165,7 @@ if (parsedArguments.version) {
   console.log("curlconverter " + VERSION);
   process.exit(0);
 }
+const verbose = parsedArguments.verbose;
 
 const argc = Object.keys(parsedArguments).length;
 const language = parsedArguments.language || defaultLanguage;
@@ -166,7 +179,7 @@ if (!has(translate, language)) {
         "must be one of: " +
         Object.keys(translate).join(", ")
     ),
-    parsedArguments.verbose
+    verbose
   );
 }
 for (const opt of Object.keys(curlConverterLongOpts)) {
@@ -192,22 +205,25 @@ if (stdin) {
       new CCError(
         "if you pass --stdin or -, you can't also pass " + extraArgsStr
       ),
-      parsedArguments.verbose
+      verbose
     );
   }
   const input = fs.readFileSync(0, "utf8");
   try {
     [code, warnings] = warnGenerator(input);
   } catch (e) {
-    exitWithError(e, parsedArguments.verbose);
+    exitWithError(e, verbose);
   }
+  warnings = printWarnings(warnings, verbose);
 } else {
+  warnings = printWarnings(warnings, verbose);
   let request;
   try {
     request = buildRequest(parsedArguments, warnings);
   } catch (e) {
-    exitWithError(e, parsedArguments.verbose);
+    exitWithError(e, verbose);
   }
+  warnings = printWarnings(warnings, verbose);
   // Warning for users using the pre-4.0 CLI
   if (request.url?.startsWith("curl ")) {
     console.error(
@@ -221,15 +237,12 @@ if (stdin) {
     );
   }
   try {
-    [code, warnings] = generator(request, warnings);
+    code = generator(request, warnings);
   } catch (e) {
-    exitWithError(e, parsedArguments.verbose);
+    exitWithError(e, verbose);
   }
+  warnings = printWarnings(warnings, verbose);
 }
 
-if (warnings && parsedArguments.verbose) {
-  for (const w of warnings) {
-    console.error("warning: " + w[1]);
-  }
-}
+printWarnings(warnings, verbose);
 process.stdout.write(code);

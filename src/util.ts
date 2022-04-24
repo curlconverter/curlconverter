@@ -966,13 +966,34 @@ function toVal(node: any): string {
   }
 }
 
+const reportError = (
+  curlCommand: string,
+  startCol: number,
+  startRow: number,
+  endCol: number,
+  endRow: number
+): string => {
+  // TODO: is this exactly how tree-sitter splits lines?
+  const line = curlCommand.split("\n")[startRow];
+  const end = endRow === startRow ? endCol : line.length;
+  return (
+    `Bash parsing error on line ${startRow + 1}:\n` +
+    `${line}\n` +
+    " ".repeat(startCol) +
+    "^".repeat(end - startCol)
+  );
+};
+
 interface TokenizeResult {
   cmdName: string;
   args: string[];
   stdin?: string;
   input?: string;
 }
-const tokenize = (curlCommand: string): TokenizeResult => {
+const tokenize = (
+  curlCommand: string,
+  warnings: Warnings = []
+): TokenizeResult => {
   const curlArgs = parser.parse(curlCommand);
   // The AST must be in a nice format, i.e.
   // (program
@@ -1004,20 +1025,20 @@ const tokenize = (curlCommand: string): TokenizeResult => {
 
   // Get the curl call AST node. Skip comments
   let command, stdin, input;
-  for (const programChildNode of curlArgs.rootNode.children) {
-    if (programChildNode.type === "comment") {
+  for (const n of curlArgs.rootNode.children) {
+    if (n.type === "comment") {
       continue;
-    } else if (programChildNode.type === "command") {
-      command = programChildNode;
+    } else if (n.type === "command") {
+      command = n;
       // TODO: if there are more `command` nodes,
       // warn that everything after the first one is ignored
       break;
-    } else if (programChildNode.type === "redirected_statement") {
-      if (!programChildNode.childCount) {
+    } else if (n.type === "redirected_statement") {
+      if (!n.childCount) {
         throw new CCError("got empty 'redirected_statement' AST node");
       }
       let redirect;
-      [command, redirect] = programChildNode.children;
+      [command, redirect] = n.children;
       if (command.type !== "command") {
         throw new CCError(
           "got 'redirected_statement' AST node whose first child is not a 'command', got " +
@@ -1025,7 +1046,7 @@ const tokenize = (curlCommand: string): TokenizeResult => {
             " instead"
         );
       }
-      if (programChildNode.childCount < 2) {
+      if (n.childCount < 2) {
         throw new CCError(
           "got 'redirected_statement' AST node with only one child - no redirect"
         );
@@ -1041,7 +1062,7 @@ const tokenize = (curlCommand: string): TokenizeResult => {
           );
         }
         const heredocStart = redirect.namedChildren[0].text;
-        const heredocBody = programChildNode.nextNamedSibling;
+        const heredocBody = n.nextNamedSibling;
         if (!heredocBody) {
           throw new CCError(
             "got 'redirected_statement' AST node with no heredoc body"
@@ -1081,6 +1102,16 @@ const tokenize = (curlCommand: string): TokenizeResult => {
       }
 
       break;
+    } else if (n.type === "ERROR") {
+      throw new CCError(
+        reportError(
+          curlCommand,
+          n.startPosition.column,
+          n.startPosition.row,
+          n.endPosition.column,
+          n.endPosition.row
+        )
+      );
     } else {
       // TODO: better error message.
       throw new CCError(
@@ -1095,6 +1126,20 @@ const tokenize = (curlCommand: string): TokenizeResult => {
     throw new CCError(
       "expected a 'command' or 'redirected_statement' AST node, only found 'comment' nodes"
     );
+  }
+  for (const n of curlArgs.rootNode.children) {
+    if (n.type === "ERROR") {
+      warnings.push([
+        "bash",
+        reportError(
+          curlCommand,
+          n.startPosition.column,
+          n.startPosition.row,
+          n.endPosition.column,
+          n.endPosition.row
+        ),
+      ]);
+    }
   }
 
   if (command.childCount < 1) {
@@ -1149,9 +1194,9 @@ const parseArgs = (
   args: string[],
   longOpts: LongOpts,
   shortOpts: ShortOpts,
-  supportedOpts?: Set<string>
-): [ParsedArguments, Warnings] => {
-  const warnings: Warnings = [];
+  supportedOpts?: Set<string>,
+  warnings: Warnings = []
+): ParsedArguments => {
   const parsedArguments: ParsedArguments = {};
   for (let i = 0, stillflags = true; i < args.length; i++) {
     let arg: string | string[] = args[i];
@@ -1257,7 +1302,7 @@ const parseArgs = (
       parsedArguments[arg] = values[values.length - 1];
     }
   }
-  return [parsedArguments, warnings];
+  return parsedArguments;
 };
 
 export function parseQueryString(
@@ -1352,9 +1397,8 @@ export function parseQueryString(
 
 function buildRequest(
   parsedArguments: ParsedArguments,
-  warnings?: Warnings
+  warnings: Warnings = []
 ): Request {
-  warnings = warnings || [];
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
     // TODO: better error message (could be parsing fail)
@@ -1699,8 +1743,9 @@ function buildRequest(
 
 function parseCurlCommand(
   curlCommand: string | string[],
-  supportedArgs?: Set<string>
-): [Request, Warnings] {
+  supportedArgs?: Set<string>,
+  warnings: Warnings = []
+): Request {
   let cmdName: string,
     args: string[],
     stdin: undefined | string,
@@ -1711,7 +1756,7 @@ function parseCurlCommand(
       throw new CCError("no arguments provided");
     }
   } else {
-    ({ cmdName, args, stdin, input } = tokenize(curlCommand));
+    ({ cmdName, args, stdin, input } = tokenize(curlCommand, warnings));
     if (typeof cmdName === "undefined") {
       throw new CCError("failed to parse input");
     }
@@ -1732,11 +1777,12 @@ function parseCurlCommand(
     }
   }
 
-  const [parsedArguments, warnings] = parseArgs(
+  const parsedArguments = parseArgs(
     args,
     curlLongOpts,
     curlShortOpts,
-    supportedArgs
+    supportedArgs,
+    warnings
   );
   const request = buildRequest(parsedArguments, warnings);
   if (stdin) {
@@ -1745,7 +1791,7 @@ function parseCurlCommand(
   if (input) {
     request.input = input;
   }
-  return [request, warnings];
+  return request;
 }
 
 // Gets the first header, matching case-insensitively
