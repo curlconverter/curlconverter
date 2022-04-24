@@ -3,6 +3,7 @@ import URL from "url";
 import nunjucks from "nunjucks";
 
 import parser from "./bash-parser.js";
+import type { Parser } from "./bash-parser.js";
 
 const env = nunjucks.configure(["templates/"], {
   // set folders with templates
@@ -929,8 +930,23 @@ const parseAnsiCString = (str: string): string => {
   return str.slice(2, -1).replace(ANSI_BACKSLASHES, unescapeChar);
 };
 
-function toVal(node: any): string {
-  // TODO: typing node is hard because of the browser/nodejs import difference
+const underlineBadNode = (
+  curlCommand: string,
+  node: Parser.SyntaxNode
+): string => {
+  // TODO: is this exactly how tree-sitter splits lines?
+  const line = curlCommand.split("\n")[node.startPosition.row];
+  const onOneLine = node.endPosition.row === node.startPosition.row;
+  const end = onOneLine ? node.endPosition.column : line.length;
+  return (
+    `${line}\n` +
+    " ".repeat(node.startPosition.column) +
+    "^".repeat(end - node.startPosition.column) +
+    (onOneLine ? "" : "^") // TODO: something else?
+  );
+};
+
+function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
   switch (node.type) {
     case "word":
     case "simple_expansion": // TODO: handle variables properly downstream
@@ -944,39 +960,21 @@ function toVal(node: any): string {
     case "concatenation":
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
-      // TODO: type `n` if you type `node`
-      if (node.children.every((n: any) => n.type === "word")) {
+      if (node.children.every((n) => n.type === "word")) {
         return node.text;
       }
-      return node.children.map(toVal).join("");
+      return node.children.map((c) => toVal(c, curlCommand)).join("");
     default:
       // console.error(curlCommand)
       // console.error(curlArgs.rootNode.toString())
       throw new CCError(
         "unexpected argument type " +
           JSON.stringify(node.type) +
-          '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"'
+          '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"\n' +
+          underlineBadNode(curlCommand, node)
       );
   }
 }
-
-const reportError = (
-  curlCommand: string,
-  startCol: number,
-  startRow: number,
-  endCol: number,
-  endRow: number
-): string => {
-  // TODO: is this exactly how tree-sitter splits lines?
-  const line = curlCommand.split("\n")[startRow];
-  const end = endRow === startRow ? endCol : line.length;
-  return (
-    `Bash parsing error on line ${startRow + 1}:\n` +
-    `${line}\n` +
-    " ".repeat(startCol) +
-    "^".repeat(end - startCol)
-  );
-};
 
 interface TokenizeResult {
   cmdName: string;
@@ -1037,7 +1035,8 @@ const tokenize = (
         throw new CCError(
           "got 'redirected_statement' AST node whose first child is not a 'command', got " +
             command.type +
-            " instead"
+            " instead\n" +
+            underlineBadNode(curlCommand, command)
         );
       }
       if (n.childCount < 2) {
@@ -1046,7 +1045,7 @@ const tokenize = (
         );
       }
       if (redirect.type === "file_redirect") {
-        stdin = toVal(redirect.namedChildren[0]);
+        stdin = toVal(redirect.namedChildren[0], curlCommand);
       } else if (redirect.type === "heredoc_redirect") {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
@@ -1077,7 +1076,7 @@ const tokenize = (
           // this shouldn't happen
           input = heredocBody.text;
         }
-        // Curl remove newlines when you pass any @filename including @- for stdin
+        // Curl removes newlines when you pass any @filename including @- for stdin
         input = input.replace(/\n/g, "");
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
@@ -1098,19 +1097,16 @@ const tokenize = (
       break;
     } else if (n.type === "ERROR") {
       throw new CCError(
-        reportError(
-          curlCommand,
-          n.startPosition.column,
-          n.startPosition.row,
-          n.endPosition.column,
-          n.endPosition.row
-        )
+        `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
+          underlineBadNode(curlCommand, n)
       );
     } else {
       // TODO: better error message.
       throw new CCError(
         "expected a 'command' or 'redirected_statement' AST node, instead got " +
-          curlArgs.rootNode.children[0].type
+          curlArgs.rootNode.children[0].type +
+          "\n" +
+          underlineBadNode(curlCommand, curlArgs.rootNode.children[0])
       );
     }
   }
@@ -1125,13 +1121,8 @@ const tokenize = (
     if (n.type === "ERROR") {
       warnings.push([
         "bash",
-        reportError(
-          curlCommand,
-          n.startPosition.column,
-          n.startPosition.row,
-          n.endPosition.column,
-          n.endPosition.row
-        ),
+        `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
+          underlineBadNode(curlCommand, n),
       ]);
     }
   }
@@ -1148,13 +1139,16 @@ const tokenize = (
   if (cmdName.type !== "command_name") {
     // TODO: better error message.
     throw new CCError(
-      "expected a 'command_name' AST node, got " + cmdName.type + " instead"
+      "expected a 'command_name' AST node, got " +
+        cmdName.type +
+        " instead\n" +
+        underlineBadNode(curlCommand, cmdName)
     );
   }
 
   return {
     cmdName: cmdName.text.trim(),
-    args: args.map(toVal),
+    args: args.map((a) => toVal(a, curlCommand)),
     stdin,
     input,
   };

@@ -8,3 +8,4 @@ const parser = new Parser();
 parser.setLanguage(Bash);
 
 export default parser;
+export type { Parser };
