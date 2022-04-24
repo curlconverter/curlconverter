@@ -63,12 +63,6 @@ interface ShortOpts {
   [key: string]: string;
 }
 
-interface PossibleArgs {
-  supported: string[];
-  unsupported: string[];
-  ignored: string[];
-}
-
 type Query = Array<[string, string | null]>;
 interface QueryDict {
   [key: string]: string | null | Array<string | null>;
