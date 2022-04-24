@@ -947,7 +947,6 @@ const underlineBadNode = (
 };
 
 function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
-  // TODO: typing node is hard because of the browser/nodejs import difference
   switch (node.type) {
     case "word":
     case "simple_expansion": // TODO: handle variables properly downstream
@@ -961,7 +960,6 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
     case "concatenation":
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
-      // TODO: type `n` if you type `node`
       if (node.children.every((n) => n.type === "word")) {
         return node.text;
       }
