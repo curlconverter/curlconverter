@@ -849,6 +849,9 @@ const parseDoubleQuoteString = (str: string): string => {
   const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
   return str.slice(1, -1).replace(BACKSLASHES, unescapeChar);
 };
+const parseTranslatedString = (str: string): string => {
+  return parseDoubleQuoteString(str.slice(1));
+};
 // ANSI-C quoted strings look $'like this'.
 // Not all shells have them but bash does
 // https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
@@ -957,6 +960,8 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
       return parseSingleQuoteString(node.text);
     case "ansii_c_string":
       return parseAnsiCString(node.text);
+    case "string_expansion":
+      return parseTranslatedString(node.text);
     case "concatenation":
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
