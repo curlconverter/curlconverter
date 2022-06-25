@@ -1,5 +1,5 @@
 extern crate reqwest;
-use reqwest::{header, multipart};
+use reqwest::{header, blocking::multipart};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut headers = header::HeaderMap::new();
@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .text("attributes", "{\"name\":\"tigers.jpeg\", \"parent\":{\"id\":\"11446498\"}}")
         .file("file", "myfile.jpg")?;
 
-    let res = reqwest::Client::new()
+    let res = reqwest::blocking::Client::new()
         .post("https://localhost:28139/api/2.0/files/content")
         .headers(headers)
         .multipart(form)

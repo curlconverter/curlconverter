@@ -1,5 +1,5 @@
 extern crate reqwest;
-use reqwest::multipart;
+use reqwest::blocking::multipart;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let form = multipart::Form::new()
@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .text("subject", "Hello")
         .text("text", "Testing the converter!");
 
-    let res = reqwest::Client::new()
+    let res = reqwest::blocking::Client::new()
         .post("http://localhost:28139/v3")
         .basic_auth("test", Some(""))
         .multipart(form)

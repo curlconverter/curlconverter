@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     headers.insert(header::COOKIE, "x=1'; y=2\"".parse().unwrap());
     headers.insert("Content-Type", "application/x-www-form-urlencoded".parse().unwrap());
 
-    let res = reqwest::Client::new()
+    let res = reqwest::blocking::Client::new()
         .post("https://localhost:28139")
         .basic_auth("ol'", Some("asd\""))
         .headers(headers)
