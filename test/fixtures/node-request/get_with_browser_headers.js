@@ -12,7 +12,8 @@ var headers = {
 
 var options = {
     url: 'http://localhost:28139/',
-    headers: headers
+    headers: headers,
+    gzip: true
 };
 
 function callback(error, response, body) {

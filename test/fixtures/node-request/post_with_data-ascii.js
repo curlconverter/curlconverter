@@ -18,6 +18,7 @@ var options = {
     url: 'http://localhost:28139/echo/html/',
     method: 'POST',
     headers: headers,
+    gzip: true,
     body: dataString
 };
 
