@@ -8,8 +8,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .text("subject", "Hello")
         .text("text", "Testing the converter!");
 
-    let res = reqwest::blocking::Client::new()
-        .post("http://localhost:28139/v3")
+    let client = reqwest::blocking::Client::new();
+    let res = client.post("http://localhost:28139/v3")
         .basic_auth("test", Some(""))
         .multipart(form)
         .send()?

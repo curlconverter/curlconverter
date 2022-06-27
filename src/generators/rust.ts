@@ -79,9 +79,13 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
     lines.push(...parts, "");
   }
 
-  lines.push(indent("let res = reqwest::blocking::Client::new()"));
+  lines.push(indent("let client = reqwest::blocking::Client::new();"));
   lines.push(
-    indent(`.${request.method.toLowerCase()}("${quote(request.url)}")`, 2)
+    indent(
+      `let res = client.${request.method.toLowerCase()}("${quote(
+        request.url
+      )}")`
+    )
   );
 
   if (request.auth) {

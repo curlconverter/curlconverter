@@ -1,8 +1,8 @@
 extern crate reqwest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let res = reqwest::blocking::Client::new()
-        .delete("http://localhost:28139/page")
+    let client = reqwest::blocking::Client::new();
+    let res = client.delete("http://localhost:28139/page")
         .send()?
         .text()?;
     println!("{}", res);
