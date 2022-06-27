@@ -79,10 +79,26 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
     lines.push(...parts, "");
   }
 
-  lines.push(indent("let res = reqwest::blocking::Client::new()"));
-  lines.push(
-    indent(`.${request.method.toLowerCase()}("${quote(request.url)}")`, 2)
-  );
+  lines.push(indent("let client = reqwest::blocking::Client::new();"));
+
+  const reqwestMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
+  if (reqwestMethods.includes(request.method)) {
+    lines.push(
+      indent(
+        `let res = client.${request.method.toLowerCase()}("${quote(
+          request.url
+        )}")`
+      )
+    );
+  } else {
+    lines.push(
+      indent(
+        `let res = client.request("${quote(request.method)}", "${quote(
+          request.url
+        )}")`
+      )
+    );
+  }
 
   if (request.auth) {
     const [user, password] = request.auth;

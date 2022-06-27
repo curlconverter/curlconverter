@@ -10,8 +10,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .text("attributes", "{\"name\":\"tigers.jpeg\", \"parent\":{\"id\":\"11446498\"}}")
         .file("file", "myfile.jpg")?;
 
-    let res = reqwest::blocking::Client::new()
-        .post("https://localhost:28139/api/2.0/files/content")
+    let client = reqwest::blocking::Client::new();
+    let res = client.post("https://localhost:28139/api/2.0/files/content")
         .headers(headers)
         .multipart(form)
         .send()?
