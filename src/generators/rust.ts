@@ -35,7 +35,7 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
     // Generate imports.
     const imports = [
       { want: "header", condition: !!request.headers },
-      { want: "multipart", condition: !!request.multipartUploads },
+      { want: "blocking::multipart", condition: !!request.multipartUploads },
     ]
       .filter((i) => i.condition)
       .map((i) => i.want);
@@ -79,7 +79,7 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
     lines.push(...parts, "");
   }
 
-  lines.push(indent("let res = reqwest::Client::new()"));
+  lines.push(indent("let res = reqwest::blocking::Client::new()"));
   lines.push(
     indent(`.${request.method.toLowerCase()}("${quote(request.url)}")`, 2)
   );
