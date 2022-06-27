@@ -17,6 +17,7 @@ var options = {
     url: 'http://localhost:28139/api/Listing.svc/PropertySearch_Post',
     method: 'POST',
     headers: headers,
+    gzip: true,
     body: dataString
 };
 

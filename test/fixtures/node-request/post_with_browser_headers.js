@@ -15,7 +15,8 @@ var headers = {
 var options = {
     url: 'http://localhost:28139/ajax/demo_post.asp',
     method: 'POST',
-    headers: headers
+    headers: headers,
+    gzip: true
 };
 
 function callback(error, response, body) {

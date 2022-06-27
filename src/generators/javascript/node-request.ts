@@ -62,6 +62,17 @@ export const _toNodeRequest = (
   if (request.headers) {
     nodeRequestCode += ",\n";
     nodeRequestCode += "    headers: headers";
+
+    const h = util.getHeader(request, "accept-encoding");
+    if (h) {
+      const acceptedEncodings = h.split(",").map((s) => s.trim().toLowerCase());
+      if (
+        acceptedEncodings.includes("gzip") ||
+        acceptedEncodings.includes("deflate")
+      ) {
+        nodeRequestCode += ",\n    gzip: true";
+      }
+    }
   }
   if (request.data) {
     nodeRequestCode += ",\n    body: dataString";
