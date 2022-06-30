@@ -13,7 +13,8 @@
     "strictNullChecks": true,
     "noUnusedParameters": false,
     "noUnusedLocals": false,
-    "noImplicitReturns": true
+    "noImplicitReturns": true,
+    "declaration": true
   },
   "include": ["src/**/*", "test/**/*", "tools/**/*", "index.d.ts"],
   "exclude": [
