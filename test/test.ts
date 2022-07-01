@@ -56,7 +56,12 @@ if (Array.isArray(testArgs.test)) {
 
 const testFileNames =
   testNames && testNames.length
-    ? testNames.map((t) => t.toString().replace(/ /g, "_") + ".sh")
+    ? testNames.map((t) =>
+        t
+          .toString()
+          .replace(/ /g, "_")
+          .replace(/(\.sh)?$/, ".sh")
+      )
     : fs.readdirSync(curlCommandsDir).filter((f) => f.endsWith(".sh")); // if no --test specified, run them all
 
 for (const outputLanguage of Object.keys(converters)) {
