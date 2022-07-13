@@ -23,6 +23,7 @@ import {
 } from "./generators/javascript/javascript.js";
 import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
+import { _toN8n, toN8nWarn } from "./generators/n8n.js";
 import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 import {
   _toNodeAxios,
@@ -70,6 +71,7 @@ const translate: {
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
   json: [_toJsonString, toJsonStringWarn],
   matlab: [_toMATLAB, toMATLABWarn],
+  n8n: [_toN8n, toN8nWarn],
   node: [_toNode, toNodeWarn],
   "node-fetch": [_toNode, toNodeWarn], // undocument alias
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],

@@ -1,0 +1,18 @@
+{
+    "url": "http://localhost:28139/api/library",
+    "raw_url": "http://localhost:28139/api/library",
+    "method": "post",
+    "headers": {
+        "accept": "application/json",
+        "Content-Type": "multipart/form-data"
+    },
+    "files": {
+        "files": "47.htz"
+    },
+    "data": {
+        "name": "47",
+        "oldMediaId": "47",
+        "updateInLayouts": "1",
+        "deleteOldRevisions": "1"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "https://localhost:28139",
+                "options": {
+                    "bodyContentType": "json"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "bodyParametersJson": "{\"drink\":\"coffe\"}",
+                "headerParametersJson": "{\"Content-Type\":\"application/json\",\"Accept\":\"application/json\"}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

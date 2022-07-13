@@ -1,0 +1,15 @@
+{
+    "url": "http://localhost:28139/patch",
+    "raw_url": "http://localhost:28139/patch",
+    "method": "patch",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "data": {
+        "item[]": [
+            "1",
+            "2",
+            "3"
+        ]
+    }
+}

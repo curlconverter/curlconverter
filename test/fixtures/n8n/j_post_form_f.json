@@ -1,0 +1,26 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139/post",
+                "options": {
+                    "bodyContentType": "multipart-form-data"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "sendBinaryData": true,
+                "binaryPropertyName": "",
+                "headerParametersJson": "{}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

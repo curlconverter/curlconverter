@@ -1,0 +1,32 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "https://localhost:28139/cookies",
+                "options": {},
+                "jsonParameters": false,
+                "requestMethod": "GET",
+                "headerParametersUi": {
+                    "parameter": [
+                        {
+                            "name": "accept",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Cookie",
+                            "value": "mysamplecookie=someValue; emptycookie=; otherCookie=2"
+                        }
+                    ]
+                }
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

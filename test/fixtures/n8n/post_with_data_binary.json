@@ -1,0 +1,23 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139/post",
+                "options": {},
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "bodyParametersJson": "{\"title\":\"china1\"}",
+                "headerParametersJson": "{\"Content-Type\":\"application/x-www-form-urlencoded\"}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

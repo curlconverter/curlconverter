@@ -1,0 +1,32 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139/endpoint",
+                "options": {},
+                "jsonParameters": false,
+                "requestMethod": "POST",
+                "headerParametersUi": {
+                    "parameter": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "key",
+                            "value": "abcdefg"
+                        }
+                    ]
+                }
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

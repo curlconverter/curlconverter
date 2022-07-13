@@ -1,0 +1,20 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139",
+                "options": {},
+                "jsonParameters": false,
+                "requestMethod": "WHAT"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

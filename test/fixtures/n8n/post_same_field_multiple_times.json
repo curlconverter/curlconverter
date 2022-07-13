@@ -1,0 +1,25 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139",
+                "options": {
+                    "bodyContentType": "form-urlencoded"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "bodyParametersJson": "{\"foo\":[\"bar\",\"\",\"barbar\"]}",
+                "headerParametersJson": "{\"Content-Type\":\"application/x-www-form-urlencoded\"}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

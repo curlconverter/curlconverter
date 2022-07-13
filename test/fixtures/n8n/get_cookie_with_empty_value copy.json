@@ -1,0 +1,14 @@
+{
+    "url": "https://localhost:28139/cookies",
+    "raw_url": "https://localhost:28139/cookies",
+    "method": "get",
+    "cookies": {
+        "mysamplecookie": "someValue",
+        "emptycookie": "",
+        "otherCookie": "2"
+    },
+    "headers": {
+        "accept": "application/json",
+        "Cookie": "mysamplecookie=someValue; emptycookie=; otherCookie=2"
+    }
+}

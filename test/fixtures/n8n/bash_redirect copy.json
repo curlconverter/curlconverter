@@ -1,0 +1,23 @@
+{
+    "url": "https://localhost:28139/api/2.0/fo/auth/unix",
+    "raw_url": "https://localhost:28139/api/2.0/fo/auth/unix/?action=create&title=UnixRecord&username=root&password=abc123&ips=10.10.10.10",
+    "method": "post",
+    "headers": {
+        "X-Requested-With": "curl",
+        "Content-Type": "text/xml"
+    },
+    "queries": {
+        "action": "create",
+        "title": "UnixRecord",
+        "username": "root",
+        "password": "abc123",
+        "ips": "10.10.10.10"
+    },
+    "data": {
+        "@-": ""
+    },
+    "auth": {
+        "user": "USER",
+        "password": "PASS"
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139/api/library",
+                "options": {
+                    "bodyContentType": "multipart-form-data"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "sendBinaryData": true,
+                "binaryPropertyName": "files:47.htz",
+                "headerParametersJson": "{\"accept\":\"application/json\",\"Content-Type\":\"multipart/form-data\"}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

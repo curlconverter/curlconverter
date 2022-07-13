@@ -1,0 +1,26 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139/american-art/query",
+                "options": {
+                    "bodyContentType": "raw"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "sendBinaryData": true,
+                "binaryPropertyName": "@./sample.sparql",
+                "headerParametersJson": "{\"Content-type\":\"application/sparql-query\",\"Accept\":\"application/sparql-results+json\"}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

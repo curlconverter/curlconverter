@@ -1,0 +1,8 @@
+{
+    "url": "http://localhost:28139/targetservice",
+    "raw_url": "http://localhost:28139/targetservice",
+    "method": "post",
+    "files": {
+        "image": "image.jpg"
+    }
+}

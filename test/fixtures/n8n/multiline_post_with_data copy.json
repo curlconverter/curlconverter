@@ -1,0 +1,13 @@
+{
+    "url": "http://localhost:28139/echo/html",
+    "raw_url": "http://localhost:28139/echo/html/",
+    "method": "get",
+    "headers": {
+        "Origin": "http://fiddle.jshell.net",
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "data": {
+        "msg1": "value1",
+        "msg2": "value2"
+    }
+}

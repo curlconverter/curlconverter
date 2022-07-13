@@ -1,0 +1,26 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "https://localhost:28139/rest/login-sessions",
+                "options": {
+                    "bodyContentType": "json"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "bodyParametersJson": "{\"userName\":\"username123\",\"password\":\"password123\",\"authLoginDomain\":\"local\"}",
+                "headerParametersJson": "{\"Content-Type\":\"application/json\",\"X-API-Version\":\"200\"}",
+                "queryParametersJson": "{}",
+                "allowUnauthorizedCerts": true
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

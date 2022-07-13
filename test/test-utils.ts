@@ -27,6 +27,7 @@ type Converter =
   | "javascript"
   | "json"
   | "matlab"
+  | "n8n"
   | "node"
   | "node-axios"
   | "node-request"
@@ -81,6 +82,11 @@ const converters = {
     name: "MATLAB",
     extension: ".m",
     converter: curlconverter.toMATLAB,
+  },
+  n8n: {
+    name: "n8n",
+    extension: ".json",
+    converter: curlconverter.toN8n,
   },
   node: {
     name: "Node",

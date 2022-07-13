@@ -1,0 +1,27 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "http://localhost:28139/test/_security",
+                "options": {
+                    "bodyContentType": "form-urlencoded"
+                },
+                "jsonParameters": true,
+                "requestMethod": "PUT",
+                "bodyParametersJson": "{\"admins\":{\"names\":[],\"roles\":[]},\"readers\":{\"names\":[\"joe\"],\"roles\":[]}}",
+                "headerParametersJson": "{\"Content-Type\":\"application/x-www-form-urlencoded\"}",
+                "queryParametersJson": "{}",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBasicAuth"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}

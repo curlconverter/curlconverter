@@ -1,0 +1,26 @@
+{
+    "connections": {},
+    "nodes": [
+        {
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 2,
+            "parameters": {
+                "url": "https://localhost:28139/api/2.0/files/content",
+                "options": {
+                    "bodyContentType": "multipart-form-data"
+                },
+                "jsonParameters": true,
+                "requestMethod": "POST",
+                "sendBinaryData": true,
+                "binaryPropertyName": "file:myfile.jpg",
+                "headerParametersJson": "{\"Authorization\":\"Bearer ACCESS_TOKEN\",\"X-Nice\":\"Header\"}",
+                "queryParametersJson": "{}"
+            },
+            "position": [
+                0,
+                0
+            ]
+        }
+    ]
+}
