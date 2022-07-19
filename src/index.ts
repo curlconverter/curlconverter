@@ -11,6 +11,7 @@ export { toGo, toGoWarn } from "./generators/go.js";
 export { toJava, toJavaWarn } from "./generators/java.js";
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
+export { toRawHttp, toRawHttpWarn } from "./generators/http.js";
 export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 export {
   toNodeRequest,

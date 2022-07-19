@@ -33,6 +33,7 @@ type Converter =
   | "php"
   | "python"
   | "r"
+  | "http"
   | "ruby"
   | "rust"
   | "strest"
@@ -77,6 +78,11 @@ const converters = {
     name: "Json",
     extension: ".json",
     converter: curlconverter.toJsonString,
+  },
+  http: {
+    name: "Http",
+    extension: ".txt",
+    converter: curlconverter.toRawHttp,
   },
   matlab: {
     name: "MATLAB",
