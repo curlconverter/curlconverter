@@ -9,9 +9,10 @@
   ],
   "rules": {
     "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": [
       "warn",
-      { "argsIgnorePattern": "^_" }
+      { "argsIgnorePattern": "^_|warnings" }
     ],
     // TODO: remove?
     "@typescript-eslint/no-non-null-assertion": "off"
