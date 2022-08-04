@@ -1,19 +1,7 @@
 import URL from "url";
 
-import nunjucks from "nunjucks";
-
 import parser from "./bash-parser.js";
 import type { Parser } from "./bash-parser.js";
-
-const env = nunjucks.configure(["templates/"], {
-  // set folders with templates
-  autoescape: false,
-});
-env.addFilter("isArr", (something: any): boolean => Array.isArray(something));
-env.addFilter(
-  "isString",
-  (something: any): boolean => typeof something === "string"
-);
 
 // TODO: this type doesn't work.
 function has<T, K extends PropertyKey>(
