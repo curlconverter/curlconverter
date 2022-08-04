@@ -1139,6 +1139,7 @@ const tokenize = (
       );
     }
   }
+  // TODO: better logic, skip comments.
   if (lastNode && lastNode.nextNamedSibling) {
     // TODO: better warning
     warnings.push([
@@ -1438,7 +1439,7 @@ function buildRequest(
   if (parsedArguments.url.length > 1) {
     warnings.push([
       "multiple-urls",
-      "multiple URLs specified, only the first one will be used",
+      "found multiple URLs, only the last one will be used",
     ]);
   }
   let url = parsedArguments.url[parsedArguments.url.length - 1];
