@@ -9,7 +9,12 @@
   ],
   "rules": {
     "no-empty": ["error", { "allowEmptyCatch": true }],
-    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_|warnings" }
+    ],
+    "@typescript-eslint/no-non-null-assertion": "off"
   },
   "parserOptions": {
     "ecmaVersion": 2018,
