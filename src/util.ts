@@ -957,6 +957,7 @@ const underlineBadNodeEnd = (
   const line = curlCommand.split("\n")[node.endPosition.row];
   const onOneLine = node.endPosition.row === node.startPosition.row;
   const start = onOneLine ? node.startPosition.column : 0;
+  // TODO: cut off line if it's too long
   return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
 };
 
@@ -1141,14 +1142,35 @@ const tokenize = (
   }
   // TODO: better logic, skip comments.
   if (lastNode && lastNode.nextNamedSibling) {
-    // TODO: better warning
+    // TODO: better wording
     warnings.push([
       "extra-commands",
       `curl command ends on line ${
         lastNode.endPosition.row + 1
-      } but there are more AST nodes:\n` +
+      }, everything after this is ignored:\n` +
         underlineBadNodeEnd(curlCommand, lastNode),
     ]);
+
+    const curlCommandLines = curlCommand.split("\n");
+    const lastNodeLine = curlCommandLines[lastNode.endPosition.row];
+    const impromperBackslash = lastNodeLine.match(/\\\s+$/);
+    if (
+      impromperBackslash &&
+      curlCommandLines.length > lastNode.endPosition.row + 1 &&
+      impromperBackslash.index !== undefined
+    ) {
+      warnings.push([
+        "unescaped-newline",
+        "The trailling '\\' on line " +
+          (lastNode.endPosition.row + 1) +
+          " is followed by whitespace, so it won't escape the newline after it:\n" +
+          // TODO: cut off line if it's very long?
+          lastNodeLine +
+          "\n" +
+          " ".repeat(impromperBackslash.index) +
+          "^".repeat(impromperBackslash[0].length),
+      ]);
+    }
   }
   if (!command) {
     // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
