@@ -450,10 +450,10 @@ function getDataString(
   if (!request.isDataRaw && request.data.startsWith("@")) {
     let filePath = request.data.slice(1);
     if (filePath === "-") {
-      if (request.stdin) {
-        filePath = request.stdin;
-      } else if (request.input) {
-        request.data = request.input;
+      if (request.stdinFile) {
+        filePath = request.stdinFile;
+      } else if (request.stdin) {
+        request.data = request.stdin;
       } else {
         if (request.isDataBinary) {
           return [
@@ -472,7 +472,7 @@ function getDataString(
         }
       }
     }
-    if (!request.input) {
+    if (!request.stdin) {
       if (request.isDataBinary) {
         // TODO: I bet the way python treats file paths is not identical to curl's
         return [

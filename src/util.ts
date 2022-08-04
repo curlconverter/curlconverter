@@ -108,7 +108,7 @@ interface Request {
   method: string;
   headers?: Headers;
   stdin?: string;
-  input?: string;
+  stdinFile?: string;
   multipartUploads?: ({
     name: string;
   } & ({ content: string } | { contentFile: string; filename?: string }))[];
@@ -949,6 +949,17 @@ const underlineBadNode = (
   );
 };
 
+const underlineBadNodeEnd = (
+  curlCommand: string,
+  node: Parser.SyntaxNode
+): string => {
+  // TODO: is this exactly how tree-sitter splits lines?
+  const line = curlCommand.split("\n")[node.endPosition.row];
+  const onOneLine = node.endPosition.row === node.startPosition.row;
+  const start = onOneLine ? node.startPosition.column : 0;
+  return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
+};
+
 function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
   switch (node.type) {
     case "word":
@@ -970,12 +981,10 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
       }
       return node.children.map((c) => toVal(c, curlCommand)).join("");
     default:
-      // console.error(curlCommand)
-      // console.error(curlArgs.rootNode.toString())
       throw new CCError(
         "unexpected argument type " +
           JSON.stringify(node.type) +
-          '. Must be one of "word", "string", "raw_string", "ascii_c_string", "simple_expansion" or "concatenation"\n' +
+          '. Must be one of "word", "string", "raw_string", "ansii_c_string", "simple_expansion", "string_expansion" or "concatenation"\n' +
           underlineBadNode(curlCommand, node)
       );
   }
@@ -985,57 +994,60 @@ interface TokenizeResult {
   cmdName: string;
   args: string[];
   stdin?: string;
-  input?: string;
+  stdinFile?: string;
 }
 const tokenize = (
   curlCommand: string,
   warnings: Warnings = []
 ): TokenizeResult => {
-  const curlArgs = parser.parse(curlCommand);
+  const ast = parser.parse(curlCommand);
+  // https://github.com/tree-sitter/tree-sitter-bash/blob/master/grammar.js
   // The AST must be in a nice format, i.e.
   // (program
   //   (command
   //     name: (command_name (word))
   //     argument+: (
   //       word |
-  //       string ('') |
-  //       raw_string ("") |
-  //       ansii_c_string ($'') |
-  //       simple_expansion (variable_name))))
+  //       'string' |
+  //       "raw_string" |
+  //       $'ansii_c_string' |
+  //       $"string_expansion" |
+  //       $simple_expansion |
+  //       concaten[ation)))
   //
   // TODO: support strings with variable expansions inside
   // TODO: support prefixed variables, e.g. "MY_VAR=hello curl example.com"
   // TODO: get only named children?
-  if (curlArgs.rootNode.type !== "program") {
+  if (ast.rootNode.type !== "program") {
     // TODO: better error message.
     throw new CCError(
       "expected a 'program' top-level AST node, got " +
-        curlArgs.rootNode.type +
+        ast.rootNode.type +
         " instead"
     );
   }
 
-  if (curlArgs.rootNode.childCount < 1 || !curlArgs.rootNode.children) {
+  if (ast.rootNode.childCount < 1 || !ast.rootNode.children) {
     // TODO: better error message.
     throw new CCError('empty "program" node');
   }
 
   // Get the curl call AST node. Skip comments
-  let command, stdin, input;
-  for (const n of curlArgs.rootNode.children) {
+  let command, lastNode, stdin, stdinFile;
+  for (const n of ast.rootNode.children) {
     if (n.type === "comment") {
       continue;
     } else if (n.type === "command") {
       command = n;
-      // TODO: if there are more `command` nodes,
-      // warn that everything after the first one is ignored
+      lastNode = n;
       break;
     } else if (n.type === "redirected_statement") {
       if (!n.childCount) {
         throw new CCError("got empty 'redirected_statement' AST node");
       }
-      let redirect;
-      [command, redirect] = n.children;
+      let redirects;
+      [command, ...redirects] = n.namedChildren;
+      lastNode = n;
       if (command.type !== "command") {
         throw new CCError(
           "got 'redirected_statement' AST node whose first child is not a 'command', got " +
@@ -1049,8 +1061,19 @@ const tokenize = (
           "got 'redirected_statement' AST node with only one child - no redirect"
         );
       }
+      if (redirects.length > 1) {
+        warnings.push([
+          "multiple-redirects",
+          // TODO: only the Python generator uses the redirect so this is misleading.
+          "found " +
+            redirects.length +
+            " redirect nodes. Only the first one will be used:\n" +
+            underlineBadNode(curlCommand, redirects[1]),
+        ]);
+      }
+      const redirect = redirects[0];
       if (redirect.type === "file_redirect") {
-        stdin = toVal(redirect.namedChildren[0], curlCommand);
+        stdinFile = toVal(redirect.namedChildren[0], curlCommand);
       } else if (redirect.type === "heredoc_redirect") {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
@@ -1061,6 +1084,7 @@ const tokenize = (
         }
         const heredocStart = redirect.namedChildren[0].text;
         const heredocBody = n.nextNamedSibling;
+        lastNode = heredocBody;
         if (!heredocBody) {
           throw new CCError(
             "got 'redirected_statement' AST node with no heredoc body"
@@ -1076,13 +1100,13 @@ const tokenize = (
         }
         // TODO: heredocs do variable expansion and stuff
         if (heredocStart.length) {
-          input = heredocBody.text.slice(0, -heredocStart.length);
+          stdin = heredocBody.text.slice(0, -heredocStart.length);
         } else {
           // this shouldn't happen
-          input = heredocBody.text;
+          stdin = heredocBody.text;
         }
         // Curl removes newlines when you pass any @filename including @- for stdin
-        input = input.replace(/\n/g, "");
+        stdin = stdin.replace(/\n/g, "");
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
           throw new CCError(
@@ -1090,7 +1114,7 @@ const tokenize = (
           );
         }
         // TODO: this just converts bash code to text
-        input = redirect.firstNamedChild.text;
+        stdin = redirect.firstNamedChild.text;
       } else {
         throw new CCError(
           "got 'redirected_statement' AST node whose second child is not one of 'file_redirect', 'heredoc_redirect' or 'herestring_redirect', got " +
@@ -1109,11 +1133,21 @@ const tokenize = (
       // TODO: better error message.
       throw new CCError(
         "expected a 'command' or 'redirected_statement' AST node, instead got " +
-          curlArgs.rootNode.children[0].type +
+          ast.rootNode.children[0].type +
           "\n" +
-          underlineBadNode(curlCommand, curlArgs.rootNode.children[0])
+          underlineBadNode(curlCommand, ast.rootNode.children[0])
       );
     }
+  }
+  if (lastNode && lastNode.nextNamedSibling) {
+    // TODO: better warning
+    warnings.push([
+      "extra-commands",
+      `curl command ends on line ${
+        lastNode.endPosition.row + 1
+      } but there are more AST nodes:\n` +
+        underlineBadNodeEnd(curlCommand, lastNode),
+    ]);
   }
   if (!command) {
     // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
@@ -1122,7 +1156,7 @@ const tokenize = (
       "expected a 'command' or 'redirected_statement' AST node, only found 'comment' nodes"
     );
   }
-  for (const n of curlArgs.rootNode.children) {
+  for (const n of ast.rootNode.children) {
     if (n.type === "ERROR") {
       warnings.push([
         "bash",
@@ -1136,26 +1170,30 @@ const tokenize = (
     // TODO: better error message.
     throw new CCError('empty "command" node');
   }
-  // TODO: add childrenForFieldName to tree-sitter node/web bindings and then
-  // use that here instead
-  // TODO: you can have variable_assignment before the actual command
-  // MY_VAR=foo curl example.com
-  const [cmdName, ...args] = command.children;
+  // Use namedChildren so that variable_assignment/file_redirect is skipped
+  // TODO: warn when command variable_assignment is skipped
+  // TODO: add childrenForFieldName to tree-sitter node/web bindings
+  const [cmdName, ...args] = command.namedChildren;
   if (cmdName.type !== "command_name") {
-    // TODO: better error message.
     throw new CCError(
-      "expected a 'command_name' AST node, got " +
+      "expected a 'command_name' AST node, found " +
         cmdName.type +
         " instead\n" +
         underlineBadNode(curlCommand, cmdName)
     );
   }
+  if (cmdName.childCount < 1) {
+    throw new CCError(
+      "found empty 'command_name' AST node\n" +
+        underlineBadNode(curlCommand, cmdName)
+    );
+  }
 
   return {
-    cmdName: cmdName.text.trim(),
+    cmdName: toVal(cmdName.firstChild!, curlCommand),
     args: args.map((a) => toVal(a, curlCommand)),
     stdin,
-    input,
+    stdinFile,
   };
 };
 
@@ -1396,6 +1434,12 @@ function buildRequest(
   if (!parsedArguments.url || !parsedArguments.url.length) {
     // TODO: better error message (could be parsing fail)
     throw new CCError("no URL specified!");
+  }
+  if (parsedArguments.url.length > 1) {
+    warnings.push([
+      "multiple-urls",
+      "multiple URLs specified, only the first one will be used",
+    ]);
   }
   let url = parsedArguments.url[parsedArguments.url.length - 1];
 
@@ -1742,14 +1786,14 @@ function parseCurlCommand(
   let cmdName: string,
     args: string[],
     stdin: undefined | string,
-    input: undefined | string;
+    stdinFile: undefined | string;
   if (Array.isArray(curlCommand)) {
     [cmdName, ...args] = curlCommand;
     if (typeof cmdName === "undefined") {
       throw new CCError("no arguments provided");
     }
   } else {
-    ({ cmdName, args, stdin, input } = tokenize(curlCommand, warnings));
+    ({ cmdName, args, stdin, stdinFile } = tokenize(curlCommand, warnings));
     if (typeof cmdName === "undefined") {
       throw new CCError("failed to parse input");
     }
@@ -1778,11 +1822,11 @@ function parseCurlCommand(
     warnings
   );
   const request = buildRequest(parsedArguments, warnings);
+  if (stdinFile) {
+    request.stdinFile = stdinFile;
+  }
   if (stdin) {
     request.stdin = stdin;
-  }
-  if (input) {
-    request.input = input;
   }
   return request;
 }
