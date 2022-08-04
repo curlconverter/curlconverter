@@ -3,11 +3,9 @@
   uri:
     url: 'http://localhost:28139/test/_security'
     method: PUT
-    body:
-      {"admins":{"names":[],"roles":[]},"readers":{"names":["joe"],"roles":[]}}
-    body_format: json
+    body: '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}'
     headers:
-      Content-Type: 'application/x-www-form-urlencoded'
+      Content-Type: application/x-www-form-urlencoded
     url_username: admin
-    url_password: 123
+    url_password: '123'
   register: result

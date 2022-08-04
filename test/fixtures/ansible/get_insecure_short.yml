@@ -3,5 +3,5 @@
   uri:
     url: 'http://localhost:28139/'
     method: GET
-    validate_certs: no
+    validate_certs: false
   register: result

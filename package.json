@@ -26,7 +26,6 @@
   "dependencies": {
     "@curlconverter/tree-sitter-bash": "^0.0.2",
     "jsesc": "^3.0.2",
-    "nunjucks": "^3.2.3",
     "query-string": "^7.1.1",
     "tree-sitter": "^0.20.0",
     "web-tree-sitter": "^0.20.5",
