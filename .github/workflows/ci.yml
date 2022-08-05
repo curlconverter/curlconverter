@@ -37,14 +37,14 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm test
-  deploy:
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.repository_owner == 'curlconverter'
-    steps:
-      - name: Deploy demo site
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          repository: curlconverter/curlconverter.github.io
-          event-type: ship-it
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: test
+  #   if: github.event_name == 'push' && github.repository_owner == 'curlconverter'
+  #   steps:
+  #     - name: Deploy demo site
+  #       uses: peter-evans/repository-dispatch@v2
+  #       with:
+  #         token: ${{ secrets.REPO_ACCESS_TOKEN }}
+  #         repository: curlconverter/curlconverter.github.io
+  #         event-type: ship-it
