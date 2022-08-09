@@ -151,8 +151,8 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
   }
 
   phpCode += "\n$response = curl_exec($ch);\n\n";
-
   phpCode += "curl_close($ch);\n";
+  phpCode += "?>"
   return phpCode;
 };
 
