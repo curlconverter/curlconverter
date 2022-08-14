@@ -11,7 +11,7 @@ req['Cookie'] = 'x=1\'; y=2"'
 req.body = 'a=b&c="&d=\''
 
 req_options = {
-  use_ssl: uri.scheme == "https",
+  use_ssl: uri.scheme == "https"
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

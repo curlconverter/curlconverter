@@ -71,8 +71,9 @@ function objToRuby(
           s += "[]";
         } else {
           s += "[\n";
-          for (const item of obj) {
-            s += " ".repeat(indent + 2) + objToRuby(item, indent + 2) + ",\n";
+          for (const [i, item] of obj.entries()) {
+            s += " ".repeat(indent + 2) + objToRuby(item, indent + 2);
+            s += i === obj.length - 1 ? "\n" : ",\n";
           }
           s += " ".repeat(indent) + "]";
         }
@@ -82,14 +83,15 @@ function objToRuby(
           s += "{}";
         } else {
           s += "{\n";
-          for (const [k, v] of Object.entries(obj)) {
+          const objEntries = Object.entries(obj);
+          for (const [i, [k, v]] of objEntries.entries()) {
             // repr() because JSON keys must be strings.
             s +=
               " ".repeat(indent + 2) +
               repr(k) +
               " => " +
-              objToRuby(v, indent + 2) +
-              ",\n";
+              objToRuby(v, indent + 2);
+            s += i === objEntries.length - 1 ? "\n" : ",\n";
           }
           s += " ".repeat(indent) + "}";
         }
@@ -212,7 +214,7 @@ function getFilesString(request: Request): string {
     filesString += "  [],\n";
   } else {
     filesString += "  [\n";
-    for (const [name, content, filename] of multipartUploads) {
+    for (const [i, [name, content, filename]] of multipartUploads.entries()) {
       filesString += "    [\n";
       filesString += "      " + name + ",\n";
       filesString += "      " + content;
@@ -222,7 +224,11 @@ function getFilesString(request: Request): string {
       } else {
         filesString += "\n";
       }
-      filesString += "    ],\n";
+      if (i === multipartUploads.length - 1) {
+        filesString += "    ]\n";
+      } else {
+        filesString += "    ],\n";
+      }
     }
     filesString += "  ],\n";
   }
@@ -368,10 +374,13 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     code += "proxy = URI(" + repr(proxy) + ")\n";
   }
   code += "req_options = {\n";
-  code += '  use_ssl: uri.scheme == "https",\n';
+  code += '  use_ssl: uri.scheme == "https"';
   if (request.insecure) {
     prelude += "require 'openssl'\n";
-    code += "  verify_mode: OpenSSL::SSL::VERIFY_NONE,\n";
+    code += ",\n";
+    code += "  verify_mode: OpenSSL::SSL::VERIFY_NONE\n";
+  } else {
+    code += "\n";
   }
   code += "}\n";
   if (!request.proxy) {

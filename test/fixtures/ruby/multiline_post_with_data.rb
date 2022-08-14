@@ -7,11 +7,11 @@ req['Origin'] = 'http://fiddle.jshell.net'
 
 req.set_form_data({
   'msg1' => 'value1',
-  'msg2' => 'value2',
+  'msg2' => 'value2'
 })
 
 req_options = {
-  use_ssl: uri.scheme == "https",
+  use_ssl: uri.scheme == "https"
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

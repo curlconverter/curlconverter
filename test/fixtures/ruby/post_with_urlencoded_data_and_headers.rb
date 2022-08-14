@@ -32,11 +32,11 @@ req.set_form_data({
   'Longitude' => '-79.4107246398925',
   'Latitude' => '43.6552047278685',
   'ZoomLevel' => '13',
-  'CurrentPage' => '1',
+  'CurrentPage' => '1'
 })
 
 req_options = {
-  use_ssl: uri.scheme == "https",
+  use_ssl: uri.scheme == "https"
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

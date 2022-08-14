@@ -16,13 +16,13 @@ req.set_form(
     [
       'form2',
       'form_data_2'
-    ],
+    ]
   ],
   'multipart/form-data'
 )
 
 req_options = {
-  use_ssl: uri.scheme == "https",
+  use_ssl: uri.scheme == "https"
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

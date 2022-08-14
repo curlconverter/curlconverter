@@ -41,9 +41,9 @@ req.body = {
       '__type' => 'TimeZoneContext:#Exchange',
       'TimeZoneDefinition' => {
         '__type' => 'TimeZoneDefinitionType:#Exchange',
-        'Id' => 'France Standard Time',
-      },
-    },
+        'Id' => 'France Standard Time'
+      }
+    }
   },
   'Body' => {
     '__type' => 'CreateItemRequest:#Exchange',
@@ -54,7 +54,7 @@ req.body = {
         'Body' => {
           '__type' => 'BodyContentType:#Exchange',
           'BodyType' => 'HTML',
-          'Value' => '<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style type="text/css" style="display:none"><!-- p { margin-top: 0px; margin-bottom: 0px; }--></style></head><body dir="ltr" style="font-size:12pt;color:#000000;background-color:#FFFFFF;font-family:Calibri,Arial,Helvetica,sans-serif;"><p>API Test for NickC<br></p></body></html>',
+          'Value' => '<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style type="text/css" style="display:none"><!-- p { margin-top: 0px; margin-bottom: 0px; }--></style></head><body dir="ltr" style="font-size:12pt;color:#000000;background-color:#FFFFFF;font-family:Calibri,Arial,Helvetica,sans-serif;"><p>API Test for NickC<br></p></body></html>'
         },
         'Importance' => 'Normal',
         'From' => nil,
@@ -65,25 +65,25 @@ req.body = {
             'RoutingType' => 'SMTP',
             'MailboxType' => 'Mailbox',
             'OriginalDisplayName' => 'George.LUCAS@nih.mail.edu.fr',
-            'SipUri' => ' ',
-          },
+            'SipUri' => ' '
+          }
         ],
         'CcRecipients' => [],
         'BccRecipients' => [],
         'Sensitivity' => 'Normal',
         'IsDeliveryReceiptRequested' => false,
-        'IsReadReceiptRequested' => false,
-      },
+        'IsReadReceiptRequested' => false
+      }
     ],
     'ClientSupportsIrm' => true,
     'OutboundCharset' => 'AutoDetect',
     'MessageDisposition' => 'SendAndSaveCopy',
-    'ComposeOperation' => 'newMail',
-  },
+    'ComposeOperation' => 'newMail'
+  }
 }.to_json
 
 req_options = {
-  use_ssl: uri.scheme == "https",
+  use_ssl: uri.scheme == "https"
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

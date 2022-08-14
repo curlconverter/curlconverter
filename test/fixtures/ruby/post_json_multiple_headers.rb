@@ -12,12 +12,12 @@ req['X-API-Version'] = '200'
 req.body = {
   'userName' => 'username123',
   'password' => 'password123',
-  'authLoginDomain' => 'local',
+  'authLoginDomain' => 'local'
 }.to_json
 
 req_options = {
   use_ssl: uri.scheme == "https",
-  verify_mode: OpenSSL::SSL::VERIFY_NONE,
+  verify_mode: OpenSSL::SSL::VERIFY_NONE
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)
