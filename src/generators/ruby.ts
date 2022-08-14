@@ -66,6 +66,11 @@ const supportedArgs = new Set([
 ]);
 
 function repr(value: string): string {
+  // https://en.wikibooks.org/wiki/Ruby_Programming/Strings
+  const specialChars = ["\n", "\t", "\r", "\b"];
+  if (specialChars.some((c) => value.includes(c))) {
+    return '"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
+  }
   return "'" + jsesc(value, { quotes: "single", minimal: true }) + "'";
 }
 
