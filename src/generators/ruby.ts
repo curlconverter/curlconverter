@@ -60,6 +60,8 @@ const supportedArgs = new Set([
   "no-insecure",
   "output",
   "user",
+  "proxy",
+  "proxy-user",
   "upload-file",
 ]);
 
@@ -188,8 +190,8 @@ function getDataString(request: Request): [string, boolean] {
   );
   if (
     !request.isDataBinary &&
-    parsedQueryAsList &&
     parsedQueryAsDict &&
+    parsedQueryAsList &&
     !(parsedQueryAsList.length === 1 && parsedQueryAsList[0][1] === null)
   ) {
     // If the original request contained %20, Ruby will encode them as "+"
@@ -311,6 +313,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     request.data ||
     request.uploadFile ||
     request.insecure ||
+    request.proxy ||
     request.output
   );
   if (util.has(methods, request.method)) {
@@ -379,6 +382,12 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
   }
 
   code += "\n";
+  if (request.proxy) {
+    const proxy = request.proxy.includes("://")
+      ? request.proxy
+      : "http://" + request.proxy;
+    code += "proxy = URI(" + repr(proxy) + ")\n";
+  }
   code += "req_options = {\n";
   code += '  use_ssl: uri.scheme == "https",\n';
   if (request.insecure) {
@@ -386,8 +395,23 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     code += "  verify_mode: OpenSSL::SSL::VERIFY_NONE,\n";
   }
   code += "}\n";
-  code +=
-    "res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|\n";
+  if (!request.proxy) {
+    code +=
+      "res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|\n";
+  } else {
+    if (request.proxyAuth) {
+      const [proxyUser, proxyPassword] = request.proxyAuth.split(/:(.*)/s, 2);
+      code +=
+        "res = Net::HTTP.start(uri.hostname, uri.port, proxy.hostname, proxy.port, " +
+        repr(proxyUser) +
+        ", " +
+        repr(proxyPassword || "") +
+        ", req_options) do |http|\n";
+    } else {
+      code +=
+        "res = Net::HTTP.new(uri.hostname, uri.port, proxy.hostname, proxy.port, req_options).start do |http|\n";
+    }
+  }
   code += "  http.request(req)\n";
   code += "end";
 
