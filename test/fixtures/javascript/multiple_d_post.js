@@ -1,4 +1,4 @@
-fetch('https://localhost:28139/webservices/rest.php', {
+fetch('http://localhost:28139/webservices/rest.php', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

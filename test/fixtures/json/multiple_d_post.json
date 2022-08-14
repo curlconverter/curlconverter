@@ -1,6 +1,6 @@
 {
-    "url": "https://localhost:28139/webservices/rest.php",
-    "raw_url": "https://localhost:28139/webservices/rest.php",
+    "url": "http://localhost:28139/webservices/rest.php",
+    "raw_url": "http://localhost:28139/webservices/rest.php",
     "method": "post",
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"

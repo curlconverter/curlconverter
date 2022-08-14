@@ -134,11 +134,16 @@ const converters = {
 const testedConverters = Object.entries(converters).map(
   (c) => c[1].converter.name
 );
+const untestedConverters = ["toPhpRequests"];
+
 const availableConverters = Object.entries(curlconverter)
   .map((c) => c[1].name)
   .filter((n) => n !== "CCError");
 const missing = availableConverters.filter(
-  (c) => !testedConverters.includes(c) && !c.endsWith("Warn")
+  (c) =>
+    !testedConverters.includes(c) &&
+    !untestedConverters.includes(c) &&
+    !c.endsWith("Warn")
 );
 const extra = testedConverters.filter(
   (c) => !availableConverters.includes(c) && c !== "toParser"

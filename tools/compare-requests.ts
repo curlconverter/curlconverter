@@ -12,32 +12,14 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
 import * as utils from "../src/util.js";
-import { fixturesDir } from "../test/test-utils.js";
+import { fixturesDir, converters } from "../test/test-utils.js";
 
 const awaitableExec = promisify(exec);
 
 const DEFAULT_PORT = 28139; // chosen randomly
 const EXPECTED_URL = "localhost:" + DEFAULT_PORT;
 
-// Only Python and R are supported currently.
-const extension = {
-  // ansible: 'yml',
-  // browser: 'js',
-  // dart: 'dart',
-  // elixir: 'ex',
-  // go: 'go',
-  // java: 'java',
-  // json: 'json',
-  // matlab: 'm',
-  // node: 'js',
-  // php: 'php',
-  python: "py",
-  r: "r",
-  // rust: 'rs',
-  // strest: 'strest.yml'
-};
-
-const executable = {
+const executables = {
   // ansible: '',
   // browser: '',
   // dart: '',
@@ -48,7 +30,7 @@ const executable = {
   // matlab: '',
   // TODO: generated code uses require() so we can't run them
   // because curlconverter is an ES6 module.
-  // node: 'node',
+  // node: 'node <file>',
   // php: '',
   python: "python3 <file>",
   r: "r < <file> --no-save",
@@ -65,10 +47,16 @@ const argv = await yargs(hideBin(process.argv))
     demandOption: false,
     type: "boolean",
   })
+  .option("sort", {
+    describe: "sort lines before comparing them",
+    default: false,
+    demandOption: false,
+    type: "boolean",
+  })
   .option("l", {
     alias: "language",
     describe: "the language of the generated program to compare against",
-    choices: Object.keys(extension),
+    choices: Object.keys(executables),
     default: ["python"],
     demandOption: false,
     type: "string",
@@ -126,32 +114,35 @@ const testFile = async (testFilename: string): Promise<void> => {
     testFilename + ".sh"
   );
   if (!fs.existsSync(inputFile)) {
+    server.close();
     throw new Error("input file doesn't exist: " + inputFile);
   }
   const curlCommand = fs.readFileSync(inputFile, "utf8");
-  const requestedUrl = utils.parseCurlCommand(curlCommand).url;
-  if (!requestedUrl.replace("http://", "").startsWith(EXPECTED_URL)) {
-    throw new Error(
-      inputFile +
-        " requests " +
-        requestedUrl +
-        ". It needs to request " +
-        EXPECTED_URL +
-        " so we can capture the data it sends."
-    );
+  const requestedUrl = utils
+    .parseCurlCommand(curlCommand)
+    .url.replace("http://", "");
+  if (!requestedUrl.startsWith(EXPECTED_URL)) {
+    console.error("bad requested URL for " + testFilename);
+    console.error("  " + requestedUrl);
+    console.error("it needs to request");
+    console.error("  http://" + EXPECTED_URL);
+    console.error("so we can capture the data it sends.");
+    server.close();
+    return;
   }
   try {
     await awaitableExec("bash " + inputFile);
   } catch (e) {}
 
-  for (const language of languages) {
-    const languageFile = path.join(
-      fixturesDir,
-      language,
-      testFilename + "." + extension[language]
-    );
+  const files = languages.map((l) =>
+    path.join(fixturesDir, l, testFilename + converters[l].extension)
+  );
+  for (let i = 0; i < languages.length; i++) {
+    const language = languages[i];
+    const languageFile = files[i];
     if (fs.existsSync(languageFile)) {
-      const command = executable[language].replace("<file>", languageFile);
+      // TODO: escape?
+      const command = executables[language].replace("<file>", languageFile);
       try {
         await awaitableExec(command);
       } catch (e) {
@@ -166,11 +157,31 @@ const testFile = async (testFilename: string): Promise<void> => {
     }
   }
 
-  const [curlRequest, ...languageRequests] = rawRequests;
+  // TODO: allow ignoring headers for each converter
+  const sortLines = (a: string): string =>
+    a
+      .split("\n")
+      .filter(Boolean)
+      .filter((s) => !s.toLowerCase().startsWith("user-agent: "))
+      .sort(Intl.Collator().compare)
+      .join("\n") + "\n";
 
+  const requestName = path.parse(inputFile).name;
+  console.log(requestName);
+  console.log("=".repeat(requestName.length));
+  console.log(fs.readFileSync(inputFile).toString());
+  for (const f of files) {
+    console.log("=".repeat(requestName.length));
+    console.log(fs.readFileSync(f).toString());
+  }
+  console.log("=".repeat(requestName.length));
+
+  const [curlRequest, ...languageRequests] = rawRequests;
   for (const languageRequest of languageRequests) {
     if (argv.diff) {
-      for (const part of diffLines(curlRequest, languageRequest)) {
+      const a = argv.sort ? sortLines(curlRequest) : curlRequest;
+      const b = argv.sort ? sortLines(languageRequest) : languageRequest;
+      for (const part of diffLines(a, b)) {
         // green for additions, red for deletions
         // grey for common parts
         const color = part.added ? "green" : part.removed ? "red" : "grey";
@@ -181,6 +192,7 @@ const testFile = async (testFilename: string): Promise<void> => {
       console.log(languageRequest);
     }
   }
+  console.log();
 
   server.close();
 };
@@ -197,8 +209,11 @@ const tests = argv._.length
       .readdirSync(path.join(fixturesDir, "curl_commands"))
       .filter((n) => n.endsWith(".sh"));
 for (const test of tests) {
-  const testName = test.toString().replace(/ /g, "_").replace(/\.sh$/, "");
+  const testName = path.parse(test.toString()).name;
   await testFile(testName);
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+  await delay(1000);
 }
 
 process.exit(0);

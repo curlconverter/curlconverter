@@ -10,7 +10,7 @@ header = [
     HeaderField('Content-Type', 'application/json')
     HeaderField('X-API-Version', '200')
 ]';
-uri = URI('https://localhost:28139/rest/login-sessions');
+uri = URI('http://localhost:28139/rest/login-sessions');
 options = HTTPOptions('VerifyServerName', false);
 body = JSONProvider(struct(...
     'userName', 'username123',...

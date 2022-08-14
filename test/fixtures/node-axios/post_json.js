@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const response = await axios.post(
-    'https://localhost:28139',
+    'http://localhost:28139',
     // '{ "drink": "coffe" }',
     {
         'drink': 'coffe'

@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-fetch('https://localhost:28139', {
+fetch('http://localhost:28139', {
     method: 'POST',
     headers: {
         'A': '\'\'a\'',

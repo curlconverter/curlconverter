@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file("file", "myfile.jpg")?;
 
     let client = reqwest::blocking::Client::new();
-    let res = client.post("https://localhost:28139/api/2.0/files/content")
+    let res = client.post("http://localhost:28139/api/2.0/files/content")
         .headers(headers)
         .multipart(form)
         .send()?

@@ -1,4 +1,4 @@
-curl https://localhost:28139/api/2.0/files/content \
+curl http://localhost:28139/api/2.0/files/content \
     -H "Authorization: Bearer ACCESS_TOKEN" \
     -X POST \
     -H 'X-Nice: Header' \

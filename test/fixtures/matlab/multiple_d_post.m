@@ -1,5 +1,5 @@
 %% Web Access using Data Import and Export API
-uri = 'https://localhost:28139/webservices/rest.php';
+uri = 'http://localhost:28139/webservices/rest.php';
 body = 'version=1.2&auth_user=fdgxf&auth_pwd=oxfdscds&json_data={ "operation": "core/get", "class": "Software", "key": "key" }';
 options = weboptions('MediaType', 'application/x-www-form-urlencoded');
 response = webwrite(uri, body, options);
@@ -10,7 +10,7 @@ import matlab.net.http.*
 import matlab.net.http.io.*
 
 header = HeaderField('Content-Type', 'application/x-www-form-urlencoded');
-uri = URI('https://localhost:28139/webservices/rest.php');
+uri = URI('http://localhost:28139/webservices/rest.php');
 body = FormProvider(...
     'version', '1.2',...
     'auth_user', 'fdgxf',...

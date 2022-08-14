@@ -16,12 +16,12 @@ headers = c(
 )
 
 params = list(
-  `deviceSerialNumber` = 'xxx^',
-  `deviceType` = 'xxx^',
-  `guideId` = 's56876^',
-  `contentType` = 'station^',
-  `callSign` = '^',
+  `deviceSerialNumber` = 'xxx',
+  `deviceType` = 'xxx',
+  `guideId` = 's56876',
+  `contentType` = 'station',
+  `callSign` = '',
   `mediaOwnerCustomerId` = 'xxx'
 )
 
-res <- httr::VERB('OPTIONS', url = 'https://localhost:28139/api/tunein/queue-and-play', httr::add_headers(.headers=headers), query = params)
+res <- httr::VERB('OPTIONS', url = 'http://localhost:28139/api/tunein/queue-and-play', httr::add_headers(.headers=headers), query = params)
