@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :post,
-  url: "https://localhost:28139/webservices/rest.php",
+  url: "http://localhost:28139/webservices/rest.php",
   options: [],
   headers: [
     {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},

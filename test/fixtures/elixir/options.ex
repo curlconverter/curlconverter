@@ -1,6 +1,6 @@
 request = %HTTPoison.Request{
   method: :options,
-  url: "https://localhost:28139/api/tunein/queue-and-play",
+  url: "http://localhost:28139/api/tunein/queue-and-play",
   options: [],
   headers: [
     {~s|Pragma|, ~s|no-cache|},
@@ -17,11 +17,11 @@ request = %HTTPoison.Request{
     {~s|Access-Control-Request-Headers|, ~s|content-type,csrf|},
   ],
   params: [
-    {~s|deviceSerialNumber|, ~s|xxx^|},
-    {~s|deviceType|, ~s|xxx^|},
-    {~s|guideId|, ~s|s56876^|},
-    {~s|contentType|, ~s|station^|},
-    {~s|callSign|, ~s|^|},
+    {~s|deviceSerialNumber|, ~s|xxx|},
+    {~s|deviceType|, ~s|xxx|},
+    {~s|guideId|, ~s|s56876|},
+    {~s|contentType|, ~s|station|},
+    {~s|callSign|, ""},
     {~s|mediaOwnerCustomerId|, ~s|xxx|},
   ],
   body: ""

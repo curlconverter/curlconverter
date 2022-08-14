@@ -16,12 +16,12 @@ headers = {
 }
 
 params = {
-    'deviceSerialNumber': 'xxx^',
-    'deviceType': 'xxx^',
-    'guideId': 's56876^',
-    'contentType': 'station^',
-    'callSign': '^',
+    'deviceSerialNumber': 'xxx',
+    'deviceType': 'xxx',
+    'guideId': 's56876',
+    'contentType': 'station',
+    'callSign': '',
     'mediaOwnerCustomerId': 'xxx',
 }
 
-response = requests.options('https://localhost:28139/api/tunein/queue-and-play', params=params, headers=headers)
+response = requests.options('http://localhost:28139/api/tunein/queue-and-play', params=params, headers=headers)

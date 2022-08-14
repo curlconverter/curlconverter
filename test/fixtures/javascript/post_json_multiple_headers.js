@@ -1,4 +1,4 @@
-fetch('https://localhost:28139/rest/login-sessions', {
+fetch('http://localhost:28139/rest/login-sessions', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',

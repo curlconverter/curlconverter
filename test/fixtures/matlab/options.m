@@ -6,11 +6,11 @@ import matlab.net.*
 import matlab.net.http.*
 
 params = {
-    'deviceSerialNumber' 'xxx^'
-    'deviceType' 'xxx^'
-    'guideId' 's56876^'
-    'contentType' 'station^'
-    'callSign' '^'
+    'deviceSerialNumber' 'xxx'
+    'deviceType' 'xxx'
+    'guideId' 's56876'
+    'contentType' 'station'
+    'callSign' ''
     'mediaOwnerCustomerId' 'xxx'
 };
 header = [
@@ -27,5 +27,5 @@ header = [
     HeaderField('DNT', '1')
     HeaderField('Access-Control-Request-Headers', 'content-type,csrf')
 ]';
-uri = URI('https://localhost:28139/api/tunein/queue-and-play', QueryParameter(params'));
+uri = URI('http://localhost:28139/api/tunein/queue-and-play', QueryParameter(params'));
 response = RequestMessage('options', header).send(uri.EncodedURI);

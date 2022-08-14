@@ -9,4 +9,4 @@ files = {
     'file': open('myfile.jpg', 'rb'),
 }
 
-response = requests.post('https://localhost:28139/api/2.0/files/content', headers=headers, files=files)
+response = requests.post('http://localhost:28139/api/2.0/files/content', headers=headers, files=files)

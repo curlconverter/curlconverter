@@ -1,4 +1,4 @@
-fetch('https://localhost:28139/api/tunein/queue-and-play?deviceSerialNumber=xxx^&deviceType=xxx^&guideId=s56876^&contentType=station^&callSign=^&mediaOwnerCustomerId=xxx', {
+fetch('http://localhost:28139/api/tunein/queue-and-play?deviceSerialNumber=xxx&deviceType=xxx&guideId=s56876&contentType=station&callSign=&mediaOwnerCustomerId=xxx', {
     method: 'OPTIONS',
     headers: {
         'Pragma': 'no-cache',
