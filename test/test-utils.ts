@@ -33,6 +33,7 @@ type Converter =
   | "php"
   | "python"
   | "r"
+  | "ruby"
   | "rust"
   | "strest"
   | "parser";
@@ -111,6 +112,11 @@ const converters = {
     name: "R",
     extension: ".r",
     converter: curlconverter.toR,
+  },
+  ruby: {
+    name: "Ruby",
+    extension: ".rb",
+    converter: curlconverter.toRuby,
   },
   rust: {
     name: "Rust",

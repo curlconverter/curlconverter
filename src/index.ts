@@ -23,6 +23,7 @@ export {
 } from "./generators/php/php-requests.js";
 export { toPython, toPythonWarn } from "./generators/python.js";
 export { toR, toRWarn } from "./generators/r.js";
+export { toRuby, toRubyWarn } from "./generators/ruby.js";
 export { toRust, toRustWarn } from "./generators/rust.js";
 export { toStrest, toStrestWarn } from "./generators/strest.js";
 
