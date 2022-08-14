@@ -197,7 +197,16 @@ function getFilesString(request: Request): string {
       const sentFilename = "filename" in m && m.filename && repr(m.filename);
       if ("contentFile" in m) {
         if (m.contentFile === "-") {
-          // TODO: use piped stdin if we have it
+          if (request.stdinFile) {
+            return [
+              name,
+              "File.open(" + repr(request.stdinFile) + ")",
+              sentFilename,
+            ];
+          } else if (request.stdin) {
+            return [name, repr(request.stdin), sentFilename];
+          }
+          // TODO: does this work?
           return [name, "STDIN", sentFilename];
         } else if (m.contentFile === m.filename) {
           // TODO: curl will look at the file extension to determine each content-type
@@ -339,6 +348,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     }
   } else if (request.multipartUploads) {
     reqBody = getFilesString(request);
+    util.deleteHeader(request, "content-type");
   }
 
   const contentType = util.getHeader(request, "content-type");

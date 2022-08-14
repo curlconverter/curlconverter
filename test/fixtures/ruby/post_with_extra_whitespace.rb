@@ -2,7 +2,6 @@ require 'net/http'
 
 uri = URI('http://localhost:28139/api/library')
 req = Net::HTTP::Post.new(uri)
-req.content_type = 'multipart/form-data'
 req['accept'] = 'application/json'
 
 req.set_form(
