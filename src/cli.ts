@@ -39,6 +39,7 @@ import {
 } from "./generators/php/php-requests.js";
 import { _toPython, toPythonWarn } from "./generators/python.js";
 import { _toR, toRWarn } from "./generators/r.js";
+import { _toRuby, toRubyWarn } from "./generators/ruby.js";
 import { _toRust, toRustWarn } from "./generators/rust.js";
 import { _toStrest, toStrestWarn } from "./generators/strest.js";
 
@@ -78,6 +79,7 @@ const translate: {
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],
   python: [_toPython, toPythonWarn],
   r: [_toR, toRWarn],
+  ruby: [_toRuby, toRubyWarn],
   rust: [_toRust, toRustWarn],
   strest: [_toStrest, toStrestWarn],
 };
@@ -101,6 +103,7 @@ language: the language to convert the curl command to. The choices are
   php-requests
   python (the default)
   r
+  ruby
   rust
   strest
 

@@ -35,6 +35,7 @@ const executables = {
   python: "python3 <file>",
   r: "r < <file> --no-save",
   // rust: '',
+  ruby: "ruby <file>",
   // strest: ''
 };
 

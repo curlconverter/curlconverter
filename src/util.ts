@@ -101,13 +101,13 @@ interface Request {
     name: string;
   } & ({ content: string } | { contentFile: string; filename?: string }))[];
   auth?: [string, string];
+  digest?: boolean;
   cookies?: Cookies;
   cookieFiles?: string[];
   cookieJar?: string;
   compressed?: boolean;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
-  digest?: boolean;
   dataArray?: string[];
   data?: string;
   uploadFile?: string;
@@ -1095,6 +1095,7 @@ const tokenize = (
           stdin = heredocBody.text;
         }
         // Curl removes newlines when you pass any @filename including @- for stdin
+        // TODO: bash_redirect_heredoc.sh makes it seem like this isn't actually true.
         stdin = stdin.replace(/\n/g, "");
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
