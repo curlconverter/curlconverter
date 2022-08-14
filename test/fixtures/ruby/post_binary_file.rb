@@ -5,7 +5,7 @@ req = Net::HTTP::Post.new(uri)
 req.content_type = 'application/sparql-query'
 req['Accept'] = 'application/sparql-results+json'
 
-req.body = File.open('./sample.sparql').read.delete("\n")
+req.body = File.binread('./sample.sparql').delete("\n")
 
 req_options = {
   use_ssl: uri.scheme == "https",

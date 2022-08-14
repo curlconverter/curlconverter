@@ -6,8 +6,8 @@ req.content_type = 'application/x-www-form-urlencoded'
 req['Origin'] = 'http://fiddle.jshell.net'
 
 req.set_form_data({
-    'msg1' => 'value1',
-    'msg2' => 'value2',
+  'msg1' => 'value1',
+  'msg2' => 'value2',
 })
 
 req_options = {

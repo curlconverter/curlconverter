@@ -9,7 +9,7 @@ req['Accept'] = 'application/json'
 # The object won't be serialized exactly like this
 # req.body = '{ "drink": "coffe" }'
 req.body = {
-    'drink' => 'coffe',
+  'drink' => 'coffe',
 }.to_json
 
 req_options = {

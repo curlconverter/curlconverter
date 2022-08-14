@@ -5,11 +5,11 @@ req = Net::HTTP::Post.new(uri)
 req.content_type = 'application/x-www-form-urlencoded'
 
 req.set_form_data({
-    'foo' => [
-        'bar',
-        '',
-        'barbar',
-    ],
+  'foo' => [
+    'bar',
+    '',
+    'barbar',
+  ],
 })
 
 req_options = {

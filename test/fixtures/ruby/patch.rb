@@ -10,15 +10,15 @@ req['Accept'] = 'application/vnd.go.cd.v4+json'
 # The object won't be serialized exactly like this
 # req.body = '{\n        "hostname": "agent02.example.com",\n        "agent_config_state": "Enabled",\n        "resources": ["Java","Linux"],\n        "environments": ["Dev"]\n        }'
 req.body = {
-    'hostname' => 'agent02.example.com',
-    'agent_config_state' => 'Enabled',
-    'resources' => [
-        'Java',
-        'Linux',
-    ],
-    'environments' => [
-        'Dev',
-    ],
+  'hostname' => 'agent02.example.com',
+  'agent_config_state' => 'Enabled',
+  'resources' => [
+    'Java',
+    'Linux',
+  ],
+  'environments' => [
+    'Dev',
+  ],
 }.to_json
 
 req_options = {

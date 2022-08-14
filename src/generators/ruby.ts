@@ -25,13 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import * as util from "../util.js";
-import type { Warnings } from "../util.js";
+import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
-import type { Request, Query, QueryDict } from "../util.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
+// https://github.com/augustl/net-http-cheat-sheet
 
 const supportedArgs = new Set([
   "url",
@@ -91,7 +91,7 @@ function objToRuby(
         } else {
           s += "[\n";
           for (const item of obj) {
-            s += " ".repeat(indent + 4) + objToRuby(item, indent + 4) + ",\n";
+            s += " ".repeat(indent + 2) + objToRuby(item, indent + 2) + ",\n";
           }
           s += " ".repeat(indent) + "]";
         }
@@ -104,10 +104,10 @@ function objToRuby(
           for (const [k, v] of Object.entries(obj)) {
             // repr() because JSON keys must be strings.
             s +=
-              " ".repeat(indent + 4) +
+              " ".repeat(indent + 2) +
               repr(k) +
               " => " +
-              objToRuby(v, indent + 4) +
+              objToRuby(v, indent + 2) +
               ",\n";
           }
           s += " ".repeat(indent) + "}";
@@ -146,10 +146,10 @@ function getDataString(request: Request): [string, boolean] {
     }
     if (!request.stdin) {
       if (request.isDataBinary) {
-        // TODO: I bet the way Ruby treats file paths is not identical to curl's
+        // TODO: What's the difference between binread() and read()?
         // TODO: .delete("\\r\\n") ?
         return [
-          "req.body = File.open(" + repr(filePath) + ').read.delete("\\n")\n',
+          "req.body = File.binread(" + repr(filePath) + ').delete("\\n")\n',
           false,
         ];
       } else {
@@ -280,7 +280,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     // TODO: can also start with @ $ and end with ! = ? are those special?
     return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
   };
-  const emptyValue = (v: string | null | Array<string | null>): boolean => {
+  const empty = (v: string | null | Array<string | null>): boolean => {
     return (
       v === null ||
       v === undefined ||
@@ -291,10 +291,9 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
   if (
     request.queryDict &&
     Object.keys(request.queryDict).every(validSymbol) &&
-    !Object.values(request.queryDict).some(emptyValue)
+    !Object.values(request.queryDict).some(empty)
   ) {
     code += "uri = URI(" + repr(request.urlWithoutQuery) + ")\n";
-    // TODO: this needs to be :symbols and they need to be escaped
     code += "params = {\n";
     for (const [key, value] of Object.entries(request.queryDict)) {
       code += "  :" + key + " => " + objToRuby(value) + ",\n";
@@ -310,7 +309,9 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     request.auth ||
     request.multipartUploads ||
     request.data ||
-    request.uploadFile
+    request.uploadFile ||
+    request.insecure ||
+    request.output
   );
   if (util.has(methods, request.method)) {
     if (request.method === "GET" && simple) {

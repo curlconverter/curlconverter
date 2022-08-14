@@ -10,9 +10,9 @@ req['X-API-Version'] = '200'
 # The object won't be serialized exactly like this
 # req.body = '{"userName":"username123","password":"password123", "authLoginDomain":"local"}'
 req.body = {
-    'userName' => 'username123',
-    'password' => 'password123',
-    'authLoginDomain' => 'local',
+  'userName' => 'username123',
+  'password' => 'password123',
+  'authLoginDomain' => 'local',
 }.to_json
 
 req_options = {

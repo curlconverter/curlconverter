@@ -8,11 +8,11 @@ req.content_type = 'application/json'
 # The object won't be serialized exactly like this
 # req.body = '{"properties": {"email": {"type": "keyword"}}}'
 req.body = {
-    'properties' => {
-        'email' => {
-            'type' => 'keyword',
-        },
+  'properties' => {
+    'email' => {
+      'type' => 'keyword',
     },
+  },
 }.to_json
 
 req_options = {

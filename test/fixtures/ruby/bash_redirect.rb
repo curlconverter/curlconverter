@@ -15,7 +15,7 @@ req.basic_auth 'USER', 'PASS'
 req.content_type = 'text/xml'
 req['X-Requested-With'] = 'curl'
 
-req.body = File.open('add_params.xml').read.delete("\n")
+req.body = File.binread('add_params.xml').delete("\n")
 
 req_options = {
   use_ssl: uri.scheme == "https",

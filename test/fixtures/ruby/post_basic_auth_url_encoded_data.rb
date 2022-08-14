@@ -6,7 +6,7 @@ req.basic_auth 'foo', 'bar'
 req.content_type = 'application/x-www-form-urlencoded'
 
 req.set_form_data({
-    'grant_type' => 'client_credentials',
+  'grant_type' => 'client_credentials',
 })
 
 req_options = {

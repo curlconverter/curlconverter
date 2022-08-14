@@ -13,8 +13,8 @@ req['X-Requested-With'] = 'XMLHttpRequest'
 req['Connection'] = 'keep-alive'
 
 req.set_form_data({
-    'msg1' => 'wow',
-    'msg2' => 'such',
+  'msg1' => 'wow',
+  'msg2' => 'such',
 })
 
 req_options = {
