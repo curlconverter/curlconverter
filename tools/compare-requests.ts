@@ -34,8 +34,8 @@ const executables = {
   // php: '',
   python: "python3 <file>",
   r: "r < <file> --no-save",
-  // rust: '',
   ruby: "ruby <file>",
+  // rust: '',
   // strest: ''
 };
 
