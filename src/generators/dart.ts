@@ -17,8 +17,8 @@ const supportedArgs = new Set([
   "data-urlencode",
   "json",
   "referer",
-  // "form",
-  // "form-string",
+  "form",
+  "form-string",
   "get",
   "header",
   "head",
@@ -35,14 +35,11 @@ function repr(value: string): string {
 }
 
 export const _toDart = (request: Request, warnings: Warnings = []): string => {
-  let s = "";
+  const imports = new Set<string>();
 
-  if (request.auth || request.isDataBinary) s += "import 'dart:convert';\n";
+  if (request.auth || request.isDataBinary) imports.add("dart:convert");
 
-  s +=
-    "import 'package:http/http.dart' as http;\n" +
-    "\n" +
-    "void main() async {\n";
+  let s = "void main() async {\n";
 
   if (request.auth) {
     const [uname, pword] = request.auth;
@@ -63,25 +60,21 @@ export const _toDart = (request: Request, warnings: Warnings = []): string => {
     request.compressed ||
     request.isDataBinary ||
     request.method.toLowerCase() === "put";
-  if (hasHeaders) {
+  if (hasHeaders && !request.multipartUploads) {
     s += "  var headers = {\n";
     for (const [hname, hval] of request.headers || []) {
       s += "    '" + hname + "': '" + hval + "',\n";
     }
 
     if (request.auth) s += "    'Authorization': authn,\n";
+    // TODO: headers might already have Accept-Encoding
     if (request.compressed) s += "    'Accept-Encoding': 'gzip',\n";
-    if (
-      !util.hasHeader(request, "content-type") &&
-      (request.isDataBinary || request.method.toLowerCase() === "put")
-    ) {
-      s += "    'Content-Type': 'application/x-www-form-urlencoded',\n";
-    }
 
     s += "  };\n";
     s += "\n";
   }
 
+  // TODO: Uri() can accept a params dict
   if (request.query) {
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
@@ -125,22 +118,101 @@ export const _toDart = (request: Request, warnings: Warnings = []): string => {
   } else {
     s += "  var url = Uri.parse('" + request.url + "');\n";
   }
-  s += "  var res = await http." + request.method.toLowerCase() + "(url";
 
-  if (hasHeaders) s += ", headers: headers";
-  else if (request.auth) s += ", headers: {'Authorization': authn}";
-  if (hasData) s += ", body: data";
+  if (request.multipartUploads) {
+    let multipart =
+      "http.MultipartRequest(" + repr(request.method) + ", url)\n";
+
+    for (const m of request.multipartUploads) {
+      // MultipartRequest syntax looks like this:
+      //   ..fields['user'] = 'nweiz@google.com'
+      // or
+      // ..files.add(await http.MultipartFile.fromPath(
+      //   'package', 'build/package.tar.gz',
+      //   contentType: MediaType('application', 'x-tar')));
+      const name = repr(m.name); // TODO: what if name is empty string?
+      const sentFilename = "filename" in m && m.filename;
+      if ("contentFile" in m) {
+        multipart += "    ..files.add(await http.MultipartFile.";
+        if (m.contentFile === "-") {
+          if (request.stdinFile) {
+            multipart += "fromPath(\n";
+            multipart += "      " + name + ", " + repr(request.stdinFile);
+            if (sentFilename && request.stdinFile !== sentFilename) {
+              multipart += ",\n";
+              multipart += "      filename: " + repr(sentFilename);
+            }
+            multipart += "))\n";
+          } else if (request.stdin) {
+            multipart += "fromString(\n";
+            multipart += "      " + name + ", " + repr(request.stdin);
+            if (sentFilename) {
+              multipart += ",\n";
+              multipart += "      filename: " + repr(sentFilename);
+            }
+            multipart += "))\n";
+          } else {
+            multipart += "fromString(\n";
+            // TODO: read the entire thing, not one line.
+            multipart +=
+              "      " + name + ", stdin.readLineSync(encoding: utf8)";
+            if (sentFilename) {
+              multipart += ",\n";
+              multipart += "      filename: " + repr(sentFilename);
+            }
+            multipart += "))\n";
+            imports.add("dart:io");
+            imports.add("dart:convert");
+          }
+        } else {
+          multipart += "fromPath(\n";
+          multipart += "      " + name + ", " + repr(m.contentFile);
+          if (sentFilename && m.contentFile !== sentFilename) {
+            multipart += ",\n";
+            multipart += "      filename: " + repr(sentFilename);
+          }
+          multipart += "))\n";
+        }
+      } else {
+        multipart += "    ..fields[" + name + "] = " + repr(m.content) + "\n";
+      }
+    }
+
+    if (hasHeaders || request.auth) {
+      s += "  var req = new " + multipart;
+      for (const [hname, hval] of request.headers || []) {
+        s += "  req.headers[" + repr(hname) + "] = " + repr(hval || "") + ";\n";
+      }
+      if (request.auth) {
+        s += "  req.headers['Authorization'] = authn;\n";
+      }
+      s += "  var res = await req.send();\n";
+    } else {
+      s += "  var res = await " + multipart;
+    }
+  } else {
+    s += "  var res = await http." + request.method.toLowerCase() + "(url";
+
+    if (hasHeaders) s += ", headers: headers";
+    else if (request.auth) s += ", headers: {'Authorization': authn}";
+    if (hasData) s += ", body: data";
+    s += ");\n";
+  }
 
   /* eslint-disable no-template-curly-in-string */
   s +=
-    ");\n" +
     "  if (res.statusCode != 200) throw Exception('http." +
     request.method.toLowerCase() +
     " error: statusCode= ${res.statusCode}');\n" +
     "  print(res.body);\n" +
     "}";
 
-  return s + "\n";
+  let importString = "";
+  for (const imp of Array.from(imports).sort()) {
+    importString += "import '" + imp + "';\n";
+  }
+  importString += "import 'package:http/http.dart' as http;\n";
+  return importString + "\n" + s + "\n";
 };
 export const toDartWarn = (
   curlCommand: string | string[],
