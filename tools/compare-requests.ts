@@ -22,6 +22,10 @@ const EXPECTED_URL = "localhost:" + DEFAULT_PORT;
 const executables = {
   // ansible: '',
   // browser: '',
+  // You need to run this first:
+  // cd /tmp && dotnet new console -o curlconverter
+  csharp:
+    "cp <file> /tmp/curlconverter/Program.cs && cd /tmp/curlconverter && dotnet run",
   // dart: '',
   // elixir: '',
   // go: '',

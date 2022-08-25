@@ -881,9 +881,9 @@ const parseAnsiCString = (str: string): string => {
         // JavaScript stores strings in UTF-16
         if (m.codePointAt(2)! > 127) {
           throw new CCError(
-            "non-ASCII control character in ANSI-C quoted string: '\\u{" +
+            'non-ASCII control character in ANSI-C quoted string: "\\u{' +
               m.codePointAt(2)!.toString(16) +
-              "}'"
+              '}"'
           );
         }
         // If this produces a 0x00 (null) character, it will cause bash to
@@ -1010,7 +1010,7 @@ const tokenize = (
   if (ast.rootNode.type !== "program") {
     // TODO: better error message.
     throw new CCError(
-      "expected a 'program' top-level AST node, got " +
+      'expected a "program" top-level AST node, got ' +
         ast.rootNode.type +
         " instead"
     );
@@ -1032,14 +1032,14 @@ const tokenize = (
       break;
     } else if (n.type === "redirected_statement") {
       if (!n.childCount) {
-        throw new CCError("got empty 'redirected_statement' AST node");
+        throw new CCError('got empty "redirected_statement" AST node');
       }
       let redirects;
       [command, ...redirects] = n.namedChildren;
       lastNode = n;
       if (command.type !== "command") {
         throw new CCError(
-          "got 'redirected_statement' AST node whose first child is not a 'command', got " +
+          'got "redirected_statement" AST node whose first child is not a "command", got ' +
             command.type +
             " instead\n" +
             underlineBadNode(curlCommand, command)
@@ -1047,7 +1047,7 @@ const tokenize = (
       }
       if (n.childCount < 2) {
         throw new CCError(
-          "got 'redirected_statement' AST node with only one child - no redirect"
+          'got "redirected_statement" AST node with only one child - no redirect'
         );
       }
       if (redirects.length > 1) {
@@ -1068,7 +1068,7 @@ const tokenize = (
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
         if (redirect.namedChildCount < 1) {
           throw new CCError(
-            "got 'redirected_statement' AST node with heredoc but no heredoc start"
+            'got "redirected_statement" AST node with heredoc but no heredoc start'
           );
         }
         const heredocStart = redirect.namedChildren[0].text;
@@ -1076,13 +1076,13 @@ const tokenize = (
         lastNode = heredocBody;
         if (!heredocBody) {
           throw new CCError(
-            "got 'redirected_statement' AST node with no heredoc body"
+            'got "redirected_statement" AST node with no heredoc body'
           );
         }
         // TODO: herestrings and heredocs are different
         if (heredocBody.type !== "heredoc_body") {
           throw new CCError(
-            "got 'redirected_statement' AST node with heredoc but no heredoc body, got " +
+            'got "redirected_statement" AST node with heredoc but no heredoc body, got ' +
               heredocBody.type +
               " instead"
           );
@@ -1100,14 +1100,14 @@ const tokenize = (
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
           throw new CCError(
-            "got 'redirected_statement' AST node with empty herestring"
+            'got "redirected_statement" AST node with empty herestring'
           );
         }
         // TODO: this just converts bash code to text
         stdin = redirect.firstNamedChild.text;
       } else {
         throw new CCError(
-          "got 'redirected_statement' AST node whose second child is not one of 'file_redirect', 'heredoc_redirect' or 'herestring_redirect', got " +
+          'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
             command.type +
             " instead"
         );
@@ -1122,7 +1122,7 @@ const tokenize = (
     } else {
       // TODO: better error message.
       throw new CCError(
-        "expected a 'command' or 'redirected_statement' AST node, instead got " +
+        'expected a "command" or "redirected_statement" AST node, instead got ' +
           ast.rootNode.children[0].type +
           "\n" +
           underlineBadNode(curlCommand, ast.rootNode.children[0])
@@ -1165,7 +1165,7 @@ const tokenize = (
     // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
     // We would probably need to keep track of the node types we've seen.
     throw new CCError(
-      "expected a 'command' or 'redirected_statement' AST node, only found 'comment' nodes"
+      'expected a "command" or "redirected_statement" AST node, only found "comment" nodes'
     );
   }
   for (const n of ast.rootNode.children) {
@@ -1188,7 +1188,7 @@ const tokenize = (
   const [cmdName, ...args] = command.namedChildren;
   if (cmdName.type !== "command_name") {
     throw new CCError(
-      "expected a 'command_name' AST node, found " +
+      'expected a "command_name" AST node, found ' +
         cmdName.type +
         " instead\n" +
         underlineBadNode(curlCommand, cmdName)
@@ -1196,7 +1196,7 @@ const tokenize = (
   }
   if (cmdName.childCount < 1) {
     throw new CCError(
-      "found empty 'command_name' AST node\n" +
+      'found empty "command_name" AST node\n' +
         underlineBadNode(curlCommand, cmdName)
     );
   }
@@ -1700,6 +1700,13 @@ function buildRequest(
   } else if (parsedArguments.form) {
     request.multipartUploads = [];
     for (const multipartArgument of parsedArguments.form) {
+      if (!multipartArgument.value.includes("=")) {
+        throw new CCError(
+          "invalid value for --form/-F: " +
+            JSON.stringify(multipartArgument.value)
+        );
+      }
+
       // TODO: https://curl.se/docs/manpage.html#-F
       // -F is the most complicated option, we only handle
       // name=value and name=@file and name=<file
