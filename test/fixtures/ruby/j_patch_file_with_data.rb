@@ -7,7 +7,7 @@ req.set_form(
   [
     [
       'file1',
-      File.open('./fixtures/curl_commands/delete.sh')
+      File.open('./test/fixtures/curl_commands/delete.sh')
     ],
     [
       'form1',
