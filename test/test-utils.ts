@@ -48,6 +48,11 @@ const converters = {
     extension: ".cfm",
     converter: curlconverter.toCFML,
   },
+  csharp: {
+    name: "C#",
+    extension: ".cs",
+    converter: curlconverter.toCSharp,
+  },
   dart: {
     name: "Dart",
     extension: ".dart",

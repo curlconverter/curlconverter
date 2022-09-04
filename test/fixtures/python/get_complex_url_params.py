@@ -46,4 +46,4 @@ params = {
     'stopover': '',
 }
 
-response = requests.get('https://localhost:28139/house-sitting/', params=params)
+response = requests.get('http://localhost:28139/house-sitting/', params=params)
