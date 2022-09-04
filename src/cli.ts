@@ -17,6 +17,7 @@ import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
 import { _toElixir, toElixirWarn } from "./generators/elixir.js";
 import { _toGo, toGoWarn } from "./generators/go.js";
 import { _toJava, toJavaWarn } from "./generators/java.js";
+import { _toJavaJsoup, toJavaJsoupWarn } from "./generators/java/jsoup.js";
 import {
   _toJavaScript,
   toJavaScriptWarn,
@@ -66,6 +67,7 @@ const translate: {
   elixir: [_toElixir, toElixirWarn],
   go: [_toGo, toGoWarn],
   java: [_toJava, toJavaWarn],
+  "java-jsoup": [_toJavaJsoup, toJavaJsoupWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias

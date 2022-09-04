@@ -25,6 +25,7 @@
   "type": "module",
   "dependencies": {
     "@curlconverter/tree-sitter-bash": "^0.0.2",
+    "curlconverter": "^4.2.0",
     "jsesc": "^3.0.2",
     "query-string": "^7.1.1",
     "tree-sitter": "^0.20.0",
