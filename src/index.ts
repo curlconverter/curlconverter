@@ -5,6 +5,7 @@ export {
   toJavaScriptWarn,
 } from "./generators/javascript/javascript.js";
 export { toNodeAxios, toNodeAxiosWarn } from "./generators/javascript/axios.js";
+export { toCSharp, toCSharpWarn } from "./generators/csharp.js";
 export { toDart, toDartWarn } from "./generators/dart.js";
 export { toElixir, toElixirWarn } from "./generators/elixir.js";
 export { toGo, toGoWarn } from "./generators/go.js";

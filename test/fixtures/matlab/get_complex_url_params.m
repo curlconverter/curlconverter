@@ -41,7 +41,7 @@ params = {
     'isfd' ''
     'stopover' ''
 };
-baseURI = 'https://localhost:28139/house-sitting/';
+baseURI = 'http://localhost:28139/house-sitting/';
 uri = [baseURI '?' char(join(join(params, '='), '&'))];
 response = webread(uri);
 
@@ -91,5 +91,5 @@ params = {
     'isfd' ''
     'stopover' ''
 };
-uri = URI('https://localhost:28139/house-sitting/', QueryParameter(params'));
+uri = URI('http://localhost:28139/house-sitting/', QueryParameter(params'));
 response = RequestMessage().send(uri.EncodedURI);

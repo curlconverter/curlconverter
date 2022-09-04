@@ -43,6 +43,6 @@ params.append('duration', '');
 params.append('isfd', '');
 params.append('stopover', '');
 
-const response = await axios.get('https://localhost:28139/house-sitting/', {
+const response = await axios.get('http://localhost:28139/house-sitting/', {
     params: params
 });

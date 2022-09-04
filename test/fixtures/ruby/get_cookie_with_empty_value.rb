@@ -1,6 +1,6 @@
 require 'net/http'
 
-uri = URI('https://localhost:28139/cookies')
+uri = URI('http://localhost:28139/cookies')
 req = Net::HTTP::Get.new(uri)
 req['accept'] = 'application/json'
 req['Cookie'] = 'mysamplecookie=someValue; emptycookie=; otherCookie=2'

@@ -1,7 +1,7 @@
 import fetch, { FormData, fileFromSync } from 'node-fetch';
 
 const form = new FormData();
-form.append('file1', fileFromSync('./fixtures/curl_commands/delete.sh'));
+form.append('file1', fileFromSync('./test/fixtures/curl_commands/delete.sh'));
 form.append('form1', 'form+data+1');
 form.append('form2', 'form_data_2');
 
