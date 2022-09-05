@@ -15,8 +15,8 @@ const supportedArgs = new Set([
   "data-urlencode",
   "json",
   "referer",
-  "form",
-  "form-string",
+  //"form",
+  //"form-string",
   "get",
   "header",
   "head",
@@ -37,8 +37,7 @@ export const _toJavaJsoup = (
   javaCode += "import org.jsoup.Connection;\n";
   javaCode += "\nclass Main {\n\n";
 
-  javaCode +=
-    "\tpublic static void main(String[] args) throws IOException {\n\n";
+  javaCode += "\tpublic static void main(String[] args) throws IOException {\n";
   javaCode +=
     '\t\tConnection.Response response = Jsoup.connect("' + request.url + '")\n';
 
