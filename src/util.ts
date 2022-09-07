@@ -827,6 +827,12 @@ const parseWord = (str: string): string => {
   const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
   return str.replace(BACKSLASHES, unescapeChar);
 };
+// Expansions look ${like_this}
+// https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+const parseExpansion = (str: string): string => {
+  // TODO: warn if child node isn't simply "variable_name".
+  return str.slice(2, -1);
+};
 const parseSingleQuoteString = (str: string): string => {
   const BACKSLASHES = /\\(\n|')/gs;
   const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
@@ -960,6 +966,8 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
       return parseSingleQuoteString(node.text);
     case "ansii_c_string":
       return parseAnsiCString(node.text);
+    case "expansion":
+      return parseExpansion(node.text);
     case "string_expansion":
       return parseTranslatedString(node.text);
     case "concatenation":
@@ -973,7 +981,7 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
       throw new CCError(
         "unexpected argument type " +
           JSON.stringify(node.type) +
-          '. Must be one of "word", "string", "raw_string", "ansii_c_string", "simple_expansion", "string_expansion" or "concatenation"\n' +
+          '. Must be one of "word", "string", "raw_string", "ansii_c_string", "expansion", "simple_expansion", "string_expansion" or "concatenation"\n' +
           underlineBadNode(curlCommand, node)
       );
   }
