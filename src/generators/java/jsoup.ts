@@ -33,6 +33,8 @@ export const _toJavaJsoup = (
   let javaCode = "";
 
   javaCode += "import java.io.IOException;\n";
+  javaCode += "import java.io.File;\n";
+  javaCode += "import java.io.FileInputStream;\n";
   javaCode += "import org.jsoup.Jsoup;\n";
   javaCode += "import org.jsoup.Connection;\n";
   javaCode += "\nclass Main {\n\n";
@@ -93,12 +95,50 @@ export const _toJavaJsoup = (
     javaCode += '\t\t.requestBody("' + request.data + '")\n';
   }
 
+  if (request.multipartUploads) {
+    javaCode += '\t\t.data("';
+
+    for (const m of request.multipartUploads) {
+      const name = m.name;
+      const fileInputStream = "new FileInputStream(new File(";
+      const fileName = "filename";
+      if ("contentFile" in m) {
+        if (m.contentFile === "-") {
+          if (request.stdinFile) {
+            javaCode +=
+              name +
+              '", "' +
+              fileName +
+              '", ' +
+              fileInputStream +
+              request.stdinFile;
+          } else if (request.stdin) {
+            javaCode +=
+              name +
+              '", "' +
+              fileName +
+              '", ' +
+              fileInputStream +
+              request.stdin;
+          }
+        } else {
+          javaCode +=
+            name + '", "' + fileName + '", ' + fileInputStream + m.contentFile;
+        }
+      } else {
+        javaCode +=
+          name + '", "' + fileName + '",' + fileInputStream + m.content;
+      }
+    }
+    javaCode += ")))\n";
+  }
+
   javaCode +=
     "\t\t.method(org.jsoup.Connection.Method." + request.method + ")\n";
   javaCode += "\t\t.ignoreContentType(true)\n";
   javaCode += "\t\t.timeout(30000)\n";
   javaCode += "\t\t.execute();\n\n";
-  javaCode += "\t\tSystem.out.println(response.parse();\n";
+  javaCode += "\t\tSystem.out.println(response.parse());\n";
 
   javaCode += "\t}\n";
   javaCode += "}";
