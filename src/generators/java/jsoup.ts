@@ -54,7 +54,7 @@ export const _toJavaJsoup = (
         javaCode +=
           "\t\t.userAgent" + '("' + doubleQuotes(headerValue) + '")\n';
       } else if (headerName.toLowerCase() === "cookie") {
-        let cookieValues = headerValue.split(";");
+        const cookieValues = headerValue.split(";");
         for (const index in cookieValues) {
           javaCode +=
             '\t\t.cookie("' +
