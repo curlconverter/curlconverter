@@ -1283,15 +1283,13 @@ const parseArgs = (
         }
       } else {
         // Short option. These can look like
-        // -X POST -> {request: 'POST'}
+        // -X POST    -> {request: 'POST'}
         // or
-        // -XPOST  -> {request: 'POST'}
+        // -XPOST     -> {request: 'POST'}
         // or multiple options
-        // -ABCX POST
-        // -> {A: true, B: true, C: true, request: 'POST'}
+        // -ABCX POST -> {A: true, B: true, C: true, request: 'POST'}
         // or multiple options and a value for the last one
-        // -ABCXPOST
-        // -> {A: true, B: true, C: true, request: 'POST'}
+        // -ABCXPOST  -> {A: true, B: true, C: true, request: 'POST'}
 
         // "-" passed to curl as an argument raises an error,
         // curlconverter's command line uses it to read from stdin
@@ -1533,18 +1531,20 @@ function buildRequest(
     method = "HEAD";
   } else if (
     has(parsedArguments, "request") &&
+    // Safari adds `-X null` if it can't determine the request type
+    // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
     parsedArguments.request !== "null"
   ) {
-    // Safari adds `-Xnull` if it can't determine the request type
     method = parsedArguments.request as string;
   } else if (parsedArguments["upload-file"]) {
     // --upload-file '' doesn't do anything.
     method = "PUT";
   } else if (
     (has(parsedArguments, "data") ||
-      has(parsedArguments, "data-ascii") ||
       has(parsedArguments, "data-binary") ||
+      has(parsedArguments, "data-ascii") ||
       has(parsedArguments, "data-raw") ||
+      has(parsedArguments, "data-urlencode") ||
       has(parsedArguments, "form") ||
       has(parsedArguments, "json")) &&
     !parsedArguments.get
