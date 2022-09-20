@@ -149,23 +149,8 @@ const buildConfigObject = (
         code += "    // data: " + commentedOutDataString + ",\n";
       }
       code += "    data: " + dataString + ",\n";
-
-      // OPTIONS is the only other http method that sends data
-      if (method !== "options") {
-        warnings.push([
-          "no-data-method",
-          "axios doesn't send data: with " + method + " requests",
-        ]);
-      }
     } else if (request.multipartUploads) {
       code += "    data: form,\n";
-
-      if (method !== "options") {
-        warnings.push([
-          "no-data-method",
-          "axios doesn't send data: with " + method + " requests",
-        ]);
-      }
     }
   }
 
