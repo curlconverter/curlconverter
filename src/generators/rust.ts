@@ -22,6 +22,9 @@ const supportedArgs = new Set([
   "head",
   "no-head",
   "user",
+  "location",
+  "location-trusted",
+  "max-redirs",
 ]);
 
 const INDENTATION = " ".repeat(4);
@@ -79,7 +82,39 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
     lines.push(...parts, "");
   }
 
-  lines.push(indent("let client = reqwest::blocking::Client::new();"));
+  if (!request.followRedirects) {
+    lines.push(indent("let client = reqwest::blocking::Client::builder()"));
+    lines.push(indent(".redirect(reqwest::redirect::Policy::none())", 2));
+    lines.push(indent(".build()", 2));
+    lines.push(indent(".unwrap();", 2));
+  } else if (typeof request.maxRedirects === "undefined") {
+    // Curl's default is following 50 redirects, reqwest's is 10
+    lines.push(indent("let client = reqwest::blocking::Client::new();"));
+  } else {
+    lines.push(indent("let client = reqwest::blocking::Client::builder()"));
+    if (request.maxRedirects === "-1") {
+      lines.push(
+        indent(
+          ".redirect(reqwest::redirect::Policy::custom(|attempt| { attempt.follow() }))",
+          2
+        )
+      );
+    } else {
+      // Insert the --max-redirs value as-is, hoping it's a valid integer
+      // --max-redirs 0 works differently in curl and reqwest
+      // https://github.com/seanmonstar/reqwest/issues/1639
+      lines.push(
+        indent(
+          ".redirect(reqwest::redirect::Policy::limited(" +
+            request.maxRedirects +
+            "))",
+          2
+        )
+      );
+    }
+    lines.push(indent(".build()", 2));
+    lines.push(indent(".unwrap();", 2));
+  }
 
   const reqwestMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
   if (reqwestMethods.includes(request.method)) {
