@@ -2,7 +2,6 @@ import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 import jsesc from "jsesc";
-import querystring from "query-string";
 
 const supportedArgs = new Set([
   "url",
@@ -27,19 +26,13 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-// TODO: I bet elixir's array syntax is different and if the query string
-// values are arrays that actually generates broken code.
 function repr(value: string | null | (string | null)[]): string {
   // In context of url parameters, don't accept nulls and such.
-  if (!value) {
-    return '""';
-  } else {
-    return `~s|${jsesc(value, { quotes: "backtick" })}|`;
-  }
+  return '"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
 }
 
 function getCookies(request: Request): string {
-  if (!request.cookies) {
+  if (!request.cookies || !request.cookies.length) {
     return "";
   }
 
@@ -47,7 +40,7 @@ function getCookies(request: Request): string {
   for (const [cookieName, cookieValue] of request.cookies) {
     cookies.push(`${cookieName}=${cookieValue}`);
   }
-  return `cookies: [~s|${cookies.join("; ")}|]`;
+  return `cookie: [${repr(cookies.join("; "))}]`;
 }
 
 function getOptions(request: Request): string {
@@ -85,37 +78,36 @@ function getBasicAuth(request: Request): string {
 }
 
 function getQueryDict(request: Request): string {
-  if (!request.query) {
+  if (!request.query || !request.query.length) {
     return "[]";
   }
   let queryDict = "[\n";
+  const queryDictLines = [];
   for (const [paramName, rawValue] of request.query) {
-    queryDict += `    {${repr(paramName)}, ${repr(rawValue)}},\n`;
+    queryDictLines.push(`    {${repr(paramName)}, ${repr(rawValue)}}`);
   }
-  queryDict += "  ]";
+  queryDict += queryDictLines.join(",\n");
+  queryDict += "\n  ]";
   return queryDict;
 }
 
 function getHeadersDict(request: Request): string {
-  if (!request.headers) {
+  if (!request.headers || !request.headers.length) {
     return "[]";
   }
   let dict = "[\n";
+  const dictLines = [];
   for (const [headerName, headerValue] of request.headers) {
-    dict += `    {${repr(headerName)}, ${repr(headerValue)}},\n`;
+    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue)}}`);
   }
-  dict += "  ]";
+  dict += dictLines.join(",\n");
+  dict += "\n  ]";
   return dict;
 }
 
 function getBody(request: Request): string {
   const formData = getFormDataString(request);
-
-  if (formData) {
-    return formData;
-  }
-
-  return '""';
+  return formData ? formData : '""';
 }
 
 function getFormDataString(request: Request): string {
@@ -126,34 +118,30 @@ function getFormDataString(request: Request): string {
   if (!request.multipartUploads) {
     return "";
   }
+  if (!request.multipartUploads.length) {
+    return `{:multipart, []}`;
+  }
 
-  let fileArgs: string[] | string = [];
-  let dataArgs: string[] | string = [];
+  const formParams: string[] = [];
   for (const m of request.multipartUploads) {
     if ("contentFile" in m) {
-      // TODO: quote
-      fileArgs.push(`    {:file, ~s|${m.contentFile}|}`);
+      formParams.push(
+        `    {:file, ${repr(m.contentFile)}, {"form-data", [{:name, ${repr(
+          m.name
+        )}}, {:filename, Path.basename(${repr(
+          m.filename ?? m.contentFile
+        )})}]}, []}`
+      );
     } else {
-      dataArgs.push(`    {${repr(m.name)}, ${repr(m.content)}}`);
+      formParams.push(`    {${repr(m.name)}, ${repr(m.content)}}`);
     }
   }
 
-  let content: string[] | string = [];
-  fileArgs = fileArgs.join(",\n");
-  if (fileArgs) {
-    content.push(fileArgs);
-  }
-
-  dataArgs = dataArgs.join(",\n");
-  if (dataArgs) {
-    content.push(dataArgs);
-  }
-
-  content = content.join(",\n");
-  if (content) {
+  const formStr = formParams.join(",\n");
+  if (formStr) {
     return `{:multipart, [
-${content}
-]}`;
+${formStr}
+  ]}`;
   }
 
   return "";
@@ -164,67 +152,35 @@ function getDataString(request: Request): string {
     return "";
   }
 
+  // TODO: JSON?
+
   if (!request.isDataRaw && request.data.startsWith("@")) {
     const filePath = request.data.slice(1);
     if (request.isDataBinary) {
-      return `File.read!("${filePath}")`;
+      return `File.read!(${repr(filePath)})`;
     } else {
-      return `{:file, ~s|${filePath}|}`;
+      return `{:file, ${repr(filePath)}}`;
     }
   }
 
-  const parsedQueryString = querystring.parse(request.data, { sort: false });
-  const keyCount = Object.keys(parsedQueryString).length;
-  const singleKeyOnly =
-    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]];
-  const singularData = request.isDataBinary || singleKeyOnly;
-  if (singularData) {
-    return `~s|${request.data}|`;
-  } else {
-    return getMultipleDataString(request, parsedQueryString);
-  }
-}
-
-function getMultipleDataString(
-  request: Request,
-  parsedQueryString: querystring.ParsedQuery<string>
-): string {
-  let repeatedKey = false;
-  for (const key in parsedQueryString) {
-    const value = parsedQueryString[key];
-    if (Array.isArray(value)) {
-      repeatedKey = true;
-    }
+  const [parsedQuery] = util.parseQueryString(request.data);
+  if (
+    !request.isDataBinary &&
+    parsedQuery &&
+    parsedQuery.length &&
+    !parsedQuery.some((p) => p[1] === null)
+  ) {
+    const data = parsedQuery.map((p) => {
+      const [key, value] = p;
+      return `    {${repr(key)}, ${repr(value)}}`;
+    });
+    return `{:form, [\n${data.join(",\n")}\n  ]}`;
   }
 
-  let dataString;
-  if (repeatedKey) {
-    const data = [];
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key];
-      if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) {
-          data.push(`    {${repr(key)}, ${repr(value[i])}}`);
-        }
-      } else {
-        data.push(`    {${repr(key)}, ${repr(value)}}`);
-      }
-    }
-    dataString = `[
-${data.join(",\n")}
-  ]`;
-  } else {
-    const data = [];
-    for (const key in parsedQueryString) {
-      const value = parsedQueryString[key];
-      data.push(`    {${repr(key)}, ${repr(value)}}`);
-    }
-    dataString = `[
-${data.join(",\n")}
-  ]`;
+  if (request.data.includes("|") && request.data.split("\n", 3).length > 3) {
+    return "~s|" + request.data + "|";
   }
-
-  return dataString;
+  return repr(request.data);
 }
 
 export const _toElixir = (
@@ -235,20 +191,67 @@ export const _toElixir = (
     util.deleteHeader(request, "cookie");
   }
 
-  const template = `request = %HTTPoison.Request{
+  // delete!(url, headers \\ [], options \\ [])
+  // get!(url, headers \\ [], options \\ [])
+  // head!(url, headers \\ [], options \\ [])
+  // options!(url, headers \\ [], options \\ [])
+  // patch!(url, body, headers \\ [], options \\ [])
+  // post!(url, body, headers \\ [], options \\ [])
+  // put!(url, body \\ "", headers \\ [], options \\ [])
+  const methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"];
+  const bodyMethods = ["PATCH", "POST", "PUT"];
+  if (!methods.includes(request.method)) {
+    warnings.push([
+      "bad-method",
+      'Unsupported method "' + request.method + '"',
+    ]);
+  }
+
+  const isBodyMethod = bodyMethods.includes(request.method);
+  const body = getBody(request);
+  const headers = getHeadersDict(request);
+  const options = getOptions(request);
+  const params = getQueryDict(request);
+
+  if (params === "[]" && (body === '""' || isBodyMethod)) {
+    let s =
+      "response = HTTPoison." +
+      request.method.toLowerCase() +
+      "! " +
+      repr(request.urlWithoutQuery);
+    if (
+      (body === '""' || !isBodyMethod) &&
+      headers === "[]" &&
+      options === "[]"
+    ) {
+      return s + "\n";
+    }
+    if (isBodyMethod) {
+      s += ",\n  " + body;
+    }
+    if (headers === "[]" && options === "[]") {
+      return s + "\n";
+    }
+    s += ",\n  " + headers;
+    if (options === "[]") {
+      return s + "\n";
+    }
+    return s + ",\n  " + options + "\n";
+  }
+
+  return `request = %HTTPoison.Request{
   method: :${request.method.toLowerCase()},
-  url: "${request.urlWithoutQuery}",
-  options: ${getOptions(request)},
-  headers: ${getHeadersDict(request)},
-  params: ${getQueryDict(request)},
-  body: ${getBody(request)}
+  url: ${repr(request.urlWithoutQuery)},
+  body: ${body},
+  headers: ${headers},
+  options: ${options},
+  params: ${params}
 }
 
 response = HTTPoison.request(request)
 `;
-
-  return template;
 };
+
 export const toElixirWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []

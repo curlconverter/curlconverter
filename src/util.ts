@@ -89,6 +89,9 @@ function pushArgValue(obj: ParsedArguments, argName: string, value: string) {
 }
 
 interface Request {
+  // If the ?query can't be losslessly parsed, then
+  // Request.query === undefined and
+  // Request.urlWithouQuery === Request.url
   url: string;
   urlWithoutQuery: string;
   query?: Query;
