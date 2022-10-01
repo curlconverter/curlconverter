@@ -119,6 +119,7 @@ interface Request {
   proxyAuth?: string;
   timeout?: string;
   followRedirects?: boolean;
+  maxRedirects?: string;
   output?: string;
   http2?: boolean;
   http3?: boolean;
@@ -1788,8 +1789,18 @@ function buildRequest(
   if (parsedArguments["max-time"]) {
     request.timeout = parsedArguments["max-time"];
   }
-  if (parsedArguments.location) {
+  if (parsedArguments.location || parsedArguments["location-trusted"]) {
     request.followRedirects = true;
+  }
+  if (parsedArguments["max-redirs"]) {
+    if (isNaN(parseInt(parsedArguments["max-redirs"]))) {
+      warnings.push([
+        "max-redirs-not-int",
+        "--max-redirs value is not a number: " +
+          JSON.stringify(parsedArguments["max-redirs"]),
+      ]);
+    }
+    request.maxRedirects = parsedArguments["max-redirs"].trim();
   }
   if (parsedArguments.output) {
     request.output = parsedArguments.output;
