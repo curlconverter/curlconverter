@@ -93,7 +93,6 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
   } else {
     lines.push(indent("let client = reqwest::blocking::Client::builder()"));
     if (request.maxRedirects === "-1") {
-      // TODO: does this work?
       lines.push(
         indent(
           ".redirect(reqwest::redirect::Policy::custom(|attempt| { attempt.follow() }))",
