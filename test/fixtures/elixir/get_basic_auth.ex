@@ -1,10 +1,3 @@
-request = %HTTPoison.Request{
-  method: :get,
-  url: "http://localhost:28139/",
-  options: [hackney: [basic_auth: {~s|some_username|, ~s|some_password|}]],
-  headers: [],
-  params: [],
-  body: ""
-}
-
-response = HTTPoison.request(request)
+response = HTTPoison.get! "http://localhost:28139/",
+  [],
+  [hackney: [basic_auth: {"some_username", "some_password"}]]
