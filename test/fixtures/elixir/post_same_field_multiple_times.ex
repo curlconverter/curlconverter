@@ -1,16 +1,9 @@
-request = %HTTPoison.Request{
-  method: :post,
-  url: "http://localhost:28139/",
-  options: [],
-  headers: [
-    {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},
-  ],
-  params: [],
-  body: [
-    {~s|foo|, ~s|bar|},
-    {~s|foo|, ""},
-    {~s|foo|, ~s|barbar|}
+response = HTTPoison.post! "http://localhost:28139/",
+  {:form, [
+    {"foo", "bar"},
+    {"foo", ""},
+    {"foo", "barbar"}
+  ]},
+  [
+    {"Content-Type", "application/x-www-form-urlencoded"}
   ]
-}
-
-response = HTTPoison.request(request)

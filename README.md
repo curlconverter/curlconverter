@@ -104,7 +104,7 @@ The parser generates a generic data structure consumed by code generator functio
 You can run a specific test with:
 
 ```sh
-npm test -- test_name
+npm test -- --test test_name
 ```
 
 where `test_name` is a file (with or without the `.sh` extension) in [test/fixtures/curl_commands/](test/fixtures/curl_commands)

@@ -23,11 +23,18 @@ const executables = {
   // ansible: '',
   // browser: '',
   // You need to run this first:
-  // cd /tmp && dotnet new console -o curlconverter
+  // cd /tmp && dotnet new console -o curlconverter-csharp
   csharp:
-    "cp <file> /tmp/curlconverter/Program.cs && cd /tmp/curlconverter && dotnet run",
+    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
   // dart: '',
-  // elixir: '',
+  // You need to run this first:
+  // mix new /tmp/curlconverterelixir/
+  // sed -i 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs
+  // or (on macOS)
+  // sed -i '' 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs
+  // cd /tmp/curlconverterelixir/ && mix deps.get
+  elixir:
+    "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
   // go: '',
   // java: '',
   // json: '',

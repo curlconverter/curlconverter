@@ -1,14 +1,8 @@
-request = %HTTPoison.Request{
-  method: :post,
-  url: "http://localhost:28139/api/oauth/token/",
-  options: [hackney: [basic_auth: {~s|foo|, ~s|bar|}]],
-  headers: [
-    {~s|Content-Type|, ~s|application/x-www-form-urlencoded|},
+response = HTTPoison.post! "http://localhost:28139/api/oauth/token/",
+  {:form, [
+    {"grant_type", "client_credentials"}
+  ]},
+  [
+    {"Content-Type", "application/x-www-form-urlencoded"}
   ],
-  params: [],
-  body: [
-    {~s|grant_type|, ~s|client_credentials|}
-  ]
-}
-
-response = HTTPoison.request(request)
+  [hackney: [basic_auth: {"foo", "bar"}]]

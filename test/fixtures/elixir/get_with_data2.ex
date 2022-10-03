@@ -1,16 +1,16 @@
 request = %HTTPoison.Request{
   method: :put,
   url: "http://localhost:28139/v2/alerts_policy_channels.json",
-  options: [],
+  body: "",
   headers: [
-    {~s|X-Api-Key|, ~s|{admin_api_key}|},
-    {~s|Content-Type|, ~s|application/json|},
+    {"X-Api-Key", "{admin_api_key}"},
+    {"Content-Type", "application/json"}
   ],
+  options: [],
   params: [
-    {~s|policy_id|, ~s|policy_id|},
-    {~s|channel_ids|, ~s|channel_id|},
-  ],
-  body: ""
+    {"policy_id", "policy_id"},
+    {"channel_ids", "channel_id"}
+  ]
 }
 
 response = HTTPoison.request(request)

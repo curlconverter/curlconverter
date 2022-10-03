@@ -1,13 +1,6 @@
-request = %HTTPoison.Request{
-  method: :post,
-  url: "http://localhost:28139/american-art/query",
-  options: [],
-  headers: [
-    {~s|Content-type|, ~s|application/sparql-query|},
-    {~s|Accept|, ~s|application/sparql-results+json|},
-  ],
-  params: [],
-  body: File.read!("./sample.sparql")
-}
-
-response = HTTPoison.request(request)
+response = HTTPoison.post! "http://localhost:28139/american-art/query",
+  File.read!("./sample.sparql"),
+  [
+    {"Content-type", "application/sparql-query"},
+    {"Accept", "application/sparql-results+json"}
+  ]

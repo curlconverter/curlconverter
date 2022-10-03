@@ -1,13 +1,7 @@
-request = %HTTPoison.Request{
-  method: :post,
-  url: "http://localhost:28139/rest/login-sessions",
-  options: [hackney: [:insecure]],
-  headers: [
-    {~s|Content-Type|, ~s|application/json|},
-    {~s|X-API-Version|, ~s|200|},
+response = HTTPoison.post! "http://localhost:28139/rest/login-sessions",
+  "{\"userName\":\"username123\",\"password\":\"password123\", \"authLoginDomain\":\"local\"}",
+  [
+    {"Content-Type", "application/json"},
+    {"X-API-Version", "200"}
   ],
-  params: [],
-  body: ~s|{"userName":"username123","password":"password123", "authLoginDomain":"local"}|
-}
-
-response = HTTPoison.request(request)
+  [hackney: [:insecure]]
