@@ -241,29 +241,33 @@ export const _toElixir = (
   const [options, optionsWithoutParams] = getOptions(request, params);
 
   if (body === '""' || isBodyMethod) {
-    let s =
-      "response = HTTPoison." +
-      request.method.toLowerCase() +
-      "! " +
-      repr(request.urlWithoutQuery);
-    if (
-      (body === '""' || !isBodyMethod) &&
-      headers === "[]" &&
-      options === "[]"
-    ) {
-      return s + "\n";
+    // Add args backwards. As soon as we see a non-default value, we have to
+    // add all preceding arguments.
+    let skipArg = true;
+    let args = [];
+    skipArg &&= options === "[]";
+    if (!skipArg) {
+      args.push(options);
     }
-    if (isBodyMethod) {
-      s += ",\n  " + body;
+    skipArg &&= headers === "[]";
+    if (!skipArg) {
+      args.push(headers);
     }
-    if (headers === "[]" && options === "[]") {
-      return s + "\n";
+    skipArg &&= body === '""';
+    if (!skipArg && isBodyMethod) {
+      args.push(body);
     }
-    s += ",\n  " + headers;
-    if (options === "[]") {
-      return s + "\n";
+    args.push(repr(request.urlWithoutQuery));
+    args = args.reverse();
+
+    let s = "response = HTTPoison." + request.method.toLowerCase() + "!(";
+    if (args.length === 1) {
+      // If we just need the method+URL, keep it all on one line
+      return s + args[0] + ")\n";
     }
-    return s + ",\n  " + options + "\n";
+    s += "\n  " + args.join(",\n  ");
+    s += "\n)\n";
+    return s;
   }
 
   return `request = %HTTPoison.Request{
