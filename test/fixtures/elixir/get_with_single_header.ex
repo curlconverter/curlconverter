@@ -1,4 +1,6 @@
-response = HTTPoison.get! "http://localhost:28139/",
+response = HTTPoison.get!(
+  "http://localhost:28139/",
   [
     {"foo", "bar"}
   ]
+)

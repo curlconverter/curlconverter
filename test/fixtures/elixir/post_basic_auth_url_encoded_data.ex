@@ -1,4 +1,5 @@
-response = HTTPoison.post! "http://localhost:28139/api/oauth/token/",
+response = HTTPoison.post!(
+  "http://localhost:28139/api/oauth/token/",
   {:form, [
     {"grant_type", "client_credentials"}
   ]},
@@ -6,3 +7,4 @@ response = HTTPoison.post! "http://localhost:28139/api/oauth/token/",
     {"Content-Type", "application/x-www-form-urlencoded"}
   ],
   [hackney: [basic_auth: {"foo", "bar"}]]
+)

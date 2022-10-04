@@ -1,4 +1,5 @@
-response = HTTPoison.post! "http://localhost:28139/echo/html/",
+response = HTTPoison.post!(
+  "http://localhost:28139/echo/html/",
   {:form, [
     {"msg1", "wow"},
     {"msg2", "such"}
@@ -14,3 +15,4 @@ response = HTTPoison.post! "http://localhost:28139/echo/html/",
     {"X-Requested-With", "XMLHttpRequest"},
     {"Connection", "keep-alive"}
   ]
+)

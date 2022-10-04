@@ -1,4 +1,5 @@
-response = HTTPoison.post! "http://localhost:28139/ajax/demo_post.asp",
+response = HTTPoison.post!(
+  "http://localhost:28139/ajax/demo_post.asp",
   "",
   [
     {"Origin", "http://www.w3schools.com"},
@@ -11,3 +12,4 @@ response = HTTPoison.post! "http://localhost:28139/ajax/demo_post.asp",
     {"Content-Length", "0"}
   ],
   [hackney: [cookie: ["_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"]]]
+)
