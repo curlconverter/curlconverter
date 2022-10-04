@@ -1,8 +1,5 @@
-request = %HTTPoison.Request{
-  method: :options,
-  url: "http://localhost:28139/api/tunein/queue-and-play",
-  body: "",
-  headers: [
+response = HTTPoison.options! "http://localhost:28139/api/tunein/queue-and-play",
+  [
     {"Pragma", "no-cache"},
     {"Access-Control-Request-Method", "POST"},
     {"Origin", "https://alexa.amazon.de"},
@@ -16,15 +13,13 @@ request = %HTTPoison.Request{
     {"DNT", "1"},
     {"Access-Control-Request-Headers", "content-type,csrf"}
   ],
-  options: [],
-  params: [
-    {"deviceSerialNumber", "xxx"},
-    {"deviceType", "xxx"},
-    {"guideId", "s56876"},
-    {"contentType", "station"},
-    {"callSign", ""},
-    {"mediaOwnerCustomerId", "xxx"}
+  [
+    params: [
+      {"deviceSerialNumber", "xxx"},
+      {"deviceType", "xxx"},
+      {"guideId", "s56876"},
+      {"contentType", "station"},
+      {"callSign", ""},
+      {"mediaOwnerCustomerId", "xxx"}
+    ]
   ]
-}
-
-response = HTTPoison.request(request)

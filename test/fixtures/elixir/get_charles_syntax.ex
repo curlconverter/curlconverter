@@ -1,17 +1,12 @@
-request = %HTTPoison.Request{
-  method: :get,
-  url: "http://localhost:28139/",
-  body: "",
-  headers: [
+response = HTTPoison.get! "http://localhost:28139/",
+  [
     {"Host", "api.ipify.org"},
     {"Accept", "*/*"},
     {"User-Agent", "GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)"},
     {"Accept-Language", "en-CN;q=1, zh-Hans-CN;q=0.9"}
   ],
-  options: [],
-  params: [
-    {"format", "json"}
+  [
+    params: [
+      {"format", "json"}
+    ]
   ]
-}
-
-response = HTTPoison.request(request)
