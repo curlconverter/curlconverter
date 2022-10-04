@@ -2,7 +2,6 @@ import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 import yaml from "yamljs";
-import querystring from "query-string";
 
 const supportedArgs = new Set([
   "url",

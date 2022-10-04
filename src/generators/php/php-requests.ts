@@ -1,7 +1,6 @@
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import querystring from "query-string";
 import jsesc from "jsesc";
 
 const supportedArgs = new Set([
@@ -27,7 +26,7 @@ const supportedArgs = new Set([
 
 // TODO: only string
 const quote = (str: string | null | (string | null)[]): string =>
-  jsesc(str, { quotes: "single" });
+  "'" + jsesc(str, { quotes: "single" }) + "'";
 
 export const _toPhpRequests = (
   request: Request,
@@ -42,8 +41,7 @@ export const _toPhpRequests = (
       if (headerValue === null) {
         continue; // TODO: this could miss not adding a trailing comma
       }
-      headerString +=
-        "    '" + headerName + "' => '" + quote(headerValue) + "'";
+      headerString += "    " + quote(headerName) + " => " + quote(headerValue);
       if (i < headerCount - 1) {
         headerString += ",\n";
       }
@@ -58,38 +56,37 @@ export const _toPhpRequests = (
   if (request.auth) {
     const [user, password] = request.auth;
     optionsString =
-      "$options = array('auth' => array('" + user + "', '" + password + "'));";
+      "$options = array('auth' => array(" +
+      quote(user) +
+      ", " +
+      quote(password) +
+      "));";
   }
 
   let dataString;
   if (request.data) {
-    const parsedQueryString = querystring.parse(request.data, { sort: false });
+    const [parsedQueryString] = util.parseQueryString(request.data);
     dataString = "$data = array(\n";
-    const dataCount = Object.keys(parsedQueryString).length;
     if (
-      dataCount === 1 &&
-      !parsedQueryString[Object.keys(parsedQueryString)[0]]
+      !parsedQueryString ||
+      !parsedQueryString.length ||
+      parsedQueryString.some((p) => p[1] === null)
     ) {
-      dataString = "$data = '" + quote(request.data) + "';";
+      dataString = "$data = " + quote(request.data) + ";";
     } else {
-      let dataIndex = 0;
-      for (const key in parsedQueryString) {
-        const value = parsedQueryString[key];
-        dataString += "    '" + key + "' => '" + quote(value) + "'";
-        if (dataIndex < dataCount - 1) {
-          dataString += ",\n";
-        }
-        dataIndex++;
+      const terms = [];
+      for (const q in parsedQueryString) {
+        const [key, value] = q;
+        terms.push("    " + quote(key) + " => " + quote(value));
       }
-      dataString += "\n);";
+      dataString += terms.join(",\n") + "\n);";
     }
   }
   let requestLine =
     "$response = Requests::" +
     request.method.toLowerCase() +
-    "('" +
-    request.url +
-    "'";
+    "(" +
+    quote(request.url);
   requestLine += ", $headers";
   if (dataString) {
     requestLine += ", $data";
