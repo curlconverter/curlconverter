@@ -31,6 +31,14 @@ function repr(value: string | null | (string | null)[]): string {
   return '"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
 }
 
+function addIndent(value: string): string {
+  // split on new lines and add 2 spaces of indentation to each line, except empty lines
+  return value
+    .split("\n")
+    .map((line) => (line ? "  " + line : line))
+    .join("\n");
+}
+
 function getCookies(request: Request): string {
   if (!request.cookies || !request.cookies.length) {
     return "";
@@ -43,7 +51,7 @@ function getCookies(request: Request): string {
   return `cookie: [${repr(cookies.join("; "))}]`;
 }
 
-function getOptions(request: Request): string {
+function getOptions(request: Request, params: string): [string, string] {
   const hackneyOptions = [];
 
   const auth = getBasicAuth(request);
@@ -61,11 +69,28 @@ function getOptions(request: Request): string {
   }
 
   let hackneyOptionsString = "";
-  if (hackneyOptions.length) {
-    hackneyOptionsString = `hackney: [${hackneyOptions.join(", ")}]`;
+  if (hackneyOptions.length > 1) {
+    hackneyOptionsString = `hackney: [\n    ${hackneyOptions.join(
+      ",\n    "
+    )}\n  ]`;
+  } else if (hackneyOptions.length) {
+    hackneyOptionsString = `hackney: [${hackneyOptions[0]}]`;
   }
 
-  return `[${hackneyOptionsString}]`;
+  const optionsWithoutParams = `[${hackneyOptionsString}]`;
+  let options = optionsWithoutParams;
+  if (params !== "[]") {
+    options = "";
+    options += "[\n";
+    options += "    params: " + addIndent(params).trim();
+    if (hackneyOptionsString) {
+      options += ",\n";
+      options += "    " + addIndent(hackneyOptionsString).trim();
+    }
+    options += "\n";
+    options += "  ]";
+  }
+  return [options, optionsWithoutParams];
 }
 
 function getBasicAuth(request: Request): string {
@@ -152,7 +177,7 @@ function getDataString(request: Request): string {
     return "";
   }
 
-  // TODO: JSON?
+  // TODO: JSON with Poison
 
   if (!request.isDataRaw && request.data.startsWith("@")) {
     const filePath = request.data.slice(1);
@@ -177,7 +202,7 @@ function getDataString(request: Request): string {
     return `{:form, [\n${data.join(",\n")}\n  ]}`;
   }
 
-  if (request.data.includes("|") && request.data.split("\n", 3).length > 3) {
+  if (!request.data.includes("|") && request.data.split("\n", 3).length > 3) {
     return "~s|" + request.data + "|";
   }
   return repr(request.data);
@@ -210,10 +235,12 @@ export const _toElixir = (
   const isBodyMethod = bodyMethods.includes(request.method);
   const body = getBody(request);
   const headers = getHeadersDict(request);
-  const options = getOptions(request);
   const params = getQueryDict(request);
+  // params can go in the options argument, but if we're using the full
+  // form, put them as a separate argument.
+  const [options, optionsWithoutParams] = getOptions(request, params);
 
-  if (params === "[]" && (body === '""' || isBodyMethod)) {
+  if (body === '""' || isBodyMethod) {
     let s =
       "response = HTTPoison." +
       request.method.toLowerCase() +
@@ -244,7 +271,7 @@ export const _toElixir = (
   url: ${repr(request.urlWithoutQuery)},
   body: ${body},
   headers: ${headers},
-  options: ${options},
+  options: ${optionsWithoutParams},
   params: ${params}
 }
 
