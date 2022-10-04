@@ -1,4 +1,5 @@
-response = HTTPoison.post! "http://localhost:28139/",
+response = HTTPoison.post!(
+  "http://localhost:28139/",
   {:form, [
     {"foo", "bar"},
     {"foo", ""},
@@ -7,3 +8,4 @@ response = HTTPoison.post! "http://localhost:28139/",
   [
     {"Content-Type", "application/x-www-form-urlencoded"}
   ]
+)

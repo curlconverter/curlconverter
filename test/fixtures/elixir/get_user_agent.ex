@@ -1,4 +1,5 @@
-response = HTTPoison.get! "http://localhost:28139/vc/moviesmagic",
+response = HTTPoison.get!(
+  "http://localhost:28139/vc/moviesmagic",
   [
     {"x-msisdn", "XXXXXXXXXXXXX"},
     {"user-agent", "Mozilla Android6.1"}
@@ -10,3 +11,4 @@ response = HTTPoison.get! "http://localhost:28139/vc/moviesmagic",
       {"tkn", "817263812"}
     ]
   ]
+)

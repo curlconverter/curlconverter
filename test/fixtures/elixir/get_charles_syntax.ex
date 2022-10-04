@@ -1,4 +1,5 @@
-response = HTTPoison.get! "http://localhost:28139/",
+response = HTTPoison.get!(
+  "http://localhost:28139/",
   [
     {"Host", "api.ipify.org"},
     {"Accept", "*/*"},
@@ -10,3 +11,4 @@ response = HTTPoison.get! "http://localhost:28139/",
       {"format", "json"}
     ]
   ]
+)

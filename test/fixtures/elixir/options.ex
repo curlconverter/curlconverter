@@ -1,4 +1,5 @@
-response = HTTPoison.options! "http://localhost:28139/api/tunein/queue-and-play",
+response = HTTPoison.options!(
+  "http://localhost:28139/api/tunein/queue-and-play",
   [
     {"Pragma", "no-cache"},
     {"Access-Control-Request-Method", "POST"},
@@ -23,3 +24,4 @@ response = HTTPoison.options! "http://localhost:28139/api/tunein/queue-and-play"
       {"mediaOwnerCustomerId", "xxx"}
     ]
   ]
+)

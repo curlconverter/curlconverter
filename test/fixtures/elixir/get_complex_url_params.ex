@@ -1,4 +1,5 @@
-response = HTTPoison.get! "http://localhost:28139/house-sitting/",
+response = HTTPoison.get!(
+  "http://localhost:28139/house-sitting/",
   [],
   [
     params: [
@@ -45,3 +46,4 @@ response = HTTPoison.get! "http://localhost:28139/house-sitting/",
       {"stopover", ""}
     ]
   ]
+)

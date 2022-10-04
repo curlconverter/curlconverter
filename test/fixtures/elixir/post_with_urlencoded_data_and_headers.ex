@@ -1,4 +1,5 @@
-response = HTTPoison.post! "http://localhost:28139/api/Listing.svc/PropertySearch_Post",
+response = HTTPoison.post!(
+  "http://localhost:28139/api/Listing.svc/PropertySearch_Post",
   {:form, [
     {"CultureId", "1"},
     {"ApplicationId", "1"},
@@ -32,3 +33,4 @@ response = HTTPoison.post! "http://localhost:28139/api/Listing.svc/PropertySearc
     {"Referer", "http://www.realtor.ca/Residential/Map.aspx"},
     {"Connection", "keep-alive"}
   ]
+)

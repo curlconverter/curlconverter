@@ -1,4 +1,5 @@
-response = HTTPoison.get! "http://localhost:28139/synthetics/api/v3/monitors",
+response = HTTPoison.get!(
+  "http://localhost:28139/synthetics/api/v3/monitors",
   [
     {"X-Api-Key", "123456789"}
   ],
@@ -9,3 +10,4 @@ response = HTTPoison.get! "http://localhost:28139/synthetics/api/v3/monitors",
       {"w", "4"}
     ]
   ]
+)
