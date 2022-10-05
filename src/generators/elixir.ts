@@ -202,7 +202,12 @@ function getDataString(request: Request): string {
     return `{:form, [\n${data.join(",\n")}\n  ]}`;
   }
 
-  if (!request.data.includes("|") && request.data.split("\n", 3).length > 3) {
+  if (
+    !request.data.includes("|") &&
+    request.data.split("\n", 4).length > 3 &&
+    // No trailing whitespace, except possibly on the last line
+    !request.data.match(/[^\S\r\n]\n/)
+  ) {
     return "~s|" + request.data + "|";
   }
   return repr(request.data);
