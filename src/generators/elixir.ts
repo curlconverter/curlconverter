@@ -202,7 +202,12 @@ function getDataString(request: Request): string {
     return `{:form, [\n${data.join(",\n")}\n  ]}`;
   }
 
-  if (!request.data.includes("|") && request.data.split("\n", 3).length > 3) {
+  if (
+    !request.data.includes("|") &&
+    request.data.split("\n", 4).length > 3 &&
+    // No trailing whitespace, except possibly on the last line
+    !request.data.match(/[^\S\r\n]\n/)
+  ) {
     return "~s|" + request.data + "|";
   }
   return repr(request.data);
@@ -228,7 +233,7 @@ export const _toElixir = (
   if (!methods.includes(request.method)) {
     warnings.push([
       "bad-method",
-      'Unsupported method "' + request.method + '"',
+      "Unsupported method " + JSON.stringify(request.method),
     ]);
   }
 
@@ -243,18 +248,18 @@ export const _toElixir = (
   if (body === '""' || isBodyMethod) {
     // Add args backwards. As soon as we see a non-default value, we have to
     // add all preceding arguments.
-    let skipArg = true;
     let args = [];
-    skipArg &&= options === "[]";
-    if (!skipArg) {
+    let keepArgs = false;
+    keepArgs ||= options !== "[]";
+    if (keepArgs) {
       args.push(options);
     }
-    skipArg &&= headers === "[]";
-    if (!skipArg) {
+    keepArgs ||= headers !== "[]";
+    if (keepArgs) {
       args.push(headers);
     }
-    skipArg &&= body === '""';
-    if (!skipArg && isBodyMethod) {
+    keepArgs ||= body !== '""';
+    if (keepArgs && isBodyMethod) {
       args.push(body);
     }
     args.push(repr(request.urlWithoutQuery));
@@ -263,11 +268,13 @@ export const _toElixir = (
     let s = "response = HTTPoison." + request.method.toLowerCase() + "!(";
     if (args.length === 1) {
       // If we just need the method+URL, keep it all on one line
-      return s + args[0] + ")\n";
+      s += args[0];
+    } else {
+      s += "\n";
+      s += "  " + args.join(",\n  ");
+      s += "\n";
     }
-    s += "\n  " + args.join(",\n  ");
-    s += "\n)\n";
-    return s;
+    return s + ")\n";
   }
 
   return `request = %HTTPoison.Request{

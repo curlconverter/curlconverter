@@ -6,10 +6,6 @@
         "Content-Type": "application/x-www-form-urlencoded"
     },
     "data": {
-        "item[]": [
-            "1",
-            "2",
-            "3"
-        ]
+        "item[]=1&item[]=2&item[]=3": ""
     }
 }

@@ -3,7 +3,6 @@ import type { Request, Warnings } from "../util.js";
 
 import yaml from "yamljs";
 import jsesc from "jsesc";
-import querystring from "query-string";
 
 const supportedArgs = new Set([
   "url",
@@ -34,13 +33,13 @@ function getDataString(request: Request): PostData | null {
   if (request.data.indexOf("'") > -1) {
     request.data = jsesc(request.data);
   }
-  const parsedQueryString = querystring.parse(request.data, { sort: false });
-  const keyCount = Object.keys(parsedQueryString).length;
-  const singleKeyOnly =
-    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]];
-  const singularData = request.isDataBinary || singleKeyOnly;
-  if (singularData) {
-    // This doesn't work with --data-binary ''
+  const [parsedQueryString] = util.parseQueryString(request.data);
+  if (
+    !parsedQueryString ||
+    !parsedQueryString.length ||
+    parsedQueryString.some((p) => p[1] === null)
+  ) {
+    // This is wrong
     try {
       return {
         mimeType,

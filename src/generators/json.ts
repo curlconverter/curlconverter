@@ -1,9 +1,7 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from "../util.js";
-import type { Request, QueryDict, Warnings } from "../util.js";
-
-import querystring from "query-string";
+import type { Request, Query, QueryDict, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
   "url",
@@ -56,37 +54,29 @@ function getDataString(request: Request): {
    }
    */
 
-  const parsedQueryString = querystring.parse(request.data, { sort: false });
-  const keyCount = Object.keys(parsedQueryString).length;
-  const singleKeyOnly =
-    keyCount === 1 && !parsedQueryString[Object.keys(parsedQueryString)[0]];
-  const singularData = request.isDataBinary || singleKeyOnly;
-  if (singularData) {
+  const [parsedQuery, parsedQueryDict] = util.parseQueryString(request.data);
+  if (
+    !parsedQuery ||
+    !parsedQuery.length ||
+    parsedQuery.some((p) => p[1] === null)
+  ) {
     const data: { [key: string]: string } = {};
-    // TODO: dataRaw = request.data ?
     data[request.data] = "";
     return { data };
-  } else {
-    return getMultipleDataString(request, parsedQueryString);
   }
-}
-
-function getMultipleDataString(
-  request: Request,
-  parsedQueryString: querystring.ParsedQuery<string>
-) {
-  const data: { [key: string]: string | string[] } = {};
-
-  for (const key in parsedQueryString) {
-    const value = parsedQueryString[key];
-    if (Array.isArray(value)) {
-      data[key] = value.map((v: string | null) => (v ? v : ""));
-    } else {
-      data[key] = value ? value : "";
+  if (parsedQueryDict) {
+    const data: { [key: string]: string | string[] } = {};
+    for (const [k, v] of Object.entries(parsedQueryDict)) {
+      if (Array.isArray(v)) {
+        data[k] = v.map((v: string | null) => v ?? "");
+      } else {
+        data[k] = v ?? "";
+      }
     }
+    return { data };
+  } else {
+    return Object.fromEntries(parsedQuery.map((q) => [q[0], q[1] ?? ""]));
   }
-
-  return { data };
 }
 
 function getFilesString(
