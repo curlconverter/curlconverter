@@ -177,7 +177,11 @@ export const _toJavaScriptOrNode = (
     const [user, password] = request.auth;
     imports.add(["* as DigestFetch", "digest-fetch"]);
     code +=
-      "client = new DigestFetch(" + repr(user) + ", " + repr(password) + ");\n";
+      "const client = new DigestFetch(" +
+      repr(user) +
+      ", " +
+      repr(password) +
+      ");\n";
     code += "client.";
   }
   code += "fetch(" + repr(request.url);
