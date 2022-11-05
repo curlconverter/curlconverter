@@ -25,13 +25,15 @@ const supportedArgs = new Set([
   "no-head",
   "user",
 ]);
+function escape(value: string): string {
+  // Escape Dart's $string interpolation syntax
+  return jsesc(value, { quotes: "single", minimal: true }).replace(
+    /\$/g,
+    "\\$"
+  );
+}
 function repr(value: string): string {
-  // In context of url parameters, don't accept nulls and such.
-  if (!value) {
-    return "''";
-  } else {
-    return "'" + jsesc(value, { quotes: "single" }) + "'";
-  }
+  return "'" + escape(value) + "'";
 }
 
 export const _toDart = (request: Request, warnings: Warnings = []): string => {
@@ -63,7 +65,7 @@ export const _toDart = (request: Request, warnings: Warnings = []): string => {
   if (hasHeaders && !request.multipartUploads) {
     s += "  var headers = {\n";
     for (const [hname, hval] of request.headers || []) {
-      s += "    '" + hname + "': '" + hval + "',\n";
+      s += "    " + repr(hname) + ": " + repr(hval ?? "") + ",\n";
     }
 
     if (request.auth) s += "    'Authorization': authn,\n";
@@ -91,32 +93,32 @@ export const _toDart = (request: Request, warnings: Warnings = []): string => {
 
   const hasData = request.data;
   if (request.data) {
-    // escape single quotes if there're not already escaped
-    if (request.data.indexOf("'") !== -1 && request.data.indexOf("\\'") === -1)
-      request.data = jsesc(request.data);
-
-    if (request.dataArray) {
+    const [parsedQuery] = util.parseQueryString(request.data);
+    if (
+      parsedQuery &&
+      parsedQuery.length &&
+      !parsedQuery.some((p) => p[1] === null)
+    ) {
       s += "  var data = {\n";
-      for (let i = 0; i !== request.dataArray.length; ++i) {
-        const kv = request.dataArray[i];
-        const splitKv = kv.replace(/\\"/g, '"').split("=");
-        const key = splitKv[0] || "";
-        const val = splitKv[1] || "";
-        s += "    '" + key + "': '" + val + "',\n";
+      for (const param of parsedQuery) {
+        const [key, val] = param;
+        s += "    " + repr(key) + ": " + repr(val ?? "") + ",\n";
       }
       s += "  };\n";
       s += "\n";
-    } else if (request.isDataBinary) {
-      s += `  var data = utf8.encode('${request.data}');\n\n`;
     } else {
-      s += `  var data = '${request.data}';\n\n`;
+      s += `  var data = ${repr(request.data)};\n\n`;
     }
   }
 
   if (request.query) {
-    s += "  var url = Uri.parse('" + request.urlWithoutQuery + "?$query');\n";
+    s +=
+      "  var url = Uri.parse('" +
+      escape(request.urlWithoutQuery) +
+      "?$query" +
+      "');\n";
   } else {
-    s += "  var url = Uri.parse('" + request.url + "');\n";
+    s += "  var url = Uri.parse(" + repr(request.url) + ");\n";
   }
 
   if (request.multipartUploads) {

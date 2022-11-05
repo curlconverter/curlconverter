@@ -14,7 +14,10 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var data = 'msg1=wow&msg2=such';
+  var data = {
+    'msg1': 'wow',
+    'msg2': 'such',
+  };
 
   var url = Uri.parse('http://localhost:28139/echo/html/');
   var res = await http.post(url, headers: headers, body: data);

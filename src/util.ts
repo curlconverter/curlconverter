@@ -63,28 +63,48 @@ type Cookie = [string, string];
 type Cookies = Array<Cookie>;
 
 type FormParam = { value: string; type: "string" | "form" };
-
+type DataParam = ["data" | "raw" | "binary" | "urlencode" | "json", string];
 interface ParsedArguments {
   request?: string; // the HTTP method
-  data?: string[];
-  "data-binary"?: string[];
-  "data-ascii"?: string[];
-  "data-raw"?: string[];
-  "data-urlencode"?: string[];
-  json?: string[];
+  data?: DataParam[];
+  jsoned?: boolean;
   form?: FormParam[];
-  [key: string]: any;
+  // TODO
+  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 type Warnings = [string, string][];
 
 function pushArgValue(obj: ParsedArguments, argName: string, value: string) {
-  if (argName === "form-string") {
-    return pushProp(obj, "form", { value, type: "string" });
-  } else if (argName === "form") {
-    return pushProp(obj, "form", { value, type: "form" });
+  switch (argName) {
+    case "data":
+    case "data-ascii":
+      return pushProp(obj, "data", ["data", value]);
+    case "data-binary":
+      return pushProp(obj, "data", [
+        // Unless it's a file, --data-binary works the same as --data
+        value.startsWith("@") ? "binary" : "data",
+        value,
+      ]);
+    case "data-raw":
+      return pushProp(obj, "data", [
+        // Unless it's a file, --data-raw works the same as --data
+        value.startsWith("@") ? "raw" : "data",
+        value,
+      ]);
+    case "data-urlencode":
+      return pushProp(obj, "data", ["urlencode", value]);
+    case "json":
+      obj.jsoned = true;
+      return pushProp(obj, "data", ["json", value]); // TODO: just "data"?
+    // TODO: case "url-query":
+
+    case "form":
+      return pushProp(obj, "form", { value, type: "form" });
+    case "form-string":
+      return pushProp(obj, "form", { value, type: "string" });
   }
-  // TODO: --data-*
+
   return pushProp(obj, argName, value);
 }
 
@@ -111,7 +131,7 @@ interface Request {
   compressed?: boolean;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
-  dataArray?: string[];
+  dataArray?: DataParam[];
   data?: string;
   uploadFile?: string;
   insecure?: boolean;
@@ -755,11 +775,6 @@ const canBeList = new Set([
   "proxy-header",
   "form",
   "data",
-  "data-binary",
-  "data-ascii",
-  "data-raw",
-  "data-urlencode",
-  "json",
   "mail-rcpt",
   "resolve",
   "connect-to",
@@ -1358,6 +1373,13 @@ const parseArgs = (
   return parsedArguments;
 };
 
+export const percentEncodeChar = (c: string): string =>
+  "%" + c.charCodeAt(0).toString(16).padStart(2, "0").toUpperCase();
+// Match Python's urllib.parse.quote() behavior
+// https://stackoverflow.com/questions/946170/equivalent-javascript-functions-for-pythons-urllib-parse-quote-and-urllib-par
+export const percentEncode = (s: string): string =>
+  encodeURIComponent(s).replace(/[()*!']/g, percentEncodeChar); // .replace('%20', '+')
+
 export function parseQueryString(
   s: string | null
 ): [Query | null, QueryDict | null] {
@@ -1390,14 +1412,8 @@ export function parseQueryString(
     try {
       // If the query string doesn't round-trip, we cannot properly convert it.
       // TODO: this is too strict. Ideally we want to check how each runtime/library
-      // percent encodes query strings. For example, a %27 character in the input query
+      // percent-encodes query strings. For example, a %27 character in the input query
       // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
-      const percentEncodeChar = (c: string): string =>
-        "%" + c.charCodeAt(0).toString(16).padStart(2, "0").toUpperCase();
-      // Match Python's urllib.parse.quote() behavior
-      // https://stackoverflow.com/questions/946170/equivalent-javascript-functions-for-pythons-urllib-parse-quote-and-urllib-par
-      const percentEncode = (s: string): string =>
-        encodeURIComponent(s).replace(/[()*!']/g, percentEncodeChar); // .replace('%20', '+')
       const roundTripKey = percentEncode(decodedKey);
       const roundTripVal =
         decodedVal === null ? null : percentEncode(decodedVal);
@@ -1544,13 +1560,7 @@ function buildRequest(
     // --upload-file '' doesn't do anything.
     method = "PUT";
   } else if (
-    (has(parsedArguments, "data") ||
-      has(parsedArguments, "data-binary") ||
-      has(parsedArguments, "data-ascii") ||
-      has(parsedArguments, "data-raw") ||
-      has(parsedArguments, "data-urlencode") ||
-      has(parsedArguments, "form") ||
-      has(parsedArguments, "json")) &&
+    (has(parsedArguments, "data") || has(parsedArguments, "form")) &&
     !parsedArguments.get
   ) {
     method = "POST";
@@ -1577,6 +1587,30 @@ function buildRequest(
     url = "http://" + url;
   }
 
+  let dataStr = "";
+  if (parsedArguments.data && parsedArguments.data.length) {
+    for (const [i, x] of parsedArguments.data.entries()) {
+      const [type, value] = x;
+      if (i > 0 && type !== "json") {
+        dataStr += "&";
+      }
+      // curl prefers @ over = for --data-urlencode
+      if (type === "urlencode" && !value.includes("@")) {
+        if (value.includes("=")) {
+          const [name, content] = value.split(/=(.*)/s, 2);
+          if (name) {
+            dataStr += name + "=";
+          }
+          dataStr += percentEncode(content);
+        } else {
+          dataStr += percentEncode(value);
+        }
+      } else {
+        dataStr += value;
+      }
+    }
+  }
+
   let urlObject = URL.parse(url); // eslint-disable-line
   if (parsedArguments["upload-file"]) {
     // TODO: it's more complicated
@@ -1594,14 +1628,15 @@ function buildRequest(
     urlObject.query = urlObject.query ? urlObject.query : "";
     if (has(parsedArguments, "data") && parsedArguments.data !== undefined) {
       let urlQueryString = "";
-
-      if (url.indexOf("?") < 0) {
-        url += "?";
-      } else {
+      if (url.includes("?")) {
         urlQueryString += "&";
+      } else {
+        url += "?";
+      }
+      if (dataStr) {
+        urlQueryString += dataStr;
       }
 
-      urlQueryString += parsedArguments.data.join("&");
       urlObject.query += urlQueryString;
       // TODO: url and urlObject will be different if url has an #id
       url += urlQueryString;
@@ -1657,58 +1692,23 @@ function buildRequest(
     request.uploadFile = parsedArguments["upload-file"];
   }
 
-  // TODO: all of these could be specified in the same command.
-  // They also need to maintain order.
-  // TODO: do all of these allow @file?
-  let data;
   if (parsedArguments.data) {
-    data = parsedArguments.data;
-    _setHeaderIfMissing(
-      headers,
-      "Content-Type",
-      "application/x-www-form-urlencoded",
-      lowercase
-    );
-  } else if (parsedArguments["data-binary"]) {
-    data = parsedArguments["data-binary"];
-    request.isDataBinary = true;
-    _setHeaderIfMissing(
-      headers,
-      "Content-Type",
-      "application/x-www-form-urlencoded",
-      lowercase
-    );
-  } else if (parsedArguments["data-ascii"]) {
-    data = parsedArguments["data-ascii"];
-    _setHeaderIfMissing(
-      headers,
-      "Content-Type",
-      "application/x-www-form-urlencoded",
-      lowercase
-    );
-  } else if (parsedArguments["data-raw"]) {
-    data = parsedArguments["data-raw"];
-    request.isDataRaw = true;
-    _setHeaderIfMissing(
-      headers,
-      "Content-Type",
-      "application/x-www-form-urlencoded",
-      lowercase
-    );
-  } else if (parsedArguments["data-urlencode"]) {
-    // TODO: this doesn't exactly match curl
-    // all '&' and all but the first '=' need to be escaped
-    data = parsedArguments["data-urlencode"];
-    _setHeaderIfMissing(
-      headers,
-      "Content-Type",
-      "application/x-www-form-urlencoded",
-      lowercase
-    );
-  } else if (parsedArguments.json) {
-    data = parsedArguments.json;
-    _setHeaderIfMissing(headers, "Content-Type", "application/json", lowercase);
-    _setHeaderIfMissing(headers, "Accept", "application/json", lowercase);
+    if (parsedArguments.jsoned) {
+      _setHeaderIfMissing(
+        headers,
+        "Content-Type",
+        "application/json",
+        lowercase
+      );
+      _setHeaderIfMissing(headers, "Accept", "application/json", lowercase);
+    } else {
+      _setHeaderIfMissing(
+        headers,
+        "Content-Type",
+        "application/x-www-form-urlencoded",
+        lowercase
+      );
+    }
   } else if (parsedArguments.form) {
     request.multipartUploads = [];
     for (const multipartArgument of parsedArguments.form) {
@@ -1756,13 +1756,12 @@ function buildRequest(
   if (parsedArguments.digest) {
     request.digest = parsedArguments.digest;
   }
-  if (data) {
-    if (data.length > 1) {
-      request.dataArray = data;
-      request.data = data.join(parsedArguments.json ? "" : "&");
-    } else {
-      request.data = data[0];
-    }
+  if (parsedArguments.data && parsedArguments.data.length) {
+    request.dataArray = parsedArguments.data;
+    request.data = dataStr;
+    request.isDataRaw = parsedArguments.data.some((x) => x[0] === "raw");
+    request.isDataBinary =
+      !request.isDataRaw && parsedArguments.data.some((x) => x[0] === "binary");
   }
 
   if (parsedArguments.insecure) {

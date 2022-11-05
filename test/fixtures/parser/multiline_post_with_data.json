@@ -13,8 +13,16 @@
     ]
   ],
   "dataArray": [
-    "msg1=value1",
-    "msg2=value2"
+    [
+      "data",
+      "msg1=value1"
+    ],
+    [
+      "data",
+      "msg2=value2"
+    ]
   ],
-  "data": "msg1=value1&msg2=value2"
+  "data": "msg1=value1&msg2=value2",
+  "isDataRaw": false,
+  "isDataBinary": false
 }

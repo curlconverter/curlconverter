@@ -456,15 +456,10 @@ function getDataString(
         request.data = request.stdin;
       } else {
         if (request.isDataBinary) {
-          return [
-            "data = sys.stdin.buffer.read().replace(b'\\n', b'')\n",
-            true,
-            null,
-            null,
-          ];
+          return ["data = sys.stdin.buffer.read()\n", true, null, null];
         } else {
           return [
-            "data = sys.stdin.read().replace('\\n', '')\n",
+            "data = sys.stdin.readline().strip('\\n')\n",
             true,
             null,
             null,
@@ -474,20 +469,18 @@ function getDataString(
     }
     if (!request.stdin) {
       if (request.isDataBinary) {
-        // TODO: I bet the way python treats file paths is not identical to curl's
+        // TODO: I bet the way Python treats file paths is not identical to curl's
         return [
-          "with open(" +
-            repr(filePath) +
-            ", 'rb') as f:\n    data = f.read().replace(b'\\n', b'')\n",
+          `with open(${repr(filePath)}, 'rb') as f:\n` +
+            "    data = f.read()\n",
           false,
           null,
           null,
         ];
       } else {
         return [
-          "with open(" +
-            repr(filePath) +
-            ") as f:\n    data = f.read().replace('\\n', '')\n",
+          `with open(${repr(filePath)}) as f:\n` +
+            "    data = f.readline().strip('\\n')\n",
           false,
           null,
           null,
@@ -518,7 +511,6 @@ function getDataString(
 
   const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data);
   if (
-    !request.isDataBinary &&
     parsedQuery &&
     parsedQuery.length &&
     !parsedQuery.some((p) => p[1] === null)
