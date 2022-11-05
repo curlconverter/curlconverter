@@ -23,6 +23,8 @@ const javaScriptSupportedArgs = new Set([
   "head",
   "no-head",
   "user",
+  "digest",
+  "no-digest",
   "upload-file",
 ]);
 
@@ -170,6 +172,14 @@ export const _toJavaScriptOrNode = (
   // Can delete content-type header
   const [dataString, commentedOutDataString] = getDataString(request);
 
+  if (request.auth && request.digest) {
+    // TODO: if 'Authorization:' header is specified, don't set this
+    const [user, password] = request.auth;
+    imports.add(["* as DigestFetch", "digest-fetch"]);
+    code +=
+      "client = new DigestFetch(" + repr(user) + ", " + repr(password) + ");\n";
+    code += "client.";
+  }
   code += "fetch(" + repr(request.url);
 
   const method = request.method.toLowerCase();
@@ -177,7 +187,7 @@ export const _toJavaScriptOrNode = (
   if (
     method !== "get" ||
     (request.headers && request.headers.length) ||
-    request.auth ||
+    (request.auth && !request.digest) ||
     request.data ||
     request.multipartUploads ||
     (isNode && request.proxy)
@@ -201,7 +211,7 @@ export const _toJavaScriptOrNode = (
           repr(headerValue || "") +
           ",\n";
       }
-      if (request.auth) {
+      if (request.auth && !request.digest) {
         // TODO: if -H 'Authorization:' is passed, don't set this
         const [user, password] = request.auth;
         code +=
