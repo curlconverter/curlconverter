@@ -6,6 +6,6 @@ headers = {
 }
 
 with open('./sample.sparql', 'rb') as f:
-    data = f.read().replace(b'\n', b'')
+    data = f.read()
 
 response = requests.post('http://localhost:28139/american-art/query', headers=headers, data=data)

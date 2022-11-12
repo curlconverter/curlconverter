@@ -190,8 +190,8 @@ const prepareDataProvider = (
 
 const prepareData = (request: Request) => {
   let response = null;
-  if (request.dataArray) {
-    const data = request.dataArray.map((x: string) =>
+  if (request.data && request.data.split("&", 2).length > 1) {
+    const data = request.data.split("&").map((x: string) =>
       x.split("=").map((x) => {
         let ans = repr(x);
         try {

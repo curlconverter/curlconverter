@@ -190,7 +190,6 @@ function getDataString(request: Request): string {
 
   const [parsedQuery] = util.parseQueryString(request.data);
   if (
-    !request.isDataBinary &&
     parsedQuery &&
     parsedQuery.length &&
     !parsedQuery.some((p) => p[1] === null)
