@@ -35,7 +35,6 @@ type Converter =
   | "r"
   | "ruby"
   | "rust"
-  | "strest"
   | "parser";
 const converters = {
   ansible: {
@@ -127,11 +126,6 @@ const converters = {
     name: "Rust",
     extension: ".rs",
     converter: curlconverter.toRust,
-  },
-  strest: {
-    name: "Strest",
-    extension: ".strest.yml",
-    converter: curlconverter.toStrest,
   },
   parser: {
     name: "Parser",

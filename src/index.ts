@@ -26,7 +26,6 @@ export { toPython, toPythonWarn } from "./generators/python.js";
 export { toR, toRWarn } from "./generators/r.js";
 export { toRuby, toRubyWarn } from "./generators/ruby.js";
 export { toRust, toRustWarn } from "./generators/rust.js";
-export { toStrest, toStrestWarn } from "./generators/strest.js";
 
 // backwards compatibility aliases
 export { toJavaScript as toBrowser } from "./generators/javascript/javascript.js";
