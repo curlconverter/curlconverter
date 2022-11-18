@@ -47,7 +47,6 @@ const executables = {
   r: "r < <file> --no-save",
   ruby: "ruby <file>",
   // rust: '',
-  // strest: ''
 };
 
 const argv = await yargs(hideBin(process.argv))

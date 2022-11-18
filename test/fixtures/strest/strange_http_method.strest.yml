@@ -1,6 +1,0 @@
-version: 2
-requests:
-  curl_converter:
-    request:
-      url: 'http://localhost:28139'
-      method: WHAT
