@@ -1,7 +1,7 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from "../util.js";
-import type { Request, Query, QueryDict, Warnings } from "../util.js";
+import type { Request, QueryDict, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
   "url",

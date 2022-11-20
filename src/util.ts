@@ -18,11 +18,8 @@ function pushProp<Type>(
   prop: string,
   value: Type
 ) {
-  if (!has(obj, prop)) {
-    // TODO: I have no idea what
-    // Type 'never[]' is not assignable to type 'never'.
-    // means
-    (obj[prop] as Type[]) = [];
+  if (!Object.prototype.hasOwnProperty.call(obj, prop)) {
+    obj[prop] = [];
   }
   obj[prop].push(value);
   return obj;
@@ -96,7 +93,7 @@ function pushArgValue(obj: ParsedArguments, argName: string, value: string) {
       return pushProp(obj, "data", ["urlencode", value]);
     case "json":
       obj.jsoned = true;
-      return pushProp(obj, "data", ["json", value]); // TODO: just "data"?
+      return pushProp(obj, "data", ["json", value]);
     // TODO: case "url-query":
 
     case "form":
@@ -129,10 +126,11 @@ interface Request {
   cookieFiles?: string[];
   cookieJar?: string;
   compressed?: boolean;
-  isDataBinary?: boolean;
-  isDataRaw?: boolean;
   dataArray?: DataParam[];
   data?: string;
+  dataFiles?: Array<[string, string]>;
+  isDataBinary?: boolean;
+  isDataRaw?: boolean;
   uploadFile?: string;
   insecure?: boolean;
   cert?: string | [string, string];
@@ -1373,12 +1371,34 @@ const parseArgs = (
   return parsedArguments;
 };
 
-export const percentEncodeChar = (c: string): string =>
-  "%" + c.charCodeAt(0).toString(16).padStart(2, "0").toUpperCase();
 // Match Python's urllib.parse.quote() behavior
-// https://stackoverflow.com/questions/946170/equivalent-javascript-functions-for-pythons-urllib-parse-quote-and-urllib-par
-export const percentEncode = (s: string): string =>
-  encodeURIComponent(s).replace(/[()*!']/g, percentEncodeChar); // .replace('%20', '+')
+// https://github.com/python/cpython/blob/3.11/Lib/urllib/parse.py#L826
+// You're not supposed to percent encode non-ASCII characters, but
+// both curl and Python let you do it by encoding each UTF-8 byte.
+// TODO: ignore hex case?
+const UTF8encoder = new TextEncoder();
+export const percentEncode = (s: string): string => {
+  return [...UTF8encoder.encode(s)]
+    .map((b) => {
+      if (
+        // A-Z
+        (b >= 0x41 && b <= 0x5a) ||
+        // a-z
+        (b >= 0x61 && b <= 0x7a) ||
+        // 0-9
+        (b >= 0x30 && b <= 0x39) ||
+        // -._~
+        b === 0x2d ||
+        b === 0x2e ||
+        b === 0x5f ||
+        b === 0x7e
+      ) {
+        return String.fromCharCode(b);
+      }
+      return "%" + b.toString(16).toUpperCase().padStart(2, "0");
+    })
+    .join("");
+};
 
 export function parseQueryString(
   s: string | null
@@ -1442,8 +1462,8 @@ export function parseQueryString(
     if (prevKey === key) {
       (asDict[key] as Array<string | null>).push(val);
     } else {
-      if (!has(asDict, key)) {
-        (asDict[key] as Array<string | null>) = [val];
+      if (!Object.prototype.hasOwnProperty.call(asDict, key)) {
+        asDict[key] = [val];
       } else {
         // If there's a repeated key with a different key between
         // one of its repetitions, there is no way to represent
@@ -1466,7 +1486,9 @@ export function parseQueryString(
 
 function buildRequest(
   parsedArguments: ParsedArguments,
-  warnings: Warnings = []
+  warnings: Warnings = [],
+  stdin?: string,
+  stdinFile?: string
 ): Request {
   // TODO: handle multiple URLs
   if (!parsedArguments.url || !parsedArguments.url.length) {
@@ -1588,26 +1610,56 @@ function buildRequest(
   }
 
   let dataStr = "";
+  // TODO: warn that we're not actually reading the files
+  const dataFiles: Array<[string, string]> = [];
   if (parsedArguments.data && parsedArguments.data.length) {
     for (const [i, x] of parsedArguments.data.entries()) {
-      const [type, value] = x;
+      const type = x[0];
+      let value = x[1];
+
       if (i > 0 && type !== "json") {
         dataStr += "&";
       }
-      // curl prefers @ over = for --data-urlencode
-      if (type === "urlencode" && !value.includes("@")) {
-        if (value.includes("=")) {
-          const [name, content] = value.split(/=(.*)/s, 2);
-          if (name) {
-            dataStr += name + "=";
-          }
-          dataStr += percentEncode(content);
-        } else {
-          dataStr += percentEncode(value);
+
+      if (type === "urlencode") {
+        // curl checks for = before @
+        const splitOn = value.includes("=") || !value.includes("@") ? "=" : "@";
+        const splitOnRegex = splitOn === "=" ? /=(.*)/s : /@(.*)/s;
+        const [name, content] = value.split(splitOnRegex, 2);
+        if (name) {
+          dataStr += name + "=";
         }
-      } else {
-        dataStr += value;
+
+        if (splitOn === "=") {
+          dataStr += percentEncode(content);
+          continue;
+        }
+        value = "@" + content;
       }
+
+      if (type !== "raw" && value.startsWith("@")) {
+        const filename = value.slice(1);
+        if (filename !== "-") {
+          dataFiles.push([filename, type]);
+        } else {
+          if (stdin !== undefined) {
+            value = ["binary", "json"].includes(type)
+              ? stdin
+              : stdin.replace(/[\n\r]/g, "");
+            value = type === "urlencode" ? percentEncode(value) : value;
+          } else if (stdinFile !== undefined) {
+            value = "@" + stdinFile;
+            dataFiles.push([stdinFile, type]);
+          } else {
+            // TODO: if stdin is read twice, it will be empty the second time
+            // TODO: `stdinSentinel` so that we can tell the difference between
+            // a stdinFile called "-" and stdin for the error message
+            dataFiles.push(["-", type]);
+          }
+        }
+      }
+
+      dataStr += value;
     }
   }
 
@@ -1667,6 +1719,12 @@ function buildRequest(
     if (queryAsDict) {
       request.queryDict = queryAsDict;
     }
+  }
+  if (stdin) {
+    request.stdin = stdin;
+  }
+  if (stdinFile) {
+    request.stdinFile = stdinFile;
   }
 
   if (cookies) {
@@ -1762,6 +1820,9 @@ function buildRequest(
     request.isDataRaw = parsedArguments.data.some((x) => x[0] === "raw");
     request.isDataBinary =
       !request.isDataRaw && parsedArguments.data.some((x) => x[0] === "binary");
+    if (dataFiles.length) {
+      request.dataFiles = dataFiles;
+    }
   }
 
   if (parsedArguments.insecure) {
@@ -1861,14 +1922,8 @@ function parseCurlCommand(
     supportedArgs,
     warnings
   );
-  const request = buildRequest(parsedArguments, warnings);
-  if (stdinFile) {
-    request.stdinFile = stdinFile;
-  }
-  if (stdin) {
-    request.stdin = stdin;
-  }
-  return request;
+
+  return buildRequest(parsedArguments, warnings, stdin, stdinFile);
 }
 
 // Gets the first header, matching case-insensitively
@@ -2006,6 +2061,7 @@ export {
   setHeaderIfMissing,
   deleteHeader,
   has,
+  UTF8encoder,
 };
 
 export type {

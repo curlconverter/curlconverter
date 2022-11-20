@@ -10,6 +10,7 @@
   "rules": {
     "no-empty": ["error", { "allowEmptyCatch": true }],
     "no-unused-vars": "off",
+    "no-control-regex": "off",
     "@typescript-eslint/no-unused-vars": [
       "warn",
       { "argsIgnorePattern": "^_|warnings" }

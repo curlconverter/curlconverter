@@ -173,7 +173,7 @@ const verbose = parsedArguments.verbose;
 
 const argc = Object.keys(parsedArguments).length;
 const language = parsedArguments.language || defaultLanguage;
-const stdin = parsedArguments.stdin;
+const commandFromStdin = parsedArguments.stdin;
 if (!has(translate, language)) {
   exitWithError(
     new CCError(
@@ -196,7 +196,7 @@ if (argc === 0) {
   console.log(USAGE.trim());
   process.exit(2);
 }
-if (stdin) {
+if (commandFromStdin) {
   // This lets you do
   // echo curl example.com | curlconverter --verbose
   const extraArgs = Object.keys(parsedArguments).filter((a) => a !== "verbose");
@@ -222,9 +222,14 @@ if (stdin) {
   warnings = printWarnings(warnings, verbose);
 } else {
   warnings = printWarnings(warnings, verbose);
+
+  let stdin;
+  if (!process.stdin.isTTY) {
+    stdin = fs.readFileSync(0).toString();
+  }
   let request;
   try {
-    request = buildRequest(parsedArguments, warnings);
+    request = buildRequest(parsedArguments, warnings, stdin);
   } catch (e) {
     exitWithError(e, verbose);
   }
