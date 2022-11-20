@@ -1,7 +1,7 @@
 import requests
 
 headers = {
-    '\'Accept\'': '\'application/json\'',
+    "'Accept'": "'application/json'",
     'Authorization': 'Bearer 000000000000000-0000',
     'Content-Type': 'application/json',
 }

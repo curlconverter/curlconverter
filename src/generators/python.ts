@@ -1,8 +1,5 @@
 import * as util from "../util.js";
-import type { Warnings } from "../util.js";
-
-import jsesc from "jsesc";
-import type { Request, Query, QueryDict } from "../util.js";
+import type { Request, Query, QueryDict, Warnings } from "../util.js";
 
 // TODO: partiallySupportedArgs
 const supportedArgs = new Set([
@@ -47,7 +44,9 @@ const supportedArgs = new Set([
   "proxy",
 ]);
 // supported by other generators
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const supportedByOthers = ["max-time", "location"];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const unsupportedArgs = [
   "dns-ipv4-addr",
   "dns-ipv6-addr",
@@ -353,22 +352,125 @@ const unsupportedArgs = [
   "next", // TODO: this is a big one
 ];
 
-function reprWithVariable(value: string, hasEnvironmentVariable: boolean) {
-  if (!value) {
-    return "''";
-  }
+// https://peps.python.org/pep-3138/
+// https://www.unicode.org/reports/tr44/#GC_Values_Table
+// https://unicode.org/Public/UNIDATA/UnicodeData.txt
+// https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
+const regexSingleEscape = /'|\\|\p{C}|\p{Z}'/gu;
+const regexDoubleEscape = /"|\\|\p{C}|\p{Z}'/gu;
 
-  if (!hasEnvironmentVariable) {
-    return "'" + jsesc(value, { quotes: "single", minimal: true }) + "'";
+export function repr(s: string): string {
+  let quote = "'";
+  if (s.includes("'") && !s.includes('"')) {
+    quote = '"';
   }
+  const regex = quote === "'" ? regexSingleEscape : regexDoubleEscape;
 
-  // TODO: escape {} in the string
-  return 'f"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
+  return (
+    quote +
+    s.replace(regex, (c: string): string => {
+      switch (c) {
+        case " ":
+          return " ";
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case "\v":
+          return "\\v";
+        case "\\":
+          return "\\\\";
+        case "'":
+        case '"':
+          return "\\" + c;
+      }
+      const hex = (c.codePointAt(0) as number).toString(16);
+      if (hex.length <= 2) {
+        return "\\x" + hex.padStart(2, "0");
+      }
+      if (hex.length <= 4) {
+        return "\\u" + hex.padStart(4, "0");
+      }
+      return "\\U" + hex.padStart(8, "0");
+    }) +
+    quote
+  );
 }
 
-function repr(value: string): string {
-  // In context of url parameters, don't accept nulls and such.
-  return reprWithVariable(value, false);
+// TODO: use this if string contains unmatched surrogates?
+// It just replaces them with the replacement character, but at least that code would run.
+export function pybescComplex(s: string): string {
+  let quote = "'";
+  if (s.includes("'") && !s.includes('"')) {
+    quote = '"';
+  }
+  const quoteCode = quote.charCodeAt(0);
+
+  // TODO: using UTF-8 here is overly simplistic and how to encode here
+  // is a pretty complicated decision.
+  // For starters, it would be more correct to use the same encoding as
+  // the terminal when running from the command line.
+  const bytes = util.UTF8encoder.encode(s);
+
+  return (
+    "b" +
+    quote +
+    [...bytes]
+      .map((c: number): string => {
+        switch (c) {
+          case 0x07:
+            return "\\a";
+          case 0x08:
+            return "\\b";
+          case 0x0c:
+            return "\\f";
+          case 0x0a:
+            return "\\n";
+          case 0x0d:
+            return "\\r";
+          case 0x09:
+            return "\\t";
+          case 0x0b:
+            return "\\v";
+          case 0x5c:
+            return "\\\\";
+          case quoteCode:
+            return "\\" + String.fromCharCode(c);
+        }
+        if (c >= 0x20 && c < 0x7f) {
+          return String.fromCharCode(c);
+        }
+        const hex = c.toString(16);
+        return "\\x" + hex.padStart(2, "0");
+      })
+      .join("") +
+    quote
+  );
+}
+
+export function reprb(s: string): string {
+  const sEsc = repr(s);
+  // We check until 0x7F instead of 0xFF because curl (running in a UTF-8 terminal) when it gets
+  // bytes sends them as is, but if we pass b'\x80' to Requests, it will encode that byte as
+  // Latin-1 instead of UTF-8.
+  if (/^[\x00-\x7f]*$/.test(s)) {
+    return "b" + sEsc;
+  }
+  // TODO: unmatched surrogates will generate code that throws an error
+  return sEsc + ".encode('utf-8')";
+}
+
+function reprWithVariable(value: string, hasEnvironmentVariable: boolean) {
+  // TODO: escape {}
+  return hasEnvironmentVariable ? "f" + repr(value) : repr(value);
 }
 
 function objToPython(
@@ -381,6 +483,8 @@ function objToPython(
       s += repr(obj);
       break;
     case "number":
+      // TODO: there could be differences in number syntax between Python and JavaScript
+      // TODO: if the number in the JSON file is too big for JavaScript, we will lose information
       s += obj;
       break;
     case "boolean":
@@ -493,16 +597,19 @@ function getDataString(
 
   const contentTypeHeader = util.getHeader(request, "content-type");
   const isJson =
+    !(request.dataFiles && request.dataFiles.length) &&
     contentTypeHeader &&
     contentTypeHeader.split(";")[0].trim() === "application/json";
   if (isJson) {
     try {
+      // TODO: repeated dictionary keys are discarded
       const dataAsJson = JSON.parse(request.data);
-      // TODO: we actually want to know how it's serialized by
-      // simplejson or Python's builtin json library,
-      // which is what Requests uses
+      // Requests uses Python's builtin json library
       // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-      // but this is hopefully good enough.
+      // which serializes JSON with spaces between : and ,
+      // but JSON.stringify() doesn't add spaces. So mostly this is
+      // guarding against loss in precision in very long numbers.
+      // TODO: reimplement JSON.stringify() to match Python's json.dumps()
       const roundtrips = JSON.stringify(dataAsJson) === request.data;
       const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
       return [dataString, false, jsonDataString, roundtrips];
@@ -583,8 +690,7 @@ function getFilesString(request: Request): [string, boolean] {
   return [filesString, usesStdin];
 }
 
-// convertVarToStringFormat will convert if inputString to f"..." format
-// if inputString has possible variable as its substring
+// TODO: get this from the input AST because strings can contain $
 function detectEnvVar(inputString: string): [Set<string>, string] {
   // Using state machine to detect environment variable
   // Each character is an edge, state machine:
