@@ -14,5 +14,6 @@ response = requests.post('http://localhost:28139', headers=headers, json=json_da
 
 # Note: json_data will not be serialized by requests
 # exactly as it was in the original request.
-#data = '{ "drink": "coffe" }'
+#data = '{ "drink":'
+#data += ' "coffe" }'
 #response = requests.post('http://localhost:28139', headers=headers, data=data)

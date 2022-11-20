@@ -1720,6 +1720,7 @@ function buildRequest(
       request.queryDict = queryAsDict;
     }
   }
+  // TODO: warn about unused stdin?
   if (stdin) {
     request.stdin = stdin;
   }

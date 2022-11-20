@@ -545,55 +545,391 @@ function objToDictOrListOfTuples(obj: Query | QueryDict): string {
   return s;
 }
 
-function getDataString(
-  request: Request
-): [string | null, boolean, string | null, boolean | null] {
-  if (!request.data) {
-    return [null, false, null, null];
+function decodePercentEncoding(s: string): string | null {
+  let decoded;
+  try {
+    // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
+    // before decoding.
+    decoded = decodeURIComponent(s.replace(/\+/g, " "));
+  } catch (e) {
+    if (e instanceof URIError) {
+      // String contains invalid percent encoded characters
+      return null;
+    }
+    throw e;
   }
-  if (!request.isDataRaw && request.data.startsWith("@")) {
-    let filePath = request.data.slice(1);
-    if (filePath === "-") {
-      if (request.stdinFile) {
-        filePath = request.stdinFile;
-      } else if (request.stdin) {
-        request.data = request.stdin;
-      } else {
-        if (request.isDataBinary) {
-          return ["data = sys.stdin.buffer.read()\n", true, null, null];
-        } else {
-          return [
-            "data = sys.stdin.readline().strip('\\n')\n",
-            true,
-            null,
-            null,
-          ];
-        }
-      }
+  let roundTripKey;
+  try {
+    // If the query string doesn't round-trip, we cannot properly convert it.
+    // TODO: this is too strict. Ideally we want to check how each runtime/library
+    // percent-encodes query strings. For example, a %27 character in the input query
+    // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
+    roundTripKey = util.percentEncode(decoded);
+  } catch (e) {
+    if (e instanceof URIError) {
+      return null;
     }
-    if (!request.stdin) {
-      if (request.isDataBinary) {
-        // TODO: I bet the way Python treats file paths is not identical to curl's
-        return [
-          `with open(${repr(filePath)}, 'rb') as f:\n` +
-            "    data = f.read()\n",
-          false,
-          null,
-          null,
-        ];
-      } else {
-        return [
-          `with open(${repr(filePath)}) as f:\n` +
-            "    data = f.readline().strip('\\n')\n",
-          false,
-          null,
-          null,
-        ];
-      }
-    }
+    throw e;
+  }
+  // If the original data used %20 instead of + (what requests will send), that's close enough
+  if (roundTripKey !== s && roundTripKey.replace(/%20/g, "+") !== s) {
+    return null;
+  }
+  return decoded;
+}
+
+function _consumeEntriesState(
+  canBeEntries: boolean,
+  dataEntries: Array<[string, string]>,
+  dataEntriesState: string
+): boolean {
+  if (!dataEntriesState) {
+    return canBeEntries;
   }
 
-  const dataString = "data = " + repr(request.data) + "\n";
+  let newEntries = dataEntriesState.split("&");
+  // --data-urlencod name=content --json blah&key=value
+  // should generate
+  // {'name': 'content'+'blah', 'key': 'value'}
+  if (dataEntries.length) {
+    const [first, ...rest] = newEntries;
+    if (first) {
+      const decodedFirst = decodePercentEncoding(first);
+      if (decodedFirst === null) {
+        return false;
+      }
+      dataEntries[dataEntries.length - 1][1] += " + " + repr(decodedFirst);
+    }
+    newEntries = rest;
+  }
+  for (const param of newEntries) {
+    const [key, val] = param.split(/=(.*)/s, 2);
+    if (val === undefined) {
+      return false;
+    }
+
+    const decodedKey = decodePercentEncoding(key);
+    if (decodedKey === null) {
+      return false;
+    }
+    const decodedVal = decodePercentEncoding(val);
+    if (decodedVal === null) {
+      return false;
+    }
+    dataEntries.push([decodedKey, repr(decodedVal)]);
+  }
+  return canBeEntries;
+}
+
+function consumeEntriesState(
+  canBeEntries: boolean,
+  dataEntries: Array<[string, string]>,
+  dataEntriesState: string
+): [boolean, Array<[string, string]>, string] {
+  if (!canBeEntries) {
+    return [false, [], ""];
+  }
+  canBeEntries = _consumeEntriesState(
+    canBeEntries,
+    dataEntries,
+    dataEntriesState
+  );
+  return [canBeEntries, dataEntries, ""];
+}
+
+function dataEntriesToDict(
+  dataEntries: Array<[string, string]>
+): { [key: string]: Array<string> } | null {
+  // Group keys
+  const asDict: { [key: string]: Array<string> } = {};
+  let prevKey = null;
+  for (const [key, val] of dataEntries) {
+    if (prevKey === key) {
+      asDict[key].push(val);
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(asDict, key)) {
+        asDict[key] = [val];
+      } else {
+        // A repeated key with a different key between one of its repetitions
+        // means we can't represent these entries as a dictionary.
+        return null;
+      }
+    }
+    prevKey = key;
+  }
+
+  return asDict;
+}
+
+function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
+  if (dataEntries.length === 0) {
+    return "''"; // This shouldn't happen
+  }
+
+  const entriesDict = dataEntriesToDict(dataEntries);
+  if (entriesDict !== null) {
+    if (Object.keys(entriesDict).length === 0) {
+      return "''"; // This shouldn't happen
+    }
+    let s = "{\n";
+    for (const [key, vals] of Object.entries(entriesDict)) {
+      s += "    " + repr(key) + ": ";
+      if (vals.length === 0) {
+        s += "''"; // This shouldn't happen
+      } else if (vals.length === 1) {
+        s += vals[0];
+      } else {
+        s += "[\n";
+        for (const val of vals) {
+          s += "        " + val + ",\n";
+        }
+        s += "    ]";
+      }
+      s += ",\n";
+    }
+    s += "}";
+    return s;
+  }
+
+  let s = "[\n";
+  for (const entry of dataEntries) {
+    const [key, val] = entry;
+    s += "    (" + repr(key) + ", " + val + "),\n";
+  }
+  s += "]";
+  return s;
+}
+
+function getDataString(
+  request: Request
+): [string | null, Set<string>, string | null, boolean | null] {
+  const imports: Set<string> = new Set();
+  if (!request.data || !request.dataArray) {
+    return [null, imports, null, null];
+  }
+
+  // There's 3 things you can pass as the data= argument to Requests (in descending order of preference):
+  //   a dictionary, or a list of tuples (if the dictionary would have duplicate keys)
+  //   a string
+  //   bytes
+  // We generate the 3 representations in parallel and decide while we're generating
+  // which ones we can't use.
+
+  // data= can't be a dict or a list of tuples (i.e. entries) when
+  // - there is a @file from --data, --data-binary or --json
+  // - there is a --data-urlencode without a name= or name@
+  // - if you split the input on & and there's a value that doesn't contain an = (e.g. --data "foo=bar&" or simply --data "&")
+  // - there is a name or value that doesn't roundtrip through percent encoding
+  let canBeEntries = true;
+  let dataEntries: Array<[string, string]> = [];
+  let dataEntriesState = "";
+
+  const dataLines = [];
+  // If we see a string with non-ASCII characters, or read from a file (which may contain
+  // non - ASCII characters), we convert the entire string to bytes at the end.
+  // curl sends bytes as-is, which is presumably in UTF-8, whereas Requests sends
+  // 0x80-0xFF as Latin-1 (as-is) and throws an error if it sees codepoints
+  // above 0xFF.
+  // TODO: is this actually helpful?
+  let encode = false;
+  let encodeOnSeparateLine = false;
+
+  // If one of the arguments has to be binary, then they all have to be binary
+  // because we can't mix bytes and str.
+  // An argument has to be binary when the input command has
+  // --data-binary @filename
+  // otherwise we will generate code that will try to read an image file as text and error.
+  const dataLinesBinary = [];
+  let isBinary = false;
+
+  for (const [i, d] of request.dataArray.entries()) {
+    const [type, value] = d;
+
+    const op = i === 0 ? "=" : "+=";
+    let line = `data ${op} `;
+    let binLine = line;
+
+    const joiner = i === 0 || type === "json" ? "" : "&";
+    if (["data", "binary", "json"].includes(type) && value.startsWith("@")) {
+      const filename = value.slice(1);
+
+      let fileObj: string | null = null;
+      let binFileObj: string | null = null;
+      let fileContents: string | null = null;
+      if (filename === "-") {
+        if (request.stdin) {
+          fileContents = ["binary", "json"].includes(type)
+            ? request.stdin
+            : request.stdin.replace(/[\n\r]/g, "");
+        } else if (request.stdinFile) {
+          line =
+            "with open(" + repr(request.stdinFile) + ") as f:\n    " + line;
+          binLine =
+            "with open(" +
+            repr(request.stdinFile) +
+            ", 'rb') as f:\n    " +
+            binLine;
+          fileObj = binFileObj = "f";
+        } else {
+          fileObj = "sys.stdin";
+          binFileObj = "sys.stdin.buffer";
+          imports.add("sys");
+        }
+      } else {
+        line = "with open(" + repr(filename) + ") as f:\n    " + line;
+        binLine =
+          "with open(" + repr(filename) + ", 'rb') as f:\n    " + binLine;
+        fileObj = binFileObj = "f";
+      }
+
+      if (fileContents === null) {
+        if (joiner) {
+          line += repr(joiner) + " + ";
+          encodeOnSeparateLine = true;
+
+          binLine += reprb(joiner) + " + ";
+        }
+        line += fileObj;
+        binLine += binFileObj;
+
+        if (type === "binary") {
+          line += ".read()"; // we don't care about `line` anymore because isBinary = true
+          binLine += ".read()";
+          isBinary = true;
+        } else {
+          line += ".read().replace('\\n', '').replace('\\r', '')";
+          binLine += ".read().replace(b'\\n', b'').replace(b'\\r', b'')";
+        }
+
+        encode = true;
+        canBeEntries = false;
+      } else {
+        line += repr(joiner + fileContents);
+        binLine += reprb(joiner + fileContents);
+
+        encode ||= [...fileContents].some((c) => c > "\xff");
+        if (canBeEntries) {
+          dataEntriesState += joiner + fileContents;
+        }
+        // TODO:
+        // isBinary ||= [...fileContents].some((c) => c > "\xff");
+      }
+    } else if (type === "urlencode") {
+      let name: string | null = null;
+      let content = value;
+      let binContent = value;
+      let entriesContent = value;
+      let contentIsCode = false;
+
+      if (value.includes("=")) {
+        // If = is the first character then it's removed
+        [name, content] = value.split(/=(.*)/s, 2);
+        entriesContent = binContent = content;
+      } else if (value.includes("@")) {
+        contentIsCode = true;
+        [name, content] = value.split(/@(.*)/s, 2);
+        binContent = content;
+        if (content === "-") {
+          if (request.stdin) {
+            content = binContent = entriesContent = request.stdin;
+            contentIsCode = false;
+          } else if (request.stdinFile) {
+            line =
+              "with open(" + repr(request.stdinFile) + ") as f:\n    " + line;
+            binLine =
+              "with open(" +
+              repr(request.stdinFile) +
+              ", 'rb') as f:\n    " +
+              binLine;
+            // TODO: change safe= etc. to match curl
+            content = binContent = "quote(f.read())";
+            entriesContent = "open(" + repr(request.stdinFile) + ").read()";
+            imports.add("urllib.parse.quote");
+          } else {
+            content = "quote(sys.stdin.read())";
+            binContent = "quote(sys.stdin.buffer.read())";
+            entriesContent = "sys.stdin.read()";
+            imports.add("sys");
+            imports.add("urllib.parse.quote");
+          }
+        } else {
+          line = "with open(" + repr(content) + ") as f:\n    " + line;
+          binLine =
+            "with open(" + repr(binContent) + ", 'rb') as f:\n    " + binLine;
+
+          // TODO: change safe= etc. to match curl
+          content = binContent = "quote(f.read())";
+          entriesContent = "open(" + repr(content) + ").read()";
+          imports.add("urllib.parse.quote");
+        }
+      }
+
+      if (name) {
+        [canBeEntries, dataEntries, dataEntriesState] = consumeEntriesState(
+          canBeEntries,
+          dataEntries,
+          dataEntriesState
+        );
+        if (contentIsCode) {
+          line += repr(joiner + name + "=") + " + " + content;
+          binLine += reprb(joiner + name + "=") + " + " + binContent;
+          encode = true;
+          encodeOnSeparateLine = true;
+          if (canBeEntries) {
+            dataEntries.push([name, entriesContent]);
+          }
+        } else {
+          const rawValue = joiner + name + "=" + util.percentEncode(content);
+          line += repr(rawValue);
+          binLine += reprb(rawValue);
+          if (canBeEntries) {
+            dataEntries.push([name, repr(entriesContent)]);
+          }
+        }
+      } else {
+        canBeEntries = false;
+        if (contentIsCode) {
+          if (joiner) {
+            line += repr(joiner) + " + ";
+            encodeOnSeparateLine = true;
+            binLine += reprb(joiner) + " + ";
+          }
+          line += content;
+          binLine += binContent;
+          encode = true;
+        } else {
+          const rawValue = joiner + util.percentEncode(content);
+          line += repr(rawValue);
+          binLine += reprb(rawValue);
+        }
+      }
+    } else {
+      line += repr(joiner + value);
+      encode ||= [...value].some((c) => c > "\xff");
+
+      binLine += reprb(joiner + value);
+
+      if (canBeEntries) {
+        dataEntriesState += joiner + value;
+      }
+    }
+
+    dataLines.push(line);
+    dataLinesBinary.push(binLine);
+  }
+  if (encode) {
+    if (dataLines.length === 1 && !encodeOnSeparateLine) {
+      dataLines[0] += ".encode('utf-8')";
+    } else {
+      dataLines.push("data = data.encode('utf-8')");
+    }
+  }
+  const dataString = (isBinary ? dataLinesBinary : dataLines).join("\n") + "\n";
+  [canBeEntries, dataEntries, dataEntriesState] = consumeEntriesState(
+    canBeEntries,
+    dataEntries,
+    dataEntriesState
+  );
 
   const contentTypeHeader = util.getHeader(request, "content-type");
   const isJson =
@@ -612,29 +948,23 @@ function getDataString(
       // TODO: reimplement JSON.stringify() to match Python's json.dumps()
       const roundtrips = JSON.stringify(dataAsJson) === request.data;
       const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
-      return [dataString, false, jsonDataString, roundtrips];
+      return [dataString, imports, jsonDataString, roundtrips];
     } catch {}
   }
 
-  const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data);
-  if (
-    parsedQuery &&
-    parsedQuery.length &&
-    !parsedQuery.some((p) => p[1] === null)
-  ) {
-    const dataPythonObj =
-      "data = " +
-      objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) +
-      "\n";
+  if (canBeEntries && dataEntries.length) {
+    // TODO: warn that spaces encoded as '%20' are encoded as '+' by Requests
+    const dataPythonObj = "data = " + dataEntriesToPython(dataEntries) + "\n";
     if (
       util.getHeader(request, "content-type") ===
       "application/x-www-form-urlencoded"
     ) {
       util.deleteHeader(request, "content-type");
     }
-    return [dataPythonObj, false, null, null];
+    imports.delete("urllib.parse.quote");
+    return [dataPythonObj, imports, null, null];
   }
-  return [dataString, false, null, null];
+  return [dataString, imports, null, null];
 }
 
 function getFilesString(request: Request): [string, boolean] {
@@ -877,7 +1207,6 @@ export const _toPython = (
 
   const contentType = util.getHeader(request, "content-type");
   let dataString;
-  let usesStdin = false;
   let jsonDataString;
   let jsonDataStringRoundtrips;
   let filesString;
@@ -886,14 +1215,16 @@ export const _toPython = (
     // be from --data but the data will be from --upload-file
     if (request.uploadFile === "-" || request.uploadFile === ".") {
       dataString = "data = sys.stdin.buffer.read()\n";
-      usesStdin = true;
+      imports.add("sys");
     } else {
       dataString = "with open(" + repr(request.uploadFile) + ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
     }
   } else if (request.data) {
-    [dataString, usesStdin, jsonDataString, jsonDataStringRoundtrips] =
+    let dataImports: Set<string>;
+    [dataString, dataImports, jsonDataString, jsonDataStringRoundtrips] =
       getDataString(request);
+    dataImports.forEach(imports.add, imports);
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
     if (
@@ -907,7 +1238,11 @@ export const _toPython = (
       }
     }
   } else if (request.multipartUploads) {
+    let usesStdin = false;
     [filesString, usesStdin] = getFilesString(request);
+    if (usesStdin) {
+      imports.add("sys");
+    }
     // If you pass files= then Requests adds this header and a `boundary`
     // If you manually pass a Content-Type header it won't set a `boundary`
     // wheras curl does, so the request will fail.
@@ -922,9 +1257,6 @@ export const _toPython = (
       commentedOutHeaders["content-type"] =
         "requests won't add a boundary if this header is set when you pass files=";
     }
-  }
-  if (usesStdin) {
-    imports.add("sys");
   }
 
   let headerDict;
@@ -1042,9 +1374,16 @@ export const _toPython = (
   }
   if (imports.size) {
     for (const imp of Array.from(imports).sort()) {
-      pythonCode += "import " + imp + "\n";
+      if (imp === "urllib.parse.quote") {
+        // TODO: use quote_plus instead, since that's what Requests uses?
+        pythonCode += "from urllib.parse import quote\n";
+      } else {
+        pythonCode += "import " + imp + "\n";
+      }
     }
-    pythonCode += "\n";
+    if (imports.size > 1) {
+      pythonCode += "\n";
+    }
   }
 
   pythonCode += "import requests\n";
@@ -1093,7 +1432,12 @@ export const _toPython = (
       "\n\n" +
       "# Note: json_data will not be serialized by requests\n" +
       "# exactly as it was in the original request.\n";
-    pythonCode += "#" + dataString;
+    pythonCode += dataString
+      ?.split("\n")
+      // Don't add comment characters to empty lines, most importantly the last line
+      .map((l) => (l.trim() ? "#" + l : l))
+      .join("\n");
+    // TODO: do this correctly?
     pythonCode += "#" + requestLine.replace(", json=json_data", ", data=data");
   }
 

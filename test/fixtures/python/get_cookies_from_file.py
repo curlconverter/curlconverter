@@ -1,5 +1,4 @@
 import http
-
 import requests
 
 cookies = http.cookiejar.MozillaCookieJar('cookie.txt')
