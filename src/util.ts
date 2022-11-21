@@ -60,10 +60,16 @@ type Cookie = [string, string];
 type Cookies = Array<Cookie>;
 
 type FormParam = { value: string; type: "string" | "form" };
-type DataParam = ["data" | "raw" | "binary" | "urlencode" | "json", string];
+type FullDataParam = ["data" | "raw" | "binary" | "urlencode" | "json", string];
+
+type DataParam = [
+  "data" | "binary" | "urlencode" | "json",
+  string | null,
+  string
+];
 interface ParsedArguments {
   request?: string; // the HTTP method
-  data?: DataParam[];
+  data?: FullDataParam[];
   jsoned?: boolean;
   form?: FormParam[];
   // TODO
@@ -126,7 +132,7 @@ interface Request {
   cookieFiles?: string[];
   cookieJar?: string;
   compressed?: boolean;
-  dataArray?: DataParam[];
+  dataArray?: (string | DataParam)[];
   data?: string;
   dataFiles?: Array<[string, string]>;
   isDataBinary?: boolean;
@@ -1609,59 +1615,84 @@ function buildRequest(
     url = "http://" + url;
   }
 
-  let dataStr = "";
-  // TODO: warn that we're not actually reading the files
-  const dataFiles: Array<[string, string]> = [];
+  const data: Array<string | DataParam> = [];
+  let dataStrState = "";
   if (parsedArguments.data && parsedArguments.data.length) {
     for (const [i, x] of parsedArguments.data.entries()) {
       const type = x[0];
       let value = x[1];
+      let name: string | null = null;
 
       if (i > 0 && type !== "json") {
-        dataStr += "&";
+        dataStrState += "&";
       }
 
       if (type === "urlencode") {
         // curl checks for = before @
         const splitOn = value.includes("=") || !value.includes("@") ? "=" : "@";
         const splitOnRegex = splitOn === "=" ? /=(.*)/s : /@(.*)/s;
-        const [name, content] = value.split(splitOnRegex, 2);
-        if (name) {
-          dataStr += name + "=";
-        }
+        [name, value] = value.split(splitOnRegex, 2);
 
         if (splitOn === "=") {
-          dataStr += percentEncode(content);
+          if (name) {
+            dataStrState += name + "=";
+          }
+          dataStrState += percentEncode(value);
           continue;
         }
-        value = "@" + content;
+        name = name ? name : null;
+        value = "@" + value;
       }
 
+      let filename: string | null = null;
+
       if (type !== "raw" && value.startsWith("@")) {
-        const filename = value.slice(1);
-        if (filename !== "-") {
-          dataFiles.push([filename, type]);
-        } else {
+        filename = value.slice(1);
+        if (filename === "-") {
           if (stdin !== undefined) {
             value = ["binary", "json"].includes(type)
               ? stdin
               : stdin.replace(/[\n\r]/g, "");
             value = type === "urlencode" ? percentEncode(value) : value;
+            filename = null;
           } else if (stdinFile !== undefined) {
-            value = "@" + stdinFile;
-            dataFiles.push([stdinFile, type]);
+            filename = stdinFile;
           } else {
             // TODO: if stdin is read twice, it will be empty the second time
             // TODO: `stdinSentinel` so that we can tell the difference between
             // a stdinFile called "-" and stdin for the error message
-            dataFiles.push(["-", type]);
           }
         }
       }
 
-      dataStr += value;
+      if (filename !== null) {
+        if (dataStrState) {
+          data.push(dataStrState);
+          dataStrState = "";
+        }
+        // If filename isn't null then type can't be "raw"
+        data.push([type, name, filename] as DataParam);
+      } else {
+        dataStrState += value;
+      }
+    }
+    if (dataStrState) {
+      data.push(dataStrState);
     }
   }
+  const dataStr = data
+    .map((d) => {
+      if (Array.isArray(d)) {
+        const name = d[1];
+        const filename = d[2];
+        if (name) {
+          return `${name}=@${filename}`;
+        }
+        return "@" + filename;
+      }
+      return d;
+    })
+    .join("");
 
   let urlObject = URL.parse(url); // eslint-disable-line
   if (parsedArguments["upload-file"]) {
@@ -1686,6 +1717,7 @@ function buildRequest(
         url += "?";
       }
       if (dataStr) {
+        // TODO: warn if dataStr has files
         urlQueryString += dataStr;
       }
 
@@ -1720,6 +1752,7 @@ function buildRequest(
       request.queryDict = queryAsDict;
     }
   }
+  // TODO: warn about unused stdin?
   if (stdin) {
     request.stdin = stdin;
   }
@@ -1815,14 +1848,12 @@ function buildRequest(
     request.digest = parsedArguments.digest;
   }
   if (parsedArguments.data && parsedArguments.data.length) {
-    request.dataArray = parsedArguments.data;
     request.data = dataStr;
-    request.isDataRaw = parsedArguments.data.some((x) => x[0] === "raw");
-    request.isDataBinary =
-      !request.isDataRaw && parsedArguments.data.some((x) => x[0] === "binary");
-    if (dataFiles.length) {
-      request.dataFiles = dataFiles;
-    }
+    request.dataArray = data;
+    request.isDataRaw = false; // TODO: remove this
+    request.isDataBinary = data.some(
+      (d) => Array.isArray(d) && d[0] === "binary"
+    );
   }
 
   if (parsedArguments.insecure) {
@@ -2072,5 +2103,6 @@ export type {
   Cookies,
   Query,
   QueryDict,
+  DataParam,
   Warnings,
 };

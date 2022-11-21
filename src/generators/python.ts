@@ -1,5 +1,11 @@
 import * as util from "../util.js";
-import type { Request, Query, QueryDict, Warnings } from "../util.js";
+import type {
+  Request,
+  Query,
+  QueryDict,
+  Warnings,
+  DataParam,
+} from "../util.js";
 
 // TODO: partiallySupportedArgs
 const supportedArgs = new Set([
@@ -545,96 +551,419 @@ function objToDictOrListOfTuples(obj: Query | QueryDict): string {
   return s;
 }
 
+function decodePercentEncoding(s: string): string | null {
+  let decoded;
+  try {
+    // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
+    // before decoding.
+    decoded = decodeURIComponent(s.replace(/\+/g, " "));
+  } catch (e) {
+    if (e instanceof URIError) {
+      // String contains invalid percent encoded characters
+      return null;
+    }
+    throw e;
+  }
+  let roundTripKey;
+  try {
+    // If the query string doesn't round-trip, we cannot properly convert it.
+    // TODO: this is too strict. Ideally we want to check how each runtime/library
+    // percent-encodes query strings. For example, a %27 character in the input query
+    // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
+    roundTripKey = util.percentEncode(decoded);
+  } catch (e) {
+    if (e instanceof URIError) {
+      return null;
+    }
+    throw e;
+  }
+  // If the original data used %20 instead of + (what requests will send), that's close enough
+  if (roundTripKey !== s && roundTripKey.replace(/%20/g, "+") !== s) {
+    return null;
+  }
+  return decoded;
+}
+
+function dataEntriesToDict(
+  dataEntries: Array<[string, string]>
+): { [key: string]: Array<string> } | null {
+  // Group keys
+  // TODO: because keys can be code that reads from a file, those should not be considered the
+  // same key, for example what if that file is /dev/urandom.
+  // TODO: would we need to distinguish if /dev/urandom came from @/dev/urandom or from @-?
+  const asDict: { [key: string]: Array<string> } = {};
+  let prevKey = null;
+  for (const [key, val] of dataEntries) {
+    if (prevKey === key) {
+      asDict[key].push(val);
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(asDict, key)) {
+        asDict[key] = [val];
+      } else {
+        // A repeated key with a different key between one of its repetitions
+        // means we can't represent these entries as a dictionary.
+        return null;
+      }
+    }
+    prevKey = key;
+  }
+
+  return asDict;
+}
+
+function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
+  if (dataEntries.length === 0) {
+    return "''"; // This shouldn't happen
+  }
+
+  const entriesDict = dataEntriesToDict(dataEntries);
+  if (entriesDict !== null) {
+    if (Object.keys(entriesDict).length === 0) {
+      return "''"; // This shouldn't happen
+    }
+    let s = "{\n";
+    for (const [key, vals] of Object.entries(entriesDict)) {
+      s += "    " + key + ": ";
+      if (vals.length === 0) {
+        s += "''"; // This shouldn't happen
+      } else if (vals.length === 1) {
+        s += vals[0];
+      } else {
+        s += "[\n";
+        for (const val of vals) {
+          s += "        " + val + ",\n";
+        }
+        s += "    ]";
+      }
+      s += ",\n";
+    }
+    s += "}";
+    return s;
+  }
+
+  let s = "[\n";
+  for (const entry of dataEntries) {
+    const [key, val] = entry;
+    s += "    (" + key + ", " + val + "),\n";
+  }
+  s += "]";
+  return s;
+}
+
+function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
+  // This code is more complicated than you might expect because it needs
+  // to handle a --data-urlencode that reads from a file followed by --json
+  // because --json doesn't add an '&' before its value.  Specifically, we
+  // have these cases:
+  //
+  // --data-urlencode @filename --json =value
+  // {open('filename').read(): 'value'}
+  //
+  // --data-urlencode @filename --json key=value
+  // {open('filename').read() + 'key': 'value'}
+  //
+  // --data-urlencode @filename --json key
+  // error
+  //
+  // --data-urlencode name@filename --json value
+  // {'name': open('filename').read() + 'value'}
+  //
+  // --data-urlencode name@filename --json key=value
+  // error
+  //
+  // --data-urlencode name@filename --json =blah
+  // error
+  //
+  // --data-urlencode adds an '&' before its value, so we don't have to worry about
+  // --json <foo> --data-urlencode <bar>
+  for (const d of dataArray) {
+    if (Array.isArray(d) && d[0] !== "urlencode") {
+      return null;
+    }
+  }
+
+  const dataEntries: Array<[string, string | null]> = [];
+  for (const [i, d] of dataArray.entries()) {
+    if (typeof d === "string") {
+      let newEntries = d.split("&");
+
+      const prevEntry = i > 0 ? dataEntries[dataEntries.length - 1] : null;
+      if (prevEntry !== null) {
+        // If there's a prevEntry, we can assume it came from --data-urlencode
+        // because it would be part of the current `d` string if it didn't.
+        const [first, ...rest] = newEntries;
+        if (first.includes("=") && prevEntry[1] === null) {
+          const [key, val] = first.split(/=(.*)/s, 2);
+          const decodedKey = decodePercentEncoding(key);
+          if (decodedKey === null) {
+            return null;
+          }
+          const decodedVal = decodePercentEncoding(val);
+          if (decodedVal === null) {
+            return null;
+          }
+          if (key) {
+            prevEntry[0] += " + " + repr(decodedKey);
+          }
+          prevEntry[1] = repr(decodedVal);
+        } else if (!first.includes("=") && prevEntry[1] !== null) {
+          if (first) {
+            const decodedVal = decodePercentEncoding(first);
+            if (decodedVal === null) {
+              return null;
+            }
+            prevEntry[1] += " + " + repr(decodedVal);
+          }
+        } else {
+          return null;
+        }
+        newEntries = rest;
+      }
+
+      for (const [j, entry] of newEntries.entries()) {
+        if (
+          !entry &&
+          j === newEntries.length - 1 &&
+          i !== dataArray.length - 1
+        ) {
+          // A --data-urlencoded should come next
+          continue;
+        }
+        if (!entry.includes("=")) {
+          return null;
+        }
+        const [key, val] = entry.split(/=(.*)/s, 2);
+        const decodedKey = decodePercentEncoding(key);
+        if (decodedKey === null) {
+          return null;
+        }
+        const decodedVal = decodePercentEncoding(val);
+        if (decodedVal === null) {
+          return null;
+        }
+        dataEntries.push([repr(decodedKey), repr(decodedVal)]);
+      }
+
+      continue;
+    }
+
+    const name = d[1];
+    const filename = d[2];
+    // TODO: I bet Python doesn't treat file paths identically to curl
+    const readFile =
+      filename === "-"
+        ? "sys.stdin.read()"
+        : "open(" + repr(filename) + ").read()";
+
+    if (!name) {
+      dataEntries.push([readFile, null]);
+    } else {
+      dataEntries.push([repr(name), readFile]);
+    }
+  }
+
+  if (dataEntries.some((e) => e[1] === null)) {
+    return null;
+  }
+
+  // TODO: warn that spaces encoded as '%20' are encoded as '+' by Requests
+  return (
+    "data = " + dataEntriesToPython(dataEntries as [string, string][]) + "\n"
+  );
+}
+
+function formatDataAsStr(
+  dataArray: (string | DataParam)[],
+  imports: Set<string>
+): [string, boolean] {
+  // If one of the arguments has to be binary, then they all have to be binary
+  // because we can't mix bytes and str.
+  // An argument has to be binary when the input command has
+  // --data-binary @filename
+  // otherwise we could generate code that will try to read an image file as text and error.
+  const binary = dataArray.some((d) => Array.isArray(d) && d[0] === "binary");
+  const reprFunc = binary ? reprb : repr;
+  const prefix = binary ? "b" : "";
+  const mode = binary ? ", 'rb'" : "";
+
+  // If we see a string with non-ASCII characters, or read from a file (which may contain
+  // non-ASCII characters), we convert the entire string to bytes at the end.
+  // curl sends bytes as-is, which is presumably in UTF-8, whereas Requests sends
+  // 0x80-0xFF as Latin-1 (as-is) and throws an error if it sees codepoints
+  // above 0xFF.
+  // TODO: is this actually helpful?
+  let encode = false;
+  let encodeOnSeparateLine = false;
+
+  const lines = [];
+
+  let extra = "";
+  let i, d;
+  for ([i, d] of dataArray.entries()) {
+    const op = i === 0 ? "=" : "+=";
+    let line = "data " + op + " ";
+
+    if (i < dataArray.length - 1 && typeof d === "string" && d.endsWith("&")) {
+      // Put the trailing '&' on the next line so that we don't have single '&'s on their own lines
+      extra = "&";
+      d = d.slice(0, -1);
+    }
+
+    if (typeof d === "string") {
+      if (d) {
+        line += reprFunc(d);
+        lines.push(line);
+        encode ||= /[^\x00-\x7F]/.test(d);
+      }
+      continue;
+    }
+
+    const [type, name, filename] = d;
+    if (type === "urlencode" && name) {
+      line += reprFunc(extra + name + "=") + " + ";
+      encodeOnSeparateLine = true; // we would need to add parentheses because of the +
+    } else if (extra) {
+      line += reprFunc(extra) + " + ";
+      encodeOnSeparateLine = true;
+    }
+    if (extra) {
+      encodeOnSeparateLine = true; // we would need to add parentheses because of the +
+    }
+
+    let readFile = "";
+    if (filename === "-") {
+      readFile += binary ? "sys.stdin.buffer" : "sys.stdin";
+      imports.add("sys");
+    } else {
+      line = "with open(" + repr(filename) + mode + ") as f:\n    " + line;
+      readFile += "f";
+    }
+    readFile += ".read()";
+    if (!["binary", "json", "urlencode"].includes(type)) {
+      readFile += `.replace(${prefix}'\\n', ${prefix}'').replace(${prefix}'\\r', ${prefix}'')`;
+    }
+
+    if (type === "urlencode") {
+      // TODO: change safe= etc. to match curl
+      readFile = "quote(" + readFile + ")";
+      imports.add("urllib.parse.quote");
+    } else {
+      // --data-urlencode files don't need to be encoded because
+      // they'll be percent-encoded and therefore ASCII-only
+      encode = true;
+    }
+
+    line += readFile;
+    lines.push(line);
+    extra = "";
+  }
+
+  if (binary) {
+    encode = false;
+  } else if (encode && lines.length === 1 && !encodeOnSeparateLine) {
+    lines[lines.length - 1] += ".encode('utf-8')";
+    encode = false;
+  }
+
+  return [lines.join("\n") + "\n", encode];
+}
+
+function formatDataAsJson(
+  d: string | DataParam,
+  imports: Set<string>
+): [string | null, boolean] {
+  let jsonDataString: string | null = null;
+  let jsonRoundtrips = false;
+
+  if (typeof d !== "string") {
+    if (d[0] !== "json") {
+      return [null, false];
+    }
+    jsonDataString = "with open(" + repr(d[2]) + ") as f:\n";
+    jsonDataString += "    json_data = json.load(f)\n";
+    imports.add("json");
+    return [jsonDataString, false];
+  }
+
+  try {
+    // TODO: repeated dictionary keys are discarded
+    const dataAsJson = JSON.parse(d);
+    // Requests uses Python's builtin json library
+    // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+    // which serializes JSON with spaces between : and ,
+    // but JSON.stringify() doesn't add spaces. So mostly this is
+    // guarding against loss in precision in very long numbers.
+    // TODO: reimplement JSON.stringify() to match Python's json.dumps()
+    jsonRoundtrips = JSON.stringify(dataAsJson) === d;
+    // If this line crashes, roundtrips will be true which is fine because downstream code
+    // shouldn't use roundtrips if jsonDataString is null.
+    jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
+    return [jsonDataString, jsonRoundtrips];
+  } catch {}
+
+  return [null, false];
+}
+
 function getDataString(
   request: Request
-): [string | null, boolean, string | null, boolean | null] {
-  if (!request.data) {
-    return [null, false, null, null];
-  }
-  if (!request.isDataRaw && request.data.startsWith("@")) {
-    let filePath = request.data.slice(1);
-    if (filePath === "-") {
-      if (request.stdinFile) {
-        filePath = request.stdinFile;
-      } else if (request.stdin) {
-        request.data = request.stdin;
-      } else {
-        if (request.isDataBinary) {
-          return ["data = sys.stdin.buffer.read()\n", true, null, null];
-        } else {
-          return [
-            "data = sys.stdin.readline().strip('\\n')\n",
-            true,
-            null,
-            null,
-          ];
-        }
-      }
-    }
-    if (!request.stdin) {
-      if (request.isDataBinary) {
-        // TODO: I bet the way Python treats file paths is not identical to curl's
-        return [
-          `with open(${repr(filePath)}, 'rb') as f:\n` +
-            "    data = f.read()\n",
-          false,
-          null,
-          null,
-        ];
-      } else {
-        return [
-          `with open(${repr(filePath)}) as f:\n` +
-            "    data = f.readline().strip('\\n')\n",
-          false,
-          null,
-          null,
-        ];
-      }
-    }
+): [string | null, boolean | null, string | null, Set<string>] {
+  const imports: Set<string> = new Set();
+  if (!request.data || !request.dataArray) {
+    return [null, false, null, imports];
   }
 
-  const dataString = "data = " + repr(request.data) + "\n";
+  // There's 4 ways to pass data to Requests (in descending order of preference):
+  //   a or dictionary/list as the json= argument
+  //   a dictionary, or a list of tuples (if the dictionary would have duplicate keys) as the data= argument
+  //   a string as data=
+  //   bytes as data=
 
-  const contentTypeHeader = util.getHeader(request, "content-type");
-  const isJson =
-    !(request.dataFiles && request.dataFiles.length) &&
-    contentTypeHeader &&
-    contentTypeHeader.split(";")[0].trim() === "application/json";
-  if (isJson) {
-    try {
-      // TODO: repeated dictionary keys are discarded
-      const dataAsJson = JSON.parse(request.data);
-      // Requests uses Python's builtin json library
-      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-      // which serializes JSON with spaces between : and ,
-      // but JSON.stringify() doesn't add spaces. So mostly this is
-      // guarding against loss in precision in very long numbers.
-      // TODO: reimplement JSON.stringify() to match Python's json.dumps()
-      const roundtrips = JSON.stringify(dataAsJson) === request.data;
-      const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
-      return [dataString, false, jsonDataString, roundtrips];
-    } catch {}
-  }
-
-  const [parsedQuery, parsedQueryAsDict] = util.parseQueryString(request.data);
+  // We can pass json= if the data is valid JSON and we've specified json in the
+  // Content-Type header because passing json= will set that header.
+  //
+  // However, if there will be a mismatch between how the JSON is formatted
+  // we need to output a commented out version of the request with data= as well.
+  // This can happen when there's extra whitespace in the original data or
+  // because the JSON contains numbers that are too big to be stored in
+  // JavaScript or because there's objects with duplicate keys.
+  const contentType = util.getHeader(request, "content-type");
+  let dataAsJson: string | null = null;
+  let jsonRoundtrips = false;
   if (
-    parsedQuery &&
-    parsedQuery.length &&
-    !parsedQuery.some((p) => p[1] === null)
+    request.dataArray.length === 1 &&
+    contentType &&
+    contentType.split(";")[0].trim() === "application/json"
   ) {
-    const dataPythonObj =
-      "data = " +
-      objToDictOrListOfTuples(parsedQueryAsDict || parsedQuery) +
-      "\n";
+    [dataAsJson, jsonRoundtrips] = formatDataAsJson(
+      request.dataArray[0],
+      imports
+    );
+  }
+  if (jsonRoundtrips) {
+    return [null, false, dataAsJson, imports];
+  }
+
+  // data= can't be a dict or a list of tuples (i.e. entries) when
+  //   there is a @file from --data, --data-binary or --json (because they can contain an '&' which would get escaped)
+  //   there is a --data-urlencode without a name= or name@
+  //   if you split the input on & and there's a value that doesn't contain an = (e.g. --data "foo=bar&" or simply --data "&")
+  //   there is a name or value that doesn't roundtrip through percent encoding
+  const dataAsEntries = formatDataAsEntries(request.dataArray);
+  if (dataAsEntries !== null) {
     if (
       util.getHeader(request, "content-type") ===
       "application/x-www-form-urlencoded"
     ) {
       util.deleteHeader(request, "content-type");
     }
-    return [dataPythonObj, false, null, null];
+    return [dataAsEntries, false, dataAsJson, imports];
   }
-  return [dataString, false, null, null];
+
+  const [dataAsString, shouldEncode] = formatDataAsStr(
+    request.dataArray,
+    imports
+  );
+  return [dataAsString, shouldEncode, dataAsJson, imports];
 }
 
 function getFilesString(request: Request): [string, boolean] {
@@ -877,23 +1206,24 @@ export const _toPython = (
 
   const contentType = util.getHeader(request, "content-type");
   let dataString;
-  let usesStdin = false;
   let jsonDataString;
-  let jsonDataStringRoundtrips;
   let filesString;
+  let shouldEncode;
   if (request.uploadFile) {
     // If you mix --data and --upload-file, it gets weird. content-length will
     // be from --data but the data will be from --upload-file
     if (request.uploadFile === "-" || request.uploadFile === ".") {
       dataString = "data = sys.stdin.buffer.read()\n";
-      usesStdin = true;
+      imports.add("sys");
     } else {
       dataString = "with open(" + repr(request.uploadFile) + ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
     }
   } else if (request.data) {
-    [dataString, usesStdin, jsonDataString, jsonDataStringRoundtrips] =
+    let dataImports: Set<string>;
+    [dataString, shouldEncode, jsonDataString, dataImports] =
       getDataString(request);
+    dataImports.forEach(imports.add, imports);
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
     if (
@@ -902,12 +1232,16 @@ export const _toPython = (
       contentType.trim() === "application/json"
     ) {
       commentedOutHeaders["content-type"] = "Already added when you pass json=";
-      if (!jsonDataStringRoundtrips) {
+      if (dataString) {
         commentedOutHeaders["content-type"] += " but not when you pass data=";
       }
     }
   } else if (request.multipartUploads) {
+    let usesStdin = false;
     [filesString, usesStdin] = getFilesString(request);
+    if (usesStdin) {
+      imports.add("sys");
+    }
     // If you pass files= then Requests adds this header and a `boundary`
     // If you manually pass a Content-Type header it won't set a `boundary`
     // wheras curl does, so the request will fail.
@@ -922,9 +1256,6 @@ export const _toPython = (
       commentedOutHeaders["content-type"] =
         "requests won't add a boundary if this header is set when you pass files=";
     }
-  }
-  if (usesStdin) {
-    imports.add("sys");
   }
 
   let headerDict;
@@ -1008,6 +1339,9 @@ export const _toPython = (
       requestLineBody += ", json=json_data";
     } else {
       requestLineBody += ", data=data";
+      if (shouldEncode) {
+        requestLineBody += ".encode('utf-8')";
+      }
     }
   } else if (request.multipartUploads) {
     requestLineBody += ", files=files";
@@ -1042,9 +1376,16 @@ export const _toPython = (
   }
   if (imports.size) {
     for (const imp of Array.from(imports).sort()) {
-      pythonCode += "import " + imp + "\n";
+      if (imp === "urllib.parse.quote") {
+        // TODO: use quote_plus instead, since that's what Requests uses?
+        pythonCode += "from urllib.parse import quote\n";
+      } else {
+        pythonCode += "import " + imp + "\n";
+      }
     }
-    pythonCode += "\n";
+    if (imports.size > 1) {
+      pythonCode += "\n";
+    }
   }
 
   pythonCode += "import requests\n";
@@ -1088,13 +1429,25 @@ export const _toPython = (
 
   pythonCode += requestLine;
 
-  if (jsonDataString && !jsonDataStringRoundtrips) {
+  if (jsonDataString && dataString) {
     pythonCode +=
       "\n\n" +
       "# Note: json_data will not be serialized by requests\n" +
       "# exactly as it was in the original request.\n";
-    pythonCode += "#" + dataString;
-    pythonCode += "#" + requestLine.replace(", json=json_data", ", data=data");
+    pythonCode += dataString
+      ?.split("\n")
+      // Don't add comment characters to empty lines, most importantly the last line
+      .map((l) => (l.trim() ? "#" + l : l))
+      .join("\n");
+    // TODO: do this correctly?
+    if (shouldEncode) {
+      pythonCode +=
+        "#" +
+        requestLine.replace(", json=json_data", ", data=data.encode('utf-8')");
+    } else {
+      pythonCode +=
+        "#" + requestLine.replace(", json=json_data", ", data=data");
+    }
   }
 
   if (request.output && request.output !== "/dev/null") {

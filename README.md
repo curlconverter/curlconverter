@@ -24,10 +24,10 @@ Features:
   - Reports syntax errors
 - Knows about all of curl's 300 or so arguments, including deleted ones, but most are simply ignored
 - Allows passing multiple short arguments in one, just like curl, e.g. `-vOXPOST`
-- When passed `--data @filename` generates Python code that reads from that file
-- When passed `--data @-` generates Python code that reads from stdin (or piped file/input)
+- `--data @filename` generates Python code that reads from that file
+- `--data @-` generates Python code that reads from stdin (or piped file/input)
 - Converts JSON to native objects
-- Warns when conversion wasn't perfect
+- Warns about issues with the conversion
 
 Limitations:
 
