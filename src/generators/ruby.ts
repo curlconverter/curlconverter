@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../repr.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
@@ -43,9 +43,9 @@ function repr(value: string): string {
   // https://en.wikibooks.org/wiki/Ruby_Programming/Strings
   const specialChars = ["\n", "\t", "\r", "\b"];
   if (specialChars.some((c) => value.includes(c))) {
-    return '"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
+    return jsrepr(value, '"');
   }
-  return "'" + jsesc(value, { quotes: "single", minimal: true }) + "'";
+  return jsrepr(value, "'");
 }
 
 function objToRuby(

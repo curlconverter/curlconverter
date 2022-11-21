@@ -3,7 +3,7 @@
 import * as util from "../util.js";
 import type { Request, Cookie, QueryDict, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../repr.js";
 
 const supportedArgs = new Set([
   "url",
@@ -38,12 +38,7 @@ function reprn(value: string | null): string {
 }
 
 function repr(value: string): string {
-  // In context of url parameters, don't accept nulls and such.
-  if (!value) {
-    return "''";
-  } else {
-    return "'" + jsesc(value, { quotes: "single" }) + "'";
-  }
+  return jsrepr(value, "'");
 }
 
 function getQueryDict(request: Request): string | undefined {

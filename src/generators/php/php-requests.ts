@@ -1,7 +1,7 @@
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../../repr.js";
 
 const supportedArgs = new Set([
   "url",
@@ -24,9 +24,12 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-// TODO: only string
-const quote = (str: string | null | (string | null)[]): string =>
-  "'" + jsesc(str, { quotes: "single" }) + "'";
+const quote = (str: string | null): string => {
+  if (str === null) {
+    return "''";
+  }
+  return jsrepr(str, "'");
+};
 
 export const _toPhpRequests = (
   request: Request,

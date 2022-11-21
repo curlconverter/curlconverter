@@ -3,6 +3,7 @@ import type { Warnings } from "../../util.js";
 import type { Request } from "../../util.js";
 
 import jsesc from "jsesc";
+import { jsrepr as repr } from "../../repr.js";
 
 const javaScriptSupportedArgs = new Set([
   "url",
@@ -51,7 +52,8 @@ const nodeSupportedArgs = new Set([
   "proxy",
 ]);
 
-export const repr = (value: string | object, indentLevel?: number): string => {
+// TODO: implement
+export const reprObj = (value: object, indentLevel?: number): string => {
   const escaped = jsesc(value, {
     quotes: "single",
     minimal: false,
@@ -85,7 +87,7 @@ const getDataString = (request: Request): [string, string | null] => {
         return [originalStringRepr, null];
       }
       const roundtrips = JSON.stringify(parsed) === request.data;
-      const jsonAsJavaScript = repr(parsed, 1);
+      const jsonAsJavaScript = reprObj(parsed, 1);
 
       const dataString = "JSON.stringify(" + jsonAsJavaScript + ")";
       return [dataString, roundtrips ? null : originalStringRepr];
@@ -111,7 +113,7 @@ const getDataString = (request: Request): [string, string | null] => {
           util.deleteHeader(request, "content-type");
         }
         // TODO: check roundtrip, add a comment
-        return ["new URLSearchParams(" + repr(queryDict, 1) + ")", null];
+        return ["new URLSearchParams(" + reprObj(queryDict, 1) + ")", null];
       }
       return [originalStringRepr, null];
     } catch {

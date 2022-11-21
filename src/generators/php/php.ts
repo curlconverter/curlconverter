@@ -1,7 +1,7 @@
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../../repr.js";
 
 const supportedArgs = new Set([
   "url",
@@ -34,7 +34,7 @@ const supportedArgs = new Set([
   "location",
 ]);
 
-const quote = (str: string): string => jsesc(str, { quotes: "single" });
+const quote = (str: string): string => jsrepr(str, "'");
 
 export const _toPhp = (request: Request, warnings: Warnings = []): string => {
   let cookieString;
@@ -45,7 +45,7 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
 
   let phpCode = "<?php\n";
   phpCode += "$ch = curl_init();\n";
-  phpCode += "curl_setopt($ch, CURLOPT_URL, '" + quote(request.url) + "');\n";
+  phpCode += "curl_setopt($ch, CURLOPT_URL, " + quote(request.url) + ");\n";
   phpCode += "curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n";
   phpCode +=
     "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" + request.method + "');\n";
@@ -68,7 +68,7 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
         continue;
       }
       headersArrayCode +=
-        "    '" + quote(headerName) + "' => '" + quote(headerValue) + "',\n";
+        "    " + quote(headerName) + " => " + quote(headerValue) + ",\n";
     }
 
     headersArrayCode += "]";
@@ -78,16 +78,16 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
 
   if (cookieString) {
     phpCode +=
-      "curl_setopt($ch, CURLOPT_COOKIE, '" + quote(cookieString) + "');\n";
+      "curl_setopt($ch, CURLOPT_COOKIE, " + quote(cookieString) + ");\n";
   }
 
   if (request.auth) {
     const authType = request.digest ? "CURLAUTH_DIGEST" : "CURLAUTH_BASIC";
     phpCode += "curl_setopt($ch, CURLOPT_HTTPAUTH, " + authType + ");\n";
     phpCode +=
-      "curl_setopt($ch, CURLOPT_USERPWD, '" +
+      "curl_setopt($ch, CURLOPT_USERPWD, " +
       quote(request.auth.join(":")) +
-      "');\n";
+      ");\n";
   }
 
   if (request.data || request.multipartUploads) {
@@ -97,14 +97,14 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
       for (const m of request.multipartUploads) {
         if ("contentFile" in m) {
           requestDataCode +=
-            "    '" +
+            "    " +
             quote(m.name) +
-            "' => new CURLFile('" +
+            " => new CURLFile(" +
             quote(m.contentFile) +
-            "'),\n";
+            "),\n";
         } else {
           requestDataCode +=
-            "    '" + quote(m.name) + "' => '" + quote(m.content) + "',\n";
+            "    " + quote(m.name) + " => " + quote(m.content) + ",\n";
         }
       }
       requestDataCode += "]";
@@ -113,11 +113,11 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
       (request.data as string).charAt(0) === "@"
     ) {
       requestDataCode =
-        "file_get_contents('" +
+        "file_get_contents(" +
         quote((request.data as string).substring(1)) +
-        "')";
+        ")";
     } else {
-      requestDataCode = "'" + quote(request.data as string) + "'";
+      requestDataCode = quote(request.data as string);
     }
     phpCode +=
       "curl_setopt($ch, CURLOPT_POSTFIELDS, " + requestDataCode + ");\n";
@@ -125,12 +125,12 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
 
   if (request.proxy) {
     phpCode +=
-      "curl_setopt($ch, CURLOPT_PROXY, '" + quote(request.proxy) + "');\n";
+      "curl_setopt($ch, CURLOPT_PROXY, " + quote(request.proxy) + ");\n";
     if (request.proxyAuth) {
       phpCode +=
-        "curl_setopt($ch, CURLOPT_PROXYUSERPWD, '" +
+        "curl_setopt($ch, CURLOPT_PROXYUSERPWD, " +
         quote(request.proxyAuth) +
-        "');\n";
+        ");\n";
     }
   }
 

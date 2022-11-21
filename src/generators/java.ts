@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../repr.js";
 
 const supportedArgs = new Set([
   "url",
@@ -25,7 +25,7 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-const doubleQuotes = (str: string): string => jsesc(str, { quotes: "double" });
+const doubleQuotes = (str: string): string => jsrepr(str, '"');
 
 export const _toJava = (request: Request, warnings: Warnings = []): string => {
   let javaCode = "";
@@ -47,10 +47,11 @@ export const _toJava = (request: Request, warnings: Warnings = []): string => {
   javaCode += "\nclass Main {\n\n";
 
   javaCode += "\tpublic static void main(String[] args) throws IOException {\n";
-  javaCode += '\t\tURL url = new URL("' + request.url + '");\n';
+  javaCode += "\t\tURL url = new URL(" + doubleQuotes(request.url) + ");\n";
   javaCode +=
     "\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n";
-  javaCode += '\t\thttpConn.setRequestMethod("' + request.method + '");\n\n';
+  javaCode +=
+    "\t\thttpConn.setRequestMethod(" + doubleQuotes(request.method) + ");\n\n";
 
   let gzip = false;
   if (request.headers) {
@@ -59,11 +60,11 @@ export const _toJava = (request: Request, warnings: Warnings = []): string => {
         continue;
       }
       javaCode +=
-        '\t\thttpConn.setRequestProperty("' +
-        headerName +
-        '", "' +
+        "\t\thttpConn.setRequestProperty(" +
+        doubleQuotes(headerName) +
+        ", " +
         doubleQuotes(headerValue) +
-        '");\n';
+        ");\n";
       if (headerName.toLowerCase() === "accept-encoding" && headerValue) {
         gzip = headerValue.indexOf("gzip") !== -1;
       }
@@ -73,9 +74,9 @@ export const _toJava = (request: Request, warnings: Warnings = []): string => {
 
   if (request.auth) {
     javaCode +=
-      '\t\tbyte[] message = ("' +
+      "\t\tbyte[] message = (" +
       doubleQuotes(request.auth.join(":")) +
-      '").getBytes("UTF-8");\n';
+      ').getBytes("UTF-8");\n';
     javaCode +=
       "\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n";
     javaCode +=
@@ -84,11 +85,10 @@ export const _toJava = (request: Request, warnings: Warnings = []): string => {
   }
 
   if (request.data) {
-    request.data = doubleQuotes(request.data);
     javaCode += "\t\thttpConn.setDoOutput(true);\n";
     javaCode +=
       "\t\tOutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n";
-    javaCode += '\t\twriter.write("' + request.data + '");\n';
+    javaCode += "\t\twriter.write(" + doubleQuotes(request.data) + ");\n";
     javaCode += "\t\twriter.flush();\n";
     javaCode += "\t\twriter.close();\n";
     javaCode += "\t\thttpConn.getOutputStream().close();\n";

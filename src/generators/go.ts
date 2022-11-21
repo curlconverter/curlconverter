@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../repr.js";
 
 const supportedArgs = new Set([
   "url",
@@ -32,7 +32,7 @@ const reprBacktick = (s: string): string => {
   return !s.includes("`") ? "`" + s + "`" : repr(s);
 };
 const repr = (s: string): string => {
-  return '"' + jsesc(s, { quotes: "double", minimal: true }) + '"';
+  return jsrepr(s, '"');
 };
 
 export const _toGo = (request: Request, warnings: Warnings = []): string => {

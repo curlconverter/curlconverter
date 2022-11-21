@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { jsrepr } from "../repr.js";
 
 const supportedArgs = new Set([
   "url",
@@ -36,7 +36,7 @@ const supportedArgs = new Set([
 ]);
 
 function repr(value: string): string {
-  return '"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
+  return jsrepr(value, '"');
 }
 
 export const _toCSharp = (
