@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { repr as jsrepr } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
   "url",
@@ -26,9 +26,12 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-function repr(value: string | null | (string | null)[]): string {
+function repr(value: string | null): string {
   // In context of url parameters, don't accept nulls and such.
-  return '"' + jsesc(value, { quotes: "double", minimal: true }) + '"';
+  if (value === null) {
+    return '""';
+  }
+  return jsrepr(value, '"');
 }
 
 function addIndent(value: string): string {

@@ -1,6 +1,8 @@
 import * as util from "../../util.js";
-import { repr, bySecondElem } from "./javascript.js";
+import { reprObj, bySecondElem } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
+
+import { repr } from "./javascript.js";
 
 const supportedArgs = new Set([
   "url",
@@ -45,7 +47,7 @@ const _getDataString = (request: Request): [string | null, string | null] => {
       return [originalStringRepr, null];
     }
     const roundtrips = JSON.stringify(parsed) === request.data;
-    const jsonAsJavaScript = repr(parsed, 1);
+    const jsonAsJavaScript = reprObj(parsed, 1);
     if (
       roundtrips &&
       exactContentType === "application/json" &&
@@ -69,7 +71,7 @@ const _getDataString = (request: Request): [string | null, string | null] => {
         util.deleteHeader(request, "content-type");
       }
       // TODO: check roundtrip, add a comment
-      return ["new URLSearchParams(" + repr(queryDict, 1) + ")", null];
+      return ["new URLSearchParams(" + reprObj(queryDict, 1) + ")", null];
     } else {
       return [originalStringRepr, null];
     }
@@ -110,7 +112,7 @@ const buildConfigObject = (
     // code += "    params,\n";
     code += "    params: params,\n";
   } else if (request.queryDict) {
-    code += "    params: " + repr(request.queryDict, 1) + ",\n";
+    code += "    params: " + reprObj(request.queryDict, 1) + ",\n";
   }
 
   const [dataString, commentedOutDataString] = getDataString(request); // can delete headers

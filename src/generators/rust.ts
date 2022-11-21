@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { repr as jsrepr } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
   "url",
@@ -30,7 +30,7 @@ const supportedArgs = new Set([
 const INDENTATION = " ".repeat(4);
 const indent = (line: string, level = 1): string =>
   INDENTATION.repeat(level) + line;
-const quote = (str: string): string => jsesc(str, { quotes: "double" });
+const repr = (str: string): string => jsrepr(str, '"');
 
 export const _toRust = (request: Request, warnings: Warnings = []): string => {
   const lines = ["extern crate reqwest;"];
@@ -62,7 +62,7 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
       if (headerValue !== null) {
         lines.push(
           indent(
-            `headers.insert(${name}, "${quote(headerValue)}".parse().unwrap());`
+            `headers.insert(${name}, ${repr(headerValue)}.parse().unwrap());`
           )
         );
       }
@@ -74,9 +74,9 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
     lines.push(indent("let form = multipart::Form::new()"));
     const parts = request.multipartUploads.map((m) => {
       if ("contentFile" in m) {
-        return indent(`.file("${m.name}", "${quote(m.contentFile)}")?`, 2);
+        return indent(`.file(${repr(m.name)}, ${repr(m.contentFile)})?`, 2);
       }
-      return indent(`.text("${m.name}", "${quote(m.content)}")`, 2);
+      return indent(`.text(${repr(m.name)}, ${repr(m.content)})`, 2);
     });
     parts[parts.length - 1] += ";";
     lines.push(...parts, "");
@@ -101,12 +101,10 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
       );
     } else {
       // Insert the --max-redirs value as-is, hoping it's a valid integer
-      // --max-redirs 0 works differently in curl and reqwest
-      // https://github.com/seanmonstar/reqwest/issues/1639
       lines.push(
         indent(
           ".redirect(reqwest::redirect::Policy::limited(" +
-            request.maxRedirects +
+            request.maxRedirects.trim() +
             "))",
           2
         )
@@ -120,17 +118,15 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
   if (reqwestMethods.includes(request.method)) {
     lines.push(
       indent(
-        `let res = client.${request.method.toLowerCase()}("${quote(
-          request.url
-        )}")`
+        `let res = client.${request.method.toLowerCase()}(${repr(request.url)})`
       )
     );
   } else {
     lines.push(
       indent(
-        `let res = client.request("${quote(request.method)}", "${quote(
+        `let res = client.request(${repr(request.method)}, ${repr(
           request.url
-        )}")`
+        )})`
       )
     );
   }
@@ -138,7 +134,7 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
   if (request.auth) {
     const [user, password] = request.auth;
     lines.push(
-      indent(`.basic_auth("${quote(user)}", Some("${quote(password)}"))`, 2)
+      indent(`.basic_auth(${repr(user)}, Some(${repr(password)}))`, 2)
     );
   }
 
@@ -155,7 +151,7 @@ export const _toRust = (request: Request, warnings: Warnings = []): string => {
       // Use raw strings for multiline content
       lines.push(indent('.body(r#"', 2), request.data, '"#', indent(")", 2));
     } else {
-      lines.push(indent(`.body("${quote(request.data)}")`, 2));
+      lines.push(indent(`.body(${repr(request.data)})`, 2));
     }
   }
 

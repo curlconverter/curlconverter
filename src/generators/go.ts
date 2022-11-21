@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import jsesc from "jsesc";
+import { repr as jsrepr } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
   "url",
@@ -29,10 +29,10 @@ const reprMaybeBacktick = (s: string): string => {
   return s.includes('"') && !s.includes("`") ? reprBacktick(s) : repr(s);
 };
 const reprBacktick = (s: string): string => {
-  return !s.includes("`") ? "`" + s + "`" : repr(s);
+  return !s.includes("`") && !s.includes("\r") ? "`" + s + "`" : repr(s);
 };
 const repr = (s: string): string => {
-  return '"' + jsesc(s, { quotes: "double", minimal: true }) + '"';
+  return jsrepr(s, '"');
 };
 
 export const _toGo = (request: Request, warnings: Warnings = []): string => {

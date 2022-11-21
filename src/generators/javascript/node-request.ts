@@ -1,7 +1,7 @@
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import jsesc from "jsesc";
+import { repr } from "./javascript.js";
 
 const supportedArgs = new Set([
   "url",
@@ -46,11 +46,7 @@ export const _toNodeRequest = (
   }
 
   if (request.data) {
-    // escape single quotes if there are any in there
-    if (request.data.indexOf("'") > -1) {
-      request.data = jsesc(request.data);
-    }
-    nodeRequestCode += "var dataString = '" + request.data + "';\n\n";
+    nodeRequestCode += "var dataString = " + repr(request.data, "'") + ";\n\n";
   }
 
   nodeRequestCode += "var options = {\n";

@@ -1,7 +1,7 @@
 import { CCError } from "../../util.js";
 import type { Request } from "../../util.js";
 
-import jsesc from "jsesc";
+import { esc as jsesc } from "../javascript/javascript.js";
 
 const repr = (value?: string | null) => {
   // In context of url parameters, don't accept nulls and such.
@@ -9,7 +9,7 @@ const repr = (value?: string | null) => {
     return "''";
   }
 
-  return "'" + jsesc(value, { quotes: "single" }).replace(/\\'/g, "''") + "'";
+  return "'" + jsesc(value, "'").replace(/\\'/g, "''") + "'";
 };
 
 const setVariableValue = (

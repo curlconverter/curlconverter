@@ -2,7 +2,7 @@ import * as util from "../../util.js";
 import type { Warnings } from "../../util.js";
 import type { Request } from "../../util.js";
 
-import jsesc from "jsesc";
+import jsescObj from "jsesc";
 
 const javaScriptSupportedArgs = new Set([
   "url",
@@ -51,8 +51,9 @@ const nodeSupportedArgs = new Set([
   "proxy",
 ]);
 
-export const repr = (value: string | object, indentLevel?: number): string => {
-  const escaped = jsesc(value, {
+// TODO: implement
+export const reprObj = (value: object, indentLevel?: number): string => {
+  const escaped = jsescObj(value, {
     quotes: "single",
     minimal: false,
     compact: false,
@@ -63,6 +64,70 @@ export const repr = (value: string | object, indentLevel?: number): string => {
     return "'" + escaped + "'";
   }
   return escaped;
+};
+
+// Backtick quotes are not supported
+const regexEscape = /'|"|\\|\p{C}|\p{Z}/gu;
+const regexDigit = /[0-9]/;
+export const esc = (s: string, quote: "'" | '"' = "'"): string =>
+  s.replace(regexEscape, (c: string, index: number, string: string) => {
+    // \0 is null but \01 is octal
+    // if we have ['\0', '1', '2']
+    // if we converted it to '\\012' it would be octal
+    // so it needs to be converted to '\\x0012'
+    if (c === "\0" && !regexDigit.test(string.charAt(index + 1))) {
+      return "\\0";
+    }
+
+    switch (c) {
+      // https://mathiasbynens.be/notes/javascript-escapes#single
+      case " ":
+        return " ";
+      case "\\":
+        return "\\\\";
+      case "\b":
+        return "\\b";
+      case "\f":
+        return "\\f";
+      case "\n":
+        return "\\n";
+      case "\r":
+        return "\\r";
+      case "\t":
+        return "\\t";
+      case "\v":
+        return "\\v";
+      case "'":
+      case '"':
+        return c === quote ? "\\" + c : c;
+    }
+
+    if (c.length === 2) {
+      const first = c.charCodeAt(0);
+      const second = c.charCodeAt(1);
+      return (
+        "\\u" +
+        first.toString(16).padStart(4, "0") +
+        "\\u" +
+        second.toString(16).padStart(4, "0")
+      );
+    }
+
+    const hex = c.charCodeAt(0).toString(16);
+    if (hex.length > 2) {
+      return "\\u" + hex.padStart(4, "0");
+    }
+    return "\\x" + hex.padStart(2, "0");
+  });
+
+export const repr = (s: string, quote?: "'" | '"'): string => {
+  if (quote === undefined) {
+    quote = "'";
+    if (s.includes("'") && !s.includes('"')) {
+      quote = '"';
+    }
+  }
+  return quote + esc(s, quote) + quote;
 };
 
 export const bySecondElem = (
@@ -85,7 +150,7 @@ const getDataString = (request: Request): [string, string | null] => {
         return [originalStringRepr, null];
       }
       const roundtrips = JSON.stringify(parsed) === request.data;
-      const jsonAsJavaScript = repr(parsed, 1);
+      const jsonAsJavaScript = reprObj(parsed, 1);
 
       const dataString = "JSON.stringify(" + jsonAsJavaScript + ")";
       return [dataString, roundtrips ? null : originalStringRepr];
@@ -111,7 +176,7 @@ const getDataString = (request: Request): [string, string | null] => {
           util.deleteHeader(request, "content-type");
         }
         // TODO: check roundtrip, add a comment
-        return ["new URLSearchParams(" + repr(queryDict, 1) + ")", null];
+        return ["new URLSearchParams(" + reprObj(queryDict, 1) + ")", null];
       }
       return [originalStringRepr, null];
     } catch {

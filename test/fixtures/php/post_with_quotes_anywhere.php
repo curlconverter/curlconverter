@@ -4,7 +4,7 @@ curl_setopt($ch, CURLOPT_URL, 'http://localhost:28139');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'A' => '\'\'a\'',
+    'A' => "''a'",
     'B' => '"',
     'Content-Type' => 'application/x-www-form-urlencoded',
 ]);

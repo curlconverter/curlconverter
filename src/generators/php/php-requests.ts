@@ -1,7 +1,7 @@
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import jsesc from "jsesc";
+import { repr } from "./php.js";
 
 const supportedArgs = new Set([
   "url",
@@ -24,10 +24,6 @@ const supportedArgs = new Set([
   "user",
 ]);
 
-// TODO: only string
-const quote = (str: string | null | (string | null)[]): string =>
-  "'" + jsesc(str, { quotes: "single" }) + "'";
-
 export const _toPhpRequests = (
   request: Request,
   warnings: Warnings = []
@@ -41,7 +37,7 @@ export const _toPhpRequests = (
       if (headerValue === null) {
         continue; // TODO: this could miss not adding a trailing comma
       }
-      headerString += "    " + quote(headerName) + " => " + quote(headerValue);
+      headerString += "    " + repr(headerName) + " => " + repr(headerValue);
       if (i < headerCount - 1) {
         headerString += ",\n";
       }
@@ -57,9 +53,9 @@ export const _toPhpRequests = (
     const [user, password] = request.auth;
     optionsString =
       "$options = array('auth' => array(" +
-      quote(user) +
+      repr(user) +
       ", " +
-      quote(password) +
+      repr(password) +
       "));";
   }
 
@@ -72,12 +68,12 @@ export const _toPhpRequests = (
       !parsedQueryString.length ||
       parsedQueryString.some((p) => p[1] === null)
     ) {
-      dataString = "$data = " + quote(request.data) + ";";
+      dataString = "$data = " + repr(request.data) + ";";
     } else {
       const terms = [];
       for (const q in parsedQueryString) {
         const [key, value] = q;
-        terms.push("    " + quote(key) + " => " + quote(value));
+        terms.push("    " + repr(key) + " => " + repr(value));
       }
       dataString += terms.join(",\n") + "\n);";
     }
@@ -86,7 +82,7 @@ export const _toPhpRequests = (
     "$response = Requests::" +
     request.method.toLowerCase() +
     "(" +
-    quote(request.url);
+    repr(request.url);
   requestLine += ", $headers";
   if (dataString) {
     requestLine += ", $data";
