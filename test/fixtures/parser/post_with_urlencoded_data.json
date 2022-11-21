@@ -41,13 +41,10 @@
       "keep-alive"
     ]
   ],
-  "dataArray": [
-    [
-      "data",
-      "msg1=wow&msg2=such"
-    ]
-  ],
   "data": "msg1=wow&msg2=such",
+  "dataArray": [
+    "msg1=wow&msg2=such"
+  ],
   "isDataRaw": false,
   "isDataBinary": false
 }

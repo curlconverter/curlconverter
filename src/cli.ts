@@ -225,6 +225,7 @@ if (commandFromStdin) {
 
   let stdin;
   if (!process.stdin.isTTY) {
+    // TODO: what if there's an EOF character? does curl read each @- until EOF?
     stdin = fs.readFileSync(0).toString();
   }
   let request;

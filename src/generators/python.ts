@@ -1,5 +1,11 @@
 import * as util from "../util.js";
-import type { Request, Query, QueryDict, Warnings } from "../util.js";
+import type {
+  Request,
+  Query,
+  QueryDict,
+  Warnings,
+  DataParam,
+} from "../util.js";
 
 // TODO: partiallySupportedArgs
 const supportedArgs = new Set([
@@ -578,69 +584,13 @@ function decodePercentEncoding(s: string): string | null {
   return decoded;
 }
 
-function _consumeEntriesState(
-  canBeEntries: boolean,
-  dataEntries: Array<[string, string]>,
-  dataEntriesState: string
-): boolean {
-  if (!dataEntriesState) {
-    return canBeEntries;
-  }
-
-  let newEntries = dataEntriesState.split("&");
-  // --data-urlencod name=content --json blah&key=value
-  // should generate
-  // {'name': 'content'+'blah', 'key': 'value'}
-  if (dataEntries.length) {
-    const [first, ...rest] = newEntries;
-    if (first) {
-      const decodedFirst = decodePercentEncoding(first);
-      if (decodedFirst === null) {
-        return false;
-      }
-      dataEntries[dataEntries.length - 1][1] += " + " + repr(decodedFirst);
-    }
-    newEntries = rest;
-  }
-  for (const param of newEntries) {
-    const [key, val] = param.split(/=(.*)/s, 2);
-    if (val === undefined) {
-      return false;
-    }
-
-    const decodedKey = decodePercentEncoding(key);
-    if (decodedKey === null) {
-      return false;
-    }
-    const decodedVal = decodePercentEncoding(val);
-    if (decodedVal === null) {
-      return false;
-    }
-    dataEntries.push([decodedKey, repr(decodedVal)]);
-  }
-  return canBeEntries;
-}
-
-function consumeEntriesState(
-  canBeEntries: boolean,
-  dataEntries: Array<[string, string]>,
-  dataEntriesState: string
-): [boolean, Array<[string, string]>, string] {
-  if (!canBeEntries) {
-    return [false, [], ""];
-  }
-  canBeEntries = _consumeEntriesState(
-    canBeEntries,
-    dataEntries,
-    dataEntriesState
-  );
-  return [canBeEntries, dataEntries, ""];
-}
-
 function dataEntriesToDict(
   dataEntries: Array<[string, string]>
 ): { [key: string]: Array<string> } | null {
   // Group keys
+  // TODO: because keys can be code that reads from a file, those should not be considered the
+  // same key, for example what if that file is /dev/urandom.
+  // TODO: would we need to distinguish if /dev/urandom came from @/dev/urandom or from @-?
   const asDict: { [key: string]: Array<string> } = {};
   let prevKey = null;
   for (const [key, val] of dataEntries) {
@@ -673,7 +623,7 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
     }
     let s = "{\n";
     for (const [key, vals] of Object.entries(entriesDict)) {
-      s += "    " + repr(key) + ": ";
+      s += "    " + key + ": ";
       if (vals.length === 0) {
         s += "''"; // This shouldn't happen
       } else if (vals.length === 1) {
@@ -694,10 +644,245 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
   let s = "[\n";
   for (const entry of dataEntries) {
     const [key, val] = entry;
-    s += "    (" + repr(key) + ", " + val + "),\n";
+    s += "    (" + key + ", " + val + "),\n";
   }
   s += "]";
   return s;
+}
+
+function getDataEntries(dataArray: (string | DataParam)[]): string | null {
+  // This code is more complicated than you might expect to handle a
+  // --data-urlencode that reads from a file followed by --json
+  // because --json doesn't add an '&' before its value.
+  // Specifically, we need to handle these cases:
+  //
+  // --data-urlencode @filename --json =value
+  // {open('filename').read(): 'value'}
+  //
+  // --data-urlencode @filename --json key=value
+  // {open('filename').read() + 'key': 'value'}
+  //
+  // --data-urlencode @filename --json key
+  // error
+  //
+  // --data-urlencode name@filename --json value
+  // {'name': open('filename').read() + 'value'}
+  //
+  // --data-urlencode name@filename --json key=value
+  // error
+  //
+  // --data-urlencode name@filename --json =blah
+  // error
+  //
+  // --data-urlencode adds an '&' before its value, so we don't have to worry about
+  // --json <foo> --data-urlencode <bar>
+  for (const d of dataArray) {
+    if (Array.isArray(d) && d[0] !== "urlencode") {
+      return null;
+    }
+  }
+
+  const dataEntries: Array<[string, string | null]> = [];
+  for (const [i, d] of dataArray.entries()) {
+    if (typeof d === "string") {
+      let newEntries = d.split("&");
+
+      const prevEntry = i > 0 ? dataEntries[i - 1] : null;
+      if (prevEntry !== null) {
+        // If there's a prevEntry, we can assume it came from --data-urlencode
+        // because it would be part of the current `d` string if it didn't.
+        const [first, ...rest] = newEntries;
+        if (first.includes("=")) {
+          if (prevEntry[1] !== null) {
+            return null;
+          }
+          const [key, val] = first.split(/=(.*)/s, 2);
+          const decodedKey = decodePercentEncoding(key);
+          if (decodedKey === null) {
+            return null;
+          }
+          const decodedVal = decodePercentEncoding(val);
+          if (decodedVal === null) {
+            return null;
+          }
+          if (key) {
+            prevEntry[0] += " + " + repr(decodedKey);
+          }
+          prevEntry[1] = repr(decodedVal);
+        } else {
+          if (prevEntry[1] === null) {
+            return null;
+          }
+          if (first) {
+            const decodedVal = decodePercentEncoding(first);
+            if (decodedVal === null) {
+              return null;
+            }
+            prevEntry[1] += " + " + repr(decodedVal);
+          }
+        }
+        newEntries = rest;
+      }
+
+      for (const entry of newEntries) {
+        if (!entry.includes("=")) {
+          return null;
+        }
+        const [key, val] = entry.split(/=(.*)/s, 2);
+        const decodedKey = decodePercentEncoding(key);
+        if (decodedKey === null) {
+          return null;
+        }
+        const decodedVal = decodePercentEncoding(val);
+        if (decodedVal === null) {
+          return null;
+        }
+        dataEntries.push([repr(decodedKey), repr(decodedVal)]);
+      }
+
+      continue;
+    }
+
+    const name = d[1];
+    const filename = d[2];
+    const readFile =
+      filename === "-"
+        ? "sys.stdin.read()"
+        : "open(" + repr(filename) + ").read()";
+
+    if (!name) {
+      dataEntries.push([readFile, null]);
+    } else {
+      dataEntries.push([repr(name), readFile]);
+    }
+  }
+
+  if (dataEntries.some((e) => e[1] === null)) {
+    return null;
+  }
+
+  // TODO: warn that spaces encoded as '%20' are encoded as '+' by Requests
+  return (
+    "data = " + dataEntriesToPython(dataEntries as [string, string][]) + "\n"
+  );
+}
+
+function getDataStr(
+  dataArray: (string | DataParam)[]
+): [string, Set<string>] | null {
+  if (dataArray.some((d) => Array.isArray(d) && d[0] === "binary")) {
+    return null;
+  }
+
+  // If we see a string with non-ASCII characters, or read from a file (which may contain
+  // non - ASCII characters), we convert the entire string to bytes at the end.
+  // curl sends bytes as-is, which is presumably in UTF-8, whereas Requests sends
+  // 0x80-0xFF as Latin-1 (as-is) and throws an error if it sees codepoints
+  // above 0xFF.
+  // TODO: is this actually helpful?
+  let encode = false;
+  let encodeOnSeparateLine = false;
+
+  const lines = [];
+  const imports: Set<string> = new Set();
+
+  for (const [i, d] of dataArray.entries()) {
+    const op = i === 0 ? "=" : "+=";
+    let line = "data " + op + " ";
+
+    if (typeof d === "string") {
+      line += repr(d);
+      lines.push(line);
+      encode ||= /[^\x00-\x7F]/.test(d);
+      continue;
+    }
+
+    encode = true;
+    const [type, name, filename] = d;
+    if (type === "urlencode" && name) {
+      line += repr(name) + " + ";
+      encodeOnSeparateLine = true; // we would need to add parentheses because of the +
+    }
+
+    let readFile = "";
+    if (filename === "-") {
+      readFile = "sys.stdin";
+      imports.add("sys");
+    } else {
+      line = "with open(" + repr(filename) + ") as f:\n    " + line;
+      readFile = "f";
+    }
+    readFile += ".read()";
+    if (!["binary", "json", "urlencode"].includes(type)) {
+      readFile += ".replace('\\n', '').replace('\\r', '')";
+    }
+
+    if (type === "urlencode") {
+      // TODO: change safe= etc. to match curl
+      readFile = "quote(" + readFile + ")";
+      imports.add("urllib.parse.quote");
+    }
+
+    line += readFile;
+    lines.push(line);
+  }
+
+  if (encode) {
+    if (lines.length > 1 || encodeOnSeparateLine) {
+      lines.push("data = data.encode('utf-8')");
+    } else {
+      lines[lines.length - 1] += ".encode('utf-8')";
+    }
+  }
+
+  return [lines.join("\n") + "\n", imports];
+}
+
+function getDataBytes(
+  dataArray: (string | DataParam)[]
+): [string, Set<string>] {
+  const lines = [];
+  const imports: Set<string> = new Set();
+
+  for (const [i, d] of dataArray.entries()) {
+    const op = i === 0 ? "=" : "+=";
+    let line = "data " + op + " ";
+
+    if (typeof d === "string") {
+      line += reprb(d);
+      lines.push(line);
+      continue;
+    }
+
+    const [type, name, filename] = d;
+    if (type === "urlencode" && name) {
+      line += reprb(name) + " + ";
+    }
+
+    let readFile = "";
+    if (filename === "-") {
+      readFile = "sys.stdin.buffer";
+      imports.add("sys");
+    } else {
+      line = "with open(" + repr(filename) + ", 'rb') as f:\n    " + line;
+      readFile = "f";
+    }
+    readFile += ".read()";
+    if (!["binary", "json", "urlencode"].includes(type)) {
+      readFile += ".replace(b'\\n', b'').replace(b'\\r', b'')";
+    }
+
+    if (type === "urlencode") {
+      // TODO: change safe= etc. to match curl
+      readFile = "quote(" + readFile + ")";
+      imports.add("urllib.parse.quote");
+    }
+
+    line += readFile;
+    lines.push(line);
+  }
+
+  return [lines.join("\n") + "\n", imports];
 }
 
 function getDataString(
@@ -708,6 +893,38 @@ function getDataString(
     return [null, imports, null, null];
   }
 
+  const contentTypeHeader = util.getHeader(request, "content-type");
+  const isJson =
+    request.dataArray.length === 1 &&
+    contentTypeHeader &&
+    contentTypeHeader.split(";")[0].trim() === "application/json";
+  let jsonRoundtrips = false;
+  let jsonDataString: string | null = null;
+  if (isJson) {
+    if (typeof request.dataArray[0] === "string") {
+      try {
+        // TODO: repeated dictionary keys are discarded
+        const dataAsJson = JSON.parse(request.data);
+        // Requests uses Python's builtin json library
+        // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+        // which serializes JSON with spaces between : and ,
+        // but JSON.stringify() doesn't add spaces. So mostly this is
+        // guarding against loss in precision in very long numbers.
+        // TODO: reimplement JSON.stringify() to match Python's json.dumps()
+        jsonRoundtrips = JSON.stringify(dataAsJson) === request.data;
+        // If this line crashes, roundtrips will be true which is fine because downstream code
+        // shouldn't use roundtrips if jsonDataString is null.
+        jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
+      } catch {}
+    } else if (request.dataArray[0][0] === "json") {
+      jsonRoundtrips = false;
+      jsonDataString =
+        "with open(" + repr(request.dataArray[0][2]) + ") as f:\n";
+      jsonDataString += "    json_data = json.load(f)\n";
+      imports.add("json");
+    }
+  }
+
   // There's 3 things you can pass as the data= argument to Requests (in descending order of preference):
   //   a dictionary, or a list of tuples (if the dictionary would have duplicate keys)
   //   a string
@@ -716,255 +933,41 @@ function getDataString(
   // which ones we can't use.
 
   // data= can't be a dict or a list of tuples (i.e. entries) when
-  // - there is a @file from --data, --data-binary or --json
-  // - there is a --data-urlencode without a name= or name@
-  // - if you split the input on & and there's a value that doesn't contain an = (e.g. --data "foo=bar&" or simply --data "&")
-  // - there is a name or value that doesn't roundtrip through percent encoding
-  let canBeEntries = true;
-  let dataEntries: Array<[string, string]> = [];
-  let dataEntriesState = "";
-
-  const dataLines = [];
-  // If we see a string with non-ASCII characters, or read from a file (which may contain
-  // non - ASCII characters), we convert the entire string to bytes at the end.
-  // curl sends bytes as-is, which is presumably in UTF-8, whereas Requests sends
-  // 0x80-0xFF as Latin-1 (as-is) and throws an error if it sees codepoints
-  // above 0xFF.
-  // TODO: is this actually helpful?
-  let encode = false;
-  let encodeOnSeparateLine = false;
-
-  // If one of the arguments has to be binary, then they all have to be binary
-  // because we can't mix bytes and str.
-  // An argument has to be binary when the input command has
-  // --data-binary @filename
-  // otherwise we will generate code that will try to read an image file as text and error.
-  const dataLinesBinary = [];
-  let isBinary = false;
-
-  for (const [i, d] of request.dataArray.entries()) {
-    const [type, value] = d;
-
-    const op = i === 0 ? "=" : "+=";
-    let line = `data ${op} `;
-    let binLine = line;
-
-    const joiner = i === 0 || type === "json" ? "" : "&";
-    if (["data", "binary", "json"].includes(type) && value.startsWith("@")) {
-      const filename = value.slice(1);
-
-      let fileObj: string | null = null;
-      let binFileObj: string | null = null;
-      let fileContents: string | null = null;
-      if (filename === "-") {
-        if (request.stdin) {
-          fileContents = ["binary", "json"].includes(type)
-            ? request.stdin
-            : request.stdin.replace(/[\n\r]/g, "");
-        } else if (request.stdinFile) {
-          line =
-            "with open(" + repr(request.stdinFile) + ") as f:\n    " + line;
-          binLine =
-            "with open(" +
-            repr(request.stdinFile) +
-            ", 'rb') as f:\n    " +
-            binLine;
-          fileObj = binFileObj = "f";
-        } else {
-          fileObj = "sys.stdin";
-          binFileObj = "sys.stdin.buffer";
-          imports.add("sys");
-        }
-      } else {
-        line = "with open(" + repr(filename) + ") as f:\n    " + line;
-        binLine =
-          "with open(" + repr(filename) + ", 'rb') as f:\n    " + binLine;
-        fileObj = binFileObj = "f";
-      }
-
-      if (fileContents === null) {
-        if (joiner) {
-          line += repr(joiner) + " + ";
-          encodeOnSeparateLine = true;
-
-          binLine += reprb(joiner) + " + ";
-        }
-        line += fileObj;
-        binLine += binFileObj;
-
-        if (type === "binary") {
-          line += ".read()"; // we don't care about `line` anymore because isBinary = true
-          binLine += ".read()";
-          isBinary = true;
-        } else {
-          line += ".read().replace('\\n', '').replace('\\r', '')";
-          binLine += ".read().replace(b'\\n', b'').replace(b'\\r', b'')";
-        }
-
-        encode = true;
-        canBeEntries = false;
-      } else {
-        line += repr(joiner + fileContents);
-        binLine += reprb(joiner + fileContents);
-
-        encode ||= [...fileContents].some((c) => c > "\xff");
-        if (canBeEntries) {
-          dataEntriesState += joiner + fileContents;
-        }
-        // TODO:
-        // isBinary ||= [...fileContents].some((c) => c > "\xff");
-      }
-    } else if (type === "urlencode") {
-      let name: string | null = null;
-      let content = value;
-      let binContent = value;
-      let entriesContent = value;
-      let contentIsCode = false;
-
-      if (value.includes("=")) {
-        // If = is the first character then it's removed
-        [name, content] = value.split(/=(.*)/s, 2);
-        entriesContent = binContent = content;
-      } else if (value.includes("@")) {
-        contentIsCode = true;
-        [name, content] = value.split(/@(.*)/s, 2);
-        binContent = content;
-        if (content === "-") {
-          if (request.stdin) {
-            content = binContent = entriesContent = request.stdin;
-            contentIsCode = false;
-          } else if (request.stdinFile) {
-            line =
-              "with open(" + repr(request.stdinFile) + ") as f:\n    " + line;
-            binLine =
-              "with open(" +
-              repr(request.stdinFile) +
-              ", 'rb') as f:\n    " +
-              binLine;
-            // TODO: change safe= etc. to match curl
-            content = binContent = "quote(f.read())";
-            entriesContent = "open(" + repr(request.stdinFile) + ").read()";
-            imports.add("urllib.parse.quote");
-          } else {
-            content = "quote(sys.stdin.read())";
-            binContent = "quote(sys.stdin.buffer.read())";
-            entriesContent = "sys.stdin.read()";
-            imports.add("sys");
-            imports.add("urllib.parse.quote");
-          }
-        } else {
-          line = "with open(" + repr(content) + ") as f:\n    " + line;
-          binLine =
-            "with open(" + repr(binContent) + ", 'rb') as f:\n    " + binLine;
-
-          // TODO: change safe= etc. to match curl
-          content = binContent = "quote(f.read())";
-          entriesContent = "open(" + repr(content) + ").read()";
-          imports.add("urllib.parse.quote");
-        }
-      }
-
-      if (name) {
-        [canBeEntries, dataEntries, dataEntriesState] = consumeEntriesState(
-          canBeEntries,
-          dataEntries,
-          dataEntriesState
-        );
-        if (contentIsCode) {
-          line += repr(joiner + name + "=") + " + " + content;
-          binLine += reprb(joiner + name + "=") + " + " + binContent;
-          encode = true;
-          encodeOnSeparateLine = true;
-          if (canBeEntries) {
-            dataEntries.push([name, entriesContent]);
-          }
-        } else {
-          const rawValue = joiner + name + "=" + util.percentEncode(content);
-          line += repr(rawValue);
-          binLine += reprb(rawValue);
-          if (canBeEntries) {
-            dataEntries.push([name, repr(entriesContent)]);
-          }
-        }
-      } else {
-        canBeEntries = false;
-        if (contentIsCode) {
-          if (joiner) {
-            line += repr(joiner) + " + ";
-            encodeOnSeparateLine = true;
-            binLine += reprb(joiner) + " + ";
-          }
-          line += content;
-          binLine += binContent;
-          encode = true;
-        } else {
-          const rawValue = joiner + util.percentEncode(content);
-          line += repr(rawValue);
-          binLine += reprb(rawValue);
-        }
-      }
-    } else {
-      line += repr(joiner + value);
-      encode ||= [...value].some((c) => c > "\xff");
-
-      binLine += reprb(joiner + value);
-
-      if (canBeEntries) {
-        dataEntriesState += joiner + value;
-      }
-    }
-
-    dataLines.push(line);
-    dataLinesBinary.push(binLine);
-  }
-  if (encode) {
-    if (dataLines.length === 1 && !encodeOnSeparateLine) {
-      dataLines[0] += ".encode('utf-8')";
-    } else {
-      dataLines.push("data = data.encode('utf-8')");
-    }
-  }
-  const dataString = (isBinary ? dataLinesBinary : dataLines).join("\n") + "\n";
-  [canBeEntries, dataEntries, dataEntriesState] = consumeEntriesState(
-    canBeEntries,
-    dataEntries,
-    dataEntriesState
-  );
-
-  const contentTypeHeader = util.getHeader(request, "content-type");
-  const isJson =
-    !(request.dataFiles && request.dataFiles.length) &&
-    contentTypeHeader &&
-    contentTypeHeader.split(";")[0].trim() === "application/json";
-  if (isJson) {
-    try {
-      // TODO: repeated dictionary keys are discarded
-      const dataAsJson = JSON.parse(request.data);
-      // Requests uses Python's builtin json library
-      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-      // which serializes JSON with spaces between : and ,
-      // but JSON.stringify() doesn't add spaces. So mostly this is
-      // guarding against loss in precision in very long numbers.
-      // TODO: reimplement JSON.stringify() to match Python's json.dumps()
-      const roundtrips = JSON.stringify(dataAsJson) === request.data;
-      const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
-      return [dataString, imports, jsonDataString, roundtrips];
-    } catch {}
-  }
-
-  if (canBeEntries && dataEntries.length) {
-    // TODO: warn that spaces encoded as '%20' are encoded as '+' by Requests
-    const dataPythonObj = "data = " + dataEntriesToPython(dataEntries) + "\n";
+  //   there is a @file from --data, --data-binary or --json (because they can contain an '&' which would get escaped)
+  //   there is a --data-urlencode without a name= or name@
+  //   if you split the input on & and there's a value that doesn't contain an = (e.g. --data "foo=bar&" or simply --data "&")
+  //   there is a name or value that doesn't roundtrip through percent encoding
+  let dataString: string | null = getDataEntries(request.dataArray);
+  if (dataString !== null) {
     if (
       util.getHeader(request, "content-type") ===
       "application/x-www-form-urlencoded"
     ) {
       util.deleteHeader(request, "content-type");
     }
-    imports.delete("urllib.parse.quote");
-    return [dataPythonObj, imports, null, null];
+    return [dataString, imports, jsonDataString, jsonRoundtrips];
   }
-  return [dataString, imports, null, null];
+
+  let dataImports: Set<string>;
+  const res = getDataStr(request.dataArray);
+
+  if (res) {
+    [dataString, dataImports] = res;
+  } else {
+    // If one of the arguments has to be binary, then they all have to be binary
+    // because we can't mix bytes and str.
+    // An argument has to be binary when the input command has
+    // --data-binary @filename
+    // otherwise we will generate code that will try to read an image file as text and error.
+    [dataString, dataImports] = getDataBytes(request.dataArray);
+  }
+
+  return [
+    dataString,
+    new Set([...imports, ...dataImports]),
+    jsonDataString,
+    jsonRoundtrips,
+  ];
 }
 
 function getFilesString(request: Request): [string, boolean] {
