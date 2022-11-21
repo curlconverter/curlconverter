@@ -3,7 +3,7 @@
 import * as util from "../util.js";
 import type { Request, Cookie, QueryDict, Warnings } from "../util.js";
 
-import { jsrepr } from "../repr.js";
+import { repr as jsrepr } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
   "url",

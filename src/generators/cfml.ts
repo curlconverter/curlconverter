@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { jsesc } from "../repr.js";
+import { esc as jsesc } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
   "url",

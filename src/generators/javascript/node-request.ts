@@ -1,7 +1,7 @@
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import { jsrepr } from "../../repr.js";
+import { repr } from "./javascript.js";
 
 const supportedArgs = new Set([
   "url",
@@ -46,8 +46,7 @@ export const _toNodeRequest = (
   }
 
   if (request.data) {
-    nodeRequestCode +=
-      "var dataString = " + jsrepr(request.data, "'") + ";\n\n";
+    nodeRequestCode += "var dataString = " + repr(request.data, "'") + ";\n\n";
   }
 
   nodeRequestCode += "var options = {\n";

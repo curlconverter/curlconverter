@@ -2,7 +2,7 @@ import * as util from "../../util.js";
 import { reprObj, bySecondElem } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
 
-import { jsrepr as repr } from "../../repr.js";
+import { repr } from "./javascript.js";
 
 const supportedArgs = new Set([
   "url",

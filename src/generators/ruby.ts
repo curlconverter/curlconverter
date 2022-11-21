@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { jsrepr } from "../repr.js";
+import { repr as jsrepr } from "./javascript/javascript.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
