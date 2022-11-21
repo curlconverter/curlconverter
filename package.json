@@ -26,6 +26,7 @@
   "dependencies": {
     "@curlconverter/tree-sitter-bash": "^0.0.2",
     "jsesc": "^3.0.2",
+    "lossless-json": "^2.0.2",
     "tree-sitter": "^0.20.1",
     "web-tree-sitter": "^0.20.7",
     "yamljs": "^0.3.0"

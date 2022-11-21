@@ -7,6 +7,12 @@ import type {
   DataParam,
 } from "../util.js";
 
+import {
+  parse as losslessJsonParse,
+  stringify as losslessJsonStringify,
+  isLosslessNumber,
+} from "lossless-json";
+
 // TODO: partiallySupportedArgs
 const supportedArgs = new Set([
   "url",
@@ -484,6 +490,9 @@ function objToPython(
   indent = 0
 ): string {
   let s = "";
+  if (isLosslessNumber(obj)) {
+    return losslessJsonStringify(obj) as string;
+  }
   switch (typeof obj) {
     case "string":
       s += repr(obj);
@@ -875,31 +884,39 @@ function formatDataAsJson(
   let jsonDataString: string | null = null;
   let jsonRoundtrips = false;
 
-  if (typeof d !== "string") {
-    if (d[0] !== "json") {
-      return [null, false];
-    }
+  if (typeof d === "string") {
+    // Try to parse using lossless-json first, then fall back to JSON.parse
+    try {
+      const dataAsLosslessJson = losslessJsonParse(d);
+      jsonRoundtrips = losslessJsonStringify(dataAsLosslessJson) === d;
+      // TODO
+      jsonDataString =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "json_data = " + objToPython(dataAsLosslessJson as any) + "\n";
+      return [jsonDataString, jsonRoundtrips];
+    } catch {}
+
+    try {
+      // TODO: repeated dictionary keys are discarded
+      const dataAsJson = JSON.parse(d);
+      // Requests uses Python's builtin json library
+      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+      // which serializes JSON with spaces between : and ,
+      // but JSON.stringify() doesn't add spaces. So mostly this is
+      // guarding against loss in precision in very long numbers.
+      // TODO: reimplement JSON.stringify() to match Python's json.dumps()
+      jsonRoundtrips = JSON.stringify(dataAsJson) === d;
+      // If this line crashes, roundtrips will be true which is fine because downstream code
+      // shouldn't use roundtrips if jsonDataString is null.
+      jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
+      return [jsonDataString, jsonRoundtrips];
+    } catch {}
+  } else if (d[0] === "json") {
     jsonDataString = "with open(" + repr(d[2]) + ") as f:\n";
     jsonDataString += "    json_data = json.load(f)\n";
     imports.add("json");
     return [jsonDataString, false];
   }
-
-  try {
-    // TODO: repeated dictionary keys are discarded
-    const dataAsJson = JSON.parse(d);
-    // Requests uses Python's builtin json library
-    // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-    // which serializes JSON with spaces between : and ,
-    // but JSON.stringify() doesn't add spaces. So mostly this is
-    // guarding against loss in precision in very long numbers.
-    // TODO: reimplement JSON.stringify() to match Python's json.dumps()
-    jsonRoundtrips = JSON.stringify(dataAsJson) === d;
-    // If this line crashes, roundtrips will be true which is fine because downstream code
-    // shouldn't use roundtrips if jsonDataString is null.
-    jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
-    return [jsonDataString, jsonRoundtrips];
-  } catch {}
 
   return [null, false];
 }
