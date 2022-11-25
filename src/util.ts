@@ -809,18 +809,18 @@ for (const [opt, val] of Object.entries(_curlLongOpts)) {
   }
 }
 for (const [shortenedOpt, vals] of Object.entries(shortened)) {
-  if (!has(curlLongOpts, shortenedOpt)) {
+  if (!Object.prototype.hasOwnProperty.call(curlLongOpts, shortenedOpt)) {
     if (vals.length === 1) {
-      (curlLongOpts[shortenedOpt] as LongShort | null) = vals[0];
+      curlLongOpts[shortenedOpt] = vals[0];
     } else if (vals.length > 1) {
       // More than one option shortens to this, it's ambiguous
-      (curlLongOpts[shortenedOpt] as LongShort | null) = null;
+      curlLongOpts[shortenedOpt] = null;
     }
   }
 }
 for (const [removedOpt, val] of Object.entries(removedLongOpts)) {
-  if (!has(curlLongOpts, removedOpt)) {
-    (curlLongOpts[removedOpt] as LongShort | null) = val;
+  if (!Object.prototype.hasOwnProperty.call(curlLongOpts, removedOpt)) {
+    curlLongOpts[removedOpt] = val;
   } else if (curlLongOpts[removedOpt] === null) {
     // This happens with --socks because it became --socks5 and there are multiple options
     // that start with "--socks"
