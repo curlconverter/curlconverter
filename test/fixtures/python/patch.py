@@ -2,8 +2,7 @@ import requests
 
 headers = {
     'Accept': 'application/vnd.go.cd.v4+json',
-    # Already added when you pass json= but not when you pass data=
-    # 'Content-Type': 'application/json',
+    'Content-Type': 'application/json',
 }
 
 json_data = {
