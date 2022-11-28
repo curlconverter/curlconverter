@@ -8,8 +8,10 @@ import type {
 } from "../util.js";
 
 import {
-  parse as losslessJsonParse,
-  stringify as losslessJsonStringify,
+  parse as jsonParseLossless,
+  stringify as jsonStringifyLossless,
+  isSafeNumber,
+  isInteger,
   isLosslessNumber,
 } from "lossless-json";
 
@@ -368,8 +370,8 @@ const unsupportedArgs = [
 // https://www.unicode.org/reports/tr44/#GC_Values_Table
 // https://unicode.org/Public/UNIDATA/UnicodeData.txt
 // https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
-const regexSingleEscape = /'|\\|\p{C}|\p{Z}'/gu;
-const regexDoubleEscape = /"|\\|\p{C}|\p{Z}'/gu;
+const regexSingleEscape = /'|\\|\p{C}|\p{Z}/gu;
+const regexDoubleEscape = /"|\\|\p{C}|\p{Z}/gu;
 
 export function repr(s: string): string {
   let quote = "'";
@@ -472,77 +474,158 @@ export function reprb(s: string): string {
   const sEsc = repr(s);
   // We check until 0x7F instead of 0xFF because curl (running in a UTF-8 terminal) when it gets
   // bytes sends them as is, but if we pass b'\x80' to Requests, it will encode that byte as
-  // Latin-1 instead of UTF-8.
+  // Latin-1 (presumably for backwards compatibility) instead of UTF-8.
   if (/^[\x00-\x7f]*$/.test(s)) {
     return "b" + sEsc;
   }
   // TODO: unmatched surrogates will generate code that throws an error
+  // e.g.: '\uDC00'.encode('utf-8')
   return sEsc + ".encode('utf-8')";
 }
 
 function reprWithVariable(value: string, hasEnvironmentVariable: boolean) {
   // TODO: escape {}
+  // ? "f" + repr(value.replace(/{/g, "{{").replace(/}/g, "}}"))
   return hasEnvironmentVariable ? "f" + repr(value) : repr(value);
+}
+
+// Port of Python's json.dumps() with its default options, which is what Requests uses
+// https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
+// It's different from JSON.stringify(). Namely, it adds spaces after ',' and ':'
+// and all non-ASCII characters in strings are escaped:
+// > JSON.stringify('\xFF')
+// '"ÿ"'
+// >>> json.dumps('\xFF')
+// '"\\u00ff"'
+const pythonJsonEscape = /"|\\|[^\x20-\x7E]/g;
+function jsonRepr(s: string): string {
+  return (
+    '"' +
+    s.replace(pythonJsonEscape, (c: string): string => {
+      // https://tc39.es/ecma262/#table-json-single-character-escapes
+      switch (c) {
+        case "\b":
+          return "\\b";
+        case "\t":
+          return "\\t";
+        case "\n":
+          return "\\n";
+        case "\f":
+          return "\\f";
+        case "\r":
+          return "\\r";
+        case "\\":
+          return "\\\\";
+        case '"':
+          return '\\"';
+      }
+
+      const hex = c.charCodeAt(0).toString(16);
+      return "\\u" + hex.padStart(4, "0");
+    }) +
+    '"'
+  );
+}
+function jsonDumps(obj: string | number | boolean | object | null): string {
+  if (isLosslessNumber(obj)) {
+    return jsonStringifyLossless(obj) as string;
+  }
+
+  switch (typeof obj) {
+    case "string":
+      return jsonRepr(obj);
+    case "number":
+      // If the number in the JSON file is very large, it'll turn into Infinity
+      if (!isFinite(obj)) {
+        throw new util.CCError("found Infitiny in JSON");
+      }
+      // TODO: If the number in the JSON file is too big for JavaScript, we will lose information
+      return obj.toString();
+    case "boolean":
+      return obj.toString();
+    case "object":
+      if (obj === null) {
+        return "null";
+      }
+      if (Array.isArray(obj)) {
+        return "[" + obj.map(jsonDumps).join(", ") + "]";
+      }
+      return (
+        "{" +
+        Object.entries(obj)
+          .map((e) => jsonRepr(e[0]) + ": " + jsonDumps(e[1]))
+          .join(", ") +
+        "}"
+      );
+    default:
+      throw new util.CCError(
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+      );
+  }
 }
 
 function objToPython(
   obj: string | number | boolean | object | null,
   indent = 0
 ): string {
-  let s = "";
   if (isLosslessNumber(obj)) {
-    return losslessJsonStringify(obj) as string;
+    const numAsStr = jsonStringifyLossless(obj) as string;
+    // If the number is a large float, it might not be representable in Python
+    // Both JavaScript and Python use f64 so we check if the float
+    // is representable in JavaScript.
+    if (!isInteger(numAsStr) && !isSafeNumber(numAsStr)) {
+      throw new util.CCError("float unrepresentable in Python: " + numAsStr);
+    }
+    return numAsStr;
   }
+
   switch (typeof obj) {
     case "string":
-      s += repr(obj);
-      break;
+      return repr(obj);
     case "number":
       // TODO: there could be differences in number syntax between Python and JavaScript
       // TODO: if the number in the JSON file is too big for JavaScript, we will lose information
-      s += obj;
-      break;
+      return obj.toString();
     case "boolean":
-      s += obj ? "True" : "False";
-      break;
+      return obj ? "True" : "False";
     case "object":
       if (obj === null) {
-        s += "None";
-      } else if (Array.isArray(obj)) {
-        if (obj.length === 0) {
-          s += "[]";
-        } else {
-          s += "[\n";
-          for (const item of obj) {
-            s += " ".repeat(indent + 4) + objToPython(item, indent + 4) + ",\n";
-          }
-          s += " ".repeat(indent) + "]";
-        }
-      } else {
-        const len = Object.keys(obj).length;
-        if (len === 0) {
-          s += "{}";
-        } else {
-          s += "{\n";
-          for (const [k, v] of Object.entries(obj)) {
-            // repr() because JSON keys must be strings.
-            s +=
-              " ".repeat(indent + 4) +
-              repr(k) +
-              ": " +
-              objToPython(v, indent + 4) +
-              ",\n";
-          }
-          s += " ".repeat(indent) + "}";
-        }
+        return "None";
       }
-      break;
+      if (Array.isArray(obj)) {
+        if (obj.length === 0) {
+          return "[]";
+        }
+        let s = "[\n";
+        for (const item of obj) {
+          s += " ".repeat(indent + 4) + objToPython(item, indent + 4) + ",\n";
+        }
+        s += " ".repeat(indent) + "]";
+        return s;
+      }
+
+      if (Object.keys(obj).length === 0) {
+        return "{}";
+      }
+      {
+        let s = "{\n";
+        for (const [k, v] of Object.entries(obj)) {
+          // repr() because JSON keys must be strings.
+          s +=
+            " ".repeat(indent + 4) +
+            repr(k) +
+            ": " +
+            objToPython(v, indent + 4) +
+            ",\n";
+        }
+        s += " ".repeat(indent) + "}";
+        return s;
+      }
     default:
       throw new util.CCError(
         "unexpected object type that shouldn't appear in JSON: " + typeof obj
       );
   }
-  return s;
 }
 
 function objToDictOrListOfTuples(obj: Query | QueryDict): string {
@@ -881,38 +964,34 @@ function formatDataAsJson(
   d: string | DataParam,
   imports: Set<string>
 ): [string | null, boolean] {
-  let jsonDataString: string | null = null;
-  let jsonRoundtrips = false;
-
   if (typeof d === "string") {
     // Try to parse using lossless-json first, then fall back to JSON.parse
+    // TODO: repeated dictionary keys are discarded
+    // https://github.com/josdejong/lossless-json/issues/244
+    let dataAsJson;
     try {
-      const dataAsLosslessJson = losslessJsonParse(d);
-      jsonRoundtrips = losslessJsonStringify(dataAsLosslessJson) === d;
-      // TODO
-      jsonDataString =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "json_data = " + objToPython(dataAsLosslessJson as any) + "\n";
-      return [jsonDataString, jsonRoundtrips];
-    } catch {}
+      // TODO: types
+      // https://github.com/josdejong/lossless-json/issues/245
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      dataAsJson = jsonParseLossless(d) as any;
+    } catch {
+      try {
+        dataAsJson = JSON.parse(d);
+      } catch {
+        return [null, false];
+      }
+    }
 
     try {
-      // TODO: repeated dictionary keys are discarded
-      const dataAsJson = JSON.parse(d);
-      // Requests uses Python's builtin json library
-      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-      // which serializes JSON with spaces between : and ,
-      // but JSON.stringify() doesn't add spaces. So mostly this is
-      // guarding against loss in precision in very long numbers.
-      // TODO: reimplement JSON.stringify() to match Python's json.dumps()
-      jsonRoundtrips = JSON.stringify(dataAsJson) === d;
-      // If this line crashes, roundtrips will be true which is fine because downstream code
-      // shouldn't use roundtrips if jsonDataString is null.
-      jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
+      const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
+      // JSON might not be serialized by Python exactly as it was originally
+      // due to different whitespace, long numbers or duplicate object keys.
+      const jsonRoundtrips = jsonDumps(dataAsJson) === d;
       return [jsonDataString, jsonRoundtrips];
     } catch {}
   } else if (d[0] === "json") {
-    jsonDataString = "with open(" + repr(d[2]) + ") as f:\n";
+    let jsonDataString = "";
+    jsonDataString += "with open(" + repr(d[2]) + ") as f:\n";
     jsonDataString += "    json_data = json.load(f)\n";
     imports.add("json");
     return [jsonDataString, false];
@@ -1133,7 +1212,6 @@ export const _toPython = (
     cookieStr = "cookies = {\n";
     for (const [cookieName, cookieValue] of request.cookies) {
       const [detectedVars, modifiedString] = detectEnvVar(cookieValue);
-
       const hasEnvironmentVariable = detectedVars.size > 0;
 
       for (const newVar of detectedVars) {
@@ -1245,13 +1323,11 @@ export const _toPython = (
     // because Requests adds it automatically when you use json=
     if (
       jsonDataString &&
+      !dataString &&
       contentType &&
       contentType.trim() === "application/json"
     ) {
       commentedOutHeaders["content-type"] = "Already added when you pass json=";
-      if (dataString) {
-        commentedOutHeaders["content-type"] += " but not when you pass data=";
-      }
     }
   } else if (request.multipartUploads) {
     let usesStdin = false;
