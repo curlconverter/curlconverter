@@ -1405,6 +1405,8 @@ export const percentEncode = (s: string): string => {
     })
     .join("");
 };
+export const percentEncodePlus = (s: string): string =>
+  percentEncode(s).replace(/%20/g, "+");
 
 export function parseQueryString(
   s: string | null
@@ -1435,28 +1437,20 @@ export function parseQueryString(
       }
       throw e;
     }
-    try {
-      // If the query string doesn't round-trip, we cannot properly convert it.
-      // TODO: this is too strict. Ideally we want to check how each runtime/library
-      // percent-encodes query strings. For example, a %27 character in the input query
-      // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
-      const roundTripKey = percentEncode(decodedKey);
-      const roundTripVal =
-        decodedVal === null ? null : percentEncode(decodedVal);
-      // If the original data used %20 instead of + (what requests will send), that's close enough
-      if (
-        (roundTripKey !== key && roundTripKey.replace(/%20/g, "+") !== key) ||
-        (roundTripVal !== null &&
-          roundTripVal !== val &&
-          roundTripVal.replace(/%20/g, "+") !== val)
-      ) {
-        return [null, null];
-      }
-    } catch (e) {
-      if (e instanceof URIError) {
-        return [null, null];
-      }
-      throw e;
+    // If the query string doesn't round-trip, we cannot properly convert it.
+    // TODO: this is a bit Python-specific, ideally we would check how each runtime/library
+    // percent-encodes query strings. For example, a %27 character in the input query
+    // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
+    const roundTripKey = percentEncode(decodedKey);
+    const roundTripVal = decodedVal === null ? null : percentEncode(decodedVal);
+    // If the original data used %20 instead of + (what requests will send), that's close enough
+    if (
+      (roundTripKey !== key && roundTripKey.replace(/%20/g, "+") !== key) ||
+      (roundTripVal !== null &&
+        roundTripVal !== val &&
+        roundTripVal.replace(/%20/g, "+") !== val)
+    ) {
+      return [null, null];
     }
     asList.push([decodedKey, decodedVal]);
   }
@@ -1631,15 +1625,21 @@ function buildRequest(
         // curl checks for = before @
         const splitOn = value.includes("=") || !value.includes("@") ? "=" : "@";
         const splitOnRegex = splitOn === "=" ? /=(.*)/s : /@(.*)/s;
-        [name, value] = value.split(splitOnRegex, 2);
+        // If there's no = or @ then the entire content is treated as a value and encoded
+        if (value.includes("@") || value.includes("=")) {
+          [name, value] = value.split(splitOnRegex, 2);
+        }
 
         if (splitOn === "=") {
           if (name) {
             dataStrState += name + "=";
           }
-          dataStrState += percentEncode(value);
+          // curl's --data-urlencode percent-encodes spaces as "+"
+          // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_getparam.c#L630
+          dataStrState += percentEncodePlus(value);
           continue;
         }
+
         name = name ? name : null;
         value = "@" + value;
       }
@@ -1653,7 +1653,7 @@ function buildRequest(
             value = ["binary", "json"].includes(type)
               ? stdin
               : stdin.replace(/[\n\r]/g, "");
-            value = type === "urlencode" ? percentEncode(value) : value;
+            value = type === "urlencode" ? percentEncodePlus(value) : value;
             filename = null;
           } else if (stdinFile !== undefined) {
             filename = stdinFile;
