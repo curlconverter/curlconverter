@@ -528,7 +528,15 @@ function jsonRepr(s: string): string {
 }
 function jsonDumps(obj: string | number | boolean | object | null): string {
   if (isLosslessNumber(obj)) {
-    return jsonStringifyLossless(obj) as string;
+    const numAsStr = jsonStringifyLossless(obj) as string;
+    // lossless-json's stringify() doesn't stringify floats like Python,
+    // for example it keeps trailing zeros but also Python will use exponent
+    // notation if it's shorter.
+    // TODO: reimplement Python's float.__repr__
+    if (!isInteger(numAsStr)) {
+      throw new util.CCError("Python float formatting not implemented");
+    }
+    return numAsStr;
   }
 
   switch (typeof obj) {
@@ -540,6 +548,9 @@ function jsonDumps(obj: string | number | boolean | object | null): string {
         throw new util.CCError("found Infitiny in JSON");
       }
       // TODO: If the number in the JSON file is too big for JavaScript, we will lose information
+      // TODO: JavaScript and Python serialize floats differently.
+      // JSON.stringify(2e2) => 200
+      // json.dumps(2e2)     => 200.0
       return obj.toString();
     case "boolean":
       return obj.toString();
@@ -985,8 +996,13 @@ function formatDataAsJson(
     try {
       const jsonDataString = "json_data = " + objToPython(dataAsJson) + "\n";
       // JSON might not be serialized by Python exactly as it was originally
-      // due to different whitespace, long numbers or duplicate object keys.
-      const jsonRoundtrips = jsonDumps(dataAsJson) === d;
+      // due to different whitespace, float formatting like extra + in exponent
+      // (1e100 vs 1e+100), different escape sequences in strings
+      // ("\/" vs "/" or "\u0008" vs "\b") or duplicate object keys.
+      let jsonRoundtrips = false;
+      try {
+        jsonRoundtrips = jsonDumps(dataAsJson) === d;
+      } catch {}
       return [jsonDataString, jsonRoundtrips];
     } catch {}
   } else if (d[0] === "json") {
