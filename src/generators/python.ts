@@ -479,8 +479,8 @@ export function reprb(s: string): string {
     return "b" + sEsc;
   }
   // TODO: unmatched surrogates will generate code that throws an error
-  // e.g.: '\uDC00'.encode('utf-8')
-  return sEsc + ".encode('utf-8')";
+  // e.g.: '\uDC00'.encode()
+  return sEsc + ".encode()";
 }
 
 function reprWithVariable(value: string, hasEnvironmentVariable: boolean) {
@@ -965,8 +965,11 @@ function formatDataAsStr(
     }
 
     if (type === "urlencode") {
-      // TODO: change safe= etc. to match curl
       readFile = "quote_plus(" + readFile + ")";
+      if (binary) {
+        // quote_plus() always returns a string
+        readFile += ".encode()";
+      }
       imports.add("urllib.parse.quote_plus");
     } else {
       // --data-urlencode files don't need to be encoded because
@@ -982,7 +985,7 @@ function formatDataAsStr(
   if (binary) {
     encode = false;
   } else if (encode && lines.length === 1 && !encodeOnSeparateLine) {
-    lines[lines.length - 1] += ".encode('utf-8')";
+    lines[lines.length - 1] += ".encode()";
     encode = false;
   }
 
@@ -1478,7 +1481,7 @@ export const _toPython = (
     } else {
       requestLineBody += ", data=data";
       if (shouldEncode) {
-        requestLineBody += ".encode('utf-8')";
+        requestLineBody += ".encode()";
       }
     }
   } else if (request.multipartUploads) {
@@ -1579,8 +1582,7 @@ export const _toPython = (
     // TODO: do this correctly?
     if (shouldEncode) {
       pythonCode +=
-        "#" +
-        requestLine.replace(", json=json_data", ", data=data.encode('utf-8')");
+        "#" + requestLine.replace(", json=json_data", ", data=data.encode()");
     } else {
       pythonCode +=
         "#" + requestLine.replace(", json=json_data", ", data=data");
