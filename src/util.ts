@@ -870,7 +870,7 @@ const parseTranslatedString = (str: string): string => {
   return parseDoubleQuoteString(str.slice(1));
 };
 // ANSI-C quoted strings look $'like this'.
-// Not all shells have them but bash does
+// Not all shells have them but Bash does
 // https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
 //
 // https://git.savannah.gnu.org/cgit/bash.git/tree/lib/sh/strtrans.c
@@ -905,7 +905,7 @@ const parseAnsiCString = (str: string): string => {
       case "?":
         return "?";
       case "c":
-        // bash handles all characters by considering the first byte
+        // Bash handles all characters by considering the first byte
         // of its UTF-8 input and can produce invalid UTF-8, whereas
         // JavaScript stores strings in UTF-16
         if (m.codePointAt(2)! > 127) {
@@ -1650,16 +1650,23 @@ function buildRequest(
         filename = value.slice(1);
         if (filename === "-") {
           if (stdin !== undefined) {
-            value = ["binary", "json"].includes(type)
-              ? stdin
-              : stdin.replace(/[\n\r]/g, "");
-            value = type === "urlencode" ? percentEncodePlus(value) : value;
+            switch (type) {
+              case "binary":
+              case "json":
+                value = stdin.replace(/[\n\r]/g, "");
+                break;
+              case "urlencode":
+                value = (name ? name + "=" : "") + percentEncodePlus(stdin);
+                break;
+              default:
+                value = stdin;
+            }
             filename = null;
           } else if (stdinFile !== undefined) {
             filename = stdinFile;
           } else {
             // TODO: if stdin is read twice, it will be empty the second time
-            // TODO: `stdinSentinel` so that we can tell the difference between
+            // TODO: `STDIN_SENTINEL` so that we can tell the difference between
             // a stdinFile called "-" and stdin for the error message
           }
         }
