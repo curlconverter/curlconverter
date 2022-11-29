@@ -667,19 +667,8 @@ function decodePercentEncoding(s: string): string | null {
     }
     throw e;
   }
-  let roundTripKey;
-  try {
-    // If the query string doesn't round-trip, we cannot properly convert it.
-    // TODO: this is too strict. Ideally we want to check how each runtime/library
-    // percent-encodes query strings. For example, a %27 character in the input query
-    // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
-    roundTripKey = util.percentEncode(decoded);
-  } catch (e) {
-    if (e instanceof URIError) {
-      return null;
-    }
-    throw e;
-  }
+  // If the query string doesn't round-trip, we cannot properly convert it.
+  const roundTripKey = util.percentEncode(decoded);
   // If the original data used %20 instead of + (what requests will send), that's close enough
   if (roundTripKey !== s && roundTripKey.replace(/%20/g, "+") !== s) {
     return null;
@@ -753,7 +742,9 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
   return s;
 }
 
-function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
+function formatDataAsEntries(
+  dataArray: (string | DataParam)[]
+): [string, string] | null {
   // This code is more complicated than you might expect because it needs
   // to handle a --data-urlencode that reads from a file followed by --json
   // because --json doesn't add an '&' before its value.  Specifically, we
@@ -786,6 +777,7 @@ function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
   }
 
   const dataEntries: Array<[string, string | null]> = [];
+  let percentWarn = "";
   for (const [i, d] of dataArray.entries()) {
     if (typeof d === "string") {
       let newEntries = d.split("&");
@@ -809,6 +801,15 @@ function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
             prevEntry[0] += " + " + repr(decodedKey);
           }
           prevEntry[1] = repr(decodedVal);
+
+          if (!percentWarn) {
+            if (key.includes("%20")) {
+              percentWarn = key;
+            }
+            if (val.includes("%20")) {
+              percentWarn = val;
+            }
+          }
         } else if (!first.includes("=") && prevEntry[1] !== null) {
           if (first) {
             const decodedVal = decodePercentEncoding(first);
@@ -816,6 +817,10 @@ function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
               return null;
             }
             prevEntry[1] += " + " + repr(decodedVal);
+
+            if (!percentWarn && first.includes("%20")) {
+              percentWarn = first;
+            }
           }
         } else {
           return null;
@@ -845,6 +850,15 @@ function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
           return null;
         }
         dataEntries.push([repr(decodedKey), repr(decodedVal)]);
+
+        if (!percentWarn) {
+          if (key.includes("%20")) {
+            percentWarn = key;
+          }
+          if (val.includes("%20")) {
+            percentWarn = val;
+          }
+        }
       }
 
       continue;
@@ -861,6 +875,10 @@ function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
     if (!name) {
       dataEntries.push([readFile, null]);
     } else {
+      // Curl doesn't percent encode the name but Requests will
+      if (name !== util.percentEncode(name)) {
+        return null;
+      }
       dataEntries.push([repr(name), readFile]);
     }
   }
@@ -869,10 +887,10 @@ function formatDataAsEntries(dataArray: (string | DataParam)[]): string | null {
     return null;
   }
 
-  // TODO: warn that spaces encoded as '%20' are encoded as '+' by Requests
-  return (
-    "data = " + dataEntriesToPython(dataEntries as [string, string][]) + "\n"
-  );
+  return [
+    "data = " + dataEntriesToPython(dataEntries as [string, string][]) + "\n",
+    percentWarn,
+  ];
 }
 
 function formatDataAsStr(
@@ -948,8 +966,8 @@ function formatDataAsStr(
 
     if (type === "urlencode") {
       // TODO: change safe= etc. to match curl
-      readFile = "quote(" + readFile + ")";
-      imports.add("urllib.parse.quote");
+      readFile = "quote_plus(" + readFile + ")";
+      imports.add("urllib.parse.quote_plus");
     } else {
       // --data-urlencode files don't need to be encoded because
       // they'll be percent-encoded and therefore ASCII-only
@@ -1017,7 +1035,8 @@ function formatDataAsJson(
 }
 
 function getDataString(
-  request: Request
+  request: Request,
+  warnings: Warnings
 ): [string | null, boolean | null, string | null, Set<string>] {
   const imports: Set<string> = new Set();
   if (!request.data || !request.dataArray) {
@@ -1062,13 +1081,21 @@ function getDataString(
   //   there is a name or value that doesn't roundtrip through percent encoding
   const dataAsEntries = formatDataAsEntries(request.dataArray);
   if (dataAsEntries !== null) {
+    const [dataEntries, percentWarn] = dataAsEntries;
     if (
       util.getHeader(request, "content-type") ===
       "application/x-www-form-urlencoded"
     ) {
       util.deleteHeader(request, "content-type");
     }
-    return [dataAsEntries, false, dataAsJson, imports];
+    if (percentWarn) {
+      warnings.push([
+        "percent-encoded-spaces",
+        'data contains spaces encoded by curl as "%20" which will be sent as "+" instead: ' +
+          JSON.stringify(percentWarn),
+      ]);
+    }
+    return [dataEntries, false, dataAsJson, imports];
   }
 
   const [dataAsString, shouldEncode] = formatDataAsStr(
@@ -1332,8 +1359,10 @@ export const _toPython = (
     }
   } else if (request.data) {
     let dataImports: Set<string>;
-    [dataString, shouldEncode, jsonDataString, dataImports] =
-      getDataString(request);
+    [dataString, shouldEncode, jsonDataString, dataImports] = getDataString(
+      request,
+      warnings
+    );
     dataImports.forEach(imports.add, imports);
     // Remove "Content-Type" from the headers dict
     // because Requests adds it automatically when you use json=
@@ -1485,9 +1514,8 @@ export const _toPython = (
   }
   if (imports.size) {
     for (const imp of Array.from(imports).sort()) {
-      if (imp === "urllib.parse.quote") {
-        // TODO: use quote_plus instead, since that's what Requests uses?
-        pythonCode += "from urllib.parse import quote\n";
+      if (imp === "urllib.parse.quote_plus") {
+        pythonCode += "from urllib.parse import quote_plus\n";
       } else {
         pythonCode += "import " + imp + "\n";
       }
