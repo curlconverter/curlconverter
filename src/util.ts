@@ -1542,7 +1542,7 @@ function buildRequest(
       }
     }
     if (cookieStrings.length) {
-      const cookieString = parsedArguments.cookie.join(";");
+      const cookieString = parsedArguments.cookie.join("; ");
       _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
       cookies = parseCookies(cookieString);
     }
@@ -1653,13 +1653,13 @@ function buildRequest(
             switch (type) {
               case "binary":
               case "json":
-                value = stdin.replace(/[\n\r]/g, "");
+                value = stdin;
                 break;
               case "urlencode":
                 value = (name ? name + "=" : "") + percentEncodePlus(stdin);
                 break;
               default:
-                value = stdin;
+                value = stdin.replace(/[\n\r]/g, "");
             }
             filename = null;
           } else if (stdinFile !== undefined) {
