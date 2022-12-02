@@ -71,44 +71,134 @@ interface ParsedArguments {
   request?: string; // the HTTP method
   data?: FullDataParam[];
   jsoned?: boolean;
+  authtype: number;
   form?: FormParam[];
   // TODO
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
+const CURLAUTH_NONE = 0;
+const CURLAUTH_BASIC = 1 << 0;
+const CURLAUTH_DIGEST = 1 << 1;
+const CURLAUTH_NEGOTIATE = 1 << 2;
+const CURLAUTH_NTLM = 1 << 3;
+const CURLAUTH_DIGEST_IE = 1 << 4;
+const CURLAUTH_NTLM_WB = 1 << 5;
+const CURLAUTH_BEARER = 1 << 6;
+const CURLAUTH_AWS_SIGV4 = 1 << 7;
+const CURLAUTH_ANY = ~CURLAUTH_DIGEST_IE;
+
+function pickAuth(mask: number): number {
+  const auths = [
+    CURLAUTH_NEGOTIATE,
+    CURLAUTH_BEARER,
+    CURLAUTH_DIGEST,
+    CURLAUTH_NTLM,
+    CURLAUTH_NTLM_WB,
+    CURLAUTH_BASIC,
+    CURLAUTH_AWS_SIGV4,
+  ];
+  for (const auth of auths) {
+    if (mask & auth) {
+      return auth;
+    }
+  }
+  return CURLAUTH_NONE;
+}
+
 type Warnings = [string, string][];
 
-function pushArgValue(obj: ParsedArguments, argName: string, value: string) {
+function pushArgValue(config: ParsedArguments, argName: string, value: string) {
   switch (argName) {
     case "data":
     case "data-ascii":
-      return pushProp(obj, "data", ["data", value]);
+      return pushProp(config, "data", ["data", value]);
     case "data-binary":
-      return pushProp(obj, "data", [
+      return pushProp(config, "data", [
         // Unless it's a file, --data-binary works the same as --data
         value.startsWith("@") ? "binary" : "data",
         value,
       ]);
     case "data-raw":
-      return pushProp(obj, "data", [
+      return pushProp(config, "data", [
         // Unless it's a file, --data-raw works the same as --data
         value.startsWith("@") ? "raw" : "data",
         value,
       ]);
     case "data-urlencode":
-      return pushProp(obj, "data", ["urlencode", value]);
+      return pushProp(config, "data", ["urlencode", value]);
     case "json":
-      obj.jsoned = true;
-      return pushProp(obj, "data", ["json", value]);
+      config.jsoned = true;
+      return pushProp(config, "data", ["json", value]);
     // TODO: case "url-query":
 
     case "form":
-      return pushProp(obj, "form", { value, type: "form" });
+      return pushProp(config, "form", { value, type: "form" });
     case "form-string":
-      return pushProp(obj, "form", { value, type: "string" });
+      return pushProp(config, "form", { value, type: "string" });
+
+    case "user":
+      return pushProp(config, "userpwd", value);
+    case "aws-sigv4":
+      config.authtype |= CURLAUTH_AWS_SIGV4;
+      return pushProp(config, "aws_sigv4", value);
+    case "oauth2-bearer":
+      config.authtype |= CURLAUTH_BEARER;
+      return pushProp(config, "oauth_bearer", value);
   }
 
-  return pushProp(obj, argName, value);
+  return pushProp(config, argName, value);
+}
+
+function setArgValue(
+  config: ParsedArguments,
+  argName: string,
+  toggle: boolean
+) {
+  switch (argName) {
+    case "digest":
+      if (toggle) {
+        config.authtype |= CURLAUTH_DIGEST;
+      } else {
+        config.authtype &= ~CURLAUTH_DIGEST;
+      }
+      break;
+    case "negotiate":
+      if (toggle) {
+        config.authtype |= CURLAUTH_NEGOTIATE;
+      } else {
+        config.authtype &= ~CURLAUTH_NEGOTIATE;
+      }
+      break;
+    case "ntlm":
+      if (toggle) {
+        config.authtype |= CURLAUTH_NTLM;
+      } else {
+        config.authtype &= ~CURLAUTH_NTLM;
+      }
+      break;
+    case "ntlm-wb":
+      if (toggle) {
+        config.authtype |= CURLAUTH_NTLM_WB;
+      } else {
+        config.authtype &= ~CURLAUTH_NTLM_WB;
+      }
+      break;
+    case "basic":
+      if (toggle) {
+        config.authtype |= CURLAUTH_BASIC;
+      } else {
+        config.authtype &= ~CURLAUTH_BASIC;
+      }
+      break;
+    case "anyauth":
+      if (toggle) {
+        config.authtype = CURLAUTH_ANY;
+      }
+      break;
+    default:
+      config[argName] = toggle;
+  }
 }
 
 interface Request {
@@ -1271,7 +1361,7 @@ const parseArgs = (
   supportedOpts?: Set<string>,
   warnings: Warnings = []
 ): ParsedArguments => {
-  const parsedArguments: ParsedArguments = {};
+  const parsedArguments: ParsedArguments = { authtype: CURLAUTH_BASIC };
   for (let i = 0, stillflags = true; i < args.length; i++) {
     let arg: string | string[] = args[i];
     let argRepr = arg;
@@ -1299,7 +1389,7 @@ const parseArgs = (
             throw new CCError("option " + arg + ": requires parameter");
           }
         } else {
-          parsedArguments[longArg.name] = toBoolean(arg.slice(2)); // TODO: all shortened args work correctly?
+          setArgValue(parsedArguments, longArg.name, toBoolean(arg.slice(2))); // TODO: all shortened args work correctly?
         }
         if (supportedOpts) {
           checkLongOpt(lookup, longArg.name, supportedOpts, warnings);
@@ -1357,7 +1447,7 @@ const parseArgs = (
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
-            parsedArguments[longArg.name] = toBoolean(shortFor);
+            setArgValue(parsedArguments, longArg.name, toBoolean(shortFor));
           }
           if (supportedOpts && lookup) {
             checkShortOpt(lookup, longArg.name, supportedOpts, warnings);
@@ -1862,6 +1952,22 @@ function buildRequest(
     }
   }
 
+  const pickedAuth = pickAuth(parsedArguments.authtype);
+  if (parsedArguments.userpwd) {
+    const [user, pass] = parsedArguments.userpwd.split(/:(.*)/s, 2);
+    request.auth = [user, pass || ""];
+  }
+  if (pickedAuth === CURLAUTH_DIGEST) {
+    request.digest = true;
+  } else if (pickedAuth === CURLAUTH_BEARER) {
+    _setHeaderIfMissing(
+      headers,
+      "Authorization",
+      "Bearer " + parsedArguments.oauth_bearer,
+      lowercase
+    );
+  }
+
   if (headers.length > 0) {
     for (let i = headers.length - 1; i >= 0; i--) {
       if (headers[i][1] === null) {
@@ -1872,13 +1978,6 @@ function buildRequest(
     request.headers = headers;
   }
 
-  if (parsedArguments.user) {
-    const [user, pass] = parsedArguments.user.split(/:(.*)/s, 2);
-    request.auth = [user, pass || ""];
-  }
-  if (parsedArguments.digest) {
-    request.digest = parsedArguments.digest;
-  }
   if (parsedArguments.data && parsedArguments.data.length) {
     request.data = dataStr;
     request.dataArray = data;
@@ -1932,8 +2031,10 @@ function buildRequest(
     request.output = parsedArguments.output;
   }
 
-  if (parsedArguments.http2) {
-    request.http2 = parsedArguments.http2;
+  const http2 =
+    parsedArguments.http2 || parsedArguments["http2-prior-knowledge"];
+  if (http2) {
+    request.http2 = http2;
   }
   if (parsedArguments.http3) {
     request.http3 = parsedArguments.http3;

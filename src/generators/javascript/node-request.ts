@@ -24,6 +24,9 @@ const supportedArgs = new Set([
   "head",
   "no-head",
   "user",
+  "basic",
+  "no-basic",
+  "oauth2-bearer",
 ]);
 
 export const _toNodeRequest = (

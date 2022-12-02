@@ -25,8 +25,11 @@ const javaScriptSupportedArgs = new Set([
   "head",
   "no-head",
   "user",
+  "basic",
+  "no-basic",
   "digest",
   "no-digest",
+  "oauth2-bearer",
   "upload-file",
 ]);
 

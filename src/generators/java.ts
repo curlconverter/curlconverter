@@ -23,6 +23,9 @@ const supportedArgs = new Set([
   "head",
   "no-head",
   "user",
+  "basic",
+  "no-basic",
+  "oauth2-bearer",
 ]);
 
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6

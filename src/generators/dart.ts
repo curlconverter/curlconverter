@@ -26,6 +26,9 @@ const supportedArgs = new Set([
   "head",
   "no-head",
   "user",
+  "basic",
+  "no-basic",
+  "oauth2-bearer",
 ]);
 function escape(value: string): string {
   // Escape Dart's $string interpolation syntax

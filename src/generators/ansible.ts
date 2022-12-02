@@ -26,6 +26,9 @@ const supportedArgs = new Set([
   "insecure",
   "no-insecure",
   "user",
+  "basic",
+  "no-basic",
+  "oauth2-bearer",
 ]);
 
 function getDataString(request: Request): [string, boolean] | undefined {
