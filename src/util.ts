@@ -196,6 +196,13 @@ function setArgValue(
         config.authtype = CURLAUTH_ANY;
       }
       break;
+    case "location":
+      config["location"] = toggle;
+      break;
+    case "location-trusted":
+      config["location"] = toggle;
+      config["location-trusted"] = toggle;
+      break;
     default:
       config[argName] = toggle;
   }
@@ -237,6 +244,7 @@ interface Request {
   timeout?: string;
   connectTimeout?: string;
   followRedirects?: boolean;
+  followRedirectsTrusted?: boolean;
   maxRedirects?: string;
   output?: string;
   http2?: boolean;
@@ -2032,8 +2040,11 @@ function buildRequest(
     }
     request.connectTimeout = parsedArguments["connect-timeout"];
   }
-  if (parsedArguments.location || parsedArguments["location-trusted"]) {
-    request.followRedirects = true;
+  if (Object.prototype.hasOwnProperty.call(parsedArguments, "location")) {
+    request.followRedirects = parsedArguments.location;
+  }
+  if (parsedArguments["location-trusted"]) {
+    request.followRedirectsTrusted = parsedArguments["location-trusted"];
   }
   if (parsedArguments["max-redirs"]) {
     if (isNaN(parseInt(parsedArguments["max-redirs"]))) {

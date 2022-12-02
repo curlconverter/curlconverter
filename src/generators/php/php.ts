@@ -35,6 +35,9 @@ const supportedArgs = new Set([
   "proxy",
   "max-time",
   "location",
+  "no-location",
+  // "location-trusted",
+  // "no-location-trusted",
 ]);
 
 // https://www.php.net/manual/en/language.types.string.php
@@ -42,10 +45,10 @@ const supportedArgs = new Set([
 // https://www.unicode.org/reports/tr44/#GC_Values_Table
 // https://unicode.org/Public/UNIDATA/UnicodeData.txt
 // https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
-const regexSinglEscape = /'|\\/gu;
+const regexSingleEscape = /'|\\/gu;
 const regexDoubleEscape = /"|\$|\\|\p{C}|\p{Z}/gu;
 export const repr = (s: string): string => {
-  let [quote, regex] = ["'", regexSinglEscape];
+  let [quote, regex] = ["'", regexSingleEscape];
   if ((s.includes("'") && !s.includes('"')) || /[^\x20-\x7E]/.test(s)) {
     [quote, regex] = ['"', regexDoubleEscape];
   }
