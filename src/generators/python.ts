@@ -56,12 +56,12 @@ const supportedArgs = new Set([
   "output",
   "user",
   "upload-file",
-  "proxy-user",
   "proxy",
+  "proxy-user",
 ]);
 // supported by other generators
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const supportedByOthers = ["max-time", "location"];
+const supportedByOthers = ["max-time", "max-redirs", "location"];
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const unsupportedArgs = [
   "dns-ipv4-addr",
@@ -1274,13 +1274,9 @@ export const _toPython = (
         ",\n";
     }
     cookieStr += "}\n";
-    // TODO: cookieStr should too, to avoid surprises.
-    // This will stop being the case in Python 3.11
+    // Before Python 3.11, cookies= was sorted alphabetically
     // https://github.com/python/cpython/issues/86232
-    commentedOutHeaders.cookie =
-      request.cookies.length > 1
-        ? "Requests sorts cookies= alphabetically"
-        : "";
+    commentedOutHeaders.cookie = "";
     if (request.cookieFiles) {
       warnings.push([
         "cookie-files",
@@ -1299,32 +1295,18 @@ export const _toPython = (
 
   let proxyDict;
   if (request.proxy) {
-    const proxy = request.proxy.includes("://")
+    let proxy = request.proxy.includes("://")
       ? request.proxy
       : "http://" + request.proxy;
     const protocol = proxy.split("://")[0].toLowerCase();
-
-    proxyDict = "proxies = {\n";
-    switch (protocol) {
-      case "http":
-      case "https":
-        // TODO: hopefully including both is right
-        proxyDict += "    'http': " + repr(proxy) + ",\n";
-        proxyDict += "    'https': " + repr(proxy) + ",\n";
-        break;
-      case "socks":
-        proxyDict += "    'socks4': " + repr(proxy) + ",\n";
-        break;
-      case "socks4":
-      case "socks5":
-      case "socks5h":
-      case "socks4a":
-      default:
-        proxyDict += "    '" + protocol + "': " + repr(proxy) + ",\n";
-        break;
-      // default:
-      //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
+    if (protocol === "socks") {
+      // https://github.com/curl/curl/blob/curl-7_86_0/lib/url.c#L2418-L2419
+      proxy = proxy.replace("socks", "socks4");
     }
+    proxyDict = "proxies = {\n";
+    proxyDict += "    'http': " + repr(proxy) + ",\n";
+    // TODO: if (protocol !== "http") { ?
+    proxyDict += "    'https': " + repr(proxy) + ",\n";
     proxyDict += "}\n";
   }
 
@@ -1353,8 +1335,6 @@ export const _toPython = (
   let filesString;
   let shouldEncode;
   if (request.uploadFile) {
-    // If you mix --data and --upload-file, it gets weird. content-length will
-    // be from --data but the data will be from --upload-file
     if (request.uploadFile === "-" || request.uploadFile === ".") {
       dataString = "data = sys.stdin.buffer.read()\n";
       imports.add("sys");
@@ -1447,70 +1427,69 @@ export const _toPython = (
     }
   }
 
-  let requestLine;
-  if (
-    ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"].includes(
-      request.method
-    )
-  ) {
-    requestLine =
-      "response = requests." +
-      request.method.toLowerCase() +
-      "(" +
-      repr(request.urlWithoutQuery);
+  const requestsMethods = [
+    "GET",
+    "HEAD",
+    "POST",
+    "PATCH",
+    "PUT",
+    "DELETE",
+    "OPTIONS", // undocumented
+  ];
+  let fn;
+  const args = [];
+  if (requestsMethods.includes(request.method)) {
+    fn = "requests." + request.method.toLowerCase();
   } else {
-    // If the method wasn't uppercase, Requests will uppercase it anyway, but we write it out in its original case
-    requestLine =
-      "response = requests.request(" +
-      repr(request.method) +
-      ", " +
-      repr(request.urlWithoutQuery);
-  }
+    fn = "requests.request";
+    args.push(repr(request.method));
 
-  let requestLineBody = "";
-  if (request.query) {
-    requestLineBody += ", params=params";
+    if (request.method !== request.method.toUpperCase()) {
+      warnings.push([
+        "method",
+        "Requests will uppercase the HTTP method: " +
+          JSON.stringify(request.method),
+      ]);
+    }
+  }
+  args.push(repr(request.urlWithoutQuery));
+
+  if (queryStr) {
+    args.push("params=params");
   }
   if (cookieStr) {
-    requestLineBody += ", cookies=cookies";
+    args.push("cookies=cookies");
   }
-  if (request.headers && request.headers.length) {
-    requestLineBody += ", headers=headers";
+  if (headerDict) {
+    args.push("headers=headers");
   }
   if (request.data || request.uploadFile) {
     if (jsonDataString) {
-      requestLineBody += ", json=json_data";
+      args.push("json=json_data");
     } else {
-      requestLineBody += ", data=data";
-      if (shouldEncode) {
-        requestLineBody += ".encode()";
-      }
+      args.push("data=data" + (shouldEncode ? ".encode()" : ""));
     }
-  } else if (request.multipartUploads) {
-    requestLineBody += ", files=files";
+  } else if (filesString) {
+    args.push("files=files");
   }
-  if (request.proxy) {
-    requestLineBody += ", proxies=proxies";
+  if (proxyDict) {
+    args.push("proxies=proxies");
   }
-  if (request.cert) {
-    requestLineBody += ", cert=cert";
+  if (certStr) {
+    args.push("cert=cert");
   }
   if (request.insecure) {
-    requestLineBody += ", verify=False";
+    args.push("verify=False");
   } else if (request.cacert || request.capath) {
-    requestLineBody +=
-      ", verify=" + repr((request.cacert || request.capath) as string);
+    args.push("verify=" + repr((request.cacert || request.capath) as string));
   }
-
   if (request.auth) {
     const [user, password] = request.auth;
     const authClass = request.digest ? "HTTPDigestAuth" : "";
-    requestLineBody +=
-      ", auth=" + authClass + "(" + repr(user) + ", " + repr(password) + ")";
+    args.push(
+      "auth=" + authClass + "(" + repr(user) + ", " + repr(password) + ")"
+    );
   }
-  requestLineBody += ")";
-
-  requestLine += requestLineBody;
 
   let pythonCode = "";
 
@@ -1548,7 +1527,6 @@ export const _toPython = (
   if (proxyDict) {
     pythonCode += proxyDict + "\n";
   }
-
   if (cookieStr) {
     pythonCode += cookieStr + "\n";
   }
@@ -1569,11 +1547,11 @@ export const _toPython = (
     pythonCode += filesString + "\n";
   }
 
-  pythonCode += requestLine;
+  pythonCode += "response = " + fn + "(" + args.join(", ") + ")\n";
 
   if (jsonDataString && dataString) {
     pythonCode +=
-      "\n\n" +
+      "\n" +
       "# Note: json_data will not be serialized by requests\n" +
       "# exactly as it was in the original request.\n";
     pythonCode += dataString
@@ -1581,24 +1559,20 @@ export const _toPython = (
       // Don't add comment characters to empty lines, most importantly the last line
       .map((l) => (l.trim() ? "#" + l : l))
       .join("\n");
-    // TODO: do this correctly?
-    if (shouldEncode) {
-      pythonCode +=
-        "#" + requestLine.replace(", json=json_data", ", data=data.encode()");
-    } else {
-      pythonCode +=
-        "#" + requestLine.replace(", json=json_data", ", data=data");
-    }
+
+    const dataArg = shouldEncode ? "data=data.encode()" : "data=data";
+    args[args.indexOf("json=json_data")] = dataArg; // Should never be -1
+    pythonCode += "#response = " + fn + "(" + args.join(", ") + ")\n";
   }
 
   if (request.output && request.output !== "/dev/null") {
     if (request.output === "-") {
-      pythonCode += "\nprint(response.text)";
+      pythonCode += "print(response.text)\n";
     } else {
       pythonCode +=
-        "\n\nwith open(" +
+        "\nwith open(" +
         repr(request.output) +
-        ", 'wb') as f:\n    f.write(response.content)";
+        ", 'wb') as f:\n    f.write(response.content)\n";
     }
   }
 
@@ -1615,7 +1589,7 @@ export const _toPython = (
     ]);
   }
 
-  return pythonCode + "\n";
+  return pythonCode;
 };
 
 export const toPythonWarn = (
