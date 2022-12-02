@@ -235,6 +235,7 @@ interface Request {
   proxy?: string;
   proxyAuth?: string;
   timeout?: string;
+  connectTimeout?: string;
   followRedirects?: boolean;
   maxRedirects?: string;
   output?: string;
@@ -2012,7 +2013,24 @@ function buildRequest(
     }
   }
   if (parsedArguments["max-time"]) {
+    if (isNaN(parseFloat(parsedArguments["max-time"]))) {
+      warnings.push([
+        "max-time-not-number",
+        "Found a non-numeric value for --max-time: " +
+          JSON.stringify(request.timeout),
+      ]);
+    }
     request.timeout = parsedArguments["max-time"];
+  }
+  if (parsedArguments["connect-timeout"]) {
+    if (isNaN(parseFloat(parsedArguments["connect-timeout"]))) {
+      warnings.push([
+        "connect-timeout-not-number",
+        "Found a non-numeric value for --connect-timeout: " +
+          JSON.stringify(request.timeout),
+      ]);
+    }
+    request.connectTimeout = parsedArguments["connect-timeout"];
   }
   if (parsedArguments.location || parsedArguments["location-trusted"]) {
     request.followRedirects = true;
