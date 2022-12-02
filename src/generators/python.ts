@@ -21,8 +21,12 @@ const supportedArgs = new Set([
   "request",
   "compressed",
   "no-compressed",
+  "user",
+  "basic",
+  "no-basic",
   "digest",
   "no-digest",
+  "oauth2-bearer",
   "http1.0",
   "http1.1",
   "http2",
@@ -54,7 +58,6 @@ const supportedArgs = new Set([
   "insecure",
   "no-insecure",
   "output",
-  "user",
   "upload-file",
   "proxy",
   "proxy-user",
@@ -1569,10 +1572,9 @@ export const _toPython = (
     if (request.output === "-") {
       pythonCode += "print(response.text)\n";
     } else {
-      pythonCode +=
-        "\nwith open(" +
-        repr(request.output) +
-        ", 'wb') as f:\n    f.write(response.content)\n";
+      pythonCode += "\n";
+      pythonCode += "with open(" + repr(request.output) + ", 'wb') as f:\n";
+      pythonCode += "    f.write(response.content)\n";
     }
   }
 

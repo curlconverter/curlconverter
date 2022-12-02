@@ -27,6 +27,9 @@ const supportedArgs = new Set([
   "insecure",
   "no-insecure",
   "user",
+  "basic",
+  "no-basic",
+  "oauth2-bearer",
 ]);
 
 export const _toMATLAB = (
