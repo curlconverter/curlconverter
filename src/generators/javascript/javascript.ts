@@ -15,6 +15,7 @@ const javaScriptSupportedArgs = new Set([
   "data-binary",
   "data-urlencode",
   "json",
+  "range",
   "referer",
   "form",
   "form-string",

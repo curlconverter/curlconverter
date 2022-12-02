@@ -1556,13 +1556,19 @@ function buildRequest(
       lowercase
     );
   }
-
   if (parsedArguments.referer) {
     // referer can be ";auto" or followed by ";auto", we ignore that.
     const referer = parsedArguments.referer.replace(/;auto$/, "");
     if (referer) {
       _setHeaderIfMissing(headers, "Referer", referer, lowercase);
     }
+  }
+  if (parsedArguments.range) {
+    let range = "bytes=" + parsedArguments.range;
+    if (!range.includes("-")) {
+      range += "-";
+    }
+    _setHeaderIfMissing(headers, "Range", range, lowercase);
   }
 
   // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
