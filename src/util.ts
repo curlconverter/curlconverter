@@ -1570,6 +1570,25 @@ function buildRequest(
     }
     _setHeaderIfMissing(headers, "Range", range, lowercase);
   }
+  if (parsedArguments["time-cond"]) {
+    let timecond = parsedArguments["time-cond"];
+    let header = "If-Modified-Since";
+    switch (timecond[0]) {
+      case "+":
+        timecond = timecond.slice(1);
+        break;
+      case "-":
+        timecond = timecond.slice(1);
+        header = "If-Unmodified-Since";
+        break;
+      case "=":
+        timecond = timecond.slice(1);
+        header = "Last-Modified";
+        break;
+    }
+    // TODO: parse date
+    _setHeaderIfMissing(headers, header, timecond, lowercase);
+  }
 
   // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
   // will send, but most APIs will helpfully uppercase what you pass in as the method.

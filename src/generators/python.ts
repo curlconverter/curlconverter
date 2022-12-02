@@ -40,6 +40,7 @@ const supportedArgs = new Set([
   "json",
   "range",
   "referer",
+  "time-cond",
   "cert",
   "cacert",
   "key",
