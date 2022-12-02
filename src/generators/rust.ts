@@ -15,6 +15,7 @@ const supportedArgs = new Set([
   "data-urlencode",
   "json",
   "referer",
+  "range",
   "form",
   "form-string",
   "get",

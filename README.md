@@ -23,7 +23,7 @@ Features:
   - Ignores comments
   - Reports syntax errors
 - Knows about all of curl's 300 or so arguments, including deleted ones, but most are ignored
-- Allows passing multiple short arguments in one, just like curl, e.g. `-OvXPOST`
+- Supports multiple short arguments passed as one, for example `-OvXPOST` instead of `-O -v -X POST`
 - `--data @filename` generates Python code that reads from that file
 - `--data @-` generates Python code that reads from stdin (or piped file/input)
 - Converts JSON to native objects

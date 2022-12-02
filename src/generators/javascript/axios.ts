@@ -17,6 +17,7 @@ const supportedArgs = new Set([
   "json",
   "form",
   "form-string",
+  "range",
   "referer",
   "get",
   "header",
