@@ -17,6 +17,7 @@ const javaScriptSupportedArgs = new Set([
   "json",
   "range",
   "referer",
+  "time-cond",
   "form",
   "form-string",
   "get",
@@ -29,28 +30,7 @@ const javaScriptSupportedArgs = new Set([
   "upload-file",
 ]);
 
-const nodeSupportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "referer",
-  "form",
-  "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "upload-file",
-  "proxy",
-]);
+const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
 
 // TODO: implement
 export const reprObj = (value: object, indentLevel?: number): string => {
@@ -72,9 +52,9 @@ const regexEscape = /'|"|\\|\p{C}|\p{Z}/gu;
 const regexDigit = /[0-9]/;
 export const esc = (s: string, quote: "'" | '"' = "'"): string =>
   s.replace(regexEscape, (c: string, index: number, string: string) => {
-    // \0 is null but \01 is octal
+    // \0 is null but \01 is an octal escape
     // if we have ['\0', '1', '2']
-    // if we converted it to '\\012' it would be octal
+    // and we converted it to '\\012', it would be interpreted as octal
     // so it needs to be converted to '\\x0012'
     if (c === "\0" && !regexDigit.test(string.charAt(index + 1))) {
       return "\\0";

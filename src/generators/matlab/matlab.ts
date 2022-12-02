@@ -17,6 +17,7 @@ const supportedArgs = new Set([
   "json",
   "range",
   "referer",
+  "time-cond",
   "form",
   "form-string",
   "get",
