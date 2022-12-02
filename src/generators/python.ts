@@ -24,16 +24,15 @@ const supportedArgs = new Set([
   "user",
   "basic",
   "no-basic",
+  "anyauth",
+  "no-anyauth",
   "digest",
   "no-digest",
   "oauth2-bearer",
-  "http1.0",
   "http1.1",
-  "http2",
+  "http2", // not supported, just better warning message
   "http2-prior-knowledge",
-  "http3",
-  "http0.9",
-  "no-http0.9",
+  "http3", // not supported, just better warning message
   "user-agent",
   "cookie",
   "data",
@@ -55,6 +54,9 @@ const supportedArgs = new Set([
   "header",
   "head",
   "no-head",
+  "max-redirs",
+  "max-time",
+  "connect-timeout",
   "insecure",
   "no-insecure",
   "output",
@@ -64,7 +66,7 @@ const supportedArgs = new Set([
 ]);
 // supported by other generators
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const supportedByOthers = ["max-time", "max-redirs", "location"];
+const supportedByOthers = ["location"];
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const unsupportedArgs = [
   "dns-ipv4-addr",
@@ -1442,9 +1444,9 @@ export const _toPython = (
   let fn;
   const args = [];
   if (requestsMethods.includes(request.method)) {
-    fn = "requests." + request.method.toLowerCase();
+    fn = request.method.toLowerCase();
   } else {
-    fn = "requests.request";
+    fn = "request";
     args.push(repr(request.method));
 
     if (request.method !== request.method.toUpperCase()) {
@@ -1492,6 +1494,37 @@ export const _toPython = (
     args.push(
       "auth=" + authClass + "(" + repr(user) + ", " + repr(password) + ")"
     );
+  }
+  if (request.timeout || request.connectTimeout) {
+    if (request.timeout) {
+      warnings.push([
+        "--max-time",
+        // https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
+        "unlike --max-time, Requests doesn't have a timeout for the whole request, only for the connect and the read",
+      ]);
+    }
+
+    if (
+      request.timeout &&
+      request.connectTimeout &&
+      request.timeout !== request.connectTimeout
+    ) {
+      args.push(
+        "timeout=(" + request.connectTimeout + ", " + request.timeout + ")"
+      );
+    } else if (request.timeout) {
+      args.push("timeout=" + request.timeout);
+    } else if (request.connectTimeout) {
+      args.push("timeout=(" + request.connectTimeout + ", None)");
+    }
+  }
+  if (request.maxRedirects) {
+    if (request.maxRedirects === "0") {
+      args.push("allow_redirects=False");
+    } else if (request.maxRedirects === "-1") {
+      imports.add("math");
+      request.maxRedirects = "math.inf";
+    }
   }
 
   let pythonCode = "";
@@ -1550,30 +1583,69 @@ export const _toPython = (
     pythonCode += filesString + "\n";
   }
 
-  pythonCode += "response = " + fn + "(" + args.join(", ") + ")\n";
+  let requestsLine = "";
+  const isSession =
+    request.maxRedirects &&
+    request.maxRedirects !== "0" &&
+    request.maxRedirects !== "30"; // Requests default
+  if (isSession) {
+    requestsLine += "with requests.Session() as session:\n";
+    requestsLine += `    session.max_redirects = ${request.maxRedirects}\n`;
+    requestsLine += "    response = session.";
+  } else {
+    requestsLine += "response = requests.";
+  }
+  requestsLine += fn + "(";
+  pythonCode += requestsLine;
+  if (args.join("").length < 100) {
+    pythonCode += args.join(", ");
+  } else {
+    pythonCode += "\n";
+    for (const arg of args) {
+      pythonCode += "    " + arg + ",\n";
+    }
+  }
+  pythonCode += ")\n";
 
   if (jsonDataString && dataString) {
+    // Don't add comment characters to empty lines, most importantly the last line
+    const commentOut = (s: string) =>
+      s
+        ?.split("\n")
+        .map((l) => (l.trim() ? "#" + l : l))
+        .join("\n");
+
+    // Should never be -1
+    args[args.indexOf("json=json_data")] = shouldEncode
+      ? "data=data.encode()"
+      : "data=data";
+
     pythonCode +=
       "\n" +
       "# Note: json_data will not be serialized by requests\n" +
       "# exactly as it was in the original request.\n";
-    pythonCode += dataString
-      ?.split("\n")
-      // Don't add comment characters to empty lines, most importantly the last line
-      .map((l) => (l.trim() ? "#" + l : l))
-      .join("\n");
-
-    const dataArg = shouldEncode ? "data=data.encode()" : "data=data";
-    args[args.indexOf("json=json_data")] = dataArg; // Should never be -1
-    pythonCode += "#response = " + fn + "(" + args.join(", ") + ")\n";
+    pythonCode += commentOut(dataString);
+    pythonCode += commentOut(requestsLine);
+    if (args.join("").length < 100) {
+      pythonCode += args.join(", ");
+    } else {
+      pythonCode += "\n";
+      for (const arg of args) {
+        pythonCode += "#    " + arg + ",\n";
+      }
+      pythonCode += "#";
+    }
+    pythonCode += ")\n";
   }
 
   if (request.output && request.output !== "/dev/null") {
     if (request.output === "-") {
-      pythonCode += "print(response.text)\n";
+      pythonCode += (isSession ? "    " : "") + "print(response.text)\n";
     } else {
       pythonCode += "\n";
+      pythonCode += isSession ? "    " : "";
       pythonCode += "with open(" + repr(request.output) + ", 'wb') as f:\n";
+      pythonCode += isSession ? "    " : "";
       pythonCode += "    f.write(response.content)\n";
     }
   }

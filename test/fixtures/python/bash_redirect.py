@@ -16,4 +16,10 @@ params = {
 with open('add_params.xml', 'rb') as f:
     data = f.read()
 
-response = requests.post('http://localhost:28139/api/2.0/fo/auth/unix/', params=params, headers=headers, data=data, auth=('USER', 'PASS'))
+response = requests.post(
+    'http://localhost:28139/api/2.0/fo/auth/unix/',
+    params=params,
+    headers=headers,
+    data=data,
+    auth=('USER', 'PASS'),
+)
