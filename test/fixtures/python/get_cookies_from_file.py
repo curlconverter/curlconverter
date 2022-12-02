@@ -1,6 +1,6 @@
-import http
+from http.cookiejar import MozillaCookieJar
 import requests
 
-cookies = http.cookiejar.MozillaCookieJar('cookie.txt')
+cookies = MozillaCookieJar('cookie.txt')
 
 response = requests.get('http://localhost:28139/', cookies=cookies)
