@@ -28,7 +28,9 @@ const supportedArgs = new Set([
   "no-basic",
   "oauth2-bearer",
   "location",
-  "location-trusted",
+  "no-location",
+  // "location-trusted",
+  // "no-location-trusted",
   "max-redirs",
 ]);
 

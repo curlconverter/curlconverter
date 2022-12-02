@@ -54,6 +54,10 @@ const supportedArgs = new Set([
   "header",
   "head",
   "no-head",
+  "location",
+  "no-location",
+  "location-trusted", // not exactly supported, just better warning message
+  "no-location-trusted",
   "max-redirs",
   "max-time",
   "connect-timeout",
@@ -64,9 +68,6 @@ const supportedArgs = new Set([
   "proxy",
   "proxy-user",
 ]);
-// supported by other generators
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const supportedByOthers = ["location"];
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const unsupportedArgs = [
   "dns-ipv4-addr",
@@ -1340,6 +1341,7 @@ export const _toPython = (
   let filesString;
   let shouldEncode;
   if (request.uploadFile) {
+    // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
     if (request.uploadFile === "-" || request.uploadFile === ".") {
       dataString = "data = sys.stdin.buffer.read()\n";
       imports.add("sys");
@@ -1518,13 +1520,30 @@ export const _toPython = (
       args.push("timeout=(" + request.connectTimeout + ", None)");
     }
   }
-  if (request.maxRedirects) {
-    if (request.maxRedirects === "0") {
-      args.push("allow_redirects=False");
-    } else if (request.maxRedirects === "-1") {
+
+  // By default, Requests follows redirects and curl doesn't unless you pass --location
+  // We don't add "allow_redirects=False" to keep the simplest case less verbose.
+  if (request.followRedirects === undefined) {
+    request.followRedirects = true;
+    // Users would see this warning for most commands
+    // warnings.push([
+    //   "--location",
+    //   "Requests defaults to following redirects, curl doesn't",
+    // ]);
+  }
+  if (!request.followRedirects || request.maxRedirects === "0") {
+    args.push("allow_redirects=False");
+  } else if (request.maxRedirects) {
+    if (request.maxRedirects === "-1") {
       imports.add("math");
       request.maxRedirects = "math.inf";
     }
+  }
+  if (request.followRedirects && request.followRedirectsTrusted) {
+    warnings.push([
+      "--location-trusted",
+      "Requests doesn't have an easy way to disable removing the Authorization: header on redirect",
+    ]);
   }
 
   let pythonCode = "";
@@ -1585,6 +1604,7 @@ export const _toPython = (
 
   let requestsLine = "";
   const isSession =
+    !request.followRedirects &&
     request.maxRedirects &&
     request.maxRedirects !== "0" &&
     request.maxRedirects !== "30"; // Requests default
