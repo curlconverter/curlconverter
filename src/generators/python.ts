@@ -35,6 +35,7 @@ const supportedArgs = new Set([
   "http3", // not supported, just better warning message
   "user-agent",
   "cookie",
+  "cookie-jar",
   "data",
   "data-raw",
   "data-ascii",
@@ -1261,8 +1262,9 @@ export const _toPython = (
   }
 
   let cookieStr;
+  let cookieFile: string | null = null;
   if (request.cookies) {
-    // TODO: could have repeat cookies
+    // TODO: handle duplicate cookie names
     cookieStr = "cookies = {\n";
     for (const [cookieName, cookieValue] of request.cookies) {
       const [detectedVars, modifiedString] = detectEnvVar(cookieValue);
@@ -1289,14 +1291,34 @@ export const _toPython = (
         "passing both cookies and cookie files is not supported",
       ]);
     }
-  } else if (request.cookieFiles && request.cookieFiles.length) {
-    // TODO: what if user passes multiple cookie files?
-    // TODO: what if user passes cookies and cookie files?
-    const cookieFile = request.cookieFiles[request.cookieFiles.length - 1];
-    imports.add("http");
-    // TODO: do we need to .load()?
-    cookieStr =
-      "cookies = http.cookiejar.MozillaCookieJar(" + repr(cookieFile) + ")\n";
+    if (request.cookieJar) {
+      warnings.push([
+        "cookie-files",
+        "passing both cookies and --cookie-jar/-c is not supported",
+      ]);
+    }
+  } else if (
+    (request.cookieFiles && request.cookieFiles.length) ||
+    request.cookieJar
+  ) {
+    imports.add("http.cookiejar.MozillaCookieJar");
+    if (request.cookieFiles && request.cookieFiles.length) {
+      // TODO: what if user passes multiple cookie files?
+      // TODO: what if user passes cookies and cookie files?
+      cookieFile = request.cookieFiles[request.cookieFiles.length - 1];
+      if (request.cookieFiles.length > 1) {
+        warnings.push([
+          "cookie-files",
+          // TODO: curl reads all of them.
+          "multiple cookie files are not supported, using the last one: " +
+            JSON.stringify(cookieFile),
+        ]);
+      }
+      // TODO: do we need to .load()?
+      cookieStr = "cookies = MozillaCookieJar(" + repr(cookieFile) + ")\n";
+    } else if (request.cookieJar) {
+      cookieStr = "cookies = MozillaCookieJar()\n";
+    }
   }
 
   let proxyDict;
@@ -1464,7 +1486,7 @@ export const _toPython = (
   if (queryStr) {
     args.push("params=params");
   }
-  if (cookieStr) {
+  if (cookieStr && !request.cookieJar) {
     args.push("cookies=cookies");
   }
   if (headerDict) {
@@ -1555,6 +1577,8 @@ export const _toPython = (
     for (const imp of Array.from(imports).sort()) {
       if (imp === "urllib.parse.quote_plus") {
         pythonCode += "from urllib.parse import quote_plus\n";
+      } else if (imp === "http.cookiejar.MozillaCookieJar") {
+        pythonCode += "from http.cookiejar import MozillaCookieJar\n";
       } else {
         pythonCode += "import " + imp + "\n";
       }
@@ -1602,68 +1626,87 @@ export const _toPython = (
     pythonCode += filesString + "\n";
   }
 
+  // Don't add indent/comment characters to empty lines, most importantly the last line
+  // which will be empty when there's a trailing newline.
+  function indent(s: string, isSession: boolean) {
+    if (isSession) {
+      return s
+        .split("\n")
+        .map((l) => (l.trim() ? "    " + l : l))
+        .join("\n");
+    }
+    return s;
+  }
+  const commentOut = (s: string) =>
+    s
+      .split("\n")
+      .map((l) => (l.trim() ? "#" + l : l))
+      .join("\n");
+  function joinArgs(args: string[]) {
+    let s = "(";
+    if (args.join("").length < 100) {
+      s += args.join(", ");
+    } else {
+      s += "\n";
+      for (const arg of args) {
+        s += "    " + arg + ",\n";
+      }
+    }
+    return s + ")";
+  }
+
   let requestsLine = "";
-  const isSession =
+  const hasMaxRedirects =
     !request.followRedirects &&
     request.maxRedirects &&
     request.maxRedirects !== "0" &&
     request.maxRedirects !== "30"; // Requests default
+  const isSession = !!(hasMaxRedirects || request.cookieJar);
   if (isSession) {
-    requestsLine += "with requests.Session() as session:\n";
-    requestsLine += `    session.max_redirects = ${request.maxRedirects}\n`;
-    requestsLine += "    response = session.";
+    pythonCode += "with requests.Session() as session:\n";
+    if (hasMaxRedirects) {
+      pythonCode += `    session.max_redirects = ${request.maxRedirects}\n`;
+    }
+    if (request.cookieJar) {
+      pythonCode += `    session.cookies = cookies\n`;
+    }
+    requestsLine += "response = session.";
   } else {
     requestsLine += "response = requests.";
   }
-  requestsLine += fn + "(";
-  pythonCode += requestsLine;
-  if (args.join("").length < 100) {
-    pythonCode += args.join(", ");
-  } else {
-    pythonCode += "\n";
-    for (const arg of args) {
-      pythonCode += "    " + arg + ",\n";
-    }
-  }
-  pythonCode += ")\n";
+  requestsLine += fn;
+  pythonCode += indent(requestsLine + joinArgs(args) + "\n", isSession);
 
   if (jsonDataString && dataString) {
-    // Don't add comment characters to empty lines, most importantly the last line
-    const commentOut = (s: string) =>
-      s
-        ?.split("\n")
-        .map((l) => (l.trim() ? "#" + l : l))
-        .join("\n");
+    // Adding empty lines to a "with" block breaks the code when pasted in the REPL
+    if (!isSession) {
+      pythonCode += "\n";
+    }
 
     // Should never be -1
     args[args.indexOf("json=json_data")] = shouldEncode
       ? "data=data.encode()"
       : "data=data";
-
-    pythonCode +=
-      "\n" +
+    let dataAlternative =
       "# Note: json_data will not be serialized by requests\n" +
       "# exactly as it was in the original request.\n";
-    pythonCode += commentOut(dataString);
-    pythonCode += commentOut(requestsLine);
-    if (args.join("").length < 100) {
-      pythonCode += args.join(", ");
-    } else {
-      pythonCode += "\n";
-      for (const arg of args) {
-        pythonCode += "#    " + arg + ",\n";
-      }
-      pythonCode += "#";
-    }
-    pythonCode += ")\n";
+    dataAlternative += commentOut(dataString);
+    dataAlternative += commentOut(requestsLine + joinArgs(args) + "\n");
+    pythonCode += indent(dataAlternative, isSession);
   }
 
+  if (request.cookieJar) {
+    pythonCode += "    cookies.save(";
+    if (request.cookieJar !== cookieFile) {
+      pythonCode += repr(request.cookieJar) + ", ";
+    }
+    pythonCode += "ignore_discard=True, ignore_expires=True)\n"; // TODO: necessary?
+  }
   if (request.output && request.output !== "/dev/null") {
     if (request.output === "-") {
-      pythonCode += (isSession ? "    " : "") + "print(response.text)\n";
+      pythonCode += indent("print(response.text)\n", isSession);
     } else {
-      pythonCode += "\n";
-      pythonCode += isSession ? "    " : "";
+      pythonCode += isSession ? "    " : "\n";
       pythonCode += "with open(" + repr(request.output) + ", 'wb') as f:\n";
       pythonCode += isSession ? "    " : "";
       pythonCode += "    f.write(response.content)\n";
