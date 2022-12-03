@@ -2,6 +2,7 @@
   "url": "http://localhost:28139/ajax/demo_post.asp",
   "method": "POST",
   "urlWithoutQuery": "http://localhost:28139/ajax/demo_post.asp",
+  "authType": "basic",
   "cookies": [
     [
       "_gat",

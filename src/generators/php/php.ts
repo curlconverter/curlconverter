@@ -137,8 +137,9 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
       "curl_setopt($ch, CURLOPT_COOKIE, " + repr(cookieString) + ");\n";
   }
 
-  if (request.auth) {
-    const authType = request.digest ? "CURLAUTH_DIGEST" : "CURLAUTH_BASIC";
+  if (request.auth && ["basic", "digest"].includes(request.authType)) {
+    const authType =
+      request.authType === "digest" ? "CURLAUTH_DIGEST" : "CURLAUTH_BASIC";
     phpCode += "curl_setopt($ch, CURLOPT_HTTPAUTH, " + authType + ");\n";
     phpCode +=
       "curl_setopt($ch, CURLOPT_USERPWD, " +

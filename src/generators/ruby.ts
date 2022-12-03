@@ -329,7 +329,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
       ", true, true, uri)\n";
   }
 
-  if (request.auth && !request.digest) {
+  if (request.auth && request.authType === "basic") {
     code +=
       "req.basic_auth " +
       repr(request.auth[0]) +

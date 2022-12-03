@@ -2,6 +2,7 @@
   "url": "http://localhost:28139/echo/html/",
   "method": "GET",
   "urlWithoutQuery": "http://localhost:28139/echo/html/",
+  "authType": "basic",
   "headers": [
     [
       "Origin",

@@ -221,7 +221,7 @@ export const _toJavaScriptOrNode = (
   // Can delete content-type header
   const [dataString, commentedOutDataString] = getDataString(request);
 
-  if (request.auth && request.digest) {
+  if (request.auth && request.authType === "digest") {
     // TODO: if 'Authorization:' header is specified, don't set this
     const [user, password] = request.auth;
     imports.add(["* as DigestFetch", "digest-fetch"]);
@@ -240,7 +240,7 @@ export const _toJavaScriptOrNode = (
   if (
     method !== "get" ||
     (request.headers && request.headers.length) ||
-    (request.auth && !request.digest) ||
+    (request.auth && request.authType === "basic") ||
     request.data ||
     request.multipartUploads ||
     (isNode && request.proxy)
@@ -254,7 +254,10 @@ export const _toJavaScriptOrNode = (
       code += "    method: " + repr(request.method) + ",\n";
     }
 
-    if ((request.headers && request.headers.length) || request.auth) {
+    if (
+      (request.headers && request.headers.length) ||
+      (request.auth && request.authType === "basic")
+    ) {
       code += "    headers: {\n";
       for (const [headerName, headerValue] of request.headers || []) {
         code +=
@@ -264,7 +267,7 @@ export const _toJavaScriptOrNode = (
           repr(headerValue || "") +
           ",\n";
       }
-      if (request.auth && !request.digest) {
+      if (request.auth && request.authType === "basic") {
         // TODO: if -H 'Authorization:' is passed, don't set this
         const [user, password] = request.auth;
         code +=

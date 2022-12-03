@@ -33,6 +33,7 @@ Limitations:
 
 - Only HTTP is supported
 - If multiple URLs are passed only the last one is used
+- By default, curl doesn't follow redirects but the generated Python code does, to keep it simpler. Unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the conversion is strictly speaking incorrect if the server responds with a redirect
 - Code generators for other languages are less thorough than the Python generator
 - and much more
 

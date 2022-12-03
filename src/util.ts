@@ -77,7 +77,6 @@ interface ParsedArguments {
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-const CURLAUTH_NONE = 0;
 const CURLAUTH_BASIC = 1 << 0;
 const CURLAUTH_DIGEST = 1 << 1;
 const CURLAUTH_NEGOTIATE = 1 << 2;
@@ -88,22 +87,22 @@ const CURLAUTH_BEARER = 1 << 6;
 const CURLAUTH_AWS_SIGV4 = 1 << 7;
 const CURLAUTH_ANY = ~CURLAUTH_DIGEST_IE;
 
-function pickAuth(mask: number): number {
-  const auths = [
-    CURLAUTH_NEGOTIATE,
-    CURLAUTH_BEARER,
-    CURLAUTH_DIGEST,
-    CURLAUTH_NTLM,
-    CURLAUTH_NTLM_WB,
-    CURLAUTH_BASIC,
-    CURLAUTH_AWS_SIGV4,
+function pickAuth(mask: number): string {
+  const auths: [number, string][] = [
+    [CURLAUTH_NEGOTIATE, "negotiate"],
+    [CURLAUTH_BEARER, "bearer"],
+    [CURLAUTH_DIGEST, "digest"],
+    [CURLAUTH_NTLM, "ntlm"],
+    [CURLAUTH_NTLM_WB, "ntlm-wb"],
+    [CURLAUTH_BASIC, "basic"],
+    [CURLAUTH_AWS_SIGV4, "aws-sigv4"],
   ];
-  for (const auth of auths) {
+  for (const [auth, authName] of auths) {
     if (mask & auth) {
-      return auth;
+      return authName;
     }
   }
-  return CURLAUTH_NONE;
+  return "none";
 }
 
 type Warnings = [string, string][];
@@ -224,7 +223,7 @@ interface Request {
     name: string;
   } & ({ content: string } | { contentFile: string; filename?: string }))[];
   auth?: [string, string];
-  digest?: boolean;
+  authType: string;
   cookies?: Cookies;
   cookieFiles?: string[];
   cookieJar?: string;
@@ -1876,7 +1875,12 @@ function buildRequest(
     urlWithoutQuery = url; // TODO: rename?
   }
 
-  const request: Request = { url, method, urlWithoutQuery };
+  const request: Request = {
+    url,
+    method,
+    urlWithoutQuery,
+    authType: pickAuth(parsedArguments.authtype),
+  };
   if (useParsedQuery) {
     request.query = queryAsList;
     if (queryAsDict) {
@@ -1897,7 +1901,7 @@ function buildRequest(
     request.cookies = cookies;
   }
   // TODO: most generators support passing cookies with --cookie but don't
-  // support reading cookies from a file. We need to somehow warn users
+  // support reading cookies from a file. We need to warn users
   // when that is the case.
   if (cookieFiles.length) {
     request.cookieFiles = cookieFiles;
@@ -1961,14 +1965,11 @@ function buildRequest(
     }
   }
 
-  const pickedAuth = pickAuth(parsedArguments.authtype);
   if (parsedArguments.userpwd) {
     const [user, pass] = parsedArguments.userpwd.split(/:(.*)/s, 2);
     request.auth = [user, pass || ""];
   }
-  if (pickedAuth === CURLAUTH_DIGEST) {
-    request.digest = true;
-  } else if (pickedAuth === CURLAUTH_BEARER) {
+  if (request.authType === "bearer") {
     _setHeaderIfMissing(
       headers,
       "Authorization",

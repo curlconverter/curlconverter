@@ -76,7 +76,7 @@ export const _toCSharp = (
     util.has(methods, request.method) &&
     !(
       request.headers ||
-      (request.auth && !request.digest) ||
+      (request.auth && request.authType === "basic") ||
       request.multipartUploads ||
       request.data ||
       request.uploadFile ||
@@ -146,7 +146,7 @@ export const _toCSharp = (
     Object.keys(contentHeaders).includes(h[0].toLowerCase())
   );
 
-  if (reqHeaders.length || (request.auth && !request.digest)) {
+  if (reqHeaders.length || (request.auth && request.authType === "basic")) {
     s += "\n";
     for (const [headerName, headerValue] of reqHeaders) {
       if (headerValue === null) {
@@ -162,7 +162,7 @@ export const _toCSharp = (
         repr(headerValue) +
         ");\n";
     }
-    if (request.auth && !request.digest) {
+    if (request.auth && request.authType === "basic") {
       // TODO: add request.rawAuth?
       const [user, password] = request.auth;
       s +=

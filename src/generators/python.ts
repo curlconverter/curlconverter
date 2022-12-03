@@ -1512,9 +1512,9 @@ export const _toPython = (
   } else if (request.cacert || request.capath) {
     args.push("verify=" + repr((request.cacert || request.capath) as string));
   }
-  if (request.auth) {
+  if (request.auth && ["basic", "digest"].includes(request.authType)) {
     const [user, password] = request.auth;
-    const authClass = request.digest ? "HTTPDigestAuth" : "";
+    const authClass = request.authType === "digest" ? "HTTPDigestAuth" : "";
     args.push(
       "auth=" + authClass + "(" + repr(user) + ", " + repr(password) + ")"
     );
@@ -1543,10 +1543,15 @@ export const _toPython = (
     }
   }
 
-  // By default, Requests follows redirects and curl doesn't unless you pass --location
-  // We don't add "allow_redirects=False" to keep the simplest case less verbose.
+  // By default, curl doesn't follow redirects and Requests does.
+  // Unless redirect behavior has been explicitly set with -L/--location/--no-location
+  // or --max-redirs 0 we pretend generate code that follows redirects,
+  // because adding allow_redirects=False to almost every command would be ugly
+  // and it only matters when the server responds with a redirect, which isn't
+  // that common.
   if (request.followRedirects === undefined) {
     request.followRedirects = true;
+
     // Users would see this warning for most commands
     // warnings.push([
     //   "--location",
@@ -1589,7 +1594,7 @@ export const _toPython = (
   }
 
   pythonCode += "import requests\n";
-  if (request.auth && request.digest) {
+  if (request.auth && request.authType === "digest") {
     pythonCode += "from requests.auth import HTTPDigestAuth\n";
   }
   pythonCode += "\n";
@@ -1657,7 +1662,7 @@ export const _toPython = (
 
   let requestsLine = "";
   const hasMaxRedirects =
-    !request.followRedirects &&
+    request.followRedirects &&
     request.maxRedirects &&
     request.maxRedirects !== "0" &&
     request.maxRedirects !== "30"; // Requests default
