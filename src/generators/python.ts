@@ -29,6 +29,15 @@ const supportedArgs = new Set([
   "digest",
   "no-digest",
   "oauth2-bearer",
+  "aws-sigv4",
+  "negotiate",
+  "no-negotiate",
+  "delegation", // GSS/kerberos
+  // "service-name", // GSS/kerberos, not supported
+  "ntlm",
+  "no-ntlm",
+  "ntlm-wb",
+  "no-ntlm-wb",
   "http1.1",
   "http2", // not supported, just better warning message
   "http2-prior-knowledge",
@@ -1248,6 +1257,7 @@ export const _toPython = (
   warnings: Warnings = []
 ): string => {
   const imports: Set<string> = new Set();
+  const requestsImports: Set<string> = new Set();
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set();
@@ -1512,22 +1522,77 @@ export const _toPython = (
   } else if (request.cacert || request.capath) {
     args.push("verify=" + repr((request.cacert || request.capath) as string));
   }
-  if (request.auth && ["basic", "digest"].includes(request.authType)) {
+  if (request.auth && !util.hasHeader(request, "Authorization")) {
     const [user, password] = request.auth;
-    const authClass = request.authType === "digest" ? "HTTPDigestAuth" : "";
-    args.push(
-      "auth=" + authClass + "(" + repr(user) + ", " + repr(password) + ")"
-    );
+    let auth = "(" + repr(user) + ", " + repr(password) + ")";
+    switch (request.authType) {
+      case "basic":
+        break;
+      case "digest":
+        requestsImports.add("requests.auth.HTTPDigestAuth");
+        auth = "HTTPDigestAuth" + auth;
+        break;
+      case "ntlm":
+      case "ntlm-wb":
+        requestsImports.add("requests_ntlm.HttpNtlmAuth");
+        auth = "HttpNtlmAuth" + auth;
+        // TODO: this could stop being true
+        warnings.push(["ntlm", "requests-ntlm is unmaintained"]);
+        break;
+      case "negotiate":
+        requestsImports.add("requests_gssapi.HTTPSPNEGOAuth");
+        auth = "HTTPSPNEGOAuth(";
+        if (request.delegation) {
+          if (request.delegation === "always") {
+            auth += "delegate=True";
+          } else if (request.delegation === "none") {
+            auth += "delegate=False";
+          } else {
+            warnings.push([
+              "delegation",
+              "--delegation value not supported: " +
+                JSON.stringify(request.delegation),
+            ]);
+          }
+        }
+        auth += ")";
+        // TODO: use requests-kerberos instead?
+        // https://star-history.com/#pythongssapi/requests-gssapi&requests/requests-kerberos
+        warnings.push([
+          "negotiate",
+          "requests-gssapi is a fork of requests-kerberos",
+        ]);
+        break;
+      case "aws-sigv4":
+        requestsImports.add("aws_requests_auth.aws_auth.AWSRequestsAuth");
+        // TODO: move this "auth = " to separate line
+        // TODO: try this.
+        auth =
+          "AWSRequestsAuth(aws_access_key=" +
+          repr(user) +
+          ", aws_secret_access_key=" +
+          repr(password) +
+          // TODO: parse
+          ", aws_host=" +
+          repr(request.awsSigV4 || "") +
+          ", aws_region=" +
+          repr(request.awsSigV4 || "") +
+          ", aws_service=" +
+          repr(request.awsSigV4 || "") +
+          ")";
+        warnings.push([
+          "--aws-sigv4",
+          "--aws-sigv4 value isn't parsed: " + JSON.stringify(request.awsSigV4),
+        ]);
+        break;
+      case "bearer":
+        // Shouldn't happen because hasHeader(Authorization) should be true
+        // TODO: use requests-oauthlib
+        break;
+    }
+    args.push("auth=" + auth);
   }
   if (request.timeout || request.connectTimeout) {
-    if (request.timeout) {
-      warnings.push([
-        "--max-time",
-        // https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
-        "unlike --max-time, Requests doesn't have a timeout for the whole request, only for the connect and the read",
-      ]);
-    }
-
     if (
       request.timeout &&
       request.connectTimeout &&
@@ -1540,6 +1605,14 @@ export const _toPython = (
       args.push("timeout=" + request.timeout);
     } else if (request.connectTimeout) {
       args.push("timeout=(" + request.connectTimeout + ", None)");
+    }
+
+    if (request.timeout) {
+      warnings.push([
+        "--max-time",
+        // https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
+        "unlike --max-time, Requests doesn't have a timeout for the whole request, only for the connect and the read",
+      ]);
     }
   }
 
@@ -1575,28 +1648,30 @@ export const _toPython = (
 
   let pythonCode = "";
 
+  function printImports(imps: Set<string>): string {
+    let s = "";
+    for (const imp of Array.from(imps).sort()) {
+      if (imp.includes(".")) {
+        const pos = imp.lastIndexOf(".");
+        const module = imp.slice(0, pos);
+        const name = imp.slice(pos + 1);
+        s += "from " + module + " import " + name + "\n";
+      } else {
+        s += "import " + imp + "\n";
+      }
+    }
+    return s;
+  }
+
   if (osVariables.size > 0) {
     imports.add("os");
   }
-  if (imports.size) {
-    for (const imp of Array.from(imports).sort()) {
-      if (imp === "urllib.parse.quote_plus") {
-        pythonCode += "from urllib.parse import quote_plus\n";
-      } else if (imp === "http.cookiejar.MozillaCookieJar") {
-        pythonCode += "from http.cookiejar import MozillaCookieJar\n";
-      } else {
-        pythonCode += "import " + imp + "\n";
-      }
-    }
-    if (imports.size > 1) {
-      pythonCode += "\n";
-    }
+  pythonCode += printImports(imports);
+  if (imports.size > 1) {
+    pythonCode += "\n";
   }
-
   pythonCode += "import requests\n";
-  if (request.auth && request.authType === "digest") {
-    pythonCode += "from requests.auth import HTTPDigestAuth\n";
-  }
+  pythonCode += printImports(requestsImports);
   pythonCode += "\n";
 
   if (osVariables.size > 0) {

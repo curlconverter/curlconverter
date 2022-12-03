@@ -87,6 +87,13 @@ const CURLAUTH_BEARER = 1 << 6;
 const CURLAUTH_AWS_SIGV4 = 1 << 7;
 const CURLAUTH_ANY = ~CURLAUTH_DIGEST_IE;
 
+// This is this function
+// https://github.com/curl/curl/blob/curl-7_86_0/lib/http.c#L455
+// which is not the correct function, since it works on the response.
+//
+// Curl also filters out auth schemes it doesn't support,
+// https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L970
+// but we support all of them, so we don't need to do that.
 function pickAuth(mask: number): string {
   const auths: [number, string][] = [
     [CURLAUTH_NEGOTIATE, "negotiate"],
@@ -95,6 +102,9 @@ function pickAuth(mask: number): string {
     [CURLAUTH_NTLM, "ntlm"],
     [CURLAUTH_NTLM_WB, "ntlm-wb"],
     [CURLAUTH_BASIC, "basic"],
+    // This check happens outside this function because we obviously
+    // don't need to to specify --no-basic to use aws-sigv4
+    // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
     [CURLAUTH_AWS_SIGV4, "aws-sigv4"],
   ];
   for (const [auth, authName] of auths) {
@@ -222,8 +232,10 @@ interface Request {
   multipartUploads?: ({
     name: string;
   } & ({ content: string } | { contentFile: string; filename?: string }))[];
-  auth?: [string, string];
   authType: string;
+  auth?: [string, string];
+  awsSigV4?: string;
+  delegation?: string;
   cookies?: Cookies;
   cookieFiles?: string[];
   cookieJar?: string;
@@ -1965,6 +1977,11 @@ function buildRequest(
     }
   }
 
+  if (parsedArguments.aws_sigv4) {
+    // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
+    request.authType = "aws-sigv4";
+    request.awsSigV4 = parsedArguments.aws_sigv4;
+  }
   if (parsedArguments.userpwd) {
     const [user, pass] = parsedArguments.userpwd.split(/:(.*)/s, 2);
     request.auth = [user, pass || ""];
@@ -1976,6 +1993,9 @@ function buildRequest(
       "Bearer " + parsedArguments.oauth_bearer,
       lowercase
     );
+  }
+  if (parsedArguments.delegation) {
+    request.delegation = parsedArguments.delegation;
   }
 
   if (headers.length > 0) {
@@ -2160,7 +2180,7 @@ const _hasHeader = (headers: Headers, header: string): boolean => {
 
 const hasHeader = (request: Request, header: string): boolean | undefined => {
   if (!request.headers) {
-    return;
+    return false;
   }
   return _hasHeader(request.headers, header);
 };
