@@ -1608,7 +1608,10 @@ function buildRequest(
   if (parsedArguments.url.length > 1) {
     warnings.push([
       "multiple-urls",
-      "found multiple URLs, only the last one will be used",
+      "found " +
+        parsedArguments.url.length +
+        " URLs, only the last one will be used: " +
+        parsedArguments.url.map(JSON.stringify).join(", "),
     ]);
   }
   let url = parsedArguments.url[parsedArguments.url.length - 1];
