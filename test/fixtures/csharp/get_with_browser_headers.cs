@@ -1,4 +1,7 @@
-HttpClient client = new HttpClient();
+HttpClientHandler handler = new HttpClientHandler();
+handler.AutomaticDecompression = DecompressionMethods.All;
+
+HttpClient client = new HttpClient(handler);
 
 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:28139/");
 

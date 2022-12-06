@@ -6,6 +6,8 @@ import { repr as jsrepr } from "./javascript/javascript.js";
 const supportedArgs = new Set([
   "url",
   "request",
+  "compressed",
+  "no-compressed",
   "no-digest",
   "http1.0",
   "http1.1",
@@ -85,7 +87,7 @@ export const _toCSharp = (
 
   let s = "";
 
-  if (request.insecure || request.proxy) {
+  if (request.insecure || request.proxy || request.compressed) {
     s += "HttpClientHandler handler = new HttpClientHandler();\n";
     if (request.insecure) {
       s +=
@@ -95,6 +97,9 @@ export const _toCSharp = (
       // TODO: probably need to parse the value a bit
       // TODO: , true) ?
       s += "handler.Proxy = new WebProxy(" + repr(request.proxy) + ");\n";
+    }
+    if (request.compressed) {
+      s += "handler.AutomaticDecompression = DecompressionMethods.All;\n";
     }
     s += "\n";
     s += "HttpClient client = new HttpClient(handler);\n\n";
