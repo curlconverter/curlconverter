@@ -544,17 +544,77 @@ function jsonRepr(s: string): string {
     '"'
   );
 }
+
+function ensure_minimum_exponent_length(n: string): string {
+  // If there's only 1 exponent digit, add a leading 0 to it
+  // ensure_minimum_exponent_length('1e-7') => '1e-07'
+  const [mantissa, exponent] = n.split("e");
+  const exponentSign = exponent[0];
+  const exponentValue = exponent.slice(1);
+  if (exponentValue.length === 1) {
+    return mantissa + "e" + exponentSign + "0" + exponentValue;
+  }
+  return n;
+}
+function floatAsPython(value: number): string {
+  // JSON.stringify() and lossless-json's stringify() don't stringify floats like Python.
+  // Notably, JavaScript doesn't add a trailing '.0' to floats that are integers but Python does
+  // JSON.stringify(10.0) => '10'
+  // str(10.0)            => '10.0'
+  //
+  // Python adds a leading 0 to exponent notation numbers with 1 exponent digit
+  // JSON.stringify(1e-7) => '1e-7'
+  //            str(1e-7) => '1e-07'
+  //
+  // Finally, Python will switch to scientific notation if the number has more than
+  // 17 digits not in scientific notation.
+  //
+  // Python's float formatting starts here:
+  // https://github.com/python/cpython/blob/bdc93b8a3563b4a3adb25fa902c0c879ccf427f6/Python/pystrtod.c#L915-L918
+  // and is ultimately this code:
+  // snprintf(buf, buf_size, "%.17g", val)
+  // change_decimal_from_locale_to_dot(buffer); // not important
+  // ensure_minimum_exponent_length(buffer, buf_size);
+  // ensure_decimal_point(buffer, buf_size, 17); // can switch to exponent notation
+  //
+  // And JavaScript's formatting is specified here:
+  // https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-numeric-types-number-tostring
+  let asJsStr = value.toString();
+  if (asJsStr.includes("e")) {
+    asJsStr = ensure_minimum_exponent_length(asJsStr);
+  } else {
+    if (isInteger(asJsStr)) {
+      asJsStr += ".0";
+    }
+    // If there's more than 17 digits of precision, switch to scientific notation
+    const significantDigits = asJsStr
+      .replace(/^-/, "")
+      .replace(".", "")
+      .replace(/^0+/, "");
+    const asExponential = ensure_minimum_exponent_length(value.toExponential());
+    if (
+      significantDigits.length > 17 ||
+      (asExponential.length < asJsStr.length &&
+        asJsStr.split(".")[1].length > 4)
+    ) {
+      asJsStr = asExponential;
+    }
+  }
+  return asJsStr;
+}
+
 function jsonDumps(obj: string | number | boolean | object | null): string {
   if (isLosslessNumber(obj)) {
     const numAsStr = jsonStringifyLossless(obj) as string;
-    // lossless-json's stringify() doesn't stringify floats like Python,
-    // for example it keeps trailing zeros but also Python will use exponent
-    // notation if it's shorter.
-    // TODO: reimplement Python's float.__repr__
-    if (!isInteger(numAsStr)) {
-      throw new util.CCError("Python float formatting not implemented");
+    if (isInteger(numAsStr)) {
+      return numAsStr;
     }
-    return numAsStr;
+
+    if (!isSafeNumber(numAsStr)) {
+      throw new util.CCError("float unrepresentable in Python: " + numAsStr);
+    }
+    // Can't be bigint because it's !isInteger and isSafeNumber
+    return floatAsPython(obj.valueOf() as number);
   }
 
   switch (typeof obj) {
@@ -605,6 +665,10 @@ function objToPython(
     if (!isInteger(numAsStr) && !isSafeNumber(numAsStr)) {
       throw new util.CCError("float unrepresentable in Python: " + numAsStr);
     }
+    // Displaying floats as they will be serialized in Python would help users
+    // understand why they're getting the "JSON won't be serialized as it was originally"
+    // message, but I think displaying them as they appear in the JSON is likely
+    // to be more convenient if you need to edit the value.
     return numAsStr;
   }
 
