@@ -188,12 +188,11 @@ const buildConfigObject = (
       host = host.slice(0, proxyPart.index);
       port = proxyPart[1];
     }
-    const portInt = parseInt(port);
 
     code += "    proxy: {\n";
     code += "        protocol: " + repr(protocol) + ",\n";
     code += "        host: " + repr(host) + ",\n";
-    if (!isNaN(portInt)) {
+    if (util.isInt(port)) {
       code += "        port: " + port + ",\n";
     } else {
       code += "        port: " + repr(port) + ",\n";

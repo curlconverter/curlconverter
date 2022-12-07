@@ -78,7 +78,7 @@ export const _toCFML = (request: Request, warnings: Warnings = []): string => {
 
   if (request.timeout) {
     cfmlCode +=
-      "httpService.setTimeout(" + (parseInt(request.timeout) || 0) + ");\n";
+      "httpService.setTimeout(" + (parseInt(request.timeout, 10) || 0) + ");\n";
   }
 
   if (request.auth) {

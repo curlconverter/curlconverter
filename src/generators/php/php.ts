@@ -194,7 +194,7 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
   if (request.timeout) {
     phpCode +=
       "curl_setopt($ch, CURLOPT_TIMEOUT, " +
-      (parseInt(request.timeout) || 0) +
+      (parseInt(request.timeout, 10) || 0) +
       ");\n";
   }
 

@@ -273,14 +273,12 @@ export const _toCSharp = (
             ");\n";
         }
       } else if (headerNameLower === "content-length") {
-        if (isNaN(parseInt(headerValue))) {
+        if (!util.isInt(headerValue)) {
           warnings.push([
             "content-length-not-int",
             "Content-Length header value is not a number: " + repr(headerValue),
           ]);
         }
-        // Hopefully it's not one of the multitude of non-sensical values parseInt accepts
-        // or something completely wild
         s +=
           "// request.Content.Headers.ContentLength = " +
           headerValue.split(/\r?\n/)[0] +

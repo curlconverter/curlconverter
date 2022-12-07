@@ -11,6 +11,10 @@ function has<T, K extends PropertyKey>(
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
+function isInt(s: string): boolean {
+  return /^\s*[+-]?\d+$/.test(s);
+}
+
 export class CCError extends Error {}
 
 function pushProp<Type>(
@@ -1093,7 +1097,7 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
     case "word":
     case "simple_expansion": // TODO: handle variables properly downstream
       return parseWord(node.text);
-    case "string":
+    case "string": // TODO: handle variables
       return parseDoubleQuoteString(node.text);
     case "raw_string":
       return parseSingleQuoteString(node.text);
@@ -2045,24 +2049,24 @@ function buildRequest(
     }
   }
   if (parsedArguments["max-time"]) {
+    request.timeout = parsedArguments["max-time"];
     if (isNaN(parseFloat(parsedArguments["max-time"]))) {
       warnings.push([
         "max-time-not-number",
-        "Found a non-numeric value for --max-time: " +
-          JSON.stringify(request.timeout),
+        "option --max-time: expected a proper numerical parameter: " +
+          JSON.stringify(parsedArguments["max-time"]),
       ]);
     }
-    request.timeout = parsedArguments["max-time"];
   }
   if (parsedArguments["connect-timeout"]) {
+    request.connectTimeout = parsedArguments["connect-timeout"];
     if (isNaN(parseFloat(parsedArguments["connect-timeout"]))) {
       warnings.push([
         "connect-timeout-not-number",
-        "Found a non-numeric value for --connect-timeout: " +
-          JSON.stringify(request.timeout),
+        "option --connect-timeout: expected a proper numerical parameter: " +
+          JSON.stringify(parsedArguments["connect-timeout"]),
       ]);
     }
-    request.connectTimeout = parsedArguments["connect-timeout"];
   }
   if (Object.prototype.hasOwnProperty.call(parsedArguments, "location")) {
     request.followRedirects = parsedArguments.location;
@@ -2071,14 +2075,14 @@ function buildRequest(
     request.followRedirectsTrusted = parsedArguments["location-trusted"];
   }
   if (parsedArguments["max-redirs"]) {
-    if (isNaN(parseInt(parsedArguments["max-redirs"]))) {
+    request.maxRedirects = parsedArguments["max-redirs"].trim();
+    if (!isInt(parsedArguments["max-redirs"])) {
       warnings.push([
         "max-redirs-not-int",
-        "--max-redirs value is not a number: " +
+        "option --max-redirs: expected a proper numerical parameter: " +
           JSON.stringify(parsedArguments["max-redirs"]),
       ]);
     }
-    request.maxRedirects = parsedArguments["max-redirs"].trim();
   }
   if (parsedArguments.output) {
     request.output = parsedArguments.output;
@@ -2278,6 +2282,7 @@ export {
   setHeaderIfMissing,
   deleteHeader,
   has,
+  isInt,
   UTF8encoder,
 };
 

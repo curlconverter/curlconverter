@@ -391,10 +391,12 @@ const unsupportedArgs = [
 const regexSingleEscape = /'|\\|\p{C}|\p{Z}/gu;
 const regexDoubleEscape = /"|\\|\p{C}|\p{Z}/gu;
 
-export function repr(s: string): string {
-  let quote = "'";
-  if (s.includes("'") && !s.includes('"')) {
-    quote = '"';
+export function repr(s: string, quote?: '"' | "'"): string {
+  if (quote === undefined) {
+    quote = "'";
+    if (s.includes("'") && !s.includes('"')) {
+      quote = '"';
+    }
   }
   const regex = quote === "'" ? regexSingleEscape : regexDoubleEscape;
 
@@ -421,8 +423,9 @@ export function repr(s: string): string {
         case "\\":
           return "\\\\";
         case "'":
+          return "\\'";
         case '"':
-          return "\\" + c;
+          return '\\"';
       }
       const hex = (c.codePointAt(0) as number).toString(16);
       if (hex.length <= 2) {
@@ -1416,7 +1419,8 @@ export const _toPython = (
   if (request.cert) {
     certStr = "cert = ";
     if (Array.isArray(request.cert)) {
-      certStr += "(" + request.cert.map(repr).join(", ") + ")";
+      certStr +=
+        "(" + repr(request.cert[0]) + ", " + repr(request.cert[1]) + ")";
     } else {
       certStr += repr(request.cert);
     }

@@ -67,6 +67,7 @@ const translate: {
   dart: [_toDart, toDartWarn],
   elixir: [_toElixir, toElixirWarn],
   go: [_toGo, toGoWarn],
+  golang: [_toGo, toGoWarn], // undocument alias
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
