@@ -67,23 +67,28 @@ export const _toGo = (request: Request, warnings: Warnings = []): string => {
 
   goCode += "func main() {\n";
 
-  if (request.insecure) {
+  if (request.insecure || request.compressed === false) {
     goCode += "\ttr := &http.Transport{\n";
-    goCode += "\t\tTLSClientConfig: &tls.Config{InsecureSkipVerify: true},\n";
+    if (request.insecure) {
+      goCode += "\t\tTLSClientConfig: &tls.Config{InsecureSkipVerify: true},\n";
+    }
+    if (request.compressed === false) {
+      goCode += "\t\tDisableCompression: true,\n";
+    }
     goCode += "\t}\n";
   }
 
   goCode += "\tclient := &http.Client{";
   if (request.timeout) {
     goCode += "\n";
-    if (request.insecure) {
+    if (request.insecure || request.compressed === false) {
       goCode += "\t\tTransport: tr,\n";
     }
     if (request.timeout) {
       goCode += "\t\tTimeout: " + request.timeout + " * time.Second,\n";
     }
     goCode += "\t";
-  } else if (request.insecure) {
+  } else if (request.insecure || request.compressed === false) {
     goCode += "Transport: tr";
   }
   goCode += "}\n";

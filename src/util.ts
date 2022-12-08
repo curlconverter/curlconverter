@@ -1929,8 +1929,8 @@ function buildRequest(
     request.cookieJar = parsedArguments["cookie-jar"];
   }
 
-  if (parsedArguments.compressed) {
-    request.compressed = true;
+  if (parsedArguments.compressed !== undefined) {
+    request.compressed = parsedArguments.compressed;
   }
 
   if (parsedArguments["upload-file"]) {
