@@ -11,7 +11,7 @@ req['Cookie'] = 'GeoIP=US:Albuquerque:35.1241:-106.7675:v4; uls-previous-languag
 req['Connection'] = 'keep-alive'
 
 req_options = {
-  use_ssl: uri.scheme == "https"
+  use_ssl: uri.scheme == 'https'
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

@@ -12,7 +12,7 @@ req.content_type = 'application/json'
 req['X-Api-Key'] = '{admin_api_key}'
 
 req_options = {
-  use_ssl: uri.scheme == "https"
+  use_ssl: uri.scheme == 'https'
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)

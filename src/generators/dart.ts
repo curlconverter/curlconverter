@@ -30,12 +30,14 @@ const supportedArgs = new Set([
   "no-basic",
   "oauth2-bearer",
 ]);
-function escape(value: string): string {
+function escape(value: string, quote: '"' | "'"): string {
   // Escape Dart's $string interpolation syntax
-  return jsesc(value, "'").replace(/\$/g, "\\$");
+  // TODO: does Dart have the same escape sequences as JS?
+  return jsesc(value, quote).replace(/\$/g, "\\$");
 }
 function repr(value: string): string {
-  return "'" + escape(value) + "'";
+  const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
+  return quote + escape(value, quote) + quote;
 }
 
 export const _toDart = (request: Request, warnings: Warnings = []): string => {
@@ -116,7 +118,7 @@ export const _toDart = (request: Request, warnings: Warnings = []): string => {
   if (request.query) {
     s +=
       "  var url = Uri.parse('" +
-      escape(request.urlWithoutQuery) +
+      escape(request.urlWithoutQuery, "'") +
       "?$query" +
       "');\n";
   } else {

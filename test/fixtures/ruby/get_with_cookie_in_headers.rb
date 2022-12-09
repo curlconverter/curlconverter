@@ -14,7 +14,7 @@ req['Cache-Control'] = 'no-cache'
 req['Sec-Metadata'] = 'destination=empty, site=same-origin'
 
 req_options = {
-  use_ssl: uri.scheme == "https"
+  use_ssl: uri.scheme == 'https'
 }
 res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
   http.request(req)
