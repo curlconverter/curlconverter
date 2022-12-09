@@ -291,6 +291,14 @@ function getFilesString(request: Request): string {
 }
 
 export const _toRuby = (request: Request, warnings: Warnings = []): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let prelude = "require 'net/http'\n";
   let code = "";
 

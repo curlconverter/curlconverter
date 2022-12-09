@@ -32,6 +32,13 @@ export const _toPhpRequests = (
   } else {
     headerString = "$headers = array();";
   }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
 
   let optionsString;
   if (request.auth) {

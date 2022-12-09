@@ -237,7 +237,7 @@ const COMMON_SUPPORTED_ARGS: string[] = [
   "referer",
   "range",
   "time-cond",
-  "cookie", // TODO: most converters don't support cookie files
+  "cookie", // TODO: can be a file
   "oauth2-bearer",
   // Basic Auth
   "user",
@@ -1270,9 +1270,6 @@ const tokenize = (
           // this shouldn't happen
           stdin = heredocBody.text;
         }
-        // Curl removes newlines when you pass any @filename including @- for stdin
-        // TODO: bash_redirect_heredoc.sh makes it seem like this isn't actually true.
-        stdin = stdin.replace(/\n/g, "");
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
           throw new CCError(
@@ -1654,6 +1651,15 @@ function buildRequest(
   const headers: Headers = [];
   if (parsedArguments.header) {
     for (const header of parsedArguments.header) {
+      if (header.startsWith("@")) {
+        warnings.push([
+          "header-file",
+          "passing a file for --header/-H is not supported: " +
+            JSON.stringify(header),
+        ]);
+        continue;
+      }
+
       if (header.includes(":")) {
         const [name, value] = header.split(/:(.*)/s, 2);
         if (!value.trim()) {
@@ -1952,9 +1958,6 @@ function buildRequest(
     // deleteHeader(request, 'cookie')
     request.cookies = cookies;
   }
-  // TODO: most generators support passing cookies with --cookie but don't
-  // support reading cookies from a file. We need to warn users
-  // when that is the case.
   if (cookieFiles.length) {
     request.cookieFiles = cookieFiles;
   }

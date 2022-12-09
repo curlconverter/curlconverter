@@ -27,7 +27,14 @@ const repr = (s: string): string => {
 };
 
 export const _toGo = (request: Request, warnings: Warnings = []): string => {
-  warnings = warnings || [];
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let goCode = "package main\n\n";
 
   goCode += "import (\n";

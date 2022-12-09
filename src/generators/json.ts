@@ -120,6 +120,13 @@ export const _toJsonString = (
     // headers, but users of the JSON output would expect to have all the
     // headers in .headers.
   }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
 
   if (request.headers) {
     // TODO: what if Object.keys().length !== request.headers.length?

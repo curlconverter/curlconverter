@@ -78,6 +78,13 @@ export const _toPhp = (request: Request, warnings: Warnings = []): string => {
     cookieString = util.getHeader(request, "cookie");
     util.deleteHeader(request, "cookie");
   }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
 
   let phpCode = "<?php\n";
   phpCode += "$ch = curl_init();\n";

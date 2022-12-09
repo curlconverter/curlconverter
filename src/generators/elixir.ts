@@ -245,6 +245,13 @@ export const _toElixir = (
   if (request.cookies) {
     util.deleteHeader(request, "cookie");
   }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
 
   // delete!(url, headers \\ [], options \\ [])
   // get!(url, headers \\ [], options \\ [])

@@ -156,6 +156,14 @@ export const _toJavaScriptOrNode = (
   warnings: Warnings,
   isNode: boolean
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   const fetchImports: Set<string> = new Set();
   const imports: Set<[string, string]> = new Set();
 

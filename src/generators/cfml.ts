@@ -27,6 +27,14 @@ const repr = (s: string): string => {
 };
 
 export const _toCFML = (request: Request, warnings: Warnings = []): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let cfmlCode = "";
 
   cfmlCode += "httpService = new http();\n";

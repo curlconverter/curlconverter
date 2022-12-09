@@ -58,6 +58,14 @@ export const _toAnsible = (
   request: Request,
   warnings: Warnings = [] // eslint-disable-line @typescript-eslint/no-unused-vars
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   const r: AnsibleURI = {
     url: request.url,
     method: request.method, // TODO: toUpper()?

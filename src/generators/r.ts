@@ -87,6 +87,14 @@ export const _toR = (request: Request, warnings: Warnings = []): string => {
     cookieDict += "\n)\n";
     util.deleteHeader(request, "Cookie");
   }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let headerDict;
   if (request.headers) {
     const hels = [];

@@ -13,6 +13,14 @@ export const _toNodeRequest = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let nodeRequestCode = "var request = require('request');\n\n";
   if (request.headers) {
     nodeRequestCode += "var headers = {\n";
@@ -55,6 +63,7 @@ export const _toNodeRequest = (
       }
     }
   }
+
   if (request.data) {
     nodeRequestCode += ",\n    body: dataString";
   }
