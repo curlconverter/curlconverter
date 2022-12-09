@@ -4,31 +4,11 @@ import type { Request, Warnings } from "../util.js";
 import yaml from "yamljs";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
-  // "form",
-  // "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  ...util.COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
+  // "form",
+  // "form-string",
 ]);
 
 function getDataString(request: Request): [string, boolean] | undefined {

@@ -2,30 +2,10 @@ import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
   // TODO
   // "form",
   // "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
 ]);
 
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6

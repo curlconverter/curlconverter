@@ -4,31 +4,11 @@ import type { Request, Warnings } from "../util.js";
 import { esc as jsesc } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
+  ...util.COMMON_SUPPORTED_ARGS,
   "compressed",
-  "no-compressed",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
+  "no-compressed",
 ]);
 function escape(value: string, quote: '"' | "'"): string {
   // Escape Dart's $string interpolation syntax

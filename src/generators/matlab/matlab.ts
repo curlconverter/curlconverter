@@ -5,31 +5,11 @@ import { toWebServices } from "./webservices.js";
 import { toHTTPInterface } from "./httpinterface.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
-  "form",
-  "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  ...util.COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
+  "form",
+  "form-string",
 ]);
 
 export const _toMATLAB = (

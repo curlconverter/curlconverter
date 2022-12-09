@@ -4,29 +4,9 @@ import type { Request, Warnings } from "../../util.js";
 import { repr } from "./php.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
   // "form",
   // "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
 ]);
 
 export const _toPhpRequests = (

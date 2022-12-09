@@ -6,31 +6,11 @@ import type { Request, Cookie, QueryDict, Warnings } from "../util.js";
 import { repr as pyrepr } from "./python.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
   "insecure",
   "no-insecure",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
 ]);
 
 function reprn(value: string | null): string {

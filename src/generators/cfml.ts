@@ -4,32 +4,12 @@ import type { Request, Warnings } from "../util.js";
 import { esc as jsesc } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
-  "proxy-user",
-  "proxy",
   "max-time",
+  "proxy",
+  "proxy-user",
 ]);
 
 const repr = (s: string): string => {

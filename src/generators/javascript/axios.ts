@@ -5,32 +5,12 @@ import type { Request, Warnings } from "../../util.js";
 import { repr } from "./javascript.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
+  ...util.COMMON_SUPPORTED_ARGS,
+  "max-time",
   "form",
   "form-string",
-  "range",
-  "referer",
-  "time-cond",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
   "proxy",
   "proxy-user",
-  "max-time",
 ]);
 
 // TODO: @

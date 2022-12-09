@@ -5,32 +5,12 @@ import type { Request } from "../../util.js";
 import jsescObj from "jsesc";
 
 const javaScriptSupportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
+  "upload-file",
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
   "digest",
   "no-digest",
-  "oauth2-bearer",
-  "upload-file",
 ]);
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);

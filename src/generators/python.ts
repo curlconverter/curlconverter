@@ -17,18 +17,15 @@ import {
 
 // TODO: partiallySupportedArgs
 const supportedArgs = new Set([
-  "url",
-  "request",
+  ...util.COMMON_SUPPORTED_ARGS,
+
   "compressed",
   "no-compressed",
-  "user",
-  "basic",
-  "no-basic",
+
   "anyauth",
   "no-anyauth",
   "digest",
   "no-digest",
-  "oauth2-bearer",
   "aws-sigv4",
   "negotiate",
   "no-negotiate",
@@ -38,43 +35,37 @@ const supportedArgs = new Set([
   "no-ntlm",
   "ntlm-wb",
   "no-ntlm-wb",
+
   "http1.1",
   "http2", // not supported, just better warning message
   "http2-prior-knowledge",
   "http3", // not supported, just better warning message
-  "user-agent",
-  "cookie",
+
   "cookie-jar",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+
   "cert",
   "cacert",
   "key",
   "capath",
+
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+
   "location",
   "no-location",
   "location-trusted", // not exactly supported, just better warning message
   "no-location-trusted",
   "max-redirs",
+
   "max-time",
   "connect-timeout",
+
   "insecure",
   "no-insecure",
+
   "output",
   "upload-file",
+
   "proxy",
   "proxy-user",
 ]);

@@ -221,6 +221,37 @@ function setArgValue(
   }
 }
 
+// Arguments which are supported by all generators, because they're
+// already handled in util.ts or because they're easy to implement
+const COMMON_SUPPORTED_ARGS: string[] = [
+  "url",
+  "proto-default",
+  // Method
+  "request",
+  "get",
+  "head",
+  "no-head",
+  // Headers
+  "header", // TODO: can be a file
+  "user-agent",
+  "referer",
+  "range",
+  "time-cond",
+  "cookie", // TODO: most converters don't support cookie files
+  "oauth2-bearer",
+  // Basic Auth
+  "user",
+  "basic",
+  "no-basic",
+  // Data
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+];
+
 interface Request {
   // If the ?query can't be losslessly parsed, then
   // Request.query === undefined and
@@ -1738,18 +1769,20 @@ function buildRequest(
   //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
   // but curl will accept a digit/plus/minus/dot in the first character
   // curl will also accept a url with one / like http:/localhost
+  let scheme;
   const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/?/);
   if (schemeMatch) {
-    const scheme = schemeMatch[1].toLowerCase();
-    if (scheme !== "http" && scheme !== "https") {
-      warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
-    }
-    url = scheme + "://" + url.slice(schemeMatch[0].length);
+    scheme = schemeMatch[1].toLowerCase();
+    url = url.slice(schemeMatch[0].length);
   } else {
-    // curl's default scheme is actually https://
-    // but we don't do that because, unlike curl, most libraries won't downgrade to http if you ask for https
-    url = "http://" + url;
+    // curl actually defaults to https://
+    // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
+    scheme = parsedArguments["proto-default"] ?? "http";
   }
+  if (scheme !== "http" && scheme !== "https") {
+    warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
+  }
+  url = scheme + "://" + url;
 
   const data: Array<string | DataParam> = [];
   let dataStrState = "";
@@ -2272,6 +2305,7 @@ const parseCookies = (cookieString: string): Cookies => {
 export {
   curlLongOpts,
   curlShortOpts,
+  COMMON_SUPPORTED_ARGS,
   parseCurlCommand,
   parseArgs,
   buildRequest,
