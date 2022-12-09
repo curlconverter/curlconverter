@@ -4,31 +4,11 @@ import type { Request, Warnings } from "../util.js";
 import yaml from "yamljs";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
-  // "form",
-  // "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  ...util.COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
+  // "form",
+  // "form-string",
 ]);
 
 function getDataString(request: Request): [string, boolean] | undefined {
@@ -78,6 +58,14 @@ export const _toAnsible = (
   request: Request,
   warnings: Warnings = [] // eslint-disable-line @typescript-eslint/no-unused-vars
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   const r: AnsibleURI = {
     url: request.url,
     method: request.method, // TODO: toUpper()?

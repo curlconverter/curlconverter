@@ -2,42 +2,22 @@ import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
+  ...util.COMMON_SUPPORTED_ARGS,
   "compressed",
-  "no-compressed",
-  "no-digest",
-  "http1.0",
-  "http1.1",
-  "http0.9",
-  "no-http0.9",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  "http0.9",
+  "http1.0",
+  "http1.1",
   "insecure",
+  "no-compressed",
+  "no-digest",
+  "no-http0.9",
   "no-insecure",
-  // "output",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
   "proxy",
-  // "proxy-user",
   "upload-file",
+  // "output",
+  // "proxy-user",
 ]);
 
 // https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/
@@ -97,6 +77,14 @@ export const _toCSharp = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   const imports = new Set();
 
   const methods = {

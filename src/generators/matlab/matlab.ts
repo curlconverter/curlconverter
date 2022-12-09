@@ -5,37 +5,25 @@ import { toWebServices } from "./webservices.js";
 import { toHTTPInterface } from "./httpinterface.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
-  "form",
-  "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  ...util.COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
+  "form",
+  "form-string",
 ]);
 
 export const _toMATLAB = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let webServicesLines, httpInterfaceLines;
   [webServicesLines, warnings] = toWebServices(request, warnings);
   [httpInterfaceLines, warnings] = toHTTPInterface(request, warnings);

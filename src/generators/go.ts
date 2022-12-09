@@ -4,35 +4,15 @@ import type { Request, Warnings } from "../util.js";
 import { repr as pyrepr } from "./python.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
+  ...util.COMMON_SUPPORTED_ARGS,
+  "insecure",
+  "no-insecure",
   "compressed",
   "no-compressed",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "user-agent",
-  "cookie",
-  "range",
-  "referer",
-  "time-cond",
+  "max-time",
   // TODO
   // "form",
   // "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
-  "max-time",
-  "insecure",
-  "no-insecure",
 ]);
 
 // https://go.dev/ref/spec#String_literals
@@ -47,7 +27,14 @@ const repr = (s: string): string => {
 };
 
 export const _toGo = (request: Request, warnings: Warnings = []): string => {
-  warnings = warnings || [];
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let goCode = "package main\n\n";
 
   goCode += "import (\n";

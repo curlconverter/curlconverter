@@ -6,37 +6,17 @@ import type { Request, Warnings } from "../util.js";
 // https://github.com/augustl/net-http-cheat-sheet
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "no-digest",
-  "http1.0",
-  "http1.1",
-  "http0.9",
-  "no-http0.9",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  "http0.9",
+  "http1.0",
+  "http1.1",
   "insecure",
+  "no-digest",
+  "no-http0.9",
   "no-insecure",
   "output",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
   "proxy",
   "proxy-user",
   "upload-file",
@@ -311,6 +291,14 @@ function getFilesString(request: Request): string {
 }
 
 export const _toRuby = (request: Request, warnings: Warnings = []): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let prelude = "require 'net/http'\n";
   let code = "";
 

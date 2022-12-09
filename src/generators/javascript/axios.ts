@@ -5,32 +5,12 @@ import type { Request, Warnings } from "../../util.js";
 import { repr } from "./javascript.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
+  ...util.COMMON_SUPPORTED_ARGS,
+  "max-time",
   "form",
   "form-string",
-  "range",
-  "referer",
-  "time-cond",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
   "proxy",
   "proxy-user",
-  "max-time",
 ]);
 
 // TODO: @
@@ -227,6 +207,14 @@ export const _toNodeAxios = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   let importCode = "const axios = require('axios');\n";
   const imports: Set<[string, string]> = new Set();
 

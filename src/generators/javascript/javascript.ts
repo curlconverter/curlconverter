@@ -5,32 +5,12 @@ import type { Request } from "../../util.js";
 import jsescObj from "jsesc";
 
 const javaScriptSupportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
+  ...util.COMMON_SUPPORTED_ARGS,
+  "upload-file",
   "form",
   "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
-  "user",
-  "basic",
-  "no-basic",
   "digest",
   "no-digest",
-  "oauth2-bearer",
-  "upload-file",
 ]);
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
@@ -176,6 +156,14 @@ export const _toJavaScriptOrNode = (
   warnings: Warnings,
   isNode: boolean
 ): string => {
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
+
   const fetchImports: Set<string> = new Set();
   const imports: Set<[string, string]> = new Set();
 

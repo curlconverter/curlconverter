@@ -4,31 +4,11 @@ import * as util from "../util.js";
 import type { Request, QueryDict, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
-  "url",
-  "request",
-  "user-agent",
-  "cookie",
-  "data",
-  "data-raw",
-  "data-ascii",
-  "data-binary",
-  "data-urlencode",
-  "json",
-  "range",
-  "referer",
-  "time-cond",
-  "form",
-  "form-string",
-  "get",
-  "header",
-  "head",
-  "no-head",
+  ...util.COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
-  "user",
-  "basic",
-  "no-basic",
-  "oauth2-bearer",
+  "form",
+  "form-string",
 ]);
 
 type JSONOutput = {
@@ -139,6 +119,13 @@ export const _toJsonString = (
     // Normally when a generator uses .cookies, it should delete it from
     // headers, but users of the JSON output would expect to have all the
     // headers in .headers.
+  }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
   }
 
   if (request.headers) {
