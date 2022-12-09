@@ -35,6 +35,7 @@ const supportedArgs = new Set([
   "no-insecure",
 ]);
 
+// https://go.dev/ref/spec#String_literals
 const reprMaybeBacktick = (s: string): string => {
   return s.includes('"') ? reprBacktick(s) : repr(s);
 };

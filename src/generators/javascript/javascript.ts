@@ -55,15 +55,7 @@ const regexEscape = /'|"|\\|\p{C}|\p{Z}/gu;
 const regexDigit = /[0-9]/;
 export const esc = (s: string, quote: "'" | '"' = "'"): string =>
   s.replace(regexEscape, (c: string, index: number, string: string) => {
-    // \0 is null but \01 is an octal escape
-    // if we have ['\0', '1', '2']
-    // and we converted it to '\\012', it would be interpreted as octal
-    // so it needs to be converted to '\\x0012'
-    if (c === "\0" && !regexDigit.test(string.charAt(index + 1))) {
-      return "\\0";
-    }
-
-    switch (c) {
+    switch (c[0]) {
       // https://mathiasbynens.be/notes/javascript-escapes#single
       case " ":
         return " ";
@@ -84,6 +76,15 @@ export const esc = (s: string, quote: "'" | '"' = "'"): string =>
       case "'":
       case '"':
         return c === quote ? "\\" + c : c;
+      case "\0":
+        // \0 is null but \01 is an octal escape
+        // if we have ['\0', '1', '2']
+        // and we converted it to '\\012', it would be interpreted as octal
+        // so it needs to be converted to '\\x0012'
+        if (!regexDigit.test(string.charAt(index + 1))) {
+          return "\\0";
+        }
+        break;
     }
 
     if (c.length === 2) {

@@ -1,8 +1,6 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { repr as jsrepr } from "./javascript/javascript.js";
-
 const supportedArgs = new Set([
   "url",
   "request",
@@ -37,7 +35,38 @@ const supportedArgs = new Set([
 const INDENTATION = " ".repeat(4);
 const indent = (line: string, level = 1): string =>
   INDENTATION.repeat(level) + line;
-const repr = (str: string): string => jsrepr(str, '"');
+
+// https://doc.rust-lang.org/reference/tokens.html
+const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
+export function repr(s: string): string {
+  return (
+    '"' +
+    s.replace(regexEscape, (c: string): string => {
+      switch (c) {
+        case " ":
+          return " ";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case "\0":
+          return "\\0";
+        case "\\":
+          return "\\\\";
+        case '"':
+          return '\\"';
+      }
+      const hex = (c.codePointAt(0) as number).toString(16);
+      if (hex.length <= 2) {
+        return "\\x" + hex.padStart(2, "0");
+      }
+      return "\\u{" + hex + "}";
+    }) +
+    '"'
+  );
+}
 
 export const _toRust = (request: Request, warnings: Warnings = []): string => {
   const lines = ["extern crate reqwest;"];

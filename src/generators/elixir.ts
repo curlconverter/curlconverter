@@ -1,8 +1,6 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { repr as jsrepr } from "./javascript/javascript.js";
-
 const supportedArgs = new Set([
   "url",
   "request",
@@ -31,12 +29,52 @@ const supportedArgs = new Set([
   "oauth2-bearer",
 ]);
 
-function repr(value: string | null): string {
-  // In context of url parameters, don't accept nulls and such.
-  if (value === null) {
-    return '""';
+const regexEscape = /"|\\|\p{C}|\p{Z}|#\{/gu;
+
+export function repr(s: string | null): string {
+  if (s === null) {
+    s = "";
   }
-  return jsrepr(value, '"');
+
+  return (
+    '"' +
+    s.replace(regexEscape, (c: string): string => {
+      switch (c[0]) {
+        case " ":
+          return " ";
+        case "\x00":
+          return "\\0";
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case "\v":
+          return "\\v";
+        case "\x1B":
+          return "\\e";
+        case "\\":
+          return "\\\\";
+        case '"':
+          return '\\"';
+        case "#":
+          return "\\" + c;
+      }
+      const hex = (c.codePointAt(0) as number).toString(16);
+      if (hex.length <= 4) {
+        return "\\u" + hex.padStart(4, "0");
+      }
+      return "\\u{" + hex + "}";
+    }) +
+    '"'
+  );
 }
 
 function addIndent(value: string): string {

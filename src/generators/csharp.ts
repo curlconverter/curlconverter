@@ -1,8 +1,6 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { repr as jsrepr } from "./javascript/javascript.js";
-
 const supportedArgs = new Set([
   "url",
   "request",
@@ -42,8 +40,57 @@ const supportedArgs = new Set([
   "upload-file",
 ]);
 
-function repr(value: string): string {
-  return jsrepr(value, '"');
+// https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/
+const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
+export function repr(s: string): string {
+  return (
+    '"' +
+    s.replace(regexEscape, (c: string): string => {
+      switch (c) {
+        case " ":
+          return " ";
+        case "\x00":
+          return "\\0";
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case "\v":
+          return "\\v";
+        case "\\":
+          return "\\\\";
+        case '"':
+          return '\\"';
+      }
+
+      if (c.length === 2) {
+        const first = c.charCodeAt(0);
+        const second = c.charCodeAt(1);
+        return (
+          "\\u" +
+          first.toString(16).padStart(4, "0") +
+          "\\u" +
+          second.toString(16).padStart(4, "0")
+        );
+      }
+
+      const hex = c.charCodeAt(0).toString(16);
+      if (hex.length <= 4) {
+        return "\\u" + hex.padStart(4, "0");
+      }
+      // Shouldn't happen
+      return "\\U" + hex.padStart(8, "0");
+    }) +
+    '"'
+  );
 }
 
 export const _toCSharp = (

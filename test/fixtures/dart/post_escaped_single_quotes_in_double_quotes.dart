@@ -5,7 +5,7 @@ void main() async {
     'Content-Type': 'application/x-www-form-urlencoded',
   };
 
-  var data = 'foo=\\\'bar\\\'';
+  var data = "foo=\\'bar\\'";
 
   var url = Uri.parse('http://localhost:28139/');
   var res = await http.post(url, headers: headers, body: data);

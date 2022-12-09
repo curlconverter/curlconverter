@@ -3,7 +3,7 @@
 import * as util from "../util.js";
 import type { Request, Cookie, QueryDict, Warnings } from "../util.js";
 
-import { repr as jsrepr } from "./javascript/javascript.js";
+import { repr as pyrepr } from "./python.js";
 
 const supportedArgs = new Set([
   "url",
@@ -42,8 +42,12 @@ function reprn(value: string | null): string {
   }
 }
 
+// https://stat.ethz.ch/R-manual/R-devel/doc/manual/R-lang.html#Literal-constants
 function repr(value: string): string {
-  return jsrepr(value, "'");
+  // TODO: do R programmers prefer double quotes?
+  // const quote = value.includes('"') && !value.includes("'") ? "'" : '"';
+  const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
+  return pyrepr(value, quote);
 }
 
 function getQueryDict(request: Request): string | undefined {
@@ -124,7 +128,7 @@ export const _toR = (request: Request, warnings: Warnings = []): string => {
   if (request.data) {
     if (request.data.startsWith("@") && !request.isDataRaw) {
       const filePath = request.data.slice(1);
-      dataString = "data = upload_file('" + filePath + "')";
+      dataString = "data = upload_file(" + repr(filePath) + ")";
     } else {
       const [parsedQueryString] = util.parseQueryString(request.data);
       // repeat to satisfy type checker
@@ -169,7 +173,7 @@ export const _toR = (request: Request, warnings: Warnings = []): string => {
   } else {
     requestLine += "VERB(" + repr(request.method) + ", ";
   }
-  requestLine += "url = '" + url + "'";
+  requestLine += "url = " + repr(url);
 
   let requestLineBody = "";
   if (request.headers) {

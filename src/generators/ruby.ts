@@ -1,8 +1,6 @@
 import * as util from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { repr as jsrepr } from "./javascript/javascript.js";
-
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
 // https://github.com/augustl/net-http-cheat-sheet
@@ -44,13 +42,71 @@ const supportedArgs = new Set([
   "upload-file",
 ]);
 
-function repr(value: string): string {
-  // https://en.wikibooks.org/wiki/Ruby_Programming/Strings
-  const specialChars = ["\n", "\t", "\r", "\b"];
-  if (specialChars.some((c) => value.includes(c))) {
-    return jsrepr(value, '"');
+// https://docs.ruby-lang.org/en/3.1/syntax/literals_rdoc.html#label-Strings
+const regexSingleEscape = /'|\\/gu;
+const regexDoubleEscape = /"|\\|\p{C}|\p{Z}|#[{@$]/gu;
+const regexDigit = /[0-9]/;
+export function repr(s: string): string {
+  let quote = "'";
+  if (
+    [...s.matchAll(/\p{C}|\p{Z}/gu)].some((m) => m[0] !== " ") ||
+    (s.includes("'") && !s.includes('"'))
+  ) {
+    quote = '"';
   }
-  return jsrepr(value, "'");
+
+  const regexEscape = quote === "'" ? regexSingleEscape : regexDoubleEscape;
+
+  return (
+    quote +
+    s.replace(regexEscape, (c: string, index: number, string: string) => {
+      switch (c[0]) {
+        case " ":
+          return " ";
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case "\v":
+          return "\\v";
+        case "\x1B":
+          return "\\e";
+        case "\\":
+          return "\\\\";
+        case "'":
+          return "\\'";
+        case '"':
+          return '\\"';
+        case "#":
+          return "\\" + c;
+        case "\0":
+          // \0 is null but \01 would be an octal escape
+          if (!regexDigit.test(string.charAt(index + 1))) {
+            return "\\0";
+          }
+          break;
+      }
+
+      const codePoint = c.codePointAt(0) as number;
+      const hex = codePoint.toString(16);
+      if (hex.length <= 2 && codePoint < 0x7f) {
+        return "\\x" + hex.padStart(2, "0");
+      }
+      if (hex.length <= 4) {
+        return "\\u" + hex.padStart(4, "0");
+      }
+      return "\\u{" + hex + "}";
+    }) +
+    quote
+  );
 }
 
 function objToRuby(
@@ -389,7 +445,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     code += "proxy = URI(" + repr(proxy) + ")\n";
   }
   code += "req_options = {\n";
-  code += '  use_ssl: uri.scheme == "https"';
+  code += "  use_ssl: uri.scheme == 'https'";
   if (request.insecure) {
     prelude += "require 'openssl'\n";
     code += ",\n";
