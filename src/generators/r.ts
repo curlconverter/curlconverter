@@ -218,7 +218,7 @@ export const toRWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const r = _toR(request, warnings);
+  const r = _toR(request[0], warnings);
   return [r, warnings];
 };
 export const toR = (curlCommand: string | string[]): string => {

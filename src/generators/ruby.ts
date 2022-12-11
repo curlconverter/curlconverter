@@ -478,7 +478,7 @@ export const toRubyWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const ruby = _toRuby(request, warnings);
+  const ruby = _toRuby(request[0], warnings);
   return [ruby, warnings];
 };
 

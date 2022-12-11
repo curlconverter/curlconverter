@@ -38,7 +38,7 @@ export const toMATLABWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const matlab = _toMATLAB(request, warnings);
+  const matlab = _toMATLAB(request[0], warnings);
   return [matlab, warnings];
 };
 export const toMATLAB = (curlCommand: string | string[]): string => {

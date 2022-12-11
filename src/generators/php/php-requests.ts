@@ -104,7 +104,7 @@ export const toPhpRequestsWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const php = _toPhpRequests(request, warnings);
+  const php = _toPhpRequests(request[0], warnings);
   return [php, warnings];
 };
 export const toPhpRequests = (curlCommand: string | string[]): string => {

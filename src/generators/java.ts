@@ -152,7 +152,7 @@ export const toJavaWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const java = _toJava(request, warnings);
+  const java = _toJava(request[0], warnings);
   return [java, warnings];
 };
 

@@ -384,7 +384,7 @@ export const toJavaScriptWarn = (
     javaScriptSupportedArgs,
     warnings
   );
-  return [_toJavaScript(request, warnings), warnings];
+  return [_toJavaScript(request[0], warnings), warnings];
 };
 export const toJavaScript = (curlCommand: string | string[]): string => {
   return toJavaScriptWarn(curlCommand)[0];
@@ -399,7 +399,7 @@ export const toNodeWarn = (
     nodeSupportedArgs,
     warnings
   );
-  return [_toNode(request, warnings), warnings];
+  return [_toNode(request[0], warnings), warnings];
 };
 export const toNode = (curlCommand: string | string[]): string => {
   return toNodeWarn(curlCommand)[0];

@@ -1873,7 +1873,7 @@ export const toPythonWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const python = _toPython(request, warnings);
+  const python = _toPython(request[0], warnings);
   return [python, warnings];
 };
 

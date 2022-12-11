@@ -213,7 +213,7 @@ export const toDartWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const dart = _toDart(request, warnings);
+  const dart = _toDart(request[0], warnings);
   return [dart, warnings];
 };
 export const toDart = (curlCommand: string | string[]): string => {

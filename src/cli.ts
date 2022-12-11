@@ -1,15 +1,9 @@
 #!/usr/bin/env node
 
-import {
-  curlLongOpts,
-  curlShortOpts,
-  parseArgs,
-  buildRequest,
-  CCError,
-  has,
-  Warnings,
-} from "./util.js";
-import type { LongOpts, ShortOpts, Request } from "./util.js";
+import { parseArgs, buildRequests, CCError, has, Warnings } from "./util.js";
+import type { Request } from "./util.js";
+import { curlLongOpts, curlShortOpts } from "./curl/getparam.js";
+import type { LongOpts, ShortOpts } from "./curl/getparam.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
 import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
@@ -115,8 +109,8 @@ curl_options: these should be passed exactly as they would be passed to curl.
   see 'curl --help' or 'curl --manual' for which options are allowed here`;
 
 const curlConverterLongOpts: LongOpts = {
-  language: { type: "string", name: "language" },
-  stdin: { type: "bool", name: "stdin" },
+  language: { letter: "**", type: "string", name: "language" },
+  stdin: { letter: "??", type: "bool", name: "stdin" },
 };
 const curlConverterShortOpts: ShortOpts = {
   // a single - (dash) tells curlconverter to read input from stdin
@@ -154,11 +148,11 @@ function exitWithError(error: unknown, verbose = false): never {
   process.exit(2); // curl exits with 2 so we do too
 }
 
-const argv = process.argv.slice(2);
+const argv = process.argv.slice(1);
 let parsedArguments;
 let warnings: Warnings = [];
 try {
-  parsedArguments = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
+  parsedArguments = parseArgs(argv, [longOpts, shortOpts], undefined, warnings);
 } catch (e) {
   exitWithError(e);
 }
@@ -227,29 +221,18 @@ if (commandFromStdin) {
   let stdin;
   if (!process.stdin.isTTY) {
     // TODO: what if there's an EOF character? does curl read each @- until EOF?
-    stdin = fs.readFileSync(0).toString();
+    // stdin = fs.readFileSync(0).toString();
   }
   let request;
   try {
-    request = buildRequest(parsedArguments, warnings, stdin);
+    request = buildRequests(parsedArguments, warnings, stdin);
   } catch (e) {
     exitWithError(e, verbose);
   }
   warnings = printWarnings(warnings, verbose);
-  // Warning for users using the pre-4.0 CLI
-  if (request.url?.startsWith("curl ")) {
-    console.error(
-      "warning: Passing a whole curl command as a single argument?"
-    );
-    console.error(
-      "warning: Pass options to curlconverter as if it was curl instead:"
-    );
-    console.error(
-      "warning: curlconverter 'curl example.com' -> curlconverter example.com"
-    );
-  }
   try {
-    code = generator(request, warnings);
+    // TODO: all
+    code = generator(request[0], warnings);
   } catch (e) {
     exitWithError(e, verbose);
   }

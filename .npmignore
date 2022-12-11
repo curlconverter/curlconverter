@@ -11,3 +11,4 @@ src/tools
 test
 dist/test
 dist/tools
+curl/

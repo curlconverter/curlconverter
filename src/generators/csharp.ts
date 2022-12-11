@@ -354,7 +354,7 @@ export const toCSharpWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const cSharp = _toCSharp(request, warnings);
+  const cSharp = _toCSharp(request[0], warnings);
   return [cSharp, warnings];
 };
 export const toCSharp = (curlCommand: string | string[]): string => {

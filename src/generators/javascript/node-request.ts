@@ -96,7 +96,7 @@ export const toNodeRequestWarn = (
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   warnings.unshift(["node-request", "the request package is deprecated"]);
 
-  const nodeRequests = _toNodeRequest(request, warnings);
+  const nodeRequests = _toNodeRequest(request[0], warnings);
   return [nodeRequests, warnings];
 };
 export const toNodeRequest = (curlCommand: string | string[]): string => {

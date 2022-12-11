@@ -132,7 +132,7 @@ export const toGoWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const go = _toGo(request, warnings);
+  const go = _toGo(request[0], warnings);
   return [go, warnings];
 };
 export const toGo = (curlCommand: string | string[]): string => {

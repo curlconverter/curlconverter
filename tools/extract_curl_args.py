@@ -175,10 +175,7 @@ def fill_out_aliases(aliases, add_no_options=True, assumptions=set()):
     # add a "name" property with the main option's `lname`
     letter_count = Counter(a["letter"] for a in aliases)
 
-    # "ARB_BOOL"-type OPTIONs have a --no-OPTION counterpart
-    no_aliases = []
-
-    for idx, alias in enumerate(aliases):
+    for alias in aliases:
         if alias["type"] == "true":
             alias["type"] = "string"
         if alias["type"] == "false":
@@ -200,21 +197,11 @@ def fill_out_aliases(aliases, add_no_options=True, assumptions=set()):
                 alias["name"] = candidate
 
         if alias["type"] == "bool":
-            no_alias = {
-                **alias,
-                "name": alias.get("name", alias["lname"]),
-                "lname": "no-" + alias["lname"],
-                # --no-OPTION options cannot be shortened
-                "expand": False,
-            }
-            no_aliases.append((idx, no_alias))
+            # "ARB_BOOL"-type OPTIONs have a --no-OPTION counterpart
+            alias["negatable"] = True
         elif alias["type"] == "none":
             # The none/bool distinction is irrelevant after the step above
             alias["type"] = "bool"
-
-    for i, (insert_idx, no_alias) in enumerate(no_aliases):
-        # +1 so that --no-OPTION appears after --OPTION
-        aliases.insert(insert_idx + i + 1, no_alias)
 
     return aliases
 
@@ -226,12 +213,10 @@ def split(aliases):
         if alias["lname"] in long_args:
             raise ValueError(f"duplicate lname: {alias['lname']!r}")
         long_args[alias["lname"]] = {
-            k: v for k, v in alias.items() if k not in ["letter", "lname"]
+            k: v for k, v in alias.items() if k not in ["lname"]
         }
         if len(alias["letter"]) == 1:
             alias_name = alias.get("name", alias["lname"])
-            if alias["letter"] == "N":  # -N is short for --no-buffer
-                alias_name = "no-" + alias_name
             if (
                 alias["letter"] in short_args
                 and short_args[alias["letter"]] != alias_name
@@ -240,7 +225,7 @@ def split(aliases):
                     f"duplicate short arg {alias['letter']!r}: {short_args[alias['letter']]!r} {alias_name!r}"
                 )
             short_args[alias["letter"]] = alias_name
-    return long_args, short_args
+    return long_args
 
 
 def format_as_js(d, var_name, indent="\t", indent_level=0):
@@ -263,7 +248,7 @@ def format_as_js(d, var_name, indent="\t", indent_level=0):
         elif isinstance(opt, str):
             yield f"{indent * (indent_level + 1)}{top_key!r}: {val_to_js(opt)},"
 
-    yield (indent * indent_level) + "};"
+    yield (indent * indent_level) + "}"
 
 
 def parse_tag(tag):
@@ -336,8 +321,9 @@ if __name__ == "__main__":
         f = file_at_commit(filename, tag)
         aliases[tag] = {}
         short_aliases[tag] = {}
+        # TODO: figure out what to do about how shortenings change over time
         for alias in fill_out_aliases(parse_aliases(f), add_no_options):
-            alias["expand"] = alias.get("expand", True)
+            # alias["negatable"] = alias.get("negatable", False)
             alias_name = alias.get("name", alias["lname"])
             alias_name = DUPES.get(alias_name, alias_name)
             # alias['name'] = alias_name
@@ -349,8 +335,6 @@ if __name__ == "__main__":
             del alias["letter"]
             lname = alias["lname"]
             del alias["lname"]
-            # TODO: figure out what to do about how shortenings change over time
-            del alias["expand"]
             aliases[tag][lname] = alias
             # TODO: report how shortened --long options change
 
@@ -424,11 +408,9 @@ if __name__ == "__main__":
     current_aliases = fill_out_aliases(
         parse_aliases(file_at_commit(filename, tags[-1])), add_no_options
     )
-    long_args, short_args = split(current_aliases)
+    long_args = split(current_aliases)
 
     js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent="  "))
-    js_params_lines += [""]  # separate by a newline
-    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent="  "))
 
     new_lines = []
     with open(OUTPUT_FILE) as f:

@@ -108,7 +108,7 @@ export const toAnsibleWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const ansible = _toAnsible(request, warnings);
+  const ansible = _toAnsible(request[0], warnings);
   return [ansible, warnings];
 };
 export const toAnsible = (curlCommand: string | string[]): string => {

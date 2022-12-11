@@ -1,0 +1,4 @@
+[submodule "curl"]
+	path = curl
+	url = git@github.com:curl/curl.git
+	branch = curl-7_79_1

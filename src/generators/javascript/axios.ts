@@ -361,7 +361,7 @@ export const toNodeAxiosWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const nodeAxios = _toNodeAxios(request, warnings);
+  const nodeAxios = _toNodeAxios(request[0], warnings);
   return [nodeAxios, warnings];
 };
 export const toNodeAxios = (curlCommand: string | string[]): string => {

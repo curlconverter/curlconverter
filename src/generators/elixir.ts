@@ -327,7 +327,7 @@ export const toElixirWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const elixir = _toElixir(request, warnings);
+  const elixir = _toElixir(request[0], warnings);
   return [elixir, warnings];
 };
 

@@ -170,7 +170,7 @@ export const toJsonStringWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const json = _toJsonString(request, warnings);
+  const json = _toJsonString(request[0], warnings);
   return [json, warnings];
 };
 export const toJsonString = (curlCommand: string | string[]): string => {

@@ -195,7 +195,7 @@ export const toRustWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const rust = _toRust(request, warnings);
+  const rust = _toRust(request[0], warnings);
   return [rust, warnings];
 };
 export const toRust = (curlCommand: string | string[]): string => {

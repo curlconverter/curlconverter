@@ -4,3 +4,7 @@ dist
 test/fixtures
 
 .mypy_cache
+
+src/curl/
+src/parse.ts
+src/utils.ts
