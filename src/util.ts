@@ -99,6 +99,10 @@ const CURLAUTH_ANY = ~CURLAUTH_DIGEST_IE;
 // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L970
 // but we support all of them, so we don't need to do that.
 function pickAuth(mask: number): string {
+  if (mask === CURLAUTH_ANY) {
+    return "basic";
+  }
+
   const auths: [number, string][] = [
     [CURLAUTH_NEGOTIATE, "negotiate"],
     [CURLAUTH_BEARER, "bearer"],

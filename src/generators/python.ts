@@ -22,8 +22,8 @@ const supportedArgs = new Set([
   "compressed",
   "no-compressed",
 
-  "anyauth",
-  "no-anyauth",
+  // "anyauth",
+  // "no-anyauth",
   "digest",
   "no-digest",
   "aws-sigv4",
