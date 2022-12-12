@@ -97,6 +97,24 @@ interface OperationConfig {
   // TODO
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
+interface GlobalConfig {
+  verbose?: boolean;
+  help?: boolean;
+  version?: boolean;
+  warnings?: Warnings;
+  configs: OperationConfig[];
+
+  // These are specific to the curlconverter cli
+  language?: string;
+  stdin?: boolean;
+}
+
+function warnf(global: GlobalConfig, warning: [string, string]) {
+  if (!global.warnings) {
+    global.warnings = [];
+  }
+  global.warnings.push(warning);
+}
 
 const CURLAUTH_BASIC = 1 << 0;
 const CURLAUTH_DIGEST = 1 << 1;
@@ -142,7 +160,12 @@ function pickAuth(mask: number): string {
 
 type Warnings = [string, string][];
 
-function pushArgValue(config: OperationConfig, argName: string, value: string) {
+function pushArgValue(
+  global: GlobalConfig,
+  config: OperationConfig,
+  argName: string,
+  value: string
+) {
   // Note: cli.ts assumes that the property names on OperationConfig
   // are the same as the passed in argument in an error message, so
   // if you do something like
@@ -186,12 +209,17 @@ function pushArgValue(config: OperationConfig, argName: string, value: string) {
       pushProp(config, "authArgs", [argName, true]); // error reporting
       config.authtype |= CURLAUTH_BEARER;
       break;
+
+    case "language": // --language is a curlconverter specific option
+      global[argName] = value;
+      return;
   }
 
   return pushProp(config, argName, value);
 }
 
 function setArgValue(
+  global: GlobalConfig,
   config: OperationConfig,
   argName: string,
   toggle: boolean
@@ -250,9 +278,29 @@ function setArgValue(
       config["location"] = toggle;
       config["location-trusted"] = toggle;
       break;
+    case "verbose":
+    case "version":
+    case "help":
+    case "stdin": // --stdin or - is a curlconverter specific option
+      global[argName] = toggle;
+      break;
+    case "next":
+      // check that the last url node has a url
+      if (
+        toggle &&
+        config.url &&
+        config.url.length > 0 &&
+        config.url.length >= (config["upload-file"] || []).length &&
+        config.url.length >= (config.output || []).length
+      ) {
+        config = { authtype: CURLAUTH_BASIC };
+        global.configs.push(config);
+      }
+      break;
     default:
       config[argName] = toggle;
   }
+  return config;
 }
 
 // Arguments which are supported by all generators, because they're
@@ -1440,11 +1488,11 @@ const checkLongOpt = (
   lookup: string,
   longArgName: string,
   supportedOpts: Set<string>,
-  warnings: Warnings
+  global: GlobalConfig
 ) => {
   if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
     // TODO: better message. include generator name?
-    warnings.push([longArgName, "--" + lookup + " is not a supported option"]);
+    warnf(global, [longArgName, "--" + lookup + " is not a supported option"]);
   }
 };
 
@@ -1452,11 +1500,11 @@ const checkShortOpt = (
   lookup: string,
   longArgName: string,
   supportedOpts: Set<string>,
-  warnings: Warnings
+  global: GlobalConfig
 ) => {
   if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
     // TODO: better message. include generator name?
-    warnings.push([longArgName, "-" + lookup + " is not a supported option"]);
+    warnf(global, [longArgName, "-" + lookup + " is not a supported option"]);
   }
 };
 
@@ -1466,8 +1514,9 @@ const parseArgs = (
   shortOpts: ShortOpts,
   supportedOpts?: Set<string>,
   warnings: Warnings = []
-): OperationConfig => {
-  const config: OperationConfig = { authtype: CURLAUTH_BASIC };
+): GlobalConfig => {
+  let config: OperationConfig = { authtype: CURLAUTH_BASIC };
+  const global: GlobalConfig = { configs: [config], warnings };
   for (let i = 0, stillflags = true; i < args.length; i++) {
     let arg: string | string[] = args[i];
     let argRepr = arg;
@@ -1490,15 +1539,20 @@ const parseArgs = (
         if (longArg.type === "string") {
           if (i + 1 < args.length) {
             i++;
-            pushArgValue(config, longArg.name, args[i]);
+            pushArgValue(global, config, longArg.name, args[i]);
           } else {
             throw new CCError("option " + arg + ": requires parameter");
           }
         } else {
-          setArgValue(config, longArg.name, toBoolean(arg.slice(2))); // TODO: all shortened args work correctly?
+          config = setArgValue(
+            global,
+            config,
+            longArg.name,
+            toBoolean(arg.slice(2))
+          ); // TODO: all shortened args work correctly?
         }
         if (supportedOpts) {
-          checkLongOpt(lookup, longArg.name, supportedOpts, warnings);
+          checkLongOpt(lookup, longArg.name, supportedOpts, global);
         }
       } else {
         // Short option. These can look like
@@ -1549,28 +1603,35 @@ const parseArgs = (
             } else {
               throw new CCError("option " + argRepr + ": requires parameter");
             }
-            pushArgValue(config, longArg.name, val as string);
+            pushArgValue(global, config, longArg.name, val as string);
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
-            setArgValue(config, longArg.name, toBoolean(shortFor));
+            config = setArgValue(
+              global,
+              config,
+              longArg.name,
+              toBoolean(shortFor)
+            );
           }
           if (supportedOpts && lookup) {
-            checkShortOpt(lookup, longArg.name, supportedOpts, warnings);
+            checkShortOpt(lookup, longArg.name, supportedOpts, global);
           }
         }
       }
     } else {
-      pushArgValue(config, "url", arg);
+      pushArgValue(global, config, "url", arg);
     }
   }
 
-  for (const [arg, values] of Object.entries(config)) {
-    if (Array.isArray(values) && !canBeList.has(arg)) {
-      config[arg] = values[values.length - 1];
+  for (const cfg of global.configs) {
+    for (const [arg, values] of Object.entries(cfg)) {
+      if (Array.isArray(values) && !canBeList.has(arg)) {
+        cfg[arg] = values[values.length - 1];
+      }
     }
   }
-  return config;
+  return global;
 };
 
 // Match Python's urllib.parse.quote() behavior
@@ -1681,11 +1742,24 @@ export function parseQueryString(
 }
 
 function buildRequest(
-  config: OperationConfig,
-  warnings: Warnings = [],
+  global: GlobalConfig,
   stdin?: string,
   stdinFile?: string
 ): Request {
+  if (!global.configs.length) {
+    // shouldn't happen
+    warnf(global, ["no-configs", "got empty config object"]);
+  }
+  if (global.configs.length > 1) {
+    warnf(global, [
+      "next",
+      "got " +
+        global.configs.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const config = global.configs[0];
+
   // TODO: handle multiple URLs
   if (!config.url || !config.url.length) {
     // TODO: better error message (could be parsing fail)
@@ -1696,7 +1770,7 @@ function buildRequest(
   if (config.header) {
     for (const header of config.header) {
       if (header.startsWith("@")) {
-        warnings.push([
+        warnf(global, [
           "header-file",
           "passing a file for --header/-H is not supported: " +
             JSON.stringify(header),
@@ -1903,7 +1977,7 @@ function buildRequest(
       scheme = config["proto-default"] ?? "http";
     }
     if (!["http", "https"].includes(scheme)) {
-      warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
+      warnf(global, ["bad-scheme", `Protocol "${scheme}" not supported`]);
     }
     url = scheme + "://" + url;
 
@@ -2142,7 +2216,7 @@ function buildRequest(
   if (config["max-time"]) {
     request.timeout = config["max-time"];
     if (isNaN(parseFloat(config["max-time"]))) {
-      warnings.push([
+      warnf(global, [
         "max-time-not-number",
         "option --max-time: expected a proper numerical parameter: " +
           JSON.stringify(config["max-time"]),
@@ -2152,7 +2226,7 @@ function buildRequest(
   if (config["connect-timeout"]) {
     request.connectTimeout = config["connect-timeout"];
     if (isNaN(parseFloat(config["connect-timeout"]))) {
-      warnings.push([
+      warnf(global, [
         "connect-timeout-not-number",
         "option --connect-timeout: expected a proper numerical parameter: " +
           JSON.stringify(config["connect-timeout"]),
@@ -2168,7 +2242,7 @@ function buildRequest(
   if (config["max-redirs"]) {
     request.maxRedirects = config["max-redirs"].trim();
     if (!isInt(config["max-redirs"])) {
-      warnings.push([
+      warnf(global, [
         "max-redirs-not-int",
         "option --max-redirs: expected a proper numerical parameter: " +
           JSON.stringify(config["max-redirs"]),
@@ -2223,7 +2297,7 @@ function parseCurlCommand(
     }
   }
 
-  const config = parseArgs(
+  const global = parseArgs(
     args,
     curlLongOpts,
     curlShortOpts,
@@ -2231,7 +2305,7 @@ function parseCurlCommand(
     warnings
   );
 
-  return buildRequest(config, warnings, stdin, stdinFile);
+  return buildRequest(global, stdin, stdinFile);
 }
 
 // Gets the first header, matching case-insensitively

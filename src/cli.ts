@@ -155,27 +155,27 @@ function exitWithError(error: unknown, verbose = false): never {
 }
 
 const argv = process.argv.slice(2);
-let config;
+let global;
 let warnings: Warnings = [];
 try {
   // TODO: this means we don't get "unsupported argument" warnings
-  config = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
+  global = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
 } catch (e) {
   exitWithError(e);
 }
-if (config.help) {
+if (global.help) {
   console.log(USAGE.trim());
   process.exit(0);
 }
-if (config.version) {
+if (global.version) {
   console.log("curlconverter " + VERSION);
   process.exit(0);
 }
-const verbose = config.verbose;
+const verbose = !!global.verbose;
+const config = global.configs[0];
 
-const argc = Object.keys(config).length;
-const language = config.language || defaultLanguage;
-const commandFromStdin = config.stdin;
+const language = global.language || defaultLanguage;
+const commandFromStdin = global.stdin;
 if (!has(translate, language)) {
   exitWithError(
     new CCError(
@@ -188,22 +188,22 @@ if (!has(translate, language)) {
     verbose
   );
 }
-for (const opt of Object.keys(curlConverterLongOpts)) {
-  delete config[opt];
+
+let extraArgs = Object.keys(config).filter((a) => a !== "authtype");
+if (global.configs.length > 1) {
+  extraArgs.push("next");
+}
+if (!extraArgs.length && !commandFromStdin && !verbose && !global.language) {
+  console.log(USAGE.trim());
+  process.exit(2);
 }
 
 const [generator, warnGenerator] = translate[language];
 let code;
-if (argc === 0) {
-  console.log(USAGE.trim());
-  process.exit(2);
-}
 if (commandFromStdin) {
   // This lets you do
   // echo curl example.com | curlconverter --verbose
-  let extraArgs = Object.keys(config).filter((a) => {
-    return a !== "verbose" && a !== "authtype";
-  });
+  // TODO: check configs.length > 1 and merge global and config[0]
   if (extraArgs.length > 0) {
     // TODO: there's a similar issue for --location-trusted
     const authArgsLocation = extraArgs.indexOf("authArgs");
@@ -244,7 +244,7 @@ if (commandFromStdin) {
   }
   let request;
   try {
-    request = buildRequest(config, warnings, stdin);
+    request = buildRequest(global, stdin);
   } catch (e) {
     exitWithError(e, verbose);
   }
