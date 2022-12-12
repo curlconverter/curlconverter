@@ -200,12 +200,26 @@ if (argc === 0) {
 if (commandFromStdin) {
   // This lets you do
   // echo curl example.com | curlconverter --verbose
-  const extraArgs = Object.keys(parsedArguments).filter((a) => a !== "verbose");
+  let extraArgs = Object.keys(parsedArguments).filter((a) => {
+    return a !== "verbose" && a !== "authtype";
+  });
   if (extraArgs.length > 0) {
+    // TODO: there's a similar issue for --location-trusted
+    const authArgsLocation = extraArgs.indexOf("authArgs");
+    if (authArgsLocation > -1) {
+      const authArgs = parsedArguments.authArgs!.map(
+        (a) => (a[1] ? "" : "no-") + a[0]
+      );
+
+      console.log(authArgs);
+      extraArgs.splice(authArgsLocation, 1);
+      extraArgs = extraArgs.concat(authArgs);
+    }
+
+    const extraArgsStr = extraArgs.map((a) => "--" + a).join(", ");
     // Throw an error so that if user typos something like
     // curlconverter - -data
     // they aren't stuck with what looks like a hung terminal.
-    const extraArgsStr = extraArgs.map((a) => "--" + a).join(", ");
     exitWithError(
       new CCError(
         "if you pass --stdin or -, you can't also pass " + extraArgsStr

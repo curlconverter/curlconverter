@@ -73,9 +73,13 @@ type DataParam = [
 ];
 interface ParsedArguments {
   request?: string; // the HTTP method
-  data?: FullDataParam[];
-  jsoned?: boolean;
+
+  // Not the same name as the curl options that set it
   authtype: number;
+  authArgs?: [string, boolean][];
+
+  json?: boolean;
+  // canBeList
   form?: FormParam[];
   // TODO
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -126,6 +130,13 @@ function pickAuth(mask: number): string {
 type Warnings = [string, string][];
 
 function pushArgValue(config: ParsedArguments, argName: string, value: string) {
+  // Note: cli.ts assumes that the property names on ParsedArguments
+  // are the same as the passed in argument in an error message, so
+  // if you do something like
+  // echo curl example.com | curlconverter - --data-raw foo
+  // The error message will say
+  // "if you pass --stdin or -, you can't also pass --data"
+  // instead of "--data-raw".
   switch (argName) {
     case "data":
     case "data-ascii":
@@ -145,7 +156,7 @@ function pushArgValue(config: ParsedArguments, argName: string, value: string) {
     case "data-urlencode":
       return pushProp(config, "data", ["urlencode", value]);
     case "json":
-      config.jsoned = true;
+      config.json = true;
       return pushProp(config, "data", ["json", value]);
     // TODO: case "url-query":
 
@@ -154,14 +165,14 @@ function pushArgValue(config: ParsedArguments, argName: string, value: string) {
     case "form-string":
       return pushProp(config, "form", { value, type: "string" });
 
-    case "user":
-      return pushProp(config, "userpwd", value);
     case "aws-sigv4":
+      pushProp(config, "authArgs", [argName, true]); // error reporting
       config.authtype |= CURLAUTH_AWS_SIGV4;
-      return pushProp(config, "aws_sigv4", value);
+      break;
     case "oauth2-bearer":
+      pushProp(config, "authArgs", [argName, true]); // error reporting
       config.authtype |= CURLAUTH_BEARER;
-      return pushProp(config, "oauth_bearer", value);
+      break;
   }
 
   return pushProp(config, argName, value);
@@ -174,6 +185,7 @@ function setArgValue(
 ) {
   switch (argName) {
     case "digest":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_DIGEST;
       } else {
@@ -181,6 +193,7 @@ function setArgValue(
       }
       break;
     case "negotiate":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_NEGOTIATE;
       } else {
@@ -188,6 +201,7 @@ function setArgValue(
       }
       break;
     case "ntlm":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_NTLM;
       } else {
@@ -195,6 +209,7 @@ function setArgValue(
       }
       break;
     case "ntlm-wb":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_NTLM_WB;
       } else {
@@ -202,6 +217,7 @@ function setArgValue(
       }
       break;
     case "basic":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_BASIC;
       } else {
@@ -209,6 +225,7 @@ function setArgValue(
       }
       break;
     case "anyauth":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype = CURLAUTH_ANY;
       }
@@ -934,6 +951,7 @@ const canBeList = new Set([
   "cookie",
   "quote",
   "telnet-option",
+  "authArgs", // used for error messages
 ]);
 
 const shortened: { [key: string]: LongShort[] } = {};
@@ -1978,7 +1996,7 @@ function buildRequest(
   }
 
   if (parsedArguments.data) {
-    if (parsedArguments.jsoned) {
+    if (parsedArguments.json) {
       _setHeaderIfMissing(
         headers,
         "Content-Type",
@@ -2024,20 +2042,20 @@ function buildRequest(
     }
   }
 
-  if (parsedArguments.aws_sigv4) {
+  if (parsedArguments["aws-sigv4"]) {
     // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
     request.authType = "aws-sigv4";
-    request.awsSigV4 = parsedArguments.aws_sigv4;
+    request.awsSigV4 = parsedArguments["aws-sigv4"];
   }
-  if (parsedArguments.userpwd) {
-    const [user, pass] = parsedArguments.userpwd.split(/:(.*)/s, 2);
+  if (parsedArguments.user) {
+    const [user, pass] = parsedArguments.user.split(/:(.*)/s, 2);
     request.auth = [user, pass || ""];
   }
   if (request.authType === "bearer") {
     _setHeaderIfMissing(
       headers,
       "Authorization",
-      "Bearer " + parsedArguments.oauth_bearer,
+      "Bearer " + parsedArguments["oauth2-bearer"],
       lowercase
     );
   }
