@@ -70,6 +70,7 @@ const translate: {
   golang: [_toGo, toGoWarn], // undocument alias
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
+  "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocument alias
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
   json: [_toJsonString, toJsonStringWarn],
@@ -78,6 +79,10 @@ const translate: {
   "node-fetch": [_toNode, toNodeWarn], // undocument alias
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],
   "node-request": [_toNodeRequest, toNodeRequestWarn],
+  nodejs: [_toNode, toNodeWarn], // undocument alias
+  "nodejs-fetch": [_toNode, toNodeWarn], // undocument alias
+  "nodejs-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
+  "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
   php: [_toPhp, toPhpWarn],
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],
   python: [_toPython, toPythonWarn],
@@ -183,7 +188,7 @@ if (!has(translate, language)) {
         JSON.stringify(language) +
         "\n" +
         "must be one of: " +
-        Object.keys(translate).join(", ")
+        Object.keys(translate).sort().join(", ")
     ),
     verbose
   );

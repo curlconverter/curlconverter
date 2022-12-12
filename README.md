@@ -2,9 +2,9 @@
 
 Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python and other languages.
 
-Try it in the browser at [curlconverter.com](https://curlconverter.com) or from the command line:
+Try it on [curlconverter.com](https://curlconverter.com) or from the command line:
 
-```sh
+```shell
 $ curlconverter --data-raw "hello=world" example.com
 import requests
 
@@ -32,8 +32,8 @@ Features:
 Limitations:
 
 - Only HTTP is supported
-- If multiple URLs are passed only the last one is used
-- By default, curl doesn't follow redirects but the generated code will do whatever the default is for that runtime, to keep it simpler. For example Python's Requests follows redirects by default, so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the resulting code will not do what curl would do if the server responds with a redirect
+- If multiple URLs are passed only the first one is used
+- By default, curl doesn't follow redirects or decompress the response but the generated code will do whatever the default is for that runtime, to keep it simpler. For example Python's Requests follows redirects by default, so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the resulting code will not do what curl would do if the server responds with a redirect
 - Code generators for other languages are less thorough than the Python generator
 - and much more
 
@@ -85,13 +85,23 @@ If you want to host curlconverter yourself and use it in the browser, it needs t
 
 ### Usage from the command line
 
-The command line tool is a drop-in replacement for curl. Take any `curl` command, change "`curl`" to "`curlconverter`" and it will print code instead of making the request. Alternatively, you can pass `-` to tell it to read the curl command from stdin.
+The command line tool is a drop-in replacement for curl. Take any curl command, change "`curl`" to "`curlconverter`" and it will print code instead of making the request
 
-```sh
+```shell
 $ curlconverter example.com
-$ echo 'curl example.com' | curlconverter -
+import requests
+
+response = requests.get('http://example.com')
 ```
 
+or you can pass `-` to tell it to read the curl command from stdin
+
+```shell
+$ echo 'curl example.com' | curlconverter -
+import requests
+
+response = requests.get('http://example.com')
+```
 
 You can choose the output language by passing `--language <language>`. The options are
 
