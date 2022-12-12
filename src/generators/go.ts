@@ -98,8 +98,22 @@ export const _toGo = (request: Request, warnings: Warnings = []): string => {
 
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers || []) {
+      let start = "\t";
+      if (
+        headerName.toLowerCase() === "accept-encoding" &&
+        // By default Go will automatically decompress gzip,
+        // unless you set DisableCompression to true on the Transport
+        // or pass a custom Accept-Encoding header.
+        // By default curl won't automatically decompress gzip unless
+        // you pass --compressed, but we comment out the header in that
+        // case (request.compressed = undefined) too.
+        request.compressed !== false
+      ) {
+        start += "// ";
+      }
       goCode +=
-        "\treq.Header.Set(" +
+        start +
+        "req.Header.Set(" +
         repr(headerName) +
         ", " +
         reprMaybeBacktick(headerValue ?? "") +

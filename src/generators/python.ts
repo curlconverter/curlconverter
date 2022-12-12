@@ -20,7 +20,7 @@ const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
 
   "compressed",
-  "no-compressed",
+  // "no-compressed",
 
   // "anyauth",
   // "no-anyauth",
