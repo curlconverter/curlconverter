@@ -99,6 +99,16 @@ export const _toJsonString = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.urls.length > 1) {
+    warnings.push([
+      "multiple-urls",
+      "found " +
+        request.urls.length +
+        " URLs, only the first one will be used: " +
+        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+    ]);
+  }
+
   const requestJson: JSONOutput = {
     url: (request.queryDict ? request.urlWithoutQuery : request.url).replace(
       /\/$/,

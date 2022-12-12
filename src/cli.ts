@@ -158,6 +158,7 @@ const argv = process.argv.slice(2);
 let parsedArguments;
 let warnings: Warnings = [];
 try {
+  // TODO: this means we don't get "unsupported argument" warnings
   parsedArguments = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
 } catch (e) {
   exitWithError(e);

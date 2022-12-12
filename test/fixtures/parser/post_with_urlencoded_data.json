@@ -1,7 +1,16 @@
 {
+  "urls": [
+    {
+      "url": "http://localhost:28139/echo/html/",
+      "originalUrl": "http://localhost:28139/echo/html/",
+      "urlWithoutQuery": "http://localhost:28139/echo/html/",
+      "method": "POST"
+    }
+  ],
   "url": "http://localhost:28139/echo/html/",
-  "method": "POST",
+  "originalUrl": "http://localhost:28139/echo/html/",
   "urlWithoutQuery": "http://localhost:28139/echo/html/",
+  "method": "POST",
   "authType": "basic",
   "compressed": true,
   "headers": [

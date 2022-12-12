@@ -1314,6 +1314,16 @@ export const _toPython = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.urls.length > 1) {
+    warnings.push([
+      "multiple-urls",
+      "found " +
+        request.urls.length +
+        " URLs, only the first one will be used: " +
+        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+    ]);
+  }
+
   const imports: Set<string> = new Set();
   const requestsImports: Set<string> = new Set();
   // Currently, only assuming that the env-var only used in

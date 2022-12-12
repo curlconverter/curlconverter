@@ -4,7 +4,7 @@ var headers = {
     'Content-Type': 'application/x-www-form-urlencoded'
 };
 
-var dataString = 'foo=\\\'bar\\\'';
+var dataString = "foo=\\'bar\\'";
 
 var options = {
     url: 'http://localhost:28139/',

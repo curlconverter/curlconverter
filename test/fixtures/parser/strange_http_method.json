@@ -1,6 +1,15 @@
 {
+  "urls": [
+    {
+      "url": "http://localhost:28139",
+      "originalUrl": "localhost:28139",
+      "urlWithoutQuery": "http://localhost:28139",
+      "method": "wHat"
+    }
+  ],
   "url": "http://localhost:28139",
-  "method": "wHat",
+  "originalUrl": "localhost:28139",
   "urlWithoutQuery": "http://localhost:28139",
+  "method": "wHat",
   "authType": "basic"
 }

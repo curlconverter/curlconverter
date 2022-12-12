@@ -73,6 +73,16 @@ export const repr = (s: string): string => {
 };
 
 export const _toPhp = (request: Request, warnings: Warnings = []): string => {
+  if (request.urls.length > 1) {
+    warnings.push([
+      "multiple-urls",
+      "found " +
+        request.urls.length +
+        " URLs, only the first one will be used: " +
+        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+    ]);
+  }
+
   let cookieString;
   if (util.hasHeader(request, "cookie")) {
     cookieString = util.getHeader(request, "cookie");

@@ -13,6 +13,15 @@ export const _toNodeRequest = (
   request: Request,
   warnings: Warnings = []
 ): string => {
+  if (request.urls.length > 1) {
+    warnings.push([
+      "multiple-urls",
+      "found " +
+        request.urls.length +
+        " URLs, only the first one will be used: " +
+        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+    ]);
+  }
   if (request.cookieFiles) {
     warnings.push([
       "cookie-files",
@@ -27,7 +36,8 @@ export const _toNodeRequest = (
     const headerCount = request.headers ? request.headers.length : 0;
     let i = 0;
     for (const [headerName, headerValue] of request.headers || []) {
-      nodeRequestCode += "    '" + headerName + "': '" + headerValue + "'";
+      nodeRequestCode +=
+        "    " + repr(headerName) + ": " + repr(headerValue || "") + "";
       if (i < headerCount - 1) {
         nodeRequestCode += ",\n";
       } else {
@@ -39,13 +49,13 @@ export const _toNodeRequest = (
   }
 
   if (request.data) {
-    nodeRequestCode += "var dataString = " + repr(request.data, "'") + ";\n\n";
+    nodeRequestCode += "var dataString = " + repr(request.data) + ";\n\n";
   }
 
   nodeRequestCode += "var options = {\n";
-  nodeRequestCode += "    url: '" + request.url + "'";
+  nodeRequestCode += "    url: " + repr(request.url);
   if (request.method.toUpperCase() !== "GET") {
-    nodeRequestCode += ",\n    method: '" + request.method.toUpperCase() + "'";
+    nodeRequestCode += ",\n    method: " + repr(request.method.toUpperCase());
   }
 
   if (request.headers) {
@@ -72,8 +82,8 @@ export const _toNodeRequest = (
     nodeRequestCode += ",\n";
     const [user, password] = request.auth;
     nodeRequestCode += "    auth: {\n";
-    nodeRequestCode += "        'user': '" + user + "',\n";
-    nodeRequestCode += "        'pass': '" + password + "'\n";
+    nodeRequestCode += "        'user': " + repr(user) + ",\n";
+    nodeRequestCode += "        'pass': " + repr(password) + "\n";
     nodeRequestCode += "    }\n";
   } else {
     nodeRequestCode += "\n";

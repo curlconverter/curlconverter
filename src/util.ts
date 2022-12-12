@@ -81,6 +81,19 @@ interface ParsedArguments {
   json?: boolean;
   // canBeList
   form?: FormParam[];
+  data?: FullDataParam[];
+  url?: string[];
+  "upload-file"?: string[];
+  output?: string[];
+  header?: string[];
+  "proxy-header"?: string[];
+  "mail-rcpt"?: string[];
+  resolve?: string[];
+  "connect-to"?: string[];
+  cookie?: string[];
+  quote?: string[];
+  "telnet-option"?: string[];
+
   // TODO
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
@@ -273,15 +286,32 @@ const COMMON_SUPPORTED_ARGS: string[] = [
   "json",
 ];
 
-interface Request {
+interface RequestUrl {
   // If the ?query can't be losslessly parsed, then
-  // Request.query === undefined and
-  // Request.urlWithouQuery === Request.url
+  // .url   === .urlWithoutQuery
+  // .query === undefined
   url: string;
+  originalUrl: string; // used in error messages
   urlWithoutQuery: string;
+  method: string;
   query?: Query;
   queryDict?: QueryDict;
+  uploadFile?: string;
+  output?: string;
+}
+
+interface Request {
+  urls: RequestUrl[];
+  // the first url in urls, to simplify generators that only use one url
+  url: string;
+  originalUrl: string;
+  urlWithoutQuery: string;
   method: string;
+  query?: Query;
+  queryDict?: QueryDict;
+  uploadFile?: string;
+  output?: string;
+
   headers?: Headers;
   stdin?: string;
   stdinFile?: string;
@@ -301,7 +331,6 @@ interface Request {
   dataFiles?: Array<[string, string]>;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
-  uploadFile?: string;
   insecure?: boolean;
   cert?: string | [string, string];
   cacert?: string;
@@ -313,7 +342,6 @@ interface Request {
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
   maxRedirects?: string;
-  output?: string;
   http2?: boolean;
   http3?: boolean;
 }
@@ -941,6 +969,8 @@ const canBeList = new Set([
   // TODO: unlike curl, we don't support multiple
   // URLs and just take the last one.
   "url",
+  "upload-file",
+  "output",
   "header",
   "proxy-header",
   "form",
@@ -1163,10 +1193,12 @@ function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
     case "concatenation":
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
-      if (node.children.every((n) => n.type === "word")) {
+      if (node.children.every((n: Parser.SyntaxNode) => n.type === "word")) {
         return node.text;
       }
-      return node.children.map((c) => toVal(c, curlCommand)).join("");
+      return node.children
+        .map((n: Parser.SyntaxNode) => toVal(n, curlCommand))
+        .join("");
     default:
       throw new CCError(
         "unexpected argument type " +
@@ -1398,7 +1430,7 @@ const tokenize = (
 
   return {
     cmdName: toVal(cmdName.firstChild!, curlCommand),
-    args: args.map((a) => toVal(a, curlCommand)),
+    args: args.map((a: Parser.SyntaxNode) => toVal(a, curlCommand)),
     stdin,
     stdinFile,
   };
@@ -1659,16 +1691,6 @@ function buildRequest(
     // TODO: better error message (could be parsing fail)
     throw new CCError("no URL specified!");
   }
-  if (parsedArguments.url.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        parsedArguments.url.length +
-        " URLs, only the last one will be used: " +
-        parsedArguments.url.map(JSON.stringify).join(", "),
-    ]);
-  }
-  let url = parsedArguments.url[parsedArguments.url.length - 1];
 
   const headers: Headers = [];
   if (parsedArguments.header) {
@@ -1766,52 +1788,6 @@ function buildRequest(
     _setHeaderIfMissing(headers, header, timecond, lowercase);
   }
 
-  // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
-  // will send, but most APIs will helpfully uppercase what you pass in as the method.
-  // TODO: read curl's source to figure out precedence rules.
-  let method = "GET";
-  if (parsedArguments.head) {
-    method = "HEAD";
-  } else if (
-    has(parsedArguments, "request") &&
-    // Safari adds `-X null` if it can't determine the request type
-    // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
-    parsedArguments.request !== "null"
-  ) {
-    method = parsedArguments.request as string;
-  } else if (parsedArguments["upload-file"]) {
-    // --upload-file '' doesn't do anything.
-    method = "PUT";
-  } else if (
-    (has(parsedArguments, "data") || has(parsedArguments, "form")) &&
-    !parsedArguments.get
-  ) {
-    method = "POST";
-  }
-
-  // curl automatically prepends 'http' if the scheme is missing,
-  // but many libraries fail if your URL doesn't have it,
-  // we tack it on here to mimic curl
-  //
-  // RFC 3986 3.1 says
-  //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-  // but curl will accept a digit/plus/minus/dot in the first character
-  // curl will also accept a url with one / like http:/localhost
-  let scheme;
-  const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/?/);
-  if (schemeMatch) {
-    scheme = schemeMatch[1].toLowerCase();
-    url = url.slice(schemeMatch[0].length);
-  } else {
-    // curl actually defaults to https://
-    // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
-    scheme = parsedArguments["proto-default"] ?? "http";
-  }
-  if (scheme !== "http" && scheme !== "https") {
-    warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
-  }
-  url = scheme + "://" + url;
-
   const data: Array<string | DataParam> = [];
   let dataStrState = "";
   if (parsedArguments.data && parsedArguments.data.length) {
@@ -1904,69 +1880,140 @@ function buildRequest(
     })
     .join("");
 
-  let urlObject = URL.parse(url); // eslint-disable-line
-  if (parsedArguments["upload-file"]) {
-    // TODO: it's more complicated
-    if ((!urlObject.path || urlObject.path === "/") && !urlObject.hash) {
-      url += "/" + parsedArguments["upload-file"];
-    } else if (url.endsWith("/")) {
-      url += parsedArguments["upload-file"];
-    }
-    urlObject = URL.parse(url); // eslint-disable-line
-  }
-  // if GET request with data, convert data to query string
-  // NB: the -G flag does not change the http verb. It just moves the data into the url.
-  // TODO: this probably has a lot of mismatches with curl
-  if (parsedArguments.get) {
-    urlObject.query = urlObject.query ? urlObject.query : "";
-    if (has(parsedArguments, "data") && parsedArguments.data !== undefined) {
-      let urlQueryString = "";
-      if (url.includes("?")) {
-        urlQueryString += "&";
-      } else {
-        url += "?";
-      }
-      if (dataStr) {
-        // TODO: warn if dataStr has files
-        urlQueryString += dataStr;
-      }
+  const urls: RequestUrl[] = [];
+  const uploadFiles = parsedArguments["upload-file"] || [];
+  const outputFiles = parsedArguments["output"] || [];
+  // eslint-disable-next-line prefer-const
+  for (let [i, url] of parsedArguments.url.entries()) {
+    const originalUrl = url;
+    const uploadFile: string | undefined = uploadFiles[i];
+    const output: string | undefined = outputFiles[i];
 
-      urlObject.query += urlQueryString;
-      // TODO: url and urlObject will be different if url has an #id
-      url += urlQueryString;
-      delete parsedArguments.data;
+    // curl automatically prepends 'http' if the scheme is missing,
+    // but many libraries fail if your URL doesn't have it,
+    // we tack it on here to mimic curl
+    //
+    // RFC 3986 3.1 says
+    //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+    // but curl will accept a digit/plus/minus/dot in the first character
+    // curl will also accept a url with one / like http:/localhost
+    let scheme;
+    const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/?/);
+    if (schemeMatch) {
+      scheme = schemeMatch[1].toLowerCase();
+      url = url.slice(schemeMatch[0].length);
+    } else {
+      // curl actually defaults to https://
+      // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
+      scheme = parsedArguments["proto-default"] ?? "http";
     }
-  }
-  if (urlObject.query && urlObject.query.endsWith("&")) {
-    urlObject.query = urlObject.query.slice(0, -1);
-  }
-  const [queryAsList, queryAsDict] = parseQueryString(urlObject.query);
-  const useParsedQuery =
-    queryAsList &&
-    queryAsList.length &&
-    queryAsList.every((p) => p[1] !== null);
-  // Most software libraries don't let you distinguish between a=&b= and a&b,
-  // so if we get an `a&b`-type query string, don't bother.
-  let urlWithoutQuery;
-  if (useParsedQuery) {
-    urlObject.search = null; // Clean out the search/query portion.
-    urlWithoutQuery = URL.format(urlObject);
-  } else {
-    urlWithoutQuery = url; // TODO: rename?
+    if (!["http", "https"].includes(scheme)) {
+      warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
+    }
+    url = scheme + "://" + url;
+
+    let urlObject = URL.parse(url); // eslint-disable-line
+    if (uploadFile) {
+      // TODO: it's more complicated
+      if ((!urlObject.path || urlObject.path === "/") && !urlObject.hash) {
+        url += "/" + uploadFile;
+      } else if (url.endsWith("/")) {
+        url += uploadFile;
+      }
+      urlObject = URL.parse(url); // eslint-disable-line
+    }
+    // if GET request with data, convert data to query string
+    // NB: the -G flag does not change the http verb. It just moves the data into the url.
+    // TODO: this probably has a lot of mismatches with curl
+    if (parsedArguments.get) {
+      urlObject.query = urlObject.query ? urlObject.query : "";
+      if (has(parsedArguments, "data") && parsedArguments.data !== undefined) {
+        let urlQueryString = "";
+        if (url.includes("?")) {
+          urlQueryString += "&";
+        } else {
+          url += "?";
+        }
+        if (dataStr) {
+          // TODO: warn if dataStr has files
+          urlQueryString += dataStr;
+        }
+
+        urlObject.query += urlQueryString;
+        // TODO: url and urlObject will be different if url has an #id
+        url += urlQueryString;
+        delete parsedArguments.data;
+      }
+    }
+    if (urlObject.query && urlObject.query.endsWith("&")) {
+      urlObject.query = urlObject.query.slice(0, -1);
+    }
+    const [queryAsList, queryAsDict] = parseQueryString(urlObject.query);
+    const useParsedQuery =
+      queryAsList &&
+      queryAsList.length &&
+      queryAsList.every((p) => p[1] !== null);
+    // Most software libraries don't let you distinguish between a=&b= and a&b,
+    // so if we get an `a&b`-type query string, don't bother.
+    let urlWithoutQuery;
+    if (useParsedQuery) {
+      urlObject.search = null; // Clean out the search/query portion.
+      urlWithoutQuery = URL.format(urlObject);
+    } else {
+      urlWithoutQuery = url; // TODO: rename?
+    }
+
+    // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
+    // will send, but most APIs will helpfully uppercase what you pass in as the method.
+    //
+    // There are many places where curl determines the method, this is the last one:
+    // https://github.com/curl/curl/blob/curl-7_85_0/lib/http.c#L2032
+    let method = "GET";
+    if (
+      has(parsedArguments, "request") &&
+      // Safari adds `-X null` if it can't determine the request type
+      // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
+      parsedArguments.request !== "null"
+    ) {
+      method = parsedArguments.request as string;
+    } else if (parsedArguments.head) {
+      method = "HEAD";
+    } else if (uploadFile) {
+      // --upload-file '' doesn't do anything.
+      method = "PUT";
+    } else if (
+      (has(parsedArguments, "data") || has(parsedArguments, "form")) &&
+      !parsedArguments.get
+    ) {
+      method = "POST";
+    }
+
+    const requestUrl: RequestUrl = {
+      url,
+      originalUrl,
+      urlWithoutQuery,
+      method,
+    };
+    if (useParsedQuery) {
+      requestUrl.query = queryAsList;
+      if (queryAsDict !== null) {
+        requestUrl.queryDict = queryAsDict;
+      }
+    }
+    if (uploadFile) {
+      requestUrl.uploadFile = uploadFile;
+    }
+    if (output) {
+      requestUrl.output = output;
+    }
+    urls.push(requestUrl);
   }
 
   const request: Request = {
-    url,
-    method,
-    urlWithoutQuery,
+    urls,
+    ...urls[0],
     authType: pickAuth(parsedArguments.authtype),
   };
-  if (useParsedQuery) {
-    request.query = queryAsList;
-    if (queryAsDict) {
-      request.queryDict = queryAsDict;
-    }
-  }
   // TODO: warn about unused stdin?
   if (stdin) {
     request.stdin = stdin;
@@ -1989,10 +2036,6 @@ function buildRequest(
 
   if (parsedArguments.compressed !== undefined) {
     request.compressed = parsedArguments.compressed;
-  }
-
-  if (parsedArguments["upload-file"]) {
-    request.uploadFile = parsedArguments["upload-file"];
   }
 
   if (parsedArguments.data) {
@@ -2141,9 +2184,6 @@ function buildRequest(
           JSON.stringify(parsedArguments["max-redirs"]),
       ]);
     }
-  }
-  if (parsedArguments.output) {
-    request.output = parsedArguments.output;
   }
 
   const http2 =

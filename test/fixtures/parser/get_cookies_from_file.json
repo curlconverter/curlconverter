@@ -1,7 +1,16 @@
 {
+  "urls": [
+    {
+      "url": "http://localhost:28139/",
+      "originalUrl": "http://localhost:28139/",
+      "urlWithoutQuery": "http://localhost:28139/",
+      "method": "GET"
+    }
+  ],
   "url": "http://localhost:28139/",
-  "method": "GET",
+  "originalUrl": "http://localhost:28139/",
   "urlWithoutQuery": "http://localhost:28139/",
+  "method": "GET",
   "authType": "basic",
   "cookieFiles": [
     "cookie.txt"

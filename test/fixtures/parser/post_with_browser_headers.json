@@ -1,7 +1,16 @@
 {
+  "urls": [
+    {
+      "url": "http://localhost:28139/ajax/demo_post.asp",
+      "originalUrl": "http://localhost:28139/ajax/demo_post.asp",
+      "urlWithoutQuery": "http://localhost:28139/ajax/demo_post.asp",
+      "method": "POST"
+    }
+  ],
   "url": "http://localhost:28139/ajax/demo_post.asp",
-  "method": "POST",
+  "originalUrl": "http://localhost:28139/ajax/demo_post.asp",
   "urlWithoutQuery": "http://localhost:28139/ajax/demo_post.asp",
+  "method": "POST",
   "authType": "basic",
   "cookies": [
     [

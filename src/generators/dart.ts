@@ -21,6 +21,15 @@ function repr(value: string): string {
 }
 
 export const _toDart = (request: Request, warnings: Warnings = []): string => {
+  if (request.urls.length > 1) {
+    warnings.push([
+      "multiple-urls",
+      "found " +
+        request.urls.length +
+        " URLs, only the first one will be used: " +
+        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+    ]);
+  }
   if (request.cookieFiles) {
     warnings.push([
       "cookie-files",
