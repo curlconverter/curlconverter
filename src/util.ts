@@ -71,7 +71,7 @@ type DataParam = [
   string | null,
   string
 ];
-interface ParsedArguments {
+interface OperationConfig {
   request?: string; // the HTTP method
 
   // Not the same name as the curl options that set it
@@ -142,8 +142,8 @@ function pickAuth(mask: number): string {
 
 type Warnings = [string, string][];
 
-function pushArgValue(config: ParsedArguments, argName: string, value: string) {
-  // Note: cli.ts assumes that the property names on ParsedArguments
+function pushArgValue(config: OperationConfig, argName: string, value: string) {
+  // Note: cli.ts assumes that the property names on OperationConfig
   // are the same as the passed in argument in an error message, so
   // if you do something like
   // echo curl example.com | curlconverter - --data-raw foo
@@ -192,7 +192,7 @@ function pushArgValue(config: ParsedArguments, argName: string, value: string) {
 }
 
 function setArgValue(
-  config: ParsedArguments,
+  config: OperationConfig,
   argName: string,
   toggle: boolean
 ) {
@@ -1466,8 +1466,8 @@ const parseArgs = (
   shortOpts: ShortOpts,
   supportedOpts?: Set<string>,
   warnings: Warnings = []
-): ParsedArguments => {
-  const parsedArguments: ParsedArguments = { authtype: CURLAUTH_BASIC };
+): OperationConfig => {
+  const config: OperationConfig = { authtype: CURLAUTH_BASIC };
   for (let i = 0, stillflags = true; i < args.length; i++) {
     let arg: string | string[] = args[i];
     let argRepr = arg;
@@ -1490,12 +1490,12 @@ const parseArgs = (
         if (longArg.type === "string") {
           if (i + 1 < args.length) {
             i++;
-            pushArgValue(parsedArguments, longArg.name, args[i]);
+            pushArgValue(config, longArg.name, args[i]);
           } else {
             throw new CCError("option " + arg + ": requires parameter");
           }
         } else {
-          setArgValue(parsedArguments, longArg.name, toBoolean(arg.slice(2))); // TODO: all shortened args work correctly?
+          setArgValue(config, longArg.name, toBoolean(arg.slice(2))); // TODO: all shortened args work correctly?
         }
         if (supportedOpts) {
           checkLongOpt(lookup, longArg.name, supportedOpts, warnings);
@@ -1549,11 +1549,11 @@ const parseArgs = (
             } else {
               throw new CCError("option " + argRepr + ": requires parameter");
             }
-            pushArgValue(parsedArguments, longArg.name, val as string);
+            pushArgValue(config, longArg.name, val as string);
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
-            setArgValue(parsedArguments, longArg.name, toBoolean(shortFor));
+            setArgValue(config, longArg.name, toBoolean(shortFor));
           }
           if (supportedOpts && lookup) {
             checkShortOpt(lookup, longArg.name, supportedOpts, warnings);
@@ -1561,16 +1561,16 @@ const parseArgs = (
         }
       }
     } else {
-      pushArgValue(parsedArguments, "url", arg);
+      pushArgValue(config, "url", arg);
     }
   }
 
-  for (const [arg, values] of Object.entries(parsedArguments)) {
+  for (const [arg, values] of Object.entries(config)) {
     if (Array.isArray(values) && !canBeList.has(arg)) {
-      parsedArguments[arg] = values[values.length - 1];
+      config[arg] = values[values.length - 1];
     }
   }
-  return parsedArguments;
+  return config;
 };
 
 // Match Python's urllib.parse.quote() behavior
@@ -1681,20 +1681,20 @@ export function parseQueryString(
 }
 
 function buildRequest(
-  parsedArguments: ParsedArguments,
+  config: OperationConfig,
   warnings: Warnings = [],
   stdin?: string,
   stdinFile?: string
 ): Request {
   // TODO: handle multiple URLs
-  if (!parsedArguments.url || !parsedArguments.url.length) {
+  if (!config.url || !config.url.length) {
     // TODO: better error message (could be parsing fail)
     throw new CCError("no URL specified!");
   }
 
   const headers: Headers = [];
-  if (parsedArguments.header) {
-    for (const header of parsedArguments.header) {
+  if (config.header) {
+    for (const header of config.header) {
       if (header.startsWith("@")) {
         warnings.push([
           "header-file",
@@ -1728,10 +1728,10 @@ function buildRequest(
     if (parsedCookies) {
       cookies = parsedCookies;
     }
-  } else if (cookieHeaders.length === 0 && parsedArguments.cookie) {
+  } else if (cookieHeaders.length === 0 && config.cookie) {
     // If there is a Cookie header, --cookies is ignored
     const cookieStrings: string[] = [];
-    for (const c of parsedArguments.cookie) {
+    for (const c of config.cookie) {
       // a --cookie without a = character reads from it as a filename
       if (c.includes("=")) {
         cookieStrings.push(c);
@@ -1740,36 +1740,31 @@ function buildRequest(
       }
     }
     if (cookieStrings.length) {
-      const cookieString = parsedArguments.cookie.join("; ");
+      const cookieString = config.cookie.join("; ");
       _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
       cookies = parseCookies(cookieString);
     }
   }
 
-  if (parsedArguments["user-agent"]) {
-    _setHeaderIfMissing(
-      headers,
-      "User-Agent",
-      parsedArguments["user-agent"],
-      lowercase
-    );
+  if (config["user-agent"]) {
+    _setHeaderIfMissing(headers, "User-Agent", config["user-agent"], lowercase);
   }
-  if (parsedArguments.referer) {
+  if (config.referer) {
     // referer can be ";auto" or followed by ";auto", we ignore that.
-    const referer = parsedArguments.referer.replace(/;auto$/, "");
+    const referer = config.referer.replace(/;auto$/, "");
     if (referer) {
       _setHeaderIfMissing(headers, "Referer", referer, lowercase);
     }
   }
-  if (parsedArguments.range) {
-    let range = "bytes=" + parsedArguments.range;
+  if (config.range) {
+    let range = "bytes=" + config.range;
     if (!range.includes("-")) {
       range += "-";
     }
     _setHeaderIfMissing(headers, "Range", range, lowercase);
   }
-  if (parsedArguments["time-cond"]) {
-    let timecond = parsedArguments["time-cond"];
+  if (config["time-cond"]) {
+    let timecond = config["time-cond"];
     let header = "If-Modified-Since";
     switch (timecond[0]) {
       case "+":
@@ -1790,8 +1785,8 @@ function buildRequest(
 
   const data: Array<string | DataParam> = [];
   let dataStrState = "";
-  if (parsedArguments.data && parsedArguments.data.length) {
-    for (const [i, x] of parsedArguments.data.entries()) {
+  if (config.data && config.data.length) {
+    for (const [i, x] of config.data.entries()) {
       const type = x[0];
       let value = x[1];
       let name: string | null = null;
@@ -1881,10 +1876,10 @@ function buildRequest(
     .join("");
 
   const urls: RequestUrl[] = [];
-  const uploadFiles = parsedArguments["upload-file"] || [];
-  const outputFiles = parsedArguments["output"] || [];
+  const uploadFiles = config["upload-file"] || [];
+  const outputFiles = config["output"] || [];
   // eslint-disable-next-line prefer-const
-  for (let [i, url] of parsedArguments.url.entries()) {
+  for (let [i, url] of config.url.entries()) {
     const originalUrl = url;
     const uploadFile: string | undefined = uploadFiles[i];
     const output: string | undefined = outputFiles[i];
@@ -1905,7 +1900,7 @@ function buildRequest(
     } else {
       // curl actually defaults to https://
       // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
-      scheme = parsedArguments["proto-default"] ?? "http";
+      scheme = config["proto-default"] ?? "http";
     }
     if (!["http", "https"].includes(scheme)) {
       warnings.push(["bad-scheme", `Protocol "${scheme}" not supported`]);
@@ -1925,9 +1920,9 @@ function buildRequest(
     // if GET request with data, convert data to query string
     // NB: the -G flag does not change the http verb. It just moves the data into the url.
     // TODO: this probably has a lot of mismatches with curl
-    if (parsedArguments.get) {
+    if (config.get) {
       urlObject.query = urlObject.query ? urlObject.query : "";
-      if (has(parsedArguments, "data") && parsedArguments.data !== undefined) {
+      if (has(config, "data") && config.data !== undefined) {
         let urlQueryString = "";
         if (url.includes("?")) {
           urlQueryString += "&";
@@ -1942,7 +1937,7 @@ function buildRequest(
         urlObject.query += urlQueryString;
         // TODO: url and urlObject will be different if url has an #id
         url += urlQueryString;
-        delete parsedArguments.data;
+        delete config.data;
       }
     }
     if (urlObject.query && urlObject.query.endsWith("&")) {
@@ -1970,21 +1965,18 @@ function buildRequest(
     // https://github.com/curl/curl/blob/curl-7_85_0/lib/http.c#L2032
     let method = "GET";
     if (
-      has(parsedArguments, "request") &&
+      has(config, "request") &&
       // Safari adds `-X null` if it can't determine the request type
       // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
-      parsedArguments.request !== "null"
+      config.request !== "null"
     ) {
-      method = parsedArguments.request as string;
-    } else if (parsedArguments.head) {
+      method = config.request as string;
+    } else if (config.head) {
       method = "HEAD";
     } else if (uploadFile) {
       // --upload-file '' doesn't do anything.
       method = "PUT";
-    } else if (
-      (has(parsedArguments, "data") || has(parsedArguments, "form")) &&
-      !parsedArguments.get
-    ) {
+    } else if ((has(config, "data") || has(config, "form")) && !config.get) {
       method = "POST";
     }
 
@@ -2012,7 +2004,7 @@ function buildRequest(
   const request: Request = {
     urls,
     ...urls[0],
-    authType: pickAuth(parsedArguments.authtype),
+    authType: pickAuth(config.authtype),
   };
   // TODO: warn about unused stdin?
   if (stdin) {
@@ -2030,16 +2022,16 @@ function buildRequest(
   if (cookieFiles.length) {
     request.cookieFiles = cookieFiles;
   }
-  if (parsedArguments["cookie-jar"]) {
-    request.cookieJar = parsedArguments["cookie-jar"];
+  if (config["cookie-jar"]) {
+    request.cookieJar = config["cookie-jar"];
   }
 
-  if (parsedArguments.compressed !== undefined) {
-    request.compressed = parsedArguments.compressed;
+  if (config.compressed !== undefined) {
+    request.compressed = config.compressed;
   }
 
-  if (parsedArguments.data) {
-    if (parsedArguments.json) {
+  if (config.data) {
+    if (config.json) {
       _setHeaderIfMissing(
         headers,
         "Content-Type",
@@ -2055,9 +2047,9 @@ function buildRequest(
         lowercase
       );
     }
-  } else if (parsedArguments.form) {
+  } else if (config.form) {
     request.multipartUploads = [];
-    for (const multipartArgument of parsedArguments.form) {
+    for (const multipartArgument of config.form) {
       if (!multipartArgument.value.includes("=")) {
         throw new CCError(
           "invalid value for --form/-F: " +
@@ -2085,25 +2077,25 @@ function buildRequest(
     }
   }
 
-  if (parsedArguments["aws-sigv4"]) {
+  if (config["aws-sigv4"]) {
     // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
     request.authType = "aws-sigv4";
-    request.awsSigV4 = parsedArguments["aws-sigv4"];
+    request.awsSigV4 = config["aws-sigv4"];
   }
-  if (parsedArguments.user) {
-    const [user, pass] = parsedArguments.user.split(/:(.*)/s, 2);
+  if (config.user) {
+    const [user, pass] = config.user.split(/:(.*)/s, 2);
     request.auth = [user, pass || ""];
   }
   if (request.authType === "bearer") {
     _setHeaderIfMissing(
       headers,
       "Authorization",
-      "Bearer " + parsedArguments["oauth2-bearer"],
+      "Bearer " + config["oauth2-bearer"],
       lowercase
     );
   }
-  if (parsedArguments.delegation) {
-    request.delegation = parsedArguments.delegation;
+  if (config.delegation) {
+    request.delegation = config.delegation;
   }
 
   if (headers.length > 0) {
@@ -2116,7 +2108,7 @@ function buildRequest(
     request.headers = headers;
   }
 
-  if (parsedArguments.data && parsedArguments.data.length) {
+  if (config.data && config.data.length) {
     request.data = dataStr;
     request.dataArray = data;
     request.isDataRaw = false; // TODO: remove this
@@ -2125,74 +2117,71 @@ function buildRequest(
     );
   }
 
-  if (parsedArguments.insecure) {
+  if (config.insecure) {
     request.insecure = true;
   }
   // TODO: if the URL doesn't start with https://, curl doesn't verify
   // certificates, etc.
-  if (parsedArguments.cert) {
+  if (config.cert) {
     // --key has no effect if --cert isn't passed
-    request.cert = parsedArguments.key
-      ? [parsedArguments.cert, parsedArguments.key]
-      : parsedArguments.cert;
+    request.cert = config.key ? [config.cert, config.key] : config.cert;
   }
-  if (parsedArguments.cacert) {
-    request.cacert = parsedArguments.cacert;
+  if (config.cacert) {
+    request.cacert = config.cacert;
   }
-  if (parsedArguments.capath) {
-    request.capath = parsedArguments.capath;
+  if (config.capath) {
+    request.capath = config.capath;
   }
-  if (parsedArguments.proxy) {
+  if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
-    request.proxy = parsedArguments.proxy;
-    if (parsedArguments["proxy-user"]) {
-      request.proxyAuth = parsedArguments["proxy-user"];
+    request.proxy = config.proxy;
+    if (config["proxy-user"]) {
+      request.proxyAuth = config["proxy-user"];
     }
   }
-  if (parsedArguments["max-time"]) {
-    request.timeout = parsedArguments["max-time"];
-    if (isNaN(parseFloat(parsedArguments["max-time"]))) {
+  if (config["max-time"]) {
+    request.timeout = config["max-time"];
+    if (isNaN(parseFloat(config["max-time"]))) {
       warnings.push([
         "max-time-not-number",
         "option --max-time: expected a proper numerical parameter: " +
-          JSON.stringify(parsedArguments["max-time"]),
+          JSON.stringify(config["max-time"]),
       ]);
     }
   }
-  if (parsedArguments["connect-timeout"]) {
-    request.connectTimeout = parsedArguments["connect-timeout"];
-    if (isNaN(parseFloat(parsedArguments["connect-timeout"]))) {
+  if (config["connect-timeout"]) {
+    request.connectTimeout = config["connect-timeout"];
+    if (isNaN(parseFloat(config["connect-timeout"]))) {
       warnings.push([
         "connect-timeout-not-number",
         "option --connect-timeout: expected a proper numerical parameter: " +
-          JSON.stringify(parsedArguments["connect-timeout"]),
+          JSON.stringify(config["connect-timeout"]),
       ]);
     }
   }
-  if (Object.prototype.hasOwnProperty.call(parsedArguments, "location")) {
-    request.followRedirects = parsedArguments.location;
+  if (Object.prototype.hasOwnProperty.call(config, "location")) {
+    request.followRedirects = config.location;
   }
-  if (parsedArguments["location-trusted"]) {
-    request.followRedirectsTrusted = parsedArguments["location-trusted"];
+  if (config["location-trusted"]) {
+    request.followRedirectsTrusted = config["location-trusted"];
   }
-  if (parsedArguments["max-redirs"]) {
-    request.maxRedirects = parsedArguments["max-redirs"].trim();
-    if (!isInt(parsedArguments["max-redirs"])) {
+  if (config["max-redirs"]) {
+    request.maxRedirects = config["max-redirs"].trim();
+    if (!isInt(config["max-redirs"])) {
       warnings.push([
         "max-redirs-not-int",
         "option --max-redirs: expected a proper numerical parameter: " +
-          JSON.stringify(parsedArguments["max-redirs"]),
+          JSON.stringify(config["max-redirs"]),
       ]);
     }
   }
 
-  const http2 =
-    parsedArguments.http2 || parsedArguments["http2-prior-knowledge"];
+  const http2 = config.http2 || config["http2-prior-knowledge"];
   if (http2) {
     request.http2 = http2;
   }
-  if (parsedArguments.http3) {
-    request.http3 = parsedArguments.http3;
+  if (config.http3) {
+    request.http3 = config.http3;
   }
 
   return request;
@@ -2234,7 +2223,7 @@ function parseCurlCommand(
     }
   }
 
-  const parsedArguments = parseArgs(
+  const config = parseArgs(
     args,
     curlLongOpts,
     curlShortOpts,
@@ -2242,7 +2231,7 @@ function parseCurlCommand(
     warnings
   );
 
-  return buildRequest(parsedArguments, warnings, stdin, stdinFile);
+  return buildRequest(config, warnings, stdin, stdinFile);
 }
 
 // Gets the first header, matching case-insensitively

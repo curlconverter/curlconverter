@@ -155,27 +155,27 @@ function exitWithError(error: unknown, verbose = false): never {
 }
 
 const argv = process.argv.slice(2);
-let parsedArguments;
+let config;
 let warnings: Warnings = [];
 try {
   // TODO: this means we don't get "unsupported argument" warnings
-  parsedArguments = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
+  config = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
 } catch (e) {
   exitWithError(e);
 }
-if (parsedArguments.help) {
+if (config.help) {
   console.log(USAGE.trim());
   process.exit(0);
 }
-if (parsedArguments.version) {
+if (config.version) {
   console.log("curlconverter " + VERSION);
   process.exit(0);
 }
-const verbose = parsedArguments.verbose;
+const verbose = config.verbose;
 
-const argc = Object.keys(parsedArguments).length;
-const language = parsedArguments.language || defaultLanguage;
-const commandFromStdin = parsedArguments.stdin;
+const argc = Object.keys(config).length;
+const language = config.language || defaultLanguage;
+const commandFromStdin = config.stdin;
 if (!has(translate, language)) {
   exitWithError(
     new CCError(
@@ -189,7 +189,7 @@ if (!has(translate, language)) {
   );
 }
 for (const opt of Object.keys(curlConverterLongOpts)) {
-  delete parsedArguments[opt];
+  delete config[opt];
 }
 
 const [generator, warnGenerator] = translate[language];
@@ -201,16 +201,14 @@ if (argc === 0) {
 if (commandFromStdin) {
   // This lets you do
   // echo curl example.com | curlconverter --verbose
-  let extraArgs = Object.keys(parsedArguments).filter((a) => {
+  let extraArgs = Object.keys(config).filter((a) => {
     return a !== "verbose" && a !== "authtype";
   });
   if (extraArgs.length > 0) {
     // TODO: there's a similar issue for --location-trusted
     const authArgsLocation = extraArgs.indexOf("authArgs");
     if (authArgsLocation > -1) {
-      const authArgs = parsedArguments.authArgs!.map(
-        (a) => (a[1] ? "" : "no-") + a[0]
-      );
+      const authArgs = config.authArgs!.map((a) => (a[1] ? "" : "no-") + a[0]);
 
       console.log(authArgs);
       extraArgs.splice(authArgsLocation, 1);
@@ -246,7 +244,7 @@ if (commandFromStdin) {
   }
   let request;
   try {
-    request = buildRequest(parsedArguments, warnings, stdin);
+    request = buildRequest(config, warnings, stdin);
   } catch (e) {
     exitWithError(e, verbose);
   }
