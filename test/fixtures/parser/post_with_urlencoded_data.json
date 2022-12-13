@@ -4,12 +4,26 @@
       "url": "http://localhost:28139/echo/html/",
       "originalUrl": "http://localhost:28139/echo/html/",
       "urlWithoutQuery": "http://localhost:28139/echo/html/",
+      "urlObj": {
+        "scheme": "http",
+        "host": "localhost:28139",
+        "path": "/echo/html/",
+        "query": "",
+        "fragment": ""
+      },
       "method": "POST"
     }
   ],
   "url": "http://localhost:28139/echo/html/",
   "originalUrl": "http://localhost:28139/echo/html/",
   "urlWithoutQuery": "http://localhost:28139/echo/html/",
+  "urlObj": {
+    "scheme": "http",
+    "host": "localhost:28139",
+    "path": "/echo/html/",
+    "query": "",
+    "fragment": ""
+  },
   "method": "POST",
   "authType": "basic",
   "compressed": true,

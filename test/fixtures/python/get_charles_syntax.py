@@ -7,8 +7,4 @@ headers = {
     'Accept-Language': 'en-CN;q=1, zh-Hans-CN;q=0.9',
 }
 
-params = {
-    'format': 'json',
-}
-
-response = requests.get('http://localhost:28139/', params=params, headers=headers)
+response = requests.get('http://localhost:28139/?format=json&', headers=headers)

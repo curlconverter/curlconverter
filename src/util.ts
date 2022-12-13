@@ -1,21 +1,15 @@
-import URL from "url";
-
 import parser from "./bash-parser.js";
 import type { Parser } from "./bash-parser.js";
 
-// TODO: this type doesn't work.
+export class CCError extends Error {}
+
+// Note: !has() will lead to type errors
 function has<T, K extends PropertyKey>(
   obj: T,
   prop: K
 ): obj is T & Record<K, unknown> {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
-
-function isInt(s: string): boolean {
-  return /^\s*[+-]?\d+$/.test(s);
-}
-
-export class CCError extends Error {}
 
 function pushProp<Type>(
   obj: { [key: string]: Type[] },
@@ -27,6 +21,10 @@ function pushProp<Type>(
   }
   obj[prop].push(value);
   return obj;
+}
+
+function isInt(s: string): boolean {
+  return /^\s*[+-]?\d+$/.test(s);
 }
 
 interface _LongShort {
@@ -71,6 +69,9 @@ type DataParam = [
   string | null,
   string
 ];
+
+// The keys should be named the same as the curl options that
+// set them because they appear in error messages.
 interface OperationConfig {
   request?: string; // the HTTP method
 
@@ -79,14 +80,15 @@ interface OperationConfig {
   authArgs?: [string, boolean][];
 
   json?: boolean;
+
   // canBeList
-  form?: FormParam[];
-  data?: FullDataParam[];
   url?: string[];
   "upload-file"?: string[];
   output?: string[];
   header?: string[];
   "proxy-header"?: string[];
+  form?: FormParam[];
+  data?: FullDataParam[];
   "mail-rcpt"?: string[];
   resolve?: string[];
   "connect-to"?: string[];
@@ -94,9 +96,30 @@ interface OperationConfig {
   quote?: string[];
   "telnet-option"?: string[];
 
-  // TODO
+  // TODO: list every argument
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
+// These options can be specified more than once, they
+// are always returned as a list.
+// Normally, if you specify some option more than once,
+// curl will just take the last one.
+const canBeList = new Set([
+  "url",
+  "upload-file",
+  "output",
+  "header",
+  "proxy-header",
+  "form",
+  "data",
+  "mail-rcpt",
+  "resolve",
+  "connect-to",
+  "cookie",
+  "quote",
+  "telnet-option",
+
+  "authArgs", // used for error messages
+]);
 interface GlobalConfig {
   verbose?: boolean;
   help?: boolean;
@@ -334,24 +357,45 @@ const COMMON_SUPPORTED_ARGS: string[] = [
   "json",
 ];
 
+// https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L60
+interface Curl_URL {
+  scheme: string;
+
+  auth?: string;
+  user?: string;
+  password?: string;
+
+  // options: string /* IMAP only? */;
+  host: string;
+  // zoneid: string /* for numerical IPv6 addresses */;
+  // port: string;
+  path: string;
+  query: string;
+  fragment: string;
+  // portnum: number /* the numerical version */;
+}
 interface RequestUrl {
   // If the ?query can't be losslessly parsed, then
   // .url   === .urlWithoutQuery
   // .query === undefined
   url: string;
+  urlObj: Curl_URL;
   originalUrl: string; // used in error messages
   urlWithoutQuery: string;
-  method: string;
   query?: Query;
   queryDict?: QueryDict;
   uploadFile?: string;
   output?: string;
+
+  method: string;
+  auth?: [string, string];
 }
 
 interface Request {
   urls: RequestUrl[];
   // the first url in urls, to simplify generators that only use one url
   url: string;
+  urlObj: Curl_URL;
   originalUrl: string;
   urlWithoutQuery: string;
   method: string;
@@ -1006,30 +1050,6 @@ const ignoredArgs = new Set([
   "no-progress-meter",
   "show-error",
   "no-show-error",
-]);
-
-// These options can be specified more than once, they
-// are always returned as a list.
-// Normally, if you specify some option more than once,
-// curl will just take the last one.
-// TODO: extract this from curl's source code?
-const canBeList = new Set([
-  // TODO: unlike curl, we don't support multiple
-  // URLs and just take the last one.
-  "url",
-  "upload-file",
-  "output",
-  "header",
-  "proxy-header",
-  "form",
-  "data",
-  "mail-rcpt",
-  "resolve",
-  "connect-to",
-  "cookie",
-  "quote",
-  "telnet-option",
-  "authArgs", // used for error messages
 ]);
 
 const shortened: { [key: string]: LongShort[] } = {};
@@ -1741,6 +1761,193 @@ export function parseQueryString(
   return [asList, asDict];
 }
 
+export function buildURL(
+  global: GlobalConfig,
+  config: OperationConfig,
+  url: string,
+  uploadFile: string | undefined,
+  dataStr: string,
+  dataStrIsSafe: boolean
+): [Curl_URL, string, string, Query | null, QueryDict | null] {
+  // This is curl's parseurl()
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1144
+  // Except we want to accept all URLs.
+  // curl further validates URLs in curl_url_get()
+  // https://github.com/curl/curl/blob/curl-7_86_0/lib/urlapi.c#L1374
+  const u: Curl_URL = {
+    scheme: "",
+    host: "",
+    path: "", // with leading '/'
+    query: "", // with leading '?'
+    fragment: "", // with leading '#'
+  };
+
+  // curl automatically prepends 'http' if the scheme is missing,
+  // but many libraries fail if your URL doesn't have it,
+  // we tack it on here to mimic curl
+  //
+  // RFC 3986 3.1 says
+  //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  // but curl will accept a digit/plus/minus/dot in the first character
+  // curl will also accept a url with one / like http:/localhost
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L960
+  const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/*/);
+  if (schemeMatch) {
+    u.scheme = schemeMatch[1].toLowerCase();
+    url = url.slice(schemeMatch[0].length);
+  } else {
+    // curl actually defaults to https://
+    // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
+    // TODO: handle file:// scheme
+    u.scheme = config["proto-default"] ?? "http";
+  }
+  if (!["http", "https"].includes(u.scheme)) {
+    warnf(global, ["bad-scheme", `Protocol "${u.scheme}" not supported`]);
+  }
+
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L992
+  const hostMatch = url.match(/^(.*?)[/?#]/); // .*? means we match until the first / ? or #
+  if (hostMatch) {
+    u.host = hostMatch[1];
+    u.path = url.slice(hostMatch[1].length); // keep leading '/'
+    // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1024
+    const fragmentIndex = u.path.indexOf("#");
+    const queryIndex = u.path.indexOf("?");
+    if (fragmentIndex !== -1) {
+      u.fragment = u.path.slice(fragmentIndex);
+      if (queryIndex !== -1 && queryIndex < fragmentIndex) {
+        u.query = u.path.slice(queryIndex, fragmentIndex);
+        u.path = u.path.slice(0, queryIndex);
+      } else {
+        u.path = u.path.slice(0, fragmentIndex);
+      }
+    } else if (queryIndex !== -1) {
+      u.query = u.path.slice(queryIndex);
+      u.path = u.path.slice(0, queryIndex);
+    }
+  } else {
+    u.host = url;
+  }
+
+  // parse username:password@hostname
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1083
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L460
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/url.c#L2827
+  const authMatch = u.host.match(/^(.*?)@/);
+  if (authMatch) {
+    const auth = authMatch[1];
+    u.host = url.slice(authMatch[0].length); // throw away '@'
+    // TODO: this makes this command line option sort of supported but not really
+    if (!config["disallow-username-in-url"]) {
+      // Curl will exit if this is the case, but we just remove it from the URL
+      u.auth = auth;
+      if (auth.includes(":")) {
+        [u.user, u.password] = auth.split(/:(.*)/s, 2);
+      } else {
+        u.user = auth;
+        u.password = ""; // if there's no ':', curl will append it
+      }
+    }
+  }
+
+  // TODO: need to extract port first
+  // hostname_check()
+  // https://github.com/curl/curl/blob/curl-7_86_0/lib/urlapi.c#L572
+  // if (!u.host) {
+  //   warnf(global, [
+  //     "no-host",
+  //     "Found empty host in URL: " + JSON.stringify(url),
+  //   ]);
+  // } else if (u.host.startsWith("[")) {
+  //   if (!u.host.endsWith("]")) {
+  //     warnf(global, [
+  //       "bad-host",
+  //       "Found invalid IPv6 address in URL: " + JSON.stringify(url),
+  //     ]);
+  //   } else {
+  //     const firstWeirdCharacter = u.host.match(/[^0123456789abcdefABCDEF:.]/);
+  //     // %zone_id
+  //     if (firstWeirdCharacter && firstWeirdCharacter[0] !== "%") {
+  //       warnf(global, [
+  //         "bad-host",
+  //         "Found invalid IPv6 address in URL: " + JSON.stringify(url),
+  //       ]);
+  //     }
+  //   }
+  // } else {
+  //   const firstInvalidCharacter = u.host.match(
+  //     /[\r\n\t/:#?!@{}[\]\\$'"^`*<>=;,]/
+  //   );
+  //   if (firstInvalidCharacter) {
+  //     warnf(global, [
+  //       "bad-host",
+  //       "Found invalid character " +
+  //         JSON.stringify(firstInvalidCharacter[0]) +
+  //         " in URL: " +
+  //         JSON.stringify(url),
+  //     ]);
+  //   }
+  // }
+
+  // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L1124
+  // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operhlp.c#L76
+  if (uploadFile) {
+    // TODO: it's more complicated
+    if (!u.path) {
+      u.path = "/" + uploadFile;
+    } else if (u.path.endsWith("/")) {
+      u.path += uploadFile;
+    }
+  }
+  // If --get and --data, convert --data to query string
+  // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L721
+  if (config.get && config.data) {
+    // TODO: check the curl source code
+    if (u.query) {
+      if (!u.query.endsWith("&")) {
+        u.query += "&";
+      }
+    } else {
+      u.query = "?";
+    }
+    u.query += dataStr;
+
+    if (!dataStrIsSafe) {
+      warnf(global, [
+        "unsafe-data",
+        // TODO: better wording
+        "the URL query string is not correct because --data contains @filenames",
+      ]);
+    }
+    if (uploadFile) {
+      warnf(global, [
+        "data-ignored",
+        "curl doesn't let you pass --get and --upload-file together",
+      ]);
+    }
+  }
+
+  url = u.scheme + "://" + u.host + u.path + u.query + u.fragment;
+  // TODO: parseQueryString() doesn't accept leading '?'
+  const [queryAsList, queryAsDict] = parseQueryString(
+    u.query ? u.query.slice(1) : ""
+  );
+  const useParsedQuery =
+    queryAsList &&
+    queryAsList.length &&
+    // Most software libraries don't let you distinguish between a=&b= and a&b,
+    // so if we get an `a&b`-type query string, don't bother.
+    queryAsList.every((p) => p[1] !== null);
+  if (useParsedQuery) {
+    // TODO: remove the fragment too?
+    const urlWithoutQuery = u.scheme + "://" + u.host + u.path + u.fragment;
+    return [u, url, urlWithoutQuery, queryAsList, queryAsDict];
+  }
+
+  // TODO: --path-as-is
+  return [u, url, url, null, null];
+}
+
 function buildRequest(
   global: GlobalConfig,
   stdin?: string,
@@ -1935,9 +2142,12 @@ function buildRequest(
       data.push(dataStrState);
     }
   }
+
+  let dataStrIsSafe = true;
   const dataStr = data
     .map((d) => {
       if (Array.isArray(d)) {
+        dataStrIsSafe = false;
         const name = d[1];
         const filename = d[2];
         if (name) {
@@ -1953,84 +2163,18 @@ function buildRequest(
   const uploadFiles = config["upload-file"] || [];
   const outputFiles = config["output"] || [];
   // eslint-disable-next-line prefer-const
-  for (let [i, url] of config.url.entries()) {
-    const originalUrl = url;
+  for (let [i, originalUrl] of config.url.entries()) {
     const uploadFile: string | undefined = uploadFiles[i];
     const output: string | undefined = outputFiles[i];
 
-    // curl automatically prepends 'http' if the scheme is missing,
-    // but many libraries fail if your URL doesn't have it,
-    // we tack it on here to mimic curl
-    //
-    // RFC 3986 3.1 says
-    //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-    // but curl will accept a digit/plus/minus/dot in the first character
-    // curl will also accept a url with one / like http:/localhost
-    let scheme;
-    const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/?/);
-    if (schemeMatch) {
-      scheme = schemeMatch[1].toLowerCase();
-      url = url.slice(schemeMatch[0].length);
-    } else {
-      // curl actually defaults to https://
-      // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
-      scheme = config["proto-default"] ?? "http";
-    }
-    if (!["http", "https"].includes(scheme)) {
-      warnf(global, ["bad-scheme", `Protocol "${scheme}" not supported`]);
-    }
-    url = scheme + "://" + url;
-
-    let urlObject = URL.parse(url); // eslint-disable-line
-    if (uploadFile) {
-      // TODO: it's more complicated
-      if ((!urlObject.path || urlObject.path === "/") && !urlObject.hash) {
-        url += "/" + uploadFile;
-      } else if (url.endsWith("/")) {
-        url += uploadFile;
-      }
-      urlObject = URL.parse(url); // eslint-disable-line
-    }
-    // if GET request with data, convert data to query string
-    // NB: the -G flag does not change the http verb. It just moves the data into the url.
-    // TODO: this probably has a lot of mismatches with curl
-    if (config.get) {
-      urlObject.query = urlObject.query ? urlObject.query : "";
-      if (has(config, "data") && config.data !== undefined) {
-        let urlQueryString = "";
-        if (url.includes("?")) {
-          urlQueryString += "&";
-        } else {
-          url += "?";
-        }
-        if (dataStr) {
-          // TODO: warn if dataStr has files
-          urlQueryString += dataStr;
-        }
-
-        urlObject.query += urlQueryString;
-        // TODO: url and urlObject will be different if url has an #id
-        url += urlQueryString;
-        delete config.data;
-      }
-    }
-    if (urlObject.query && urlObject.query.endsWith("&")) {
-      urlObject.query = urlObject.query.slice(0, -1);
-    }
-    const [queryAsList, queryAsDict] = parseQueryString(urlObject.query);
-    const useParsedQuery =
-      queryAsList &&
-      queryAsList.length &&
-      queryAsList.every((p) => p[1] !== null);
-    // Most software libraries don't let you distinguish between a=&b= and a&b,
-    // so if we get an `a&b`-type query string, don't bother.
-    let urlWithoutQuery;
-    if (useParsedQuery) {
-      urlObject.search = null; // Clean out the search/query portion.
-      urlWithoutQuery = URL.format(urlObject);
-    } else {
-      urlWithoutQuery = url; // TODO: rename?
-    }
+    const [urlObj, url, urlWithoutQuery, queryAsList, queryAsDict] = buildURL(
+      global,
+      config,
+      originalUrl,
+      uploadFile,
+      dataStr,
+      dataStrIsSafe
+    );
 
     // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
     // will send, but most APIs will helpfully uppercase what you pass in as the method.
@@ -2058,11 +2202,12 @@ function buildRequest(
       url,
       originalUrl,
       urlWithoutQuery,
+      urlObj,
       method,
     };
-    if (useParsedQuery) {
+    if (queryAsList) {
       requestUrl.query = queryAsList;
-      if (queryAsDict !== null) {
+      if (queryAsDict) {
         requestUrl.queryDict = queryAsDict;
       }
     }
@@ -2072,7 +2217,19 @@ function buildRequest(
     if (output) {
       requestUrl.output = output;
     }
+
+    const auth = config.user || urlObj.auth;
+    if (auth) {
+      // --user takes precedence over the URL
+      const [user, pass] = auth.split(/:(.*)/s, 2);
+      requestUrl.auth = [user, pass || ""];
+    }
+
     urls.push(requestUrl);
+  }
+  // --get moves --data into the URL's query string
+  if (config.get && config.data) {
+    delete config.data;
   }
 
   const request: Request = {
@@ -2155,10 +2312,6 @@ function buildRequest(
     // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
     request.authType = "aws-sigv4";
     request.awsSigV4 = config["aws-sigv4"];
-  }
-  if (config.user) {
-    const [user, pass] = config.user.split(/:(.*)/s, 2);
-    request.auth = [user, pass || ""];
   }
   if (request.authType === "bearer") {
     _setHeaderIfMissing(

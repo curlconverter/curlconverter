@@ -1,9 +1,6 @@
 const axios = require('axios');
 
-const response = await axios.get('http://localhost:28139/', {
-    params: {
-        'format': 'json'
-    },
+const response = await axios.get('http://localhost:28139/?format=json&', {
     headers: {
         'Host': 'api.ipify.org',
         'Accept': '*/*',

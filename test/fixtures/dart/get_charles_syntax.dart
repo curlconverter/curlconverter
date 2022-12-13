@@ -9,12 +9,7 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var params = {
-    'format': 'json',
-  };
-  var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');
-
-  var url = Uri.parse('http://localhost:28139/?$query');
+  var url = Uri.parse('http://localhost:28139/?format=json&');
   var res = await http.get(url, headers: headers);
   if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
   print(res.body);
