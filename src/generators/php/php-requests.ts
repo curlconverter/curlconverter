@@ -10,9 +10,18 @@ const supportedArgs = new Set([
 ]);
 
 export const _toPhpRequests = (
-  request: Request,
+  requests: Request[],
   warnings: Warnings = []
 ): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -113,8 +122,8 @@ export const toPhpRequestsWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const php = _toPhpRequests(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const php = _toPhpRequests(requests, warnings);
   return [php, warnings];
 };
 export const toPhpRequests = (curlCommand: string | string[]): string => {

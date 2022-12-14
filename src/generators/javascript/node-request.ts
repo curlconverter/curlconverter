@@ -7,10 +7,13 @@ const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
   // "form",
   // "form-string",
+  "next",
 ]);
 
-export const _toNodeRequest = (
+const requestToNodeRequest = (
   request: Request,
+  requestIndex: number,
+  definedVariables: Set<string>,
   warnings: Warnings = []
 ): string => {
   if (request.urls.length > 1) {
@@ -30,9 +33,9 @@ export const _toNodeRequest = (
     ]);
   }
 
-  let nodeRequestCode = "var request = require('request');\n\n";
+  let nodeRequestCode = "";
   if (request.headers) {
-    nodeRequestCode += "var headers = {\n";
+    nodeRequestCode += defVar(definedVariables, "headers", "{\n");
     const headerCount = request.headers ? request.headers.length : 0;
     let i = 0;
     for (const [headerName, headerValue] of request.headers || []) {
@@ -49,10 +52,14 @@ export const _toNodeRequest = (
   }
 
   if (request.data) {
-    nodeRequestCode += "var dataString = " + repr(request.data) + ";\n\n";
+    nodeRequestCode += defVar(
+      definedVariables,
+      "dataString",
+      repr(request.data) + ";\n\n"
+    );
   }
 
-  nodeRequestCode += "var options = {\n";
+  nodeRequestCode += defVar(definedVariables, "options", "{\n");
   nodeRequestCode += "    url: " + repr(request.url);
   if (request.method.toUpperCase() !== "GET") {
     nodeRequestCode += ",\n    method: " + repr(request.method.toUpperCase());
@@ -90,23 +97,51 @@ export const _toNodeRequest = (
   }
   nodeRequestCode += "};\n\n";
 
-  nodeRequestCode += "function callback(error, response, body) {\n";
-  nodeRequestCode += "    if (!error && response.statusCode == 200) {\n";
-  nodeRequestCode += "        console.log(body);\n";
-  nodeRequestCode += "    }\n";
-  nodeRequestCode += "}\n\n";
+  if (requestIndex === 0) {
+    nodeRequestCode += "function callback(error, response, body) {\n";
+    nodeRequestCode += "    if (!error && response.statusCode == 200) {\n";
+    nodeRequestCode += "        console.log(body);\n";
+    nodeRequestCode += "    }\n";
+    nodeRequestCode += "}\n\n";
+  }
   nodeRequestCode += "request(options, callback);";
 
   return nodeRequestCode + "\n";
 };
+
+const defVar = (
+  variables: Set<string>,
+  name: string,
+  value: string
+): string => {
+  if (!variables.has(name)) {
+    variables.add(name);
+    name = "var " + name;
+  }
+  return `${name} = ${value}`;
+};
+
+export const _toNodeRequest = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  const code = "var request = require('request');\n\n";
+  const definedVariables = new Set(["request"]);
+
+  const requestCode = requests.map((r, i) =>
+    requestToNodeRequest(r, i, definedVariables, warnings)
+  );
+  return code + requestCode.join("\n\n");
+};
+
 export const toNodeRequestWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   warnings.unshift(["node-request", "the request package is deprecated"]);
 
-  const nodeRequests = _toNodeRequest(request, warnings);
+  const nodeRequests = _toNodeRequest(requests, warnings);
   return [nodeRequests, warnings];
 };
 export const toNodeRequest = (curlCommand: string | string[]): string => {

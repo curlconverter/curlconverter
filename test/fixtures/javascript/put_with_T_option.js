@@ -3,12 +3,5 @@ fetch('http://localhost:28139/twitter/_mapping/user?pretty', {
     headers: {
         'Content-Type': 'application/json'
     },
-    // body: '{"properties": {"email": {"type": "keyword"}}}',
-    body: JSON.stringify({
-        'properties': {
-            'email': {
-                'type': 'keyword'
-            }
-        }
-    })
+    body: File(['<data goes here>'], 'my_file.txt')
 });

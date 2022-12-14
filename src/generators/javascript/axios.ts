@@ -204,9 +204,18 @@ const buildConfigObject = (
 };
 
 export const _toNodeAxios = (
-  request: Request,
+  requests: Request[],
   warnings: Warnings = []
 ): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -225,7 +234,7 @@ export const _toNodeAxios = (
   }
 
   let importCode = "const axios = require('axios');\n";
-  const imports: Set<[string, string]> = new Set();
+  const imports = new Set<[string, string]>();
 
   let code = "";
 
@@ -369,8 +378,8 @@ export const toNodeAxiosWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const nodeAxios = _toNodeAxios(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const nodeAxios = _toNodeAxios(requests, warnings);
   return [nodeAxios, warnings];
 };
 export const toNodeAxios = (curlCommand: string | string[]): string => {

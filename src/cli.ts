@@ -4,7 +4,7 @@ import {
   curlLongOpts,
   curlShortOpts,
   parseArgs,
-  buildRequest,
+  buildRequests,
   CCError,
   has,
   Warnings,
@@ -55,7 +55,7 @@ const defaultLanguage = "python";
 // NOTE: make sure to update this when adding language support
 const translate: {
   [key: string]: [
-    (request: Request, warnings?: Warnings) => string,
+    (request: Request[], warnings?: Warnings) => string,
     (curlCommand: string | string[], warnings?: Warnings) => [string, Warnings]
   ];
 } = {
@@ -247,15 +247,15 @@ if (commandFromStdin) {
     // TODO: what if there's an EOF character? does curl read each @- until EOF?
     stdin = fs.readFileSync(0).toString();
   }
-  let request;
+  let requests;
   try {
-    request = buildRequest(global, stdin);
+    requests = buildRequests(global, stdin);
   } catch (e) {
     exitWithError(e, verbose);
   }
   warnings = printWarnings(warnings, verbose);
   // Warning for users using the pre-4.0 CLI
-  if (request.url?.startsWith("curl ")) {
+  if (requests[0].url?.startsWith("curl ")) {
     console.error(
       "warning: Passing a whole curl command as a single argument?"
     );
@@ -267,7 +267,7 @@ if (commandFromStdin) {
     );
   }
   try {
-    code = generator(request, warnings);
+    code = generator(requests, warnings);
   } catch (e) {
     exitWithError(e, verbose);
   }

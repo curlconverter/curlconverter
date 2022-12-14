@@ -1950,23 +1950,10 @@ export function buildURL(
 
 function buildRequest(
   global: GlobalConfig,
+  config: OperationConfig,
   stdin?: string,
   stdinFile?: string
 ): Request {
-  if (!global.configs.length) {
-    // shouldn't happen
-    warnf(global, ["no-configs", "got empty config object"]);
-  }
-  if (global.configs.length > 1) {
-    warnf(global, [
-      "next",
-      "got " +
-        global.configs.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const config = global.configs[0];
-
   // TODO: handle multiple URLs
   if (!config.url || !config.url.length) {
     // TODO: better error message (could be parsing fail)
@@ -2261,23 +2248,16 @@ function buildRequest(
     request.compressed = config.compressed;
   }
 
-  if (config.data) {
-    if (config.json) {
-      _setHeaderIfMissing(
-        headers,
-        "Content-Type",
-        "application/json",
-        lowercase
-      );
-      _setHeaderIfMissing(headers, "Accept", "application/json", lowercase);
-    } else {
-      _setHeaderIfMissing(
-        headers,
-        "Content-Type",
-        "application/x-www-form-urlencoded",
-        lowercase
-      );
-    }
+  if (config.json) {
+    _setHeaderIfMissing(headers, "Content-Type", "application/json", lowercase);
+    _setHeaderIfMissing(headers, "Accept", "application/json", lowercase);
+  } else if (config.data) {
+    _setHeaderIfMissing(
+      headers,
+      "Content-Type",
+      "application/x-www-form-urlencoded",
+      lowercase
+    );
   } else if (config.form) {
     request.multipartUploads = [];
     for (const multipartArgument of config.form) {
@@ -2414,11 +2394,25 @@ function buildRequest(
   return request;
 }
 
+function buildRequests(
+  global: GlobalConfig,
+  stdin?: string,
+  stdinFile?: string
+): Request[] {
+  if (!global.configs.length) {
+    // shouldn't happen
+    warnf(global, ["no-configs", "got empty config object"]);
+  }
+  return global.configs.map((config) =>
+    buildRequest(global, config, stdin, stdinFile)
+  );
+}
+
 function parseCurlCommand(
   curlCommand: string | string[],
   supportedArgs?: Set<string>,
   warnings: Warnings = []
-): Request {
+): Request[] {
   let cmdName: string,
     args: string[],
     stdin: undefined | string,
@@ -2458,7 +2452,7 @@ function parseCurlCommand(
     warnings
   );
 
-  return buildRequest(global, stdin, stdinFile);
+  return buildRequests(global, stdin, stdinFile);
 }
 
 // Gets the first header, matching case-insensitively
@@ -2589,7 +2583,7 @@ export {
   COMMON_SUPPORTED_ARGS,
   parseCurlCommand,
   parseArgs,
-  buildRequest,
+  buildRequests,
   getHeader,
   getContentType,
   hasHeader,
