@@ -1777,11 +1777,12 @@ export const _toPython = (
 
   // Don't add indent/comment characters to empty lines, most importantly the last line
   // which will be empty when there's a trailing newline.
-  function indent(s: string, isSession: boolean) {
-    if (isSession) {
+  function indent(s: string, level: number) {
+    const begin = "    ".repeat(level);
+    if (level > 0) {
       return s
         .split("\n")
-        .map((l) => (l.trim() ? "    " + l : l))
+        .map((l) => (l.trim() ? begin + l : l))
         .join("\n");
     }
     return s;
@@ -1810,7 +1811,8 @@ export const _toPython = (
     request.maxRedirects &&
     request.maxRedirects !== "0" &&
     request.maxRedirects !== "30"; // Requests default
-  const isSession = !!(hasMaxRedirects || request.cookieJar);
+  const isSession = hasMaxRedirects || request.cookieJar;
+  let indentLevel = 0;
   if (isSession) {
     pythonCode += "with requests.Session() as session:\n";
     if (hasMaxRedirects) {
@@ -1820,11 +1822,12 @@ export const _toPython = (
       pythonCode += `    session.cookies = cookies\n`;
     }
     requestsLine += "response = session.";
+    indentLevel += 1;
   } else {
     requestsLine += "response = requests.";
   }
   requestsLine += fn;
-  pythonCode += indent(requestsLine + joinArgs(args) + "\n", isSession);
+  pythonCode += indent(requestsLine + joinArgs(args) + "\n", indentLevel);
 
   if (jsonDataString && dataString) {
     // Adding empty lines to a "with" block breaks the code when pasted in the REPL
@@ -1841,25 +1844,28 @@ export const _toPython = (
       "# exactly as it was in the original request.\n";
     dataAlternative += commentOut(dataString);
     dataAlternative += commentOut(requestsLine + joinArgs(args) + "\n");
-    pythonCode += indent(dataAlternative, isSession);
+    pythonCode += indent(dataAlternative, indentLevel);
   }
 
   if (request.cookieJar) {
-    pythonCode += "    cookies.save(";
+    let cookieSaveLine = "cookies.save(";
     if (request.cookieJar !== cookieFile) {
-      pythonCode += repr(request.cookieJar) + ", ";
+      cookieSaveLine += repr(request.cookieJar) + ", ";
     }
-    pythonCode += "ignore_discard=True, ignore_expires=True)\n"; // TODO: necessary?
+    cookieSaveLine += "ignore_discard=True, ignore_expires=True)\n"; // TODO: necessary?
+    pythonCode += indent(cookieSaveLine, indentLevel);
   }
   if (request.output && request.output !== "/dev/null") {
+    let outputLine = "";
     if (request.output === "-") {
-      pythonCode += indent("print(response.text)\n", isSession);
+      outputLine += "print(response.text)\n";
     } else {
-      pythonCode += isSession ? "    " : "\n";
-      pythonCode += "with open(" + repr(request.output) + ", 'wb') as f:\n";
-      pythonCode += isSession ? "    " : "";
-      pythonCode += "    f.write(response.content)\n";
+      outputLine += isSession ? "" : "\n";
+
+      outputLine += "with open(" + repr(request.output) + ", 'wb') as f:\n";
+      outputLine += "    f.write(response.content)\n";
     }
+    pythonCode += indent(outputLine, indentLevel);
   }
 
   if (request.http2) {

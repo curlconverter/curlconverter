@@ -1,11 +1,6 @@
 require 'net/http'
 
-uri = URI('http://localhost:28139/')
-params = {
-  :format => 'json',
-}
-uri.query = URI.encode_www_form(params)
-
+uri = URI('http://localhost:28139/?format=json&')
 req = Net::HTTP::Get.new(uri)
 req['Host'] = 'api.ipify.org'
 req['Accept'] = '*/*'
