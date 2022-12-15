@@ -55,9 +55,18 @@ type AnsibleURI = {
 };
 
 export const _toAnsible = (
-  request: Request,
+  requests: Request[],
   warnings: Warnings = [] // eslint-disable-line @typescript-eslint/no-unused-vars
 ): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -116,8 +125,8 @@ export const toAnsibleWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const ansible = _toAnsible(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const ansible = _toAnsible(requests, warnings);
   return [ansible, warnings];
 };
 export const toAnsible = (curlCommand: string | string[]): string => {

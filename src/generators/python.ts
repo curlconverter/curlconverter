@@ -66,6 +66,8 @@ const supportedArgs = new Set([
   "output",
   "upload-file",
 
+  "next",
+
   "proxy",
   "proxy-user",
 ]);
@@ -372,7 +374,7 @@ const unsupportedArgs = [
   "parallel-max",
   "parallel-immediate",
   "no-parallel-immediate",
-  "next", // TODO: this is a big one
+  "next",
 ];
 
 // https://peps.python.org/pep-3138/
@@ -1117,7 +1119,7 @@ function getDataString(
   request: Request,
   warnings: Warnings
 ): [string | null, boolean | null, string | null, Set<string>] {
-  const imports: Set<string> = new Set();
+  const imports = new Set<string>();
   if (!request.data || !request.dataArray) {
     return [null, false, null, imports];
   }
@@ -1252,7 +1254,7 @@ function detectEnvVar(inputString: string): [Set<string>, string] {
   const IN_STRING = 1;
 
   // We only care for the unique element
-  const detectedVariables: Set<string> = new Set();
+  const detectedVariables = new Set<string>();
   let currState = IN_STRING;
   let envVarStartIndex = -1;
 
@@ -1310,9 +1312,11 @@ function detectEnvVar(inputString: string): [Set<string>, string] {
   return [detectedVariables, modifiedString.join("")];
 }
 
-export const _toPython = (
+const requestToPython = (
   request: Request,
-  warnings: Warnings = []
+  warnings: Warnings = [],
+  imports: Set<string>,
+  requestsImports: Set<string>
 ): string => {
   if (request.urls.length > 1) {
     warnings.push([
@@ -1324,8 +1328,6 @@ export const _toPython = (
     ]);
   }
 
-  const imports: Set<string> = new Set();
-  const requestsImports: Set<string> = new Set();
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set();
@@ -1717,32 +1719,9 @@ export const _toPython = (
 
   let pythonCode = "";
 
-  function printImports(imps: Set<string>): string {
-    let s = "";
-    for (const imp of Array.from(imps).sort()) {
-      if (imp.includes(".")) {
-        const pos = imp.lastIndexOf(".");
-        const module = imp.slice(0, pos);
-        const name = imp.slice(pos + 1);
-        s += "from " + module + " import " + name + "\n";
-      } else {
-        s += "import " + imp + "\n";
-      }
-    }
-    return s;
-  }
-
   if (osVariables.size > 0) {
     imports.add("os");
   }
-  pythonCode += printImports(imports);
-  if (imports.size > 1) {
-    pythonCode += "\n";
-  }
-  pythonCode += "import requests\n";
-  pythonCode += printImports(requestsImports);
-  pythonCode += "\n";
-
   if (osVariables.size > 0) {
     for (const osVar of osVariables) {
       const line = `${osVar} = os.getenv('${osVar}')\n`;
@@ -1804,6 +1783,13 @@ export const _toPython = (
     }
     return s + ")";
   }
+
+  // Things that vary per-url:
+  // method (because of upload-file)
+  // data= (because of upload-file)
+  // output-file
+  // params= (because of the query string)
+  // auth= (because the URL can have an auth string)
 
   let requestsLine = "";
   const hasMaxRedirects =
@@ -1884,12 +1870,53 @@ export const _toPython = (
   return pythonCode;
 };
 
+function printImports(imps: Set<string>): string {
+  let s = "";
+  for (const imp of Array.from(imps).sort()) {
+    if (imp.includes(".")) {
+      const pos = imp.lastIndexOf(".");
+      const module = imp.slice(0, pos);
+      const name = imp.slice(pos + 1);
+      s += "from " + module + " import " + name + "\n";
+    } else {
+      s += "import " + imp + "\n";
+    }
+  }
+  return s;
+}
+
+export const _toPython = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  const imports = new Set<string>();
+  const requestsImports = new Set<string>();
+
+  const code = [];
+  for (const request of requests) {
+    code.push(requestToPython(request, warnings, imports, requestsImports));
+  }
+
+  let pythonCode = "";
+  pythonCode += printImports(imports);
+  if (imports.size > 1) {
+    pythonCode += "\n";
+  }
+  pythonCode += "import requests\n";
+  pythonCode += printImports(requestsImports);
+  pythonCode += "\n";
+
+  pythonCode += code.join("\n\n");
+
+  return pythonCode;
+};
+
 export const toPythonWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const python = _toPython(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const python = _toPython(requests, warnings);
   return [python, warnings];
 };
 

@@ -26,7 +26,19 @@ const repr = (s: string): string => {
   return "'" + s.replace(/'/g, "''") + "'";
 };
 
-export const _toCFML = (request: Request, warnings: Warnings = []): string => {
+export const _toCFML = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -151,8 +163,8 @@ export const toCFMLWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const cfml = _toCFML(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const cfml = _toCFML(requests, warnings);
   return [cfml, warnings];
 };
 

@@ -26,7 +26,16 @@ const repr = (s: string): string => {
   return pyrepr(s, '"');
 };
 
-export const _toGo = (request: Request, warnings: Warnings = []): string => {
+export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -154,8 +163,8 @@ export const toGoWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const go = _toGo(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const go = _toGo(requests, warnings);
   return [go, warnings];
 };
 export const toGo = (curlCommand: string | string[]): string => {

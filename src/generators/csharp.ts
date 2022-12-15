@@ -74,9 +74,18 @@ export function repr(s: string): string {
 }
 
 export const _toCSharp = (
-  request: Request,
+  requests: Request[],
   warnings: Warnings = []
 ): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -362,8 +371,8 @@ export const toCSharpWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const cSharp = _toCSharp(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const cSharp = _toCSharp(requests, warnings);
   return [cSharp, warnings];
 };
 export const toCSharp = (curlCommand: string | string[]): string => {

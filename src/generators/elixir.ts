@@ -7,6 +7,7 @@ const supportedArgs = new Set([
   "form-string",
   "insecure",
   "no-insecure",
+  "next",
 ]);
 
 const regexEscape = /"|\\|\p{C}|\p{Z}|#\{/gu;
@@ -238,10 +239,7 @@ function getDataString(request: Request): string {
   return repr(request.data);
 }
 
-export const _toElixir = (
-  request: Request,
-  warnings: Warnings = []
-): string => {
+const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -332,12 +330,19 @@ response = HTTPoison.request(request)
 `;
 };
 
+export const _toElixir = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  return requests.map((r) => requestToElixir(r, warnings)).join("\n");
+};
+
 export const toElixirWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const elixir = _toElixir(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const elixir = _toElixir(requests, warnings);
   return [elixir, warnings];
 };
 

@@ -20,6 +20,7 @@ const supportedArgs = new Set([
   "proxy",
   "proxy-user",
   "upload-file",
+  "next",
 ]);
 
 // https://docs.ruby-lang.org/en/3.1/syntax/literals_rdoc.html#label-Strings
@@ -290,7 +291,11 @@ function getFilesString(request: Request): string {
   return filesString;
 }
 
-export const _toRuby = (request: Request, warnings: Warnings = []): string => {
+const requestToRuby = (
+  request: Request,
+  warnings: Warnings,
+  imports: Set<string>
+): string => {
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -308,7 +313,6 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     ]);
   }
 
-  let prelude = "require 'net/http'\n";
   let code = "";
 
   const methods = {
@@ -371,7 +375,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
   if (util.has(methods, request.method)) {
     if (request.method === "GET" && simple) {
       code += "res = Net::HTTP.get_response(uri)\n";
-      return prelude + "\n" + code;
+      return code;
     } else {
       code += "req = Net::HTTP::" + methods[request.method] + ".new(uri)\n";
     }
@@ -402,7 +406,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     let importJson = false;
     [reqBody, importJson] = getDataString(request);
     if (importJson) {
-      prelude += "require 'json'\n";
+      imports.add("json");
     }
   } else if (request.multipartUploads) {
     reqBody = getFilesString(request);
@@ -444,7 +448,7 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
   code += "req_options = {\n";
   code += "  use_ssl: uri.scheme == 'https'";
   if (request.insecure) {
-    prelude += "require 'openssl'\n";
+    imports.add("openssl");
     code += ",\n";
     code += "  verify_mode: OpenSSL::SSL::VERIFY_NONE\n";
   } else {
@@ -479,15 +483,32 @@ export const _toRuby = (request: Request, warnings: Warnings = []): string => {
     }
   }
 
-  return prelude + "\n" + code + "\n";
+  return code + "\n";
+};
+
+export const _toRuby = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  const imports = new Set<string>();
+
+  const code = requests
+    .map((r) => requestToRuby(r, warnings, imports))
+    .join("\n\n");
+
+  let prelude = "require 'net/http'\n";
+  for (const imp of Array.from(imports).sort()) {
+    prelude += "require '" + imp + "'\n";
+  }
+  return prelude + "\n" + code;
 };
 
 export const toRubyWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const ruby = _toRuby(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const ruby = _toRuby(requests, warnings);
   return [ruby, warnings];
 };
 

@@ -20,7 +20,19 @@ function repr(value: string): string {
   return quote + escape(value, quote) + quote;
 }
 
-export const _toDart = (request: Request, warnings: Warnings = []): string => {
+export const _toDart = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -221,8 +233,8 @@ export const toDartWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const dart = _toDart(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const dart = _toDart(requests, warnings);
   return [dart, warnings];
 };
 export const toDart = (curlCommand: string | string[]): string => {

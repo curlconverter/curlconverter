@@ -11,6 +11,7 @@ const javaScriptSupportedArgs = new Set([
   "form-string",
   "digest",
   "no-digest",
+  "next",
 ]);
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
@@ -151,20 +152,13 @@ const getDataString = (request: Request): [string, string | null] => {
   return [originalStringRepr, null];
 };
 
-export const _toJavaScriptOrNode = (
+const requestToJavaScriptOrNode = (
   request: Request,
   warnings: Warnings,
+  fetchImports: Set<string>,
+  imports: Set<[string, string]>,
   isNode: boolean
 ): string => {
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
-    ]);
-  }
   if (request.cookieFiles) {
     warnings.push([
       "cookie-files",
@@ -172,9 +166,6 @@ export const _toJavaScriptOrNode = (
         request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
     ]);
   }
-
-  const fetchImports: Set<string> = new Set();
-  const imports: Set<[string, string]> = new Set();
 
   let code = "";
 
@@ -231,128 +222,149 @@ export const _toJavaScriptOrNode = (
       ");\n";
     code += "client.";
   }
-  code += "fetch(" + repr(request.url);
 
-  const method = request.method.toLowerCase();
+  for (const urlObj of request.urls) {
+    code += "fetch(" + repr(urlObj.url);
 
-  if (
-    method !== "get" ||
-    (request.headers && request.headers.length) ||
-    (request.auth && request.authType === "basic") ||
-    request.data ||
-    request.multipartUploads ||
-    (isNode && request.proxy)
-  ) {
-    code += ", {\n";
-
-    if (method !== "get") {
-      // TODO: If you pass a weird method to fetch() it won't uppercase it
-      // const methods = []
-      // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
-      code += "    method: " + repr(request.method) + ",\n";
-    }
+    const method = urlObj.method.toLowerCase();
 
     if (
+      method !== "get" ||
       (request.headers && request.headers.length) ||
-      (request.auth && request.authType === "basic")
+      // TODO: should authType be per-url too?
+      (urlObj.auth && request.authType === "basic") ||
+      request.data ||
+      request.multipartUploads ||
+      (isNode && request.proxy)
     ) {
-      code += "    headers: {\n";
-      for (const [headerName, headerValue] of request.headers || []) {
-        code +=
-          "        " +
-          repr(headerName) +
-          ": " +
-          repr(headerValue || "") +
-          ",\n";
+      code += ", {\n";
+
+      if (method !== "get") {
+        // TODO: If you pass a weird method to fetch() it won't uppercase it
+        // const methods = []
+        // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
+        code += "    method: " + repr(request.method) + ",\n";
       }
-      if (request.auth && request.authType === "basic") {
-        // TODO: if -H 'Authorization:' is passed, don't set this
-        const [user, password] = request.auth;
-        code +=
-          "        'Authorization': 'Basic ' + btoa(" +
-          repr(user + ":" + password) +
-          "),\n";
+
+      if (
+        (request.headers && request.headers.length) ||
+        (urlObj.auth && request.authType === "basic")
+      ) {
+        code += "    headers: {\n";
+        for (const [headerName, headerValue] of request.headers || []) {
+          code +=
+            "        " +
+            repr(headerName) +
+            ": " +
+            repr(headerValue || "") +
+            ",\n";
+        }
+        if (urlObj.auth && request.authType === "basic") {
+          // TODO: if -H 'Authorization:' is passed, don't set this
+          const [user, password] = urlObj.auth;
+          code +=
+            "        'Authorization': 'Basic ' + btoa(" +
+            repr(user + ":" + password) +
+            "),\n";
+        }
+
+        if (code.endsWith(",\n")) {
+          code = code.slice(0, -2);
+          code += "\n";
+        }
+        code += "    },\n";
+      }
+
+      if (urlObj.uploadFile) {
+        if (isNode) {
+          fetchImports.add("fileFromSync");
+          code += "    body: fileFromSync(" + repr(urlObj.uploadFile) + "),\n";
+        } else {
+          code +=
+            "    body: File(['<data goes here>'], " +
+            repr(urlObj.uploadFile) +
+            "),\n";
+          warnings.push([
+            "--form",
+            "you can't read a file for --upload-file/-F in the browser",
+          ]);
+        }
+      } else if (request.data) {
+        if (commentedOutDataString) {
+          code += "    // body: " + commentedOutDataString + ",\n";
+        }
+        code += "    body: " + dataString + ",\n";
+      } else if (request.multipartUploads) {
+        code += "    body: form,\n";
+      }
+
+      if (isNode && request.proxy) {
+        // TODO: do this parsing in utils.ts
+        const proxy = request.proxy.includes("://")
+          ? request.proxy
+          : "http://" + request.proxy;
+        // TODO: could be more accurate
+        let [protocol] = proxy.split(/:\/\/(.*)/s, 2);
+        protocol = protocol.toLowerCase();
+
+        if (!protocol) {
+          protocol = "http";
+        }
+        if (protocol === "socks") {
+          protocol = "socks4";
+          proxy.replace(/^socks/, "socks4");
+        }
+
+        switch (protocol) {
+          case "socks4":
+          case "socks5":
+          case "socks5h":
+          case "socks4a":
+            imports.add(["{ SocksProxyAgent }", "socks-proxy-agent"]);
+            code += "    agent: new SocksProxyAgent(" + repr(proxy) + "),\n";
+            break;
+          case "http":
+          case "https":
+            imports.add(["HttpsProxyAgent", "https-proxy-agent"]);
+            code += "    agent: new HttpsProxyAgent(" + repr(proxy) + "),\n";
+            break;
+          default:
+            warnings.push([
+              "--proxy",
+              "failed to parse --proxy/-x or unknown protocol: " + protocol,
+            ]);
+            break;
+          // default:
+          //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
+        }
       }
 
       if (code.endsWith(",\n")) {
         code = code.slice(0, -2);
-        code += "\n";
       }
-      code += "    },\n";
+      code += "\n}";
     }
-
-    if (request.data) {
-      if (commentedOutDataString) {
-        code += "    // body: " + commentedOutDataString + ",\n";
-      }
-      code += "    body: " + dataString + ",\n";
-    } else if (request.multipartUploads) {
-      code += "    body: form,\n";
-    } else if (request.uploadFile) {
-      if (isNode) {
-        fetchImports.add("fileFromSync");
-        code += "    body: fileFromSync(" + repr(request.uploadFile) + "),\n";
-      } else {
-        code +=
-          "    body: File(['<data goes here>'], " +
-          repr(request.uploadFile) +
-          "),\n";
-        warnings.push([
-          "--form",
-          "you can't read a file for --upload-file/-F in the browser",
-        ]);
-      }
-    }
-
-    if (isNode && request.proxy) {
-      // TODO: do this parsing in utils.ts
-      const proxy = request.proxy.includes("://")
-        ? request.proxy
-        : "http://" + request.proxy;
-      // TODO: could be more accurate
-      let [protocol] = proxy.split(/:\/\/(.*)/s, 2);
-      protocol = protocol.toLowerCase();
-
-      if (!protocol) {
-        protocol = "http";
-      }
-      if (protocol === "socks") {
-        protocol = "socks4";
-        proxy.replace(/^socks/, "socks4");
-      }
-
-      switch (protocol) {
-        case "socks4":
-        case "socks5":
-        case "socks5h":
-        case "socks4a":
-          imports.add(["{ SocksProxyAgent }", "socks-proxy-agent"]);
-          code += "    agent: new SocksProxyAgent(" + repr(proxy) + "),\n";
-          break;
-        case "http":
-        case "https":
-          imports.add(["HttpsProxyAgent", "https-proxy-agent"]);
-          code += "    agent: new HttpsProxyAgent(" + repr(proxy) + "),\n";
-          break;
-        default:
-          warnings.push([
-            "--proxy",
-            "failed to parse --proxy/-x or unknown protocol: " + protocol,
-          ]);
-          break;
-        // default:
-        //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
-      }
-    }
-
-    if (code.endsWith(",\n")) {
-      code = code.slice(0, -2);
-    }
-    code += "\n}";
+    code += ");\n";
   }
-  code += ");";
 
   // TODO: generate some code for the output, like .json() if 'Accept': 'application/json'
+
+  return code;
+};
+
+export const _toJavaScriptOrNode = (
+  requests: Request[],
+  warnings: Warnings,
+  isNode: boolean
+): string => {
+  const fetchImports = new Set<string>();
+  const imports = new Set<[string, string]>();
+
+  const code = requests
+    .map((r) =>
+      requestToJavaScriptOrNode(r, warnings, fetchImports, imports, isNode)
+    )
+    .join("\n");
 
   let importCode = "";
   if (isNode) {
@@ -369,46 +381,50 @@ export const _toJavaScriptOrNode = (
   }
 
   if (importCode) {
-    code = importCode + "\n" + code;
+    return importCode + "\n" + code;
   }
-  return code + "\n";
+  return code;
 };
 
 export const _toJavaScript = (
-  request: Request,
+  requests: Request[],
   warnings: Warnings = []
 ): string => {
-  return _toJavaScriptOrNode(request, warnings, false);
+  return _toJavaScriptOrNode(requests, warnings, false);
 };
-export const _toNode = (request: Request, warnings: Warnings = []): string => {
-  return _toJavaScriptOrNode(request, warnings, true);
+export const _toNode = (
+  requests: Request[],
+  warnings: Warnings = []
+): string => {
+  return _toJavaScriptOrNode(requests, warnings, true);
 };
 
 export const toJavaScriptWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(
+  const requests = util.parseCurlCommand(
     curlCommand,
     javaScriptSupportedArgs,
     warnings
   );
-  return [_toJavaScript(request, warnings), warnings];
+  return [_toJavaScript(requests, warnings), warnings];
 };
 export const toJavaScript = (curlCommand: string | string[]): string => {
-  return toJavaScriptWarn(curlCommand)[0];
+  const [result] = toJavaScriptWarn(curlCommand);
+  return result;
 };
 
 export const toNodeWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(
+  const requests = util.parseCurlCommand(
     curlCommand,
     nodeSupportedArgs,
     warnings
   );
-  return [_toNode(request, warnings), warnings];
+  return [_toNode(requests, warnings), warnings];
 };
 export const toNode = (curlCommand: string | string[]): string => {
   return toNodeWarn(curlCommand)[0];

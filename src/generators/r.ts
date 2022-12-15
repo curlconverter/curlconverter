@@ -76,7 +76,16 @@ function getFilesString(request: Request): string | undefined {
   return filesString;
 }
 
-export const _toR = (request: Request, warnings: Warnings = []): string => {
+export const _toR = (requests: Request[], warnings: Warnings = []): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -227,8 +236,8 @@ export const toRWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const r = _toR(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const r = _toR(requests, warnings);
   return [r, warnings];
 };
 export const toR = (curlCommand: string | string[]): string => {

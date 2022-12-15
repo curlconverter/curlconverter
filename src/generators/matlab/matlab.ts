@@ -13,9 +13,18 @@ const supportedArgs = new Set([
 ]);
 
 export const _toMATLAB = (
-  request: Request,
+  requests: Request[],
   warnings: Warnings = []
 ): string => {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -46,8 +55,8 @@ export const toMATLABWarn = (
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] => {
-  const request = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const matlab = _toMATLAB(request, warnings);
+  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const matlab = _toMATLAB(requests, warnings);
   return [matlab, warnings];
 };
 export const toMATLAB = (curlCommand: string | string[]): string => {
