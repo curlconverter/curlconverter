@@ -672,7 +672,7 @@ function objToPython(
     case "string":
       return repr(obj);
     case "number":
-      // TODO: there could be differences in number syntax between Python and JavaScript
+      // TODO: there are differences in number serialization between Python and JavaScript
       // TODO: if the number in the JSON file is too big for JavaScript, we will lose information
       return obj.toString();
     case "boolean":
@@ -1312,22 +1312,54 @@ function detectEnvVar(inputString: string): [Set<string>, string] {
   return [detectedVariables, modifiedString.join("")];
 }
 
+// Don't add indent/comment characters to empty lines, most importantly the last line
+// which will be empty when there's a trailing newline.
+function indent(s: string, level: number) {
+  if (level === 0) {
+    return s;
+  }
+  const begin = "    ".repeat(level);
+  return s
+    .split("\n")
+    .map((l) => (l.trim() ? begin + l : l))
+    .join("\n");
+}
+const commentOut = (s: string) =>
+  s
+    .split("\n")
+    .map((l) => (l.trim() ? "#" + l : l))
+    .join("\n");
+
+const uniqueWarn = (
+  seenWarnings: Set<string>,
+  warnings: Warnings,
+  warning: [string, string]
+) => {
+  if (!seenWarnings.has(warning[0])) {
+    seenWarnings.add(warning[0]);
+    warnings.push(warning);
+  }
+};
+
+function joinArgs(args: string[]) {
+  let s = "(";
+  if (args.join("").length < 100) {
+    s += args.join(", ");
+  } else {
+    s += "\n";
+    for (const arg of args) {
+      s += "    " + arg + ",\n";
+    }
+  }
+  return s + ")";
+}
+
 const requestToPython = (
   request: Request,
   warnings: Warnings = [],
   imports: Set<string>,
-  requestsImports: Set<string>
+  thirdPartyImports: Set<string>
 ): string => {
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
-    ]);
-  }
-
   // Currently, only assuming that the env-var only used in
   // the value part of cookies, params, or body
   const osVariables = new Set();
@@ -1430,11 +1462,14 @@ const requestToPython = (
     certStr += "\n";
   }
 
-  let queryStr;
-  if (request.query) {
-    queryStr =
+  // if there's only 1 URL, put params here, otherwise put it right before the URL
+  let paramsStr;
+  if (request.urls[0].query && request.urls.length === 1) {
+    paramsStr =
       "params = " +
-      objToDictOrListOfTuples(request.queryDict || request.query) +
+      objToDictOrListOfTuples(
+        request.urls[0].queryDict || request.urls[0].query
+      ) +
       "\n";
   }
 
@@ -1443,13 +1478,17 @@ const requestToPython = (
   let jsonDataString;
   let filesString;
   let shouldEncode;
-  if (request.uploadFile) {
+  if (request.urls[0].uploadFile && request.urls.length === 1) {
     // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
-    if (request.uploadFile === "-" || request.uploadFile === ".") {
+    if (
+      request.urls[0].uploadFile === "-" ||
+      request.urls[0].uploadFile === "."
+    ) {
       dataString = "data = sys.stdin.buffer.read()\n";
       imports.add("sys");
     } else {
-      dataString = "with open(" + repr(request.uploadFile) + ", 'rb') as f:\n";
+      dataString =
+        "with open(" + repr(request.urls[0].uploadFile) + ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
     }
   } else if (request.data) {
@@ -1537,188 +1576,7 @@ const requestToPython = (
     }
   }
 
-  const requestsMethods = [
-    "GET",
-    "HEAD",
-    "POST",
-    "PATCH",
-    "PUT",
-    "DELETE",
-    "OPTIONS", // undocumented
-  ];
-  let fn;
-  const args = [];
-  if (requestsMethods.includes(request.method)) {
-    fn = request.method.toLowerCase();
-  } else {
-    fn = "request";
-    args.push(repr(request.method));
-
-    if (request.method !== request.method.toUpperCase()) {
-      warnings.push([
-        "method",
-        "Requests will uppercase the HTTP method: " +
-          JSON.stringify(request.method),
-      ]);
-    }
-  }
-  args.push(repr(request.urlWithoutQuery));
-
-  if (queryStr) {
-    args.push("params=params");
-  }
-  if (cookieStr && !request.cookieJar) {
-    args.push("cookies=cookies");
-  }
-  if (headerDict) {
-    args.push("headers=headers");
-  }
-  if (request.data || request.uploadFile) {
-    if (jsonDataString) {
-      args.push("json=json_data");
-    } else {
-      args.push("data=data" + (shouldEncode ? ".encode()" : ""));
-    }
-  } else if (filesString) {
-    args.push("files=files");
-  }
-  if (proxyDict) {
-    args.push("proxies=proxies");
-  }
-  if (certStr) {
-    args.push("cert=cert");
-  }
-  if (request.insecure) {
-    args.push("verify=False");
-  } else if (request.cacert || request.capath) {
-    args.push("verify=" + repr((request.cacert || request.capath) as string));
-  }
-  if (request.auth && !util.hasHeader(request, "Authorization")) {
-    const [user, password] = request.auth;
-    let auth = "(" + repr(user) + ", " + repr(password) + ")";
-    switch (request.authType) {
-      case "basic":
-        break;
-      case "digest":
-        requestsImports.add("requests.auth.HTTPDigestAuth");
-        auth = "HTTPDigestAuth" + auth;
-        break;
-      case "ntlm":
-      case "ntlm-wb":
-        requestsImports.add("requests_ntlm.HttpNtlmAuth");
-        auth = "HttpNtlmAuth" + auth;
-        // TODO: this could stop being true
-        warnings.push(["ntlm", "requests-ntlm is unmaintained"]);
-        break;
-      case "negotiate":
-        requestsImports.add("requests_gssapi.HTTPSPNEGOAuth");
-        auth = "HTTPSPNEGOAuth(";
-        if (request.delegation) {
-          if (request.delegation === "always") {
-            auth += "delegate=True";
-          } else if (request.delegation === "none") {
-            auth += "delegate=False";
-          } else {
-            warnings.push([
-              "delegation",
-              "--delegation value not supported: " +
-                JSON.stringify(request.delegation),
-            ]);
-          }
-        }
-        auth += ")";
-        // TODO: use requests-kerberos instead?
-        // https://star-history.com/#pythongssapi/requests-gssapi&requests/requests-kerberos
-        warnings.push([
-          "negotiate",
-          "requests-gssapi is a fork of requests-kerberos",
-        ]);
-        break;
-      case "aws-sigv4":
-        requestsImports.add("aws_requests_auth.aws_auth.AWSRequestsAuth");
-        // TODO: move this "auth = " to separate line
-        // TODO: try this.
-        auth =
-          "AWSRequestsAuth(aws_access_key=" +
-          repr(user) +
-          ", aws_secret_access_key=" +
-          repr(password) +
-          // TODO: parse
-          ", aws_host=" +
-          repr(request.awsSigV4 || "") +
-          ", aws_region=" +
-          repr(request.awsSigV4 || "") +
-          ", aws_service=" +
-          repr(request.awsSigV4 || "") +
-          ")";
-        warnings.push([
-          "--aws-sigv4",
-          "--aws-sigv4 value isn't parsed: " + JSON.stringify(request.awsSigV4),
-        ]);
-        break;
-      case "bearer":
-        // Shouldn't happen because hasHeader(Authorization) should be true
-        // TODO: use requests-oauthlib
-        break;
-    }
-    args.push("auth=" + auth);
-  }
-  if (request.timeout || request.connectTimeout) {
-    if (
-      request.timeout &&
-      request.connectTimeout &&
-      request.timeout !== request.connectTimeout
-    ) {
-      args.push(
-        "timeout=(" + request.connectTimeout + ", " + request.timeout + ")"
-      );
-    } else if (request.timeout) {
-      args.push("timeout=" + request.timeout);
-    } else if (request.connectTimeout) {
-      args.push("timeout=(" + request.connectTimeout + ", None)");
-    }
-
-    if (request.timeout) {
-      warnings.push([
-        "--max-time",
-        // https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
-        "unlike --max-time, Requests doesn't have a timeout for the whole request, only for the connect and the read",
-      ]);
-    }
-  }
-
-  // By default, curl doesn't follow redirects and Requests does.
-  // Unless redirect behavior has been explicitly set with -L/--location/--no-location
-  // or --max-redirs 0 we pretend generate code that follows redirects,
-  // because adding allow_redirects=False to almost every command would be ugly
-  // and it only matters when the server responds with a redirect, which isn't
-  // that common.
-  if (request.followRedirects === undefined) {
-    request.followRedirects = true;
-
-    // Users would see this warning for most commands
-    // warnings.push([
-    //   "--location",
-    //   "Requests defaults to following redirects, curl doesn't",
-    // ]);
-  }
-  if (!request.followRedirects || request.maxRedirects === "0") {
-    args.push("allow_redirects=False");
-  } else if (request.maxRedirects) {
-    if (request.maxRedirects === "-1") {
-      imports.add("math");
-      request.maxRedirects = "math.inf";
-    }
-  }
-  if (request.followRedirects && request.followRedirectsTrusted) {
-    warnings.push([
-      "--location-trusted",
-      "Requests doesn't have an easy way to disable removing the Authorization: header on redirect",
-    ]);
-  }
-
   let pythonCode = "";
-
   if (osVariables.size > 0) {
     imports.add("os");
   }
@@ -1740,8 +1598,8 @@ const requestToPython = (
   if (headerDict) {
     pythonCode += headerDict + "\n";
   }
-  if (queryStr) {
-    pythonCode += queryStr + "\n";
+  if (paramsStr) {
+    pythonCode += paramsStr + "\n";
   }
   if (certStr) {
     pythonCode += certStr + "\n";
@@ -1754,84 +1612,301 @@ const requestToPython = (
     pythonCode += filesString + "\n";
   }
 
-  // Don't add indent/comment characters to empty lines, most importantly the last line
-  // which will be empty when there's a trailing newline.
-  function indent(s: string, level: number) {
-    const begin = "    ".repeat(level);
-    if (level > 0) {
-      return s
-        .split("\n")
-        .map((l) => (l.trim() ? begin + l : l))
-        .join("\n");
-    }
-    return s;
+  // By default, curl doesn't follow redirects and Requests does.
+  // Unless redirect behavior has been explicitly set with -L/--location/--no-location
+  // or --max-redirs 0 we pretend generate code that follows redirects,
+  // because adding allow_redirects=False to almost every command would be ugly
+  // and it only matters when the server responds with a redirect, which isn't
+  // that common.
+  let followRedirects = request.followRedirects;
+  let maxRedirects = request.maxRedirects;
+  if (followRedirects === undefined) {
+    followRedirects = true;
+
+    // Users would see this warning for most commands
+    // warnings.push([
+    //   "--location",
+    //   "Requests defaults to following redirects, curl doesn't",
+    // ]);
   }
-  const commentOut = (s: string) =>
-    s
-      .split("\n")
-      .map((l) => (l.trim() ? "#" + l : l))
-      .join("\n");
-  function joinArgs(args: string[]) {
-    let s = "(";
-    if (args.join("").length < 100) {
-      s += args.join(", ");
-    } else {
-      s += "\n";
-      for (const arg of args) {
-        s += "    " + arg + ",\n";
-      }
-    }
-    return s + ")";
-  }
+  const hasMaxRedirects =
+    followRedirects &&
+    maxRedirects &&
+    maxRedirects !== "0" &&
+    maxRedirects !== "30"; // Requests default
 
   // Things that vary per-url:
-  // method (because of upload-file)
-  // data= (because of upload-file)
-  // output-file
+  // method (because --upload-file can make it PUT)
+  // data= (because of --upload-file)
+  // --output file
   // params= (because of the query string)
   // auth= (because the URL can have an auth string)
-
-  let requestsLine = "";
-  const hasMaxRedirects =
-    request.followRedirects &&
-    request.maxRedirects &&
-    request.maxRedirects !== "0" &&
-    request.maxRedirects !== "30"; // Requests default
   const isSession = hasMaxRedirects || request.cookieJar;
-  let indentLevel = 0;
-  if (isSession) {
-    pythonCode += "with requests.Session() as session:\n";
-    if (hasMaxRedirects) {
-      pythonCode += `    session.max_redirects = ${request.maxRedirects}\n`;
-    }
-    if (request.cookieJar) {
-      pythonCode += `    session.cookies = cookies\n`;
-    }
-    requestsLine += "response = session.";
-    indentLevel += 1;
-  } else {
-    requestsLine += "response = requests.";
-  }
-  requestsLine += fn;
-  pythonCode += indent(requestsLine + joinArgs(args) + "\n", indentLevel);
+  const seenWarnings: Set<string> = new Set();
+  const requestLines = [];
+  let extraEmptyLine = false;
+  for (const [urlObjIndex, urlObj] of request.urls.entries()) {
+    let requestLine = "";
+    const requestsMethods = [
+      "GET",
+      "HEAD",
+      "POST",
+      "PATCH",
+      "PUT",
+      "DELETE",
+      "OPTIONS", // undocumented
+    ];
+    let fn;
+    const args = [];
+    if (requestsMethods.includes(urlObj.method)) {
+      fn = urlObj.method.toLowerCase();
+    } else {
+      fn = "request";
+      args.push(repr(urlObj.method));
 
-  if (jsonDataString && dataString) {
-    // Adding empty lines to a "with" block breaks the code when pasted in the REPL
-    if (!isSession) {
-      pythonCode += "\n";
+      if (urlObj.method !== urlObj.method.toUpperCase()) {
+        warnings.push([
+          "method",
+          "Requests will uppercase the HTTP method: " +
+            JSON.stringify(urlObj.method),
+        ]);
+      }
+    }
+    args.push(repr(urlObj.urlWithoutQuery));
+
+    if (urlObj.query) {
+      args.push("params=params");
+    }
+    if (cookieStr && !request.cookieJar) {
+      args.push("cookies=cookies");
+    }
+    if (headerDict) {
+      args.push("headers=headers");
+    }
+    if (urlObj.uploadFile) {
+      if (request.urls.length > 1) {
+        // If there's more than one URL we could have --data for all
+        // of them and --upload-file for just one of them and we can't
+        // overwrite the `data` variable in that case.
+        args.push("data=file_contents");
+      } else {
+        args.push("data=data");
+      }
+    } else if (request.data) {
+      if (jsonDataString) {
+        args.push("json=json_data");
+      } else {
+        args.push("data=data" + (shouldEncode ? ".encode()" : ""));
+      }
+    } else if (filesString) {
+      args.push("files=files");
+    }
+    if (proxyDict) {
+      args.push("proxies=proxies");
+    }
+    if (certStr) {
+      args.push("cert=cert");
+    }
+    if (request.insecure) {
+      args.push("verify=False");
+    } else if (request.cacert || request.capath) {
+      args.push("verify=" + repr((request.cacert || request.capath) as string));
+    }
+    // TODO: does this header check apply to all auth methods?
+    if (urlObj.auth && !util.hasHeader(request, "Authorization")) {
+      const [user, password] = urlObj.auth;
+      let auth = "(" + repr(user) + ", " + repr(password) + ")";
+      switch (request.authType) {
+        case "basic":
+          break;
+        case "digest":
+          thirdPartyImports.add("requests.auth.HTTPDigestAuth");
+          auth = "HTTPDigestAuth" + auth;
+          break;
+        case "ntlm":
+        case "ntlm-wb":
+          thirdPartyImports.add("requests_ntlm.HttpNtlmAuth");
+          auth = "HttpNtlmAuth" + auth;
+          // TODO: this could stop being true
+          uniqueWarn(seenWarnings, warnings, [
+            "ntlm",
+            "requests-ntlm is unmaintained",
+          ]);
+          break;
+        case "negotiate":
+          thirdPartyImports.add("requests_gssapi.HTTPSPNEGOAuth");
+          auth = "HTTPSPNEGOAuth(";
+          if (request.delegation) {
+            if (request.delegation === "always") {
+              auth += "delegate=True";
+            } else if (request.delegation === "none") {
+              auth += "delegate=False";
+            } else {
+              uniqueWarn(seenWarnings, warnings, [
+                "delegation",
+                "--delegation value not supported: " +
+                  JSON.stringify(request.delegation),
+              ]);
+            }
+          }
+          auth += ")";
+          // TODO: use requests-kerberos instead?
+          // https://star-history.com/#pythongssapi/requests-gssapi&requests/requests-kerberos
+          uniqueWarn(seenWarnings, warnings, [
+            "negotiate",
+            "requests-gssapi is a fork of requests-kerberos",
+          ]);
+          break;
+        case "aws-sigv4":
+          thirdPartyImports.add("aws_requests_auth.aws_auth.AWSRequestsAuth");
+          // TODO: move this "auth = " to separate line
+          // TODO: try this.
+          auth =
+            "AWSRequestsAuth(aws_access_key=" +
+            repr(user) +
+            ", aws_secret_access_key=" +
+            repr(password) +
+            // TODO: parse
+            ", aws_host=" +
+            repr(request.awsSigV4 || "") +
+            ", aws_region=" +
+            repr(request.awsSigV4 || "") +
+            ", aws_service=" +
+            repr(request.awsSigV4 || "") +
+            ")";
+          uniqueWarn(seenWarnings, warnings, [
+            "--aws-sigv4",
+            "--aws-sigv4 value isn't parsed: " +
+              JSON.stringify(request.awsSigV4),
+          ]);
+          break;
+        case "bearer":
+          // Shouldn't happen because hasHeader(Authorization) should be true
+          // TODO: use requests-oauthlib
+          break;
+      }
+      args.push("auth=" + auth);
+    }
+    if (request.timeout || request.connectTimeout) {
+      if (
+        request.timeout &&
+        request.connectTimeout &&
+        request.timeout !== request.connectTimeout
+      ) {
+        args.push(
+          "timeout=(" + request.connectTimeout + ", " + request.timeout + ")"
+        );
+      } else if (request.timeout) {
+        args.push("timeout=" + request.timeout);
+      } else if (request.connectTimeout) {
+        args.push("timeout=(" + request.connectTimeout + ", None)");
+      }
+
+      if (request.timeout) {
+        uniqueWarn(seenWarnings, warnings, [
+          "--max-time",
+          // https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
+          "unlike --max-time, Requests doesn't have a timeout for the whole request, only for the connect and the read",
+        ]);
+      }
     }
 
-    // Should never be -1
-    args[args.indexOf("json=json_data")] = shouldEncode
-      ? "data=data.encode()"
-      : "data=data";
-    let dataAlternative =
-      "# Note: json_data will not be serialized by requests\n" +
-      "# exactly as it was in the original request.\n";
-    dataAlternative += commentOut(dataString);
-    dataAlternative += commentOut(requestsLine + joinArgs(args) + "\n");
-    pythonCode += indent(dataAlternative, indentLevel);
+    if (!followRedirects || maxRedirects === "0") {
+      args.push("allow_redirects=False");
+    } else if (maxRedirects) {
+      if (maxRedirects === "-1") {
+        imports.add("math");
+        maxRedirects = "math.inf";
+      }
+    }
+    if (followRedirects && request.followRedirectsTrusted) {
+      uniqueWarn(seenWarnings, warnings, [
+        "--location-trusted",
+        "Requests doesn't have an easy way to disable removing the Authorization: header on redirect",
+      ]);
+    }
+
+    if (isSession && urlObjIndex === 0) {
+      requestLine += "with requests.Session() as session:\n";
+      if (hasMaxRedirects) {
+        requestLine += `    session.max_redirects = ${maxRedirects}\n`;
+      }
+      if (request.cookieJar) {
+        requestLine += `    session.cookies = cookies\n`;
+      }
+    }
+    const indentLevel = isSession ? 1 : 0;
+
+    if (urlObj.query && request.urls.length > 1) {
+      requestLine += indent(
+        "params = " +
+          objToDictOrListOfTuples(urlObj.queryDict || urlObj.query) +
+          "\n",
+        indentLevel
+      );
+    }
+
+    if (urlObj.uploadFile && request.urls.length > 1) {
+      let uploadFileLine = "";
+      // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
+      if (urlObj.uploadFile === "-" || urlObj.uploadFile === ".") {
+        uploadFileLine += "file_contents = sys.stdin.buffer.read()\n";
+        imports.add("sys");
+      } else {
+        uploadFileLine +=
+          "with open(" + repr(urlObj.uploadFile) + ", 'rb') as f:\n";
+        uploadFileLine += "    file_contents = f.read()\n";
+      }
+      requestLine += indent(uploadFileLine, indentLevel);
+    }
+
+    const fnCallLine =
+      "response = " + (isSession ? "session." : "requests.") + fn;
+    requestLine += indent(fnCallLine + joinArgs(args) + "\n", indentLevel);
+
+    if (jsonDataString && dataString && !urlObj.uploadFile) {
+      // Adding empty lines to a "with" block breaks the code when pasted in the REPL
+      requestLine += isSession || request.urls.length > 1 ? "" : "\n";
+
+      // Should never be -1
+      args[args.indexOf("json=json_data")] = shouldEncode
+        ? "data=data.encode()"
+        : "data=data";
+      let dataAlternative =
+        "# Note: json_data will not be serialized by requests\n" +
+        "# exactly as it was in the original request.\n";
+      dataAlternative += commentOut(dataString);
+      dataAlternative += commentOut(fnCallLine + joinArgs(args) + "\n");
+      requestLine += indent(dataAlternative, indentLevel);
+    }
+
+    if (urlObj.output && urlObj.output !== "/dev/null") {
+      let outputLine = "";
+      if (request.output === "-") {
+        outputLine += "print(response.text)\n";
+      } else {
+        outputLine += isSession || request.urls.length > 1 ? "" : "\n";
+
+        outputLine += "with open(" + repr(urlObj.output) + ", 'wb') as f:\n";
+        outputLine += "    f.write(response.content)\n";
+      }
+      requestLine += indent(outputLine, indentLevel);
+    }
+
+    if (
+      !isSession &&
+      // request.urls.length > 1 &&
+      (urlObj.query ||
+        (dataString && jsonDataString) ||
+        urlObj.uploadFile ||
+        (urlObj.output && urlObj.output !== "/dev/null"))
+    ) {
+      extraEmptyLine = true;
+    }
+    requestLines.push(requestLine);
   }
+
+  pythonCode += requestLines.join(extraEmptyLine ? "\n" : "");
 
   if (request.cookieJar) {
     let cookieSaveLine = "cookies.save(";
@@ -1839,19 +1914,7 @@ const requestToPython = (
       cookieSaveLine += repr(request.cookieJar) + ", ";
     }
     cookieSaveLine += "ignore_discard=True, ignore_expires=True)\n"; // TODO: necessary?
-    pythonCode += indent(cookieSaveLine, indentLevel);
-  }
-  if (request.output && request.output !== "/dev/null") {
-    let outputLine = "";
-    if (request.output === "-") {
-      outputLine += "print(response.text)\n";
-    } else {
-      outputLine += isSession ? "" : "\n";
-
-      outputLine += "with open(" + repr(request.output) + ", 'wb') as f:\n";
-      outputLine += "    f.write(response.content)\n";
-    }
-    pythonCode += indent(outputLine, indentLevel);
+    pythonCode += indent(cookieSaveLine, 1);
   }
 
   if (request.http2) {
@@ -1889,26 +1952,38 @@ export const _toPython = (
   requests: Request[],
   warnings: Warnings = []
 ): string => {
-  const imports = new Set<string>();
-  const requestsImports = new Set<string>();
-
   const code = [];
+  let joinTwoLines = false;
+  const imports = new Set<string>();
+  const thirdPartyImports = new Set<string>();
   for (const request of requests) {
-    code.push(requestToPython(request, warnings, imports, requestsImports));
+    const requestCode = requestToPython(
+      request,
+      warnings,
+      imports,
+      thirdPartyImports
+    );
+    code.push(requestCode);
+
+    // If one of the requests defines variables (or its URL is very long),
+    // separate all the configs with two empty lines.
+    // curl example.com --next example.com
+    // vs.
+    // curl --data "foo=bar" example.com --next example.com
+    // (+1 for the trailing newline)
+    joinTwoLines ||= requestCode.split("\n").length > request.urls.length + 1;
   }
 
-  let pythonCode = "";
-  pythonCode += printImports(imports);
+  let importCode = "";
+  importCode += printImports(imports);
   if (imports.size > 1) {
-    pythonCode += "\n";
+    importCode += "\n";
   }
-  pythonCode += "import requests\n";
-  pythonCode += printImports(requestsImports);
-  pythonCode += "\n";
+  importCode += "import requests\n";
+  importCode += printImports(thirdPartyImports);
+  importCode += "\n";
 
-  pythonCode += code.join("\n\n");
-
-  return pythonCode;
+  return importCode + code.join(joinTwoLines ? "\n\n" : "\n");
 };
 
 export const toPythonWarn = (
