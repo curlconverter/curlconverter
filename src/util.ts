@@ -374,6 +374,11 @@ interface Curl_URL {
   fragment: string;
   // portnum: number /* the numerical version */;
 }
+// struct getout
+// https://github.com/curl/curl/blob/curl-7_86_0/src/tool_sdecls.h#L96
+// and
+// struct urlpieces
+// https://github.com/curl/curl/blob/curl-7_86_0/lib/urldata.h#L1336
 interface RequestUrl {
   // If the ?query can't be losslessly parsed, then
   // .url   === .urlWithoutQuery
@@ -389,6 +394,8 @@ interface RequestUrl {
 
   method: string;
   auth?: [string, string];
+  // TODO: should authType be per-url as well?
+  // authType?: string;
 }
 
 interface Request {
@@ -2148,7 +2155,7 @@ function buildRequest(
 
   const urls: RequestUrl[] = [];
   const uploadFiles = config["upload-file"] || [];
-  const outputFiles = config["output"] || [];
+  const outputFiles = config.output || [];
   // eslint-disable-next-line prefer-const
   for (let [i, originalUrl] of config.url.entries()) {
     const uploadFile: string | undefined = uploadFiles[i];
@@ -2217,6 +2224,21 @@ function buildRequest(
   // --get moves --data into the URL's query string
   if (config.get && config.data) {
     delete config.data;
+  }
+
+  if ((config["upload-file"] || []).length > config.url.length) {
+    warnf(global, [
+      "too-many-upload-files",
+      "Got more --upload-file/-T options than URLs: " +
+        config["upload-file"]?.map((f) => JSON.stringify(f)).join(", "),
+    ]);
+  }
+  if ((config.output || []).length > config.url.length) {
+    warnf(global, [
+      "too-many-ouptut-files",
+      "Got more --output/-o options than URLs: " +
+        config.output?.map((f) => JSON.stringify(f)).join(", "),
+    ]);
   }
 
   const request: Request = {
