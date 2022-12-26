@@ -131,7 +131,7 @@ const testFile = async (testFilename: string): Promise<void> => {
   const curlCommand = fs.readFileSync(inputFile, "utf8");
   const requestedUrl = utils
     .parseCurlCommand(curlCommand)[0]
-    .url.replace("http://", "");
+    .urls[0].url.replace("http://", "");
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
     console.error("bad requested URL for " + testFilename);
     console.error("  " + requestedUrl);

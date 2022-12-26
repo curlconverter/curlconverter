@@ -121,21 +121,21 @@ function getOptions(request: Request, params: string): [string, string] {
 }
 
 function getBasicAuth(request: Request): string {
-  if (!request.auth) {
+  if (!request.urls[0].auth) {
     return "";
   }
 
-  const [user, password] = request.auth;
+  const [user, password] = request.urls[0].auth;
   return `basic_auth: {${repr(user)}, ${repr(password)}}`;
 }
 
 function getQueryDict(request: Request): string {
-  if (!request.query || !request.query.length) {
+  if (!request.urls[0].query || !request.urls[0].query.length) {
     return "[]";
   }
   let queryDict = "[\n";
   const queryDictLines = [];
-  for (const [paramName, rawValue] of request.query) {
+  for (const [paramName, rawValue] of request.urls[0].query) {
     queryDictLines.push(`    {${repr(paramName)}, ${repr(rawValue)}}`);
   }
   queryDict += queryDictLines.join(",\n");
@@ -270,14 +270,14 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   // put!(url, body \\ "", headers \\ [], options \\ [])
   const methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"];
   const bodyMethods = ["PATCH", "POST", "PUT"];
-  if (!methods.includes(request.method)) {
+  if (!methods.includes(request.urls[0].method)) {
     warnings.push([
       "bad-method",
-      "Unsupported method " + JSON.stringify(request.method),
+      "Unsupported method " + JSON.stringify(request.urls[0].method),
     ]);
   }
 
-  const isBodyMethod = bodyMethods.includes(request.method);
+  const isBodyMethod = bodyMethods.includes(request.urls[0].method);
   const body = getBody(request);
   const headers = getHeadersDict(request);
   const params = getQueryDict(request);
@@ -302,10 +302,11 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
     if (keepArgs && isBodyMethod) {
       args.push(body);
     }
-    args.push(repr(request.urlWithoutQuery));
+    args.push(repr(request.urls[0].urlWithoutQuery));
     args = args.reverse();
 
-    let s = "response = HTTPoison." + request.method.toLowerCase() + "!(";
+    let s =
+      "response = HTTPoison." + request.urls[0].method.toLowerCase() + "!(";
     if (args.length === 1) {
       // If we just need the method+URL, keep it all on one line
       s += args[0];
@@ -318,8 +319,8 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   }
 
   return `request = %HTTPoison.Request{
-  method: :${request.method.toLowerCase()},
-  url: ${repr(request.urlWithoutQuery)},
+  method: :${request.urls[0].method.toLowerCase()},
+  url: ${repr(request.urls[0].urlWithoutQuery)},
   body: ${body},
   headers: ${headers},
   options: ${optionsWithoutParams},

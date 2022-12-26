@@ -85,8 +85,8 @@ export const _toAnsible = (
   }
 
   const r: AnsibleURI = {
-    url: request.url,
-    method: request.method, // TODO: toUpper()?
+    url: request.urls[0].url,
+    method: request.urls[0].method, // TODO: toUpper()?
   };
   if (typeof request.data === "string" && request.data) {
     const asJson = getDataString(request);
@@ -104,19 +104,19 @@ export const _toAnsible = (
       r.headers[k] = v || "";
     }
   }
-  if (request.auth) {
-    if (request.auth[0]) {
-      r.url_username = request.auth[0];
+  if (request.urls[0].auth) {
+    if (request.urls[0].auth[0]) {
+      r.url_username = request.urls[0].auth[0];
     }
-    if (request.auth[1]) {
-      r.url_password = request.auth[1];
+    if (request.urls[0].auth[1]) {
+      r.url_password = request.urls[0].auth[1];
     }
   }
   if (request.insecure) {
     r.validate_certs = false;
   }
   return yaml.stringify(
-    [{ name: request.urlWithoutQuery, uri: r, register: "result" }],
+    [{ name: request.urls[0].urlWithoutQuery, uri: r, register: "result" }],
     100,
     2
   );

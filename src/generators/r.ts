@@ -31,14 +31,14 @@ function repr(value: string): string {
 }
 
 function getQueryDict(request: Request): string | undefined {
-  if (request.queryDict === undefined) {
+  if (request.urls[0].queryDict === undefined) {
     return undefined;
   }
 
   let queryDict = "params = list(\n";
-  queryDict += Object.keys(request.queryDict)
+  queryDict += Object.keys(request.urls[0].queryDict)
     .map((paramName) => {
-      const rawValue = (request.queryDict as QueryDict)[paramName];
+      const rawValue = (request.urls[0].queryDict as QueryDict)[paramName];
       let paramValue;
       if (Array.isArray(rawValue)) {
         paramValue = "c(" + (rawValue as string[]).map(repr).join(", ") + ")";
@@ -166,19 +166,21 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
   } else if (request.multipartUploads) {
     filesString = getFilesString(request);
   }
-  const url = request.queryDict ? request.urlWithoutQuery : request.url;
+  const url = request.urls[0].queryDict
+    ? request.urls[0].urlWithoutQuery
+    : request.urls[0].url;
 
   let requestLine = "res <- httr::";
 
   // TODO: GET() doesn't support sending data, detect and use VERB() instead
   if (
     ["GET", "HEAD", "PATCH", "PUT", "DELETE", "POST"].includes(
-      request.method.toUpperCase()
+      request.urls[0].method.toUpperCase()
     )
   ) {
-    requestLine += request.method.toUpperCase() + "(";
+    requestLine += request.urls[0].method.toUpperCase() + "(";
   } else {
-    requestLine += "VERB(" + repr(request.method) + ", ";
+    requestLine += "VERB(" + repr(request.urls[0].method) + ", ";
   }
   requestLine += "url = " + repr(url);
 
@@ -186,7 +188,7 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
   if (request.headers) {
     requestLineBody += ", httr::add_headers(.headers=headers)";
   }
-  if (request.queryDict) {
+  if (request.urls[0].queryDict) {
     requestLineBody += ", query = params";
   }
   if (request.cookies) {
@@ -203,8 +205,8 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
   if (request.insecure) {
     requestLineBody += ", config = httr::config(ssl_verifypeer = FALSE)";
   }
-  if (request.auth) {
-    const [user, password] = request.auth;
+  if (request.urls[0].auth) {
+    const [user, password] = request.urls[0].auth;
     requestLineBody +=
       ", httr::authenticate(" + repr(user) + ", " + repr(password) + ")";
   }

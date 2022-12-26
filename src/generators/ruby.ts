@@ -347,60 +347,65 @@ const requestToRuby = (
   };
 
   if (
-    request.queryDict &&
-    Object.keys(request.queryDict).every(validSymbol) &&
-    !Object.values(request.queryDict).some(empty)
+    request.urls[0].queryDict &&
+    Object.keys(request.urls[0].queryDict).every(validSymbol) &&
+    !Object.values(request.urls[0].queryDict).some(empty)
   ) {
-    code += "uri = URI(" + repr(request.urlWithoutQuery) + ")\n";
+    code += "uri = URI(" + repr(request.urls[0].urlWithoutQuery) + ")\n";
     code += "params = {\n";
-    for (const [key, value] of Object.entries(request.queryDict)) {
+    for (const [key, value] of Object.entries(request.urls[0].queryDict)) {
       code += "  :" + key + " => " + objToRuby(value) + ",\n";
     }
     code += "}\n";
     code += "uri.query = URI.encode_www_form(params)\n\n";
   } else {
-    code += "uri = URI(" + repr(request.url) + ")\n";
+    code += "uri = URI(" + repr(request.urls[0].url) + ")\n";
   }
 
   const simple = !(
     request.headers ||
-    request.auth ||
+    request.urls[0].auth ||
     request.multipartUploads ||
     request.data ||
-    request.uploadFile ||
+    request.urls[0].uploadFile ||
     request.insecure ||
     request.proxy ||
-    request.output
+    request.urls[0].output
   );
-  if (util.has(methods, request.method)) {
-    if (request.method === "GET" && simple) {
+  if (util.has(methods, request.urls[0].method)) {
+    if (request.urls[0].method === "GET" && simple) {
       code += "res = Net::HTTP.get_response(uri)\n";
       return code;
     } else {
-      code += "req = Net::HTTP::" + methods[request.method] + ".new(uri)\n";
+      code +=
+        "req = Net::HTTP::" + methods[request.urls[0].method] + ".new(uri)\n";
     }
   } else {
     code +=
       "req = Net::HTTPGenericRequest.new(" +
-      repr(request.method) +
+      repr(request.urls[0].method) +
       ", true, true, uri)\n";
   }
 
-  if (request.auth && request.authType === "basic") {
+  if (request.urls[0].auth && request.authType === "basic") {
     code +=
       "req.basic_auth " +
-      repr(request.auth[0]) +
+      repr(request.urls[0].auth[0]) +
       ", " +
-      repr(request.auth[1]) +
+      repr(request.urls[0].auth[1]) +
       "\n";
   }
 
   let reqBody;
-  if (request.uploadFile) {
-    if (request.uploadFile === "-" || request.uploadFile === ".") {
+  if (request.urls[0].uploadFile) {
+    if (
+      request.urls[0].uploadFile === "-" ||
+      request.urls[0].uploadFile === "."
+    ) {
       reqBody = "req.body = STDIN.read\n";
     } else {
-      reqBody = "req.body = File.read(" + repr(request.uploadFile) + ")\n";
+      reqBody =
+        "req.body = File.read(" + repr(request.urls[0].uploadFile) + ")\n";
     }
   } else if (request.data) {
     let importJson = false;
@@ -475,11 +480,11 @@ const requestToRuby = (
   code += "  http.request(req)\n";
   code += "end";
 
-  if (request.output && request.output !== "/dev/null") {
-    if (request.output === "-") {
+  if (request.urls[0].output && request.urls[0].output !== "/dev/null") {
+    if (request.urls[0].output === "-") {
       code += "\nputs res.body";
     } else {
-      code += "\nFile.write(" + repr(request.output) + ", res.body)";
+      code += "\nFile.write(" + repr(request.urls[0].output) + ", res.body)";
     }
   }
 

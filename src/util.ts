@@ -399,17 +399,8 @@ interface RequestUrl {
 }
 
 interface Request {
+  // Will have at least one element (otherwise an error is raised)
   urls: RequestUrl[];
-  // the first url in urls, to simplify generators that only use one url
-  url: string;
-  urlObj: Curl_URL;
-  originalUrl: string;
-  urlWithoutQuery: string;
-  method: string;
-  query?: Query;
-  queryDict?: QueryDict;
-  uploadFile?: string;
-  output?: string;
 
   headers?: Headers;
   stdin?: string;
@@ -418,7 +409,6 @@ interface Request {
     name: string;
   } & ({ content: string } | { contentFile: string; filename?: string }))[];
   authType: string;
-  auth?: [string, string];
   awsSigV4?: string;
   delegation?: string;
   cookies?: Cookies;
@@ -2243,7 +2233,6 @@ function buildRequest(
 
   const request: Request = {
     urls,
-    ...urls[0],
     authType: pickAuth(config.authtype),
   };
   // TODO: warn about unused stdin?

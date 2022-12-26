@@ -15,7 +15,7 @@ import type { Request, Warnings } from "../../util.js";
 const isSupportedByWebServices = (request: Request): boolean => {
   if (
     !new Set(["get", "post", "put", "delete", "patch"]).has(
-      request.method.toLowerCase()
+      request.urls[0].method.toLowerCase()
     )
   ) {
     return false;
@@ -29,15 +29,15 @@ const parseWebOptions = (request: Request): { [key: string]: string } => {
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
   // thus, it is necessary to set the method for other requests
   if (
-    request.method.toLowerCase() !== "get" &&
-    request.method.toLowerCase() !== "post"
+    request.urls[0].method.toLowerCase() !== "get" &&
+    request.urls[0].method.toLowerCase() !== "post"
   ) {
-    options.RequestMethod = request.method.toLowerCase();
+    options.RequestMethod = request.urls[0].method.toLowerCase();
   }
 
   const headers: { [key: string]: string } = {};
-  if (request.auth) {
-    const [username, password] = request.auth;
+  if (request.urls[0].auth) {
+    const [username, password] = request.urls[0].auth;
     if (username !== "") {
       options.Username = username;
       options.Password = password;
@@ -138,11 +138,13 @@ const prepareOptions = (
 
 const prepareBasicURI = (request: Request): string[] => {
   const response = [];
-  if (request.queryDict) {
-    response.push(setVariableValue("baseURI", repr(request.urlWithoutQuery)));
+  if (request.urls[0].queryDict) {
+    response.push(
+      setVariableValue("baseURI", repr(request.urls[0].urlWithoutQuery))
+    );
     response.push(setVariableValue("uri", `[baseURI '?' ${paramsString}]`));
   } else {
-    response.push(setVariableValue("uri", repr(request.url)));
+    response.push(setVariableValue("uri", repr(request.urls[0].url)));
   }
   return response;
 };

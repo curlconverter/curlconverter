@@ -84,7 +84,7 @@ export const _toJava = (
 
   let javaCode = "";
 
-  if (request.auth) {
+  if (request.urls[0].auth) {
     javaCode += "import javax.xml.bind.DatatypeConverter;\n";
   }
   javaCode += "import java.io.IOException;\n";
@@ -101,11 +101,11 @@ export const _toJava = (
   javaCode += "\nclass Main {\n\n";
 
   javaCode += "\tpublic static void main(String[] args) throws IOException {\n";
-  javaCode += "\t\tURL url = new URL(" + repr(request.url) + ");\n";
+  javaCode += "\t\tURL url = new URL(" + repr(request.urls[0].url) + ");\n";
   javaCode +=
     "\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n";
   javaCode +=
-    "\t\thttpConn.setRequestMethod(" + repr(request.method) + ");\n\n";
+    "\t\thttpConn.setRequestMethod(" + repr(request.urls[0].method) + ");\n\n";
 
   let gzip = false;
   if (request.headers) {
@@ -126,10 +126,10 @@ export const _toJava = (
     javaCode += "\n";
   }
 
-  if (request.auth) {
+  if (request.urls[0].auth) {
     javaCode +=
       "\t\tbyte[] message = (" +
-      repr(request.auth.join(":")) +
+      repr(request.urls[0].auth.join(":")) +
       ').getBytes("UTF-8");\n';
     javaCode +=
       "\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n";

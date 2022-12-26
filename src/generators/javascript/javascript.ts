@@ -210,9 +210,9 @@ const requestToJavaScriptOrNode = (
   // Can delete content-type header
   const [dataString, commentedOutDataString] = getDataString(request);
 
-  if (request.auth && request.authType === "digest") {
+  if (request.urls[0].auth && request.authType === "digest") {
     // TODO: if 'Authorization:' header is specified, don't set this
-    const [user, password] = request.auth;
+    const [user, password] = request.urls[0].auth;
     imports.add(["* as DigestFetch", "digest-fetch"]);
     code +=
       "const client = new DigestFetch(" +
@@ -243,7 +243,7 @@ const requestToJavaScriptOrNode = (
         // TODO: If you pass a weird method to fetch() it won't uppercase it
         // const methods = []
         // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
-        code += "    method: " + repr(request.method) + ",\n";
+        code += "    method: " + repr(request.urls[0].method) + ",\n";
       }
 
       if (

@@ -106,9 +106,9 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
 
   goCode +=
     "\treq, err := http.NewRequest(" +
-    repr(request.method) +
+    repr(request.urls[0].method) +
     ", " +
-    repr(request.url);
+    repr(request.urls[0].url);
   goCode += ", " + (request.data ? "data" : "nil") + ")\n";
   goCode += "\tif err != nil {\n";
   goCode += "\t\tlog.Fatal(err)\n";
@@ -139,8 +139,8 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
     }
   }
 
-  if (request.auth && request.authType === "basic") {
-    const [user, password] = request.auth;
+  if (request.urls[0].auth && request.authType === "basic") {
+    const [user, password] = request.urls[0].auth;
     goCode +=
       "\treq.SetBasicAuth(" + repr(user) + ", " + repr(password) + ")\n";
   }

@@ -119,14 +119,14 @@ export const _toJsonString = (
   }
 
   const requestJson: JSONOutput = {
-    url: (request.queryDict ? request.urlWithoutQuery : request.url).replace(
-      /\/$/,
-      ""
-    ),
+    url: (request.urls[0].queryDict
+      ? request.urls[0].urlWithoutQuery
+      : request.urls[0].url
+    ).replace(/\/$/, ""),
     // url: request.queryDict ? request.urlWithoutQuery : request.url,
-    raw_url: request.url,
+    raw_url: request.urls[0].url,
     // TODO: move this after .query?
-    method: request.method.toLowerCase(), // lowercase for backwards compatibility
+    method: request.urls[0].method.toLowerCase(), // lowercase for backwards compatibility
   };
   // if (request.queryDict) {
   //   requestJson.query = request.queryDict
@@ -152,9 +152,9 @@ export const _toJsonString = (
     requestJson.headers = Object.fromEntries(request.headers);
   }
 
-  if (request.queryDict) {
+  if (request.urls[0].queryDict) {
     // TODO: rename
-    requestJson.queries = request.queryDict;
+    requestJson.queries = request.urls[0].queryDict;
   }
 
   // TODO: not Object.assign, doesn't work with type system
@@ -168,8 +168,8 @@ export const _toJsonString = (
     requestJson.insecure = false;
   }
 
-  if (request.auth) {
-    const [user, password] = request.auth;
+  if (request.urls[0].auth) {
+    const [user, password] = request.urls[0].auth;
     requestJson.auth = {
       user: user,
       password: password,

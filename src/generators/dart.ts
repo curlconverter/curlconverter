@@ -52,12 +52,12 @@ export const _toDart = (
 
   const imports = new Set<string>();
 
-  if (request.auth || request.isDataBinary) imports.add("dart:convert");
+  if (request.urls[0].auth || request.isDataBinary) imports.add("dart:convert");
 
   let s = "void main() async {\n";
 
-  if (request.auth) {
-    const [uname, pword] = request.auth;
+  if (request.urls[0].auth) {
+    const [uname, pword] = request.urls[0].auth;
 
     s +=
       "  var uname = '" +
@@ -74,14 +74,14 @@ export const _toDart = (
     request.headers ||
     request.compressed ||
     request.isDataBinary ||
-    request.method.toLowerCase() === "put";
+    request.urls[0].method.toLowerCase() === "put";
   if (hasHeaders && !request.multipartUploads) {
     s += "  var headers = {\n";
     for (const [hname, hval] of request.headers || []) {
       s += "    " + repr(hname) + ": " + repr(hval ?? "") + ",\n";
     }
 
-    if (request.auth) s += "    'Authorization': authn,\n";
+    if (request.urls[0].auth) s += "    'Authorization': authn,\n";
     // TODO: headers might already have Accept-Encoding
     if (request.compressed) s += "    'Accept-Encoding': 'gzip',\n";
 
@@ -90,10 +90,10 @@ export const _toDart = (
   }
 
   // TODO: Uri() can accept a params dict
-  if (request.query) {
+  if (request.urls[0].query) {
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
-    for (const [paramName, rawValue] of request.query) {
+    for (const [paramName, rawValue] of request.urls[0].query) {
       const paramValue = repr(rawValue === null ? "" : rawValue);
       s += "    " + repr(paramName) + ": " + paramValue + ",\n";
     }
@@ -124,19 +124,19 @@ export const _toDart = (
     }
   }
 
-  if (request.query) {
+  if (request.urls[0].query) {
     s +=
       "  var url = Uri.parse('" +
-      escape(request.urlWithoutQuery, "'") +
+      escape(request.urls[0].urlWithoutQuery, "'") +
       "?$query" +
       "');\n";
   } else {
-    s += "  var url = Uri.parse(" + repr(request.url) + ");\n";
+    s += "  var url = Uri.parse(" + repr(request.urls[0].url) + ");\n";
   }
 
   if (request.multipartUploads) {
     let multipart =
-      "http.MultipartRequest(" + repr(request.method) + ", url)\n";
+      "http.MultipartRequest(" + repr(request.urls[0].method) + ", url)\n";
 
     for (const m of request.multipartUploads) {
       // MultipartRequest syntax looks like this:
@@ -193,12 +193,12 @@ export const _toDart = (
       }
     }
 
-    if (hasHeaders || request.auth) {
+    if (hasHeaders || request.urls[0].auth) {
       s += "  var req = new " + multipart;
       for (const [hname, hval] of request.headers || []) {
         s += "  req.headers[" + repr(hname) + "] = " + repr(hval || "") + ";\n";
       }
-      if (request.auth) {
+      if (request.urls[0].auth) {
         s += "  req.headers['Authorization'] = authn;\n";
       }
       s += "  var res = await req.send();\n";
@@ -206,10 +206,11 @@ export const _toDart = (
       s += "  var res = await " + multipart;
     }
   } else {
-    s += "  var res = await http." + request.method.toLowerCase() + "(url";
+    s +=
+      "  var res = await http." + request.urls[0].method.toLowerCase() + "(url";
 
     if (hasHeaders) s += ", headers: headers";
-    else if (request.auth) s += ", headers: {'Authorization': authn}";
+    else if (request.urls[0].auth) s += ", headers: {'Authorization': authn}";
     if (hasData) s += ", body: data";
     s += ");\n";
   }
@@ -217,7 +218,7 @@ export const _toDart = (
   /* eslint-disable no-template-curly-in-string */
   s +=
     "  if (res.statusCode != 200) throw Exception('http." +
-    request.method.toLowerCase() +
+    request.urls[0].method.toLowerCase() +
     " error: statusCode= ${res.statusCode}');\n" +
     "  print(res.body);\n" +
     "}";

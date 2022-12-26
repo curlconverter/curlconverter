@@ -96,8 +96,8 @@ const buildConfigObject = (
   if (hasSearchParams) {
     // code += "    params,\n";
     code += "    params: params,\n";
-  } else if (request.queryDict) {
-    code += "    params: " + reprObj(request.queryDict, 1) + ",\n";
+  } else if (request.urls[0].queryDict) {
+    code += "    params: " + reprObj(request.urls[0].queryDict, 1) + ",\n";
   }
 
   const [dataString, commentedOutDataString] = getDataString(request); // can delete headers
@@ -117,8 +117,8 @@ const buildConfigObject = (
     code += "    },\n";
   }
 
-  if (request.auth) {
-    const [username, password] = request.auth;
+  if (request.urls[0].auth) {
+    const [username, password] = request.urls[0].auth;
     code += "    auth: {\n";
     code += "        username: " + repr(username);
     if (password) {
@@ -239,13 +239,13 @@ export const _toNodeAxios = (
   let code = "";
 
   const hasSearchParams =
-    request.query &&
-    (!request.queryDict ||
+    request.urls[0].query &&
+    (!request.urls[0].queryDict ||
       // https://stackoverflow.com/questions/42898009/multiple-fields-with-same-key-in-query-params-axios-request
-      Object.values(request.queryDict).some((qv) => Array.isArray(qv)));
-  if (hasSearchParams && request.query) {
+      Object.values(request.urls[0].queryDict).some((qv) => Array.isArray(qv)));
+  if (hasSearchParams && request.urls[0].query) {
     code += "const params = new URLSearchParams();\n";
-    for (const [key, value] of request.query) {
+    for (const [key, value] of request.urls[0].query) {
       const val = value ? value : "";
       code += "params.append(" + repr(key) + ", " + repr(val) + ");\n";
     }
@@ -275,7 +275,7 @@ export const _toNodeAxios = (
     code += "\n";
   }
 
-  const method = request.method.toLowerCase();
+  const method = request.urls[0].method.toLowerCase();
   const methods = ["get", "delete", "head", "options", "post", "put", "patch"];
   code += "const response = await axios";
   if (methods.includes(method)) {
@@ -284,18 +284,18 @@ export const _toNodeAxios = (
   code += "(";
 
   const url =
-    request.queryDict || hasSearchParams
-      ? request.urlWithoutQuery
-      : request.url;
+    request.urls[0].queryDict || hasSearchParams
+      ? request.urls[0].urlWithoutQuery
+      : request.urls[0].url;
 
   // axios only supports posting data with these HTTP methods
   // You can also post data with OPTIONS, but that has to go in the config object
   const dataMethods = ["post", "put", "patch"];
   let needsConfig = !!(
-    request.query ||
-    request.queryDict ||
+    request.urls[0].query ||
+    request.urls[0].queryDict ||
     request.headers ||
-    request.auth ||
+    request.urls[0].auth ||
     request.multipartUploads ||
     (request.data && !dataMethods.includes(method)) ||
     request.timeout ||
@@ -334,10 +334,10 @@ export const _toNodeAxios = (
 
   // getDataString() can delete a header, so we can end up with an empty config
   needsConfig = !!(
-    request.query ||
-    request.queryDict ||
+    request.urls[0].query ||
+    request.urls[0].queryDict ||
     (request.headers && request.headers.length) ||
-    request.auth ||
+    request.urls[0].auth ||
     request.multipartUploads ||
     (request.data && !dataMethods.includes(method)) ||
     request.timeout ||

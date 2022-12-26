@@ -60,9 +60,10 @@ const requestToNodeRequest = (
   }
 
   nodeRequestCode += defVar(definedVariables, "options", "{\n");
-  nodeRequestCode += "    url: " + repr(request.url);
-  if (request.method.toUpperCase() !== "GET") {
-    nodeRequestCode += ",\n    method: " + repr(request.method.toUpperCase());
+  nodeRequestCode += "    url: " + repr(request.urls[0].url);
+  if (request.urls[0].method.toUpperCase() !== "GET") {
+    nodeRequestCode +=
+      ",\n    method: " + repr(request.urls[0].method.toUpperCase());
   }
 
   if (request.headers) {
@@ -85,9 +86,9 @@ const requestToNodeRequest = (
     nodeRequestCode += ",\n    body: dataString";
   }
 
-  if (request.auth) {
+  if (request.urls[0].auth) {
     nodeRequestCode += ",\n";
-    const [user, password] = request.auth;
+    const [user, password] = request.urls[0].auth;
     nodeRequestCode += "    auth: {\n";
     nodeRequestCode += "        'user': " + repr(user) + ",\n";
     nodeRequestCode += "        'pass': " + repr(password) + "\n";

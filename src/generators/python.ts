@@ -1882,7 +1882,7 @@ const requestToPython = (
 
     if (urlObj.output && urlObj.output !== "/dev/null") {
       let outputLine = "";
-      if (request.output === "-") {
+      if (request.urls[0].output === "-") {
         outputLine += "print(response.text)\n";
       } else {
         outputLine += isSession || request.urls.length > 1 ? "" : "\n";

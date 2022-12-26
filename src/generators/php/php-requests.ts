@@ -60,8 +60,8 @@ export const _toPhpRequests = (
   }
 
   let optionsString;
-  if (request.auth) {
-    const [user, password] = request.auth;
+  if (request.urls[0].auth) {
+    const [user, password] = request.urls[0].auth;
     optionsString =
       "$options = array('auth' => array(" +
       repr(user) +
@@ -91,9 +91,9 @@ export const _toPhpRequests = (
   }
   let requestLine =
     "$response = Requests::" +
-    request.method.toLowerCase() +
+    request.urls[0].method.toLowerCase() +
     "(" +
-    repr(request.url);
+    repr(request.urls[0].url);
   requestLine += ", $headers";
   if (dataString) {
     requestLine += ", $data";

@@ -15,17 +15,6 @@
         "method": "wHat"
       }
     ],
-    "url": "http://localhost:28139",
-    "originalUrl": "localhost:28139",
-    "urlWithoutQuery": "http://localhost:28139",
-    "urlObj": {
-      "scheme": "http",
-      "host": "localhost:28139",
-      "path": "",
-      "query": "",
-      "fragment": ""
-    },
-    "method": "wHat",
     "authType": "basic"
   }
 ]

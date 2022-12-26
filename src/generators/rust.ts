@@ -160,24 +160,26 @@ export const _toRust = (
   }
 
   const reqwestMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
-  if (reqwestMethods.includes(request.method)) {
+  if (reqwestMethods.includes(request.urls[0].method)) {
     lines.push(
       indent(
-        `let res = client.${request.method.toLowerCase()}(${repr(request.url)})`
+        `let res = client.${request.urls[0].method.toLowerCase()}(${repr(
+          request.urls[0].url
+        )})`
       )
     );
   } else {
     lines.push(
       indent(
-        `let res = client.request(${repr(request.method)}, ${repr(
-          request.url
+        `let res = client.request(${repr(request.urls[0].method)}, ${repr(
+          request.urls[0].url
         )})`
       )
     );
   }
 
-  if (request.auth) {
-    const [user, password] = request.auth;
+  if (request.urls[0].auth) {
+    const [user, password] = request.urls[0].auth;
     lines.push(
       indent(`.basic_auth(${repr(user)}, Some(${repr(password)}))`, 2)
     );

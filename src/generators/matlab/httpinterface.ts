@@ -73,11 +73,11 @@ const prepareHeaders = (request: Request): string | null => {
 
 const prepareURI = (request: Request) => {
   const uriParams = [];
-  if (request.queryDict) {
-    uriParams.push(repr(request.urlWithoutQuery));
+  if (request.urls[0].queryDict) {
+    uriParams.push(repr(request.urls[0].urlWithoutQuery));
     uriParams.push("QueryParameter(params')");
   } else {
-    uriParams.push(repr(request.url));
+    uriParams.push(repr(request.urls[0].url));
   }
   return callFunction("uri", "URI", uriParams);
 };
@@ -85,8 +85,8 @@ const prepareURI = (request: Request) => {
 const prepareAuth = (request: Request): string[] => {
   const options = [];
   const optionsParams = [];
-  if (request.auth) {
-    const [usr, pass] = request.auth;
+  if (request.urls[0].auth) {
+    const [usr, pass] = request.urls[0].auth;
     const userfield = `'Username', ${repr(usr)}`;
     const passfield = `'Password', ${repr(pass)}`;
     const authparams = (usr ? `${userfield}, ` : "") + passfield;
@@ -228,10 +228,12 @@ const prepareData = (request: Request) => {
 };
 
 const prepareRequestMessage = (request: Request): string => {
-  let reqMessage: string[] | string = [repr(request.method.toLowerCase())];
+  let reqMessage: string[] | string = [
+    repr(request.urls[0].method.toLowerCase()),
+  ];
   if (request.cookies || request.headers) {
     reqMessage.push("header");
-  } else if (request.method.toLowerCase() === "get") {
+  } else if (request.urls[0].method.toLowerCase() === "get") {
     reqMessage = "";
   }
   if (containsBody(request)) {
@@ -244,7 +246,7 @@ const prepareRequestMessage = (request: Request): string => {
 
   // list as many params as necessary
   const params = ["uri.EncodedURI"];
-  if (request.auth || request.insecure) {
+  if (request.urls[0].auth || request.insecure) {
     params.push("options");
   }
 

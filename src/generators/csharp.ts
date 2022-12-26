@@ -122,20 +122,20 @@ export const _toCSharp = (
     PUT: "Put",
     TRACE: "Trace",
   };
-  let methodStr = "new HttpMethod(" + repr(request.method) + ")";
-  if (util.has(moreMethods, request.method)) {
-    methodStr = "HttpMethod." + moreMethods[request.method];
+  let methodStr = "new HttpMethod(" + repr(request.urls[0].method) + ")";
+  if (util.has(moreMethods, request.urls[0].method)) {
+    methodStr = "HttpMethod." + moreMethods[request.urls[0].method];
   }
 
   const simple =
-    util.has(methods, request.method) &&
+    util.has(methods, request.urls[0].method) &&
     !(
       request.headers ||
-      (request.auth && request.authType === "basic") ||
+      (request.urls[0].auth && request.authType === "basic") ||
       request.multipartUploads ||
       request.data ||
-      request.uploadFile ||
-      request.output
+      request.urls[0].uploadFile ||
+      request.urls[0].output
     );
 
   let s = "";
@@ -161,17 +161,17 @@ export const _toCSharp = (
   }
 
   if (simple) {
-    if (request.method === "GET") {
+    if (request.urls[0].method === "GET") {
       s +=
         "string responseBody = await client.GetStringAsync(" +
-        repr(request.url) +
+        repr(request.urls[0].url) +
         ");\n";
     } else {
       s +=
         "HttpResponseMessage response = await client." +
-        methods[request.method] +
+        methods[request.urls[0].method] +
         "Async(" +
-        repr(request.url) +
+        repr(request.urls[0].url) +
         ");\n";
       s += "response.EnsureSuccessStatusCode();\n";
       s +=
@@ -184,7 +184,7 @@ export const _toCSharp = (
     "HttpRequestMessage request = new HttpRequestMessage(" +
     methodStr +
     ", " +
-    repr(request.url) +
+    repr(request.urls[0].url) +
     ");\n";
 
   // https://docs.microsoft.com/en-us/dotnet/api/system.net.http.headers.httpcontentheaders
@@ -204,7 +204,10 @@ export const _toCSharp = (
     Object.keys(contentHeaders).includes(h[0].toLowerCase())
   );
 
-  if (reqHeaders.length || (request.auth && request.authType === "basic")) {
+  if (
+    reqHeaders.length ||
+    (request.urls[0].auth && request.authType === "basic")
+  ) {
     s += "\n";
     for (const [headerName, headerValue] of reqHeaders) {
       if (headerValue === null) {
@@ -220,9 +223,9 @@ export const _toCSharp = (
         repr(headerValue) +
         ");\n";
     }
-    if (request.auth && request.authType === "basic") {
+    if (request.urls[0].auth && request.authType === "basic") {
       // TODO: add request.rawAuth?
-      const [user, password] = request.auth;
+      const [user, password] = request.urls[0].auth;
       s +=
         'request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(' +
         repr(user + ":" + password) +
@@ -231,10 +234,10 @@ export const _toCSharp = (
     s += "\n";
   }
 
-  if (request.uploadFile) {
+  if (request.urls[0].uploadFile) {
     s +=
       "request.Content = new ByteArrayContent(File.ReadAllBytes(" +
-      repr(request.uploadFile) +
+      repr(request.urls[0].uploadFile) +
       "));\n";
   } else if (typeof request.data === "string") {
     // TODO: parse
@@ -350,7 +353,7 @@ export const _toCSharp = (
   }
 
   if (
-    request.uploadFile ||
+    request.urls[0].uploadFile ||
     request.data ||
     request.multipartUploads ||
     reqContentHeaders.length

@@ -110,10 +110,13 @@ export const _toPhp = (
 
   let phpCode = "<?php\n";
   phpCode += "$ch = curl_init();\n";
-  phpCode += "curl_setopt($ch, CURLOPT_URL, " + repr(request.url) + ");\n";
+  phpCode +=
+    "curl_setopt($ch, CURLOPT_URL, " + repr(request.urls[0].url) + ");\n";
   phpCode += "curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n";
   phpCode +=
-    "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" + request.method + "');\n";
+    "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" +
+    request.urls[0].method +
+    "');\n";
 
   if (request.headers || request.compressed) {
     let headersArrayCode = "[\n";
@@ -146,13 +149,13 @@ export const _toPhp = (
       "curl_setopt($ch, CURLOPT_COOKIE, " + repr(cookieString) + ");\n";
   }
 
-  if (request.auth && ["basic", "digest"].includes(request.authType)) {
+  if (request.urls[0].auth && ["basic", "digest"].includes(request.authType)) {
     const authType =
       request.authType === "digest" ? "CURLAUTH_DIGEST" : "CURLAUTH_BASIC";
     phpCode += "curl_setopt($ch, CURLOPT_HTTPAUTH, " + authType + ");\n";
     phpCode +=
       "curl_setopt($ch, CURLOPT_USERPWD, " +
-      repr(request.auth.join(":")) +
+      repr(request.urls[0].auth.join(":")) +
       ");\n";
   }
 

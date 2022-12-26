@@ -183,8 +183,8 @@ const containsBody = (request: Request): boolean => {
 };
 
 const prepareQueryString = (request: Request): string | null => {
-  if (request.queryDict) {
-    const params = addCellArray(request.queryDict, [], "", 1);
+  if (request.urls[0].queryDict) {
+    const params = addCellArray(request.urls[0].queryDict, [], "", 1);
     return setVariableValue("params", params);
   }
   return null;

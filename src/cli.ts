@@ -255,7 +255,7 @@ if (commandFromStdin) {
   }
   warnings = printWarnings(warnings, verbose);
   // Warning for users using the pre-4.0 CLI
-  if (requests[0].url?.startsWith("curl ")) {
+  if (requests[0].urls[0].originalUrl.startsWith("curl ")) {
     console.error(
       "warning: Passing a whole curl command as a single argument?"
     );

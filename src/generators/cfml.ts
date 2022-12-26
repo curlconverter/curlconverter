@@ -59,8 +59,9 @@ export const _toCFML = (
   let cfmlCode = "";
 
   cfmlCode += "httpService = new http();\n";
-  cfmlCode += "httpService.setUrl(" + repr(request.url as string) + ");\n";
-  cfmlCode += "httpService.setMethod(" + repr(request.method) + ");\n";
+  cfmlCode +=
+    "httpService.setUrl(" + repr(request.urls[0].url as string) + ");\n";
+  cfmlCode += "httpService.setMethod(" + repr(request.urls[0].method) + ");\n";
 
   if (request.cookies) {
     for (const [headerName, headerValue] of request.cookies) {
@@ -90,8 +91,8 @@ export const _toCFML = (
       "httpService.setTimeout(" + (parseInt(request.timeout, 10) || 0) + ");\n";
   }
 
-  if (request.auth) {
-    const [authUser, authPassword] = request.auth;
+  if (request.urls[0].auth) {
+    const [authUser, authPassword] = request.urls[0].auth;
     cfmlCode += "httpService.setUsername(" + repr(authUser) + ");\n";
     cfmlCode += "httpService.setPassword(" + repr(authPassword || "") + ");\n";
   }
