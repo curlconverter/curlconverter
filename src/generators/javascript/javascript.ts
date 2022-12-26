@@ -128,7 +128,7 @@ const getDataString = (request: Request): [string, string | null] => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [queryList, queryDict] = util.parseQueryString(request.data);
-      if (queryDict) {
+      if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8
         // TODO: handle repeated content-type header
@@ -138,8 +138,14 @@ const getDataString = (request: Request): [string, string | null] => {
         ) {
           util.deleteHeader(request, "content-type");
         }
+
+        const queryObj =
+          queryDict &&
+          Object.values(queryDict).every((v) => typeof v === "string")
+            ? queryDict
+            : queryList;
         // TODO: check roundtrip, add a comment
-        return ["new URLSearchParams(" + reprObj(queryDict, 1) + ")", null];
+        return ["new URLSearchParams(" + reprObj(queryObj, 1) + ")", null];
       }
       return [originalStringRepr, null];
     } catch {

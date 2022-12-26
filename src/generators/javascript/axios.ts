@@ -46,14 +46,20 @@ const _getDataString = (request: Request): [string | null, string | null] => {
   if (contentType === "application/x-www-form-urlencoded") {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [queryList, queryDict] = util.parseQueryString(request.data);
-    if (queryDict) {
+    if (queryList) {
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8
       if (exactContentType === "application/x-www-form-urlencoded") {
         util.deleteHeader(request, "content-type");
       }
+
+      const queryObj =
+        queryDict &&
+        Object.values(queryDict).every((v) => typeof v === "string")
+          ? queryDict
+          : queryList;
       // TODO: check roundtrip, add a comment
-      return ["new URLSearchParams(" + reprObj(queryDict, 1) + ")", null];
+      return ["new URLSearchParams(" + reprObj(queryObj, 1) + ")", null];
     } else {
       return [originalStringRepr, null];
     }
