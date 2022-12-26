@@ -61,14 +61,22 @@ type Headers = Array<[string, string | null]>;
 type Cookie = [string, string];
 type Cookies = Array<Cookie>;
 
-type FormParam = { value: string; type: "string" | "form" };
-type FullDataParam = ["data" | "raw" | "binary" | "urlencode" | "json", string];
+type FormType = "string" | "form";
+type SrcFormParam = { value: string; type: FormType };
+type FormParam = {
+  name: string;
+} & ({ content: string } | { contentFile: string; filename?: string });
 
-type DataParam = [
-  "data" | "binary" | "urlencode" | "json",
-  string | null,
-  string
-];
+type FileParamType = "string" | "binary" | "urlencode" | "json";
+type DataType = FileParamType | "raw";
+
+type SrcDataParam = [DataType, string];
+
+type FileDataParam = [FileParamType, string | null, string];
+// "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
+// when we have its contents (because it comes from a pipe) are converted
+// to plain strings
+type DataParam = string | FileDataParam;
 
 // The keys should be named the same as the curl options that
 // set them because they appear in error messages.
@@ -87,8 +95,8 @@ interface OperationConfig {
   output?: string[];
   header?: string[];
   "proxy-header"?: string[];
-  form?: FormParam[];
-  data?: FullDataParam[];
+  form?: SrcFormParam[];
+  data?: SrcDataParam[];
   "mail-rcpt"?: string[];
   resolve?: string[];
   "connect-to"?: string[];
@@ -412,9 +420,7 @@ interface Request {
   headers?: Headers;
   stdin?: string;
   stdinFile?: string;
-  multipartUploads?: ({
-    name: string;
-  } & ({ content: string } | { contentFile: string; filename?: string }))[];
+  multipartUploads?: FormParam[];
   authType: string;
   awsSigV4?: string;
   delegation?: string;
@@ -422,7 +428,7 @@ interface Request {
   cookieFiles?: string[];
   cookieJar?: string;
   compressed?: boolean;
-  dataArray?: (string | DataParam)[];
+  dataArray?: DataParam[];
   data?: string;
   dataFiles?: Array<[string, string]>;
   isDataBinary?: boolean;
@@ -2051,7 +2057,7 @@ function buildRequest(
     _setHeaderIfMissing(headers, header, timecond, lowercase);
   }
 
-  const data: Array<string | DataParam> = [];
+  const data: Array<DataParam> = [];
   let dataStrState = "";
   if (config.data && config.data.length) {
     for (const [i, x] of config.data.entries()) {
@@ -2119,8 +2125,12 @@ function buildRequest(
           data.push(dataStrState);
           dataStrState = "";
         }
-        // If filename isn't null then type can't be "raw"
-        data.push([type, name, filename] as DataParam);
+        data.push([
+          // If filename isn't null then type can't be "raw"
+          type as FileParamType,
+          name,
+          filename,
+        ]);
       } else {
         dataStrState += value;
       }

@@ -820,9 +820,7 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
   return s;
 }
 
-function formatDataAsEntries(
-  dataArray: (string | DataParam)[]
-): [string, string] | null {
+function formatDataAsEntries(dataArray: DataParam[]): [string, string] | null {
   // This code is more complicated than you might expect because it needs
   // to handle a --data-urlencode that reads from a file followed by --json
   // because --json doesn't add an '&' before its value.  Specifically, we
@@ -972,7 +970,7 @@ function formatDataAsEntries(
 }
 
 function formatDataAsStr(
-  dataArray: (string | DataParam)[],
+  dataArray: DataParam[],
   imports: Set<string>
 ): [string, boolean] {
   // If one of the arguments has to be binary, then they all have to be binary
@@ -1071,7 +1069,7 @@ function formatDataAsStr(
 }
 
 function formatDataAsJson(
-  d: string | DataParam,
+  d: DataParam,
   imports: Set<string>
 ): [string | null, boolean] {
   if (typeof d === "string") {
