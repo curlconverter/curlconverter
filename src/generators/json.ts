@@ -40,27 +40,19 @@ function getDataString(request: Request): {
    */
 
   const [parsedQuery, parsedQueryDict] = util.parseQueryString(request.data);
-  if (
-    !parsedQuery ||
-    !parsedQuery.length ||
-    parsedQuery.some((p) => p[1] === null)
-  ) {
-    const data: { [key: string]: string } = {};
-    data[request.data] = "";
-    return { data };
+  if (!parsedQuery || !parsedQuery.length) {
+    // TODO: this is not a good API
+    return {
+      data: {
+        [request.data]: "",
+      },
+    };
   }
   if (parsedQueryDict) {
-    const data: { [key: string]: string | string[] } = {};
-    for (const [k, v] of Object.entries(parsedQueryDict)) {
-      if (Array.isArray(v)) {
-        data[k] = v.map((v: string | null) => v ?? "");
-      } else {
-        data[k] = v ?? "";
-      }
-    }
-    return { data };
+    return { data: parsedQueryDict };
   } else {
-    return Object.fromEntries(parsedQuery.map((q) => [q[0], q[1] ?? ""]));
+    // This loses data
+    return { data: Object.fromEntries(parsedQuery) };
   }
 }
 

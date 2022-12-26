@@ -44,12 +44,9 @@ const _getDataString = (request: Request): [string | null, string | null] => {
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const query = util.parseQueryString(request.data);
-    const queryDict = query[1];
-    if (
-      queryDict &&
-      Object.values(queryDict).every((v) => typeof v === "string")
-    ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [queryList, queryDict] = util.parseQueryString(request.data);
+    if (queryDict) {
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8
       if (exactContentType === "application/x-www-form-urlencoded") {

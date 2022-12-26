@@ -208,15 +208,9 @@ function getDataString(request: Request): [string, boolean] {
     } catch {}
   }
 
-  const [parsedQueryAsList, parsedQueryAsDict] = util.parseQueryString(
-    request.data
-  );
-  if (
-    !request.isDataBinary &&
-    parsedQueryAsDict &&
-    parsedQueryAsList &&
-    !(parsedQueryAsList.length === 1 && parsedQueryAsList[0][1] === null)
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, parsedQueryAsDict] = util.parseQueryString(request.data);
+  if (!request.isDataBinary && parsedQueryAsDict) {
     // If the original request contained %20, Ruby will encode them as "+"
     return ["req.set_form_data(" + objToRuby(parsedQueryAsDict) + ")\n", false];
   }

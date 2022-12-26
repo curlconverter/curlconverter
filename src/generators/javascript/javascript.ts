@@ -126,12 +126,9 @@ const getDataString = (request: Request): [string, string | null] => {
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const query = util.parseQueryString(request.data);
-      const queryDict = query[1];
-      if (
-        queryDict &&
-        Object.values(queryDict).every((v) => typeof v === "string")
-      ) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const [queryList, queryDict] = util.parseQueryString(request.data);
+      if (queryDict) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8
         // TODO: handle repeated content-type header

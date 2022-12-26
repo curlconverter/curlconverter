@@ -216,11 +216,7 @@ function getDataString(request: Request): string {
   }
 
   const [parsedQuery] = util.parseQueryString(request.data);
-  if (
-    parsedQuery &&
-    parsedQuery.length &&
-    !parsedQuery.some((p) => p[1] === null)
-  ) {
+  if (parsedQuery && parsedQuery.length) {
     const data = parsedQuery.map((p) => {
       const [key, value] = p;
       return `    {${repr(key)}, ${repr(value)}}`;

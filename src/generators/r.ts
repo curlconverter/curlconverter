@@ -145,23 +145,13 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
     } else {
       const [parsedQueryString] = util.parseQueryString(request.data);
       // repeat to satisfy type checker
-      dataIsList =
-        parsedQueryString &&
-        parsedQueryString.length &&
-        (parsedQueryString.length > 1 || parsedQueryString[0][1] !== null);
+      dataIsList = parsedQueryString && parsedQueryString.length;
       if (dataIsList) {
         dataString = "data = list(\n";
         dataString += (parsedQueryString as QueryList)
           .map((q) => {
             const [key, value] = q;
-            // Converting null to "" causes the generated code to send a different request,
-            // with a = where there was none. This is hopefully more useful though than just
-            // outputing the data as a string in the generated code.
-            // TODO: add the orginal data commented out as a string explaining the above
-            // situation.
-            return (
-              "  " + reprn(key) + " = " + repr(value === null ? "" : value)
-            );
+            return "  " + reprn(key) + " = " + repr(value);
           })
           .join(",\n");
         dataString += "\n)\n";

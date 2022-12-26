@@ -74,11 +74,7 @@ export const _toPhpRequests = (
   if (request.data) {
     const [parsedQueryString] = util.parseQueryString(request.data);
     dataString = "$data = array(\n";
-    if (
-      !parsedQueryString ||
-      !parsedQueryString.length ||
-      parsedQueryString.some((p) => p[1] === null)
-    ) {
+    if (!parsedQueryString || !parsedQueryString.length) {
       dataString = "$data = " + repr(request.data) + ";";
     } else {
       const terms = [];

@@ -107,15 +107,11 @@ export const _toDart = (
   const hasData = request.data;
   if (request.data) {
     const [parsedQuery] = util.parseQueryString(request.data);
-    if (
-      parsedQuery &&
-      parsedQuery.length &&
-      !parsedQuery.some((p) => p[1] === null)
-    ) {
+    if (parsedQuery && parsedQuery.length) {
       s += "  var data = {\n";
       for (const param of parsedQuery) {
         const [key, val] = param;
-        s += "    " + repr(key) + ": " + repr(val ?? "") + ",\n";
+        s += "    " + repr(key) + ": " + repr(val) + ",\n";
       }
       s += "  };\n";
       s += "\n";

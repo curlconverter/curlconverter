@@ -51,9 +51,9 @@ interface ShortOpts {
   [key: string]: string;
 }
 
-type QueryList = Array<[string, string | null]>;
+type QueryList = Array<[string, string]>;
 interface QueryDict {
-  [key: string]: string | null | Array<string | null>;
+  [key: string]: string | Array<string>;
 }
 
 type Headers = Array<[string, string | null]>;
@@ -1700,16 +1700,20 @@ export function parseQueryString(
 
   const asList: QueryList = [];
   for (const param of s.split("&")) {
-    const [key, _val] = param.split(/=(.*)/s, 2);
-    const val = _val === undefined ? null : _val;
+    // Most software libraries don't let you distinguish between a=&b= and a&b,
+    // so if we get an `a&b`-type query string, don't bother.
+    if (!param.includes("=")) {
+      return [null, null];
+    }
+
+    const [key, val] = param.split(/=(.*)/s, 2);
     let decodedKey;
     let decodedVal;
     try {
       // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
       // before decoding.
       decodedKey = decodeURIComponent(key.replace(/\+/g, " "));
-      decodedVal =
-        val === null ? null : decodeURIComponent(val.replace(/\+/g, " "));
+      decodedVal = decodeURIComponent(val.replace(/\+/g, " "));
     } catch (e) {
       if (e instanceof URIError) {
         // Query string contains invalid percent encoded characters,
@@ -1723,13 +1727,11 @@ export function parseQueryString(
     // percent-encodes query strings. For example, a %27 character in the input query
     // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
     const roundTripKey = percentEncode(decodedKey);
-    const roundTripVal = decodedVal === null ? null : percentEncode(decodedVal);
+    const roundTripVal = percentEncode(decodedVal);
     // If the original data used %20 instead of + (what requests will send), that's close enough
     if (
       (roundTripKey !== key && roundTripKey.replace(/%20/g, "+") !== key) ||
-      (roundTripVal !== null &&
-        roundTripVal !== val &&
-        roundTripVal.replace(/%20/g, "+") !== val)
+      (roundTripVal !== val && roundTripVal.replace(/%20/g, "+") !== val)
     ) {
       return [null, null];
     }
@@ -1741,24 +1743,24 @@ export function parseQueryString(
   let prevKey = null;
   for (const [key, val] of asList) {
     if (prevKey === key) {
-      (asDict[key] as Array<string | null>).push(val);
+      (asDict[key] as Array<string>).push(val);
+    } else if (!Object.prototype.hasOwnProperty.call(asDict, key)) {
+      asDict[key] = [val];
     } else {
-      if (!Object.prototype.hasOwnProperty.call(asDict, key)) {
-        asDict[key] = [val];
-      } else {
-        // If there's a repeated key with a different key between
-        // one of its repetitions, there is no way to represent
-        // this query string as a dictionary.
-        return [asList, null];
-      }
+      // If there's a repeated key with a different key between
+      // one of its repetitions, there is no way to represent
+      // this query string as a dictionary.
+      return [asList, null];
     }
     prevKey = key;
   }
 
   // Convert lists with 1 element to the element
   for (const [key, val] of Object.entries(asDict)) {
-    if ((val as Array<string | null>).length === 1) {
-      asDict[key] = (val as Array<string | null>)[0];
+    // The type system doesn't know that val can only be an array here, but
+    // creating a second object and copying everything would be less efficient.
+    if (val.length === 1) {
+      asDict[key] = val[0];
     }
   }
 
@@ -1936,13 +1938,7 @@ export function buildURL(
   const [queryList, queryDict] = parseQueryString(
     u.query ? u.query.slice(1) : ""
   );
-  const useParsedQuery =
-    queryList &&
-    queryList.length &&
-    // Most software libraries don't let you distinguish between a=&b= and a&b,
-    // so if we get an `a&b`-type query string, don't bother.
-    queryList.every((p) => p[1] !== null);
-  if (useParsedQuery) {
+  if (queryList && queryList.length) {
     // TODO: remove the fragment too?
     const urlWithoutQueryList = u.scheme + "://" + u.host + u.path + u.fragment;
     return [u, url, urlWithoutQueryList, queryList, queryDict];
