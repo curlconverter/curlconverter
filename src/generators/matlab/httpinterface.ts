@@ -74,7 +74,7 @@ const prepareHeaders = (request: Request): string | null => {
 const prepareURI = (request: Request) => {
   const uriParams = [];
   if (request.urls[0].queryDict) {
-    uriParams.push(repr(request.urls[0].urlWithoutQuery));
+    uriParams.push(repr(request.urls[0].urlWithoutQueryList));
     uriParams.push("QueryParameter(params')");
   } else {
     uriParams.push(repr(request.urls[0].url));

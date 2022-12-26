@@ -351,7 +351,7 @@ const requestToRuby = (
     Object.keys(request.urls[0].queryDict).every(validSymbol) &&
     !Object.values(request.urls[0].queryDict).some(empty)
   ) {
-    code += "uri = URI(" + repr(request.urls[0].urlWithoutQuery) + ")\n";
+    code += "uri = URI(" + repr(request.urls[0].urlWithoutQueryList) + ")\n";
     code += "params = {\n";
     for (const [key, value] of Object.entries(request.urls[0].queryDict)) {
       code += "  :" + key + " => " + objToRuby(value) + ",\n";

@@ -1,7 +1,13 @@
 // Author: Bob Rudis (bob@rud.is)
 
 import * as util from "../util.js";
-import type { Request, Cookie, QueryDict, Warnings } from "../util.js";
+import type {
+  Request,
+  Cookie,
+  QueryList,
+  QueryDict,
+  Warnings,
+} from "../util.js";
 
 import { repr as pyrepr } from "./python.js";
 
@@ -145,7 +151,7 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
         (parsedQueryString.length > 1 || parsedQueryString[0][1] !== null);
       if (dataIsList) {
         dataString = "data = list(\n";
-        dataString += (parsedQueryString as util.Query)
+        dataString += (parsedQueryString as QueryList)
           .map((q) => {
             const [key, value] = q;
             // Converting null to "" causes the generated code to send a different request,
@@ -167,7 +173,7 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
     filesString = getFilesString(request);
   }
   const url = request.urls[0].queryDict
-    ? request.urls[0].urlWithoutQuery
+    ? request.urls[0].urlWithoutQueryList
     : request.urls[0].url;
 
   let requestLine = "res <- httr::";

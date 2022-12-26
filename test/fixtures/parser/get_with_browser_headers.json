@@ -4,7 +4,7 @@
       {
         "url": "http://localhost:28139/",
         "originalUrl": "http://localhost:28139/",
-        "urlWithoutQuery": "http://localhost:28139/",
+        "urlWithoutQueryList": "http://localhost:28139/",
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",

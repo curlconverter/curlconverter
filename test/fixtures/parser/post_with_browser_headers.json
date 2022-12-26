@@ -4,7 +4,7 @@
       {
         "url": "http://localhost:28139/ajax/demo_post.asp",
         "originalUrl": "http://localhost:28139/ajax/demo_post.asp",
-        "urlWithoutQuery": "http://localhost:28139/ajax/demo_post.asp",
+        "urlWithoutQueryList": "http://localhost:28139/ajax/demo_post.asp",
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",

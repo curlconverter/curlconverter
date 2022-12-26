@@ -51,7 +51,7 @@ interface ShortOpts {
   [key: string]: string;
 }
 
-type Query = Array<[string, string | null]>;
+type QueryList = Array<[string, string | null]>;
 interface QueryDict {
   [key: string]: string | null | Array<string | null>;
 }
@@ -380,15 +380,22 @@ interface Curl_URL {
 // struct urlpieces
 // https://github.com/curl/curl/blob/curl-7_86_0/lib/urldata.h#L1336
 interface RequestUrl {
-  // If the ?query can't be losslessly parsed, then
-  // .url   === .urlWithoutQuery
-  // .query === undefined
+  // The url exactly as it was passed in, used for error messages
+  originalUrl: string;
   url: string;
+
   urlObj: Curl_URL;
-  originalUrl: string; // used in error messages
-  urlWithoutQuery: string;
-  query?: Query;
+
+  // If the ?query can't be losslessly parsed, then
+  // .urlWithoutQueryList === .url
+  // .queryList           === undefined
+  urlWithoutQueryList: string;
+  queryList?: QueryList;
+  // When all repeated keys in queryList happen one after the other
+  // ?a=1&a=1&b=2 (okay)
+  // ?a=1&b=2&a=1 (doesn't work, queryList is defined but queryDict isn't)
   queryDict?: QueryDict;
+
   uploadFile?: string;
   output?: string;
 
@@ -1684,14 +1691,14 @@ export const percentEncodePlus = (s: string): string =>
 
 export function parseQueryString(
   s: string | null
-): [Query | null, QueryDict | null] {
+): [QueryList | null, QueryDict | null] {
   // if url is 'example.com?' => s is ''
   // if url is 'example.com'  => s is null
   if (!s) {
     return [null, null];
   }
 
-  const asList: Query = [];
+  const asList: QueryList = [];
   for (const param of s.split("&")) {
     const [key, _val] = param.split(/=(.*)/s, 2);
     const val = _val === undefined ? null : _val;
@@ -1765,7 +1772,7 @@ export function buildURL(
   uploadFile: string | undefined,
   dataStr: string,
   dataStrIsSafe: boolean
-): [Curl_URL, string, string, Query | null, QueryDict | null] {
+): [Curl_URL, string, string, QueryList | null, QueryDict | null] {
   // This is curl's parseurl()
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1144
   // Except we want to accept all URLs.
@@ -1926,19 +1933,19 @@ export function buildURL(
 
   url = u.scheme + "://" + u.host + u.path + u.query + u.fragment;
   // TODO: parseQueryString() doesn't accept leading '?'
-  const [queryAsList, queryAsDict] = parseQueryString(
+  const [queryList, queryDict] = parseQueryString(
     u.query ? u.query.slice(1) : ""
   );
   const useParsedQuery =
-    queryAsList &&
-    queryAsList.length &&
+    queryList &&
+    queryList.length &&
     // Most software libraries don't let you distinguish between a=&b= and a&b,
     // so if we get an `a&b`-type query string, don't bother.
-    queryAsList.every((p) => p[1] !== null);
+    queryList.every((p) => p[1] !== null);
   if (useParsedQuery) {
     // TODO: remove the fragment too?
-    const urlWithoutQuery = u.scheme + "://" + u.host + u.path + u.fragment;
-    return [u, url, urlWithoutQuery, queryAsList, queryAsDict];
+    const urlWithoutQueryList = u.scheme + "://" + u.host + u.path + u.fragment;
+    return [u, url, urlWithoutQueryList, queryList, queryDict];
   }
 
   // TODO: --path-as-is
@@ -2151,7 +2158,7 @@ function buildRequest(
     const uploadFile: string | undefined = uploadFiles[i];
     const output: string | undefined = outputFiles[i];
 
-    const [urlObj, url, urlWithoutQuery, queryAsList, queryAsDict] = buildURL(
+    const [urlObj, url, urlWithoutQueryList, queryList, queryDict] = buildURL(
       global,
       config,
       originalUrl,
@@ -2185,14 +2192,14 @@ function buildRequest(
     const requestUrl: RequestUrl = {
       url,
       originalUrl,
-      urlWithoutQuery,
+      urlWithoutQueryList,
       urlObj,
       method,
     };
-    if (queryAsList) {
-      requestUrl.query = queryAsList;
-      if (queryAsDict) {
-        requestUrl.queryDict = queryAsDict;
+    if (queryList) {
+      requestUrl.queryList = queryList;
+      if (queryDict) {
+        requestUrl.queryDict = queryDict;
       }
     }
     if (uploadFile) {
@@ -2612,7 +2619,7 @@ export type {
   Request,
   Cookie,
   Cookies,
-  Query,
+  QueryList,
   QueryDict,
   DataParam,
   Warnings,

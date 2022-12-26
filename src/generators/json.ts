@@ -120,10 +120,10 @@ export const _toJsonString = (
 
   const requestJson: JSONOutput = {
     url: (request.urls[0].queryDict
-      ? request.urls[0].urlWithoutQuery
+      ? request.urls[0].urlWithoutQueryList
       : request.urls[0].url
     ).replace(/\/$/, ""),
-    // url: request.queryDict ? request.urlWithoutQuery : request.url,
+    // url: request.queryDict ? request.urlWithoutQueryList : request.url,
     raw_url: request.urls[0].url,
     // TODO: move this after .query?
     method: request.urls[0].method.toLowerCase(), // lowercase for backwards compatibility

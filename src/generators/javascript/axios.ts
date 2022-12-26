@@ -239,13 +239,13 @@ export const _toNodeAxios = (
   let code = "";
 
   const hasSearchParams =
-    request.urls[0].query &&
+    request.urls[0].queryList &&
     (!request.urls[0].queryDict ||
       // https://stackoverflow.com/questions/42898009/multiple-fields-with-same-key-in-query-params-axios-request
       Object.values(request.urls[0].queryDict).some((qv) => Array.isArray(qv)));
-  if (hasSearchParams && request.urls[0].query) {
+  if (hasSearchParams && request.urls[0].queryList) {
     code += "const params = new URLSearchParams();\n";
-    for (const [key, value] of request.urls[0].query) {
+    for (const [key, value] of request.urls[0].queryList) {
       const val = value ? value : "";
       code += "params.append(" + repr(key) + ", " + repr(val) + ");\n";
     }
@@ -285,14 +285,14 @@ export const _toNodeAxios = (
 
   const url =
     request.urls[0].queryDict || hasSearchParams
-      ? request.urls[0].urlWithoutQuery
+      ? request.urls[0].urlWithoutQueryList
       : request.urls[0].url;
 
   // axios only supports posting data with these HTTP methods
   // You can also post data with OPTIONS, but that has to go in the config object
   const dataMethods = ["post", "put", "patch"];
   let needsConfig = !!(
-    request.urls[0].query ||
+    request.urls[0].queryList ||
     request.urls[0].queryDict ||
     request.headers ||
     request.urls[0].auth ||
@@ -334,7 +334,7 @@ export const _toNodeAxios = (
 
   // getDataString() can delete a header, so we can end up with an empty config
   needsConfig = !!(
-    request.urls[0].query ||
+    request.urls[0].queryList ||
     request.urls[0].queryDict ||
     (request.headers && request.headers.length) ||
     request.urls[0].auth ||

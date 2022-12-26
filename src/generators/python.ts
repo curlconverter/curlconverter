@@ -1,7 +1,7 @@
 import * as util from "../util.js";
 import type {
   Request,
-  Query,
+  QueryList,
   QueryDict,
   Warnings,
   DataParam,
@@ -717,7 +717,7 @@ function objToPython(
   }
 }
 
-function objToDictOrListOfTuples(obj: Query | QueryDict): string {
+function objToDictOrListOfTuples(obj: QueryList | QueryDict): string {
   if (!Array.isArray(obj)) {
     return objToPython(obj);
   }
@@ -1464,11 +1464,11 @@ const requestToPython = (
 
   // if there's only 1 URL, put params here, otherwise put it right before the URL
   let paramsStr;
-  if (request.urls[0].query && request.urls.length === 1) {
+  if (request.urls[0].queryList && request.urls.length === 1) {
     paramsStr =
       "params = " +
       objToDictOrListOfTuples(
-        request.urls[0].queryDict || request.urls[0].query
+        request.urls[0].queryDict || request.urls[0].queryList
       ) +
       "\n";
   }
@@ -1672,9 +1672,9 @@ const requestToPython = (
         ]);
       }
     }
-    args.push(repr(urlObj.urlWithoutQuery));
+    args.push(repr(urlObj.urlWithoutQueryList));
 
-    if (urlObj.query) {
+    if (urlObj.queryList) {
       args.push("params=params");
     }
     if (cookieStr && !request.cookieJar) {
@@ -1837,10 +1837,10 @@ const requestToPython = (
     }
     const indentLevel = isSession ? 1 : 0;
 
-    if (urlObj.query && request.urls.length > 1) {
+    if (urlObj.queryList && request.urls.length > 1) {
       requestLine += indent(
         "params = " +
-          objToDictOrListOfTuples(urlObj.queryDict || urlObj.query) +
+          objToDictOrListOfTuples(urlObj.queryDict || urlObj.queryList) +
           "\n",
         indentLevel
       );
@@ -1896,7 +1896,7 @@ const requestToPython = (
     if (
       !isSession &&
       // request.urls.length > 1 &&
-      (urlObj.query ||
+      (urlObj.queryList ||
         (dataString && jsonDataString) ||
         urlObj.uploadFile ||
         (urlObj.output && urlObj.output !== "/dev/null"))

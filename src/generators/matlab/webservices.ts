@@ -140,7 +140,7 @@ const prepareBasicURI = (request: Request): string[] => {
   const response = [];
   if (request.urls[0].queryDict) {
     response.push(
-      setVariableValue("baseURI", repr(request.urls[0].urlWithoutQuery))
+      setVariableValue("baseURI", repr(request.urls[0].urlWithoutQueryList))
     );
     response.push(setVariableValue("uri", `[baseURI '?' ${paramsString}]`));
   } else {

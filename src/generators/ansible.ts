@@ -116,7 +116,7 @@ export const _toAnsible = (
     r.validate_certs = false;
   }
   return yaml.stringify(
-    [{ name: request.urls[0].urlWithoutQuery, uri: r, register: "result" }],
+    [{ name: request.urls[0].urlWithoutQueryList, uri: r, register: "result" }],
     100,
     2
   );

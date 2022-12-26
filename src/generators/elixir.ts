@@ -130,12 +130,12 @@ function getBasicAuth(request: Request): string {
 }
 
 function getQueryDict(request: Request): string {
-  if (!request.urls[0].query || !request.urls[0].query.length) {
+  if (!request.urls[0].queryList || !request.urls[0].queryList.length) {
     return "[]";
   }
   let queryDict = "[\n";
   const queryDictLines = [];
-  for (const [paramName, rawValue] of request.urls[0].query) {
+  for (const [paramName, rawValue] of request.urls[0].queryList) {
     queryDictLines.push(`    {${repr(paramName)}, ${repr(rawValue)}}`);
   }
   queryDict += queryDictLines.join(",\n");
@@ -302,7 +302,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
     if (keepArgs && isBodyMethod) {
       args.push(body);
     }
-    args.push(repr(request.urls[0].urlWithoutQuery));
+    args.push(repr(request.urls[0].urlWithoutQueryList));
     args = args.reverse();
 
     let s =
@@ -320,7 +320,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
 
   return `request = %HTTPoison.Request{
   method: :${request.urls[0].method.toLowerCase()},
-  url: ${repr(request.urls[0].urlWithoutQuery)},
+  url: ${repr(request.urls[0].urlWithoutQueryList)},
   body: ${body},
   headers: ${headers},
   options: ${optionsWithoutParams},

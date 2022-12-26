@@ -90,10 +90,10 @@ export const _toDart = (
   }
 
   // TODO: Uri() can accept a params dict
-  if (request.urls[0].query) {
+  if (request.urls[0].queryList) {
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
-    for (const [paramName, rawValue] of request.urls[0].query) {
+    for (const [paramName, rawValue] of request.urls[0].queryList) {
       const paramValue = repr(rawValue === null ? "" : rawValue);
       s += "    " + repr(paramName) + ": " + paramValue + ",\n";
     }
@@ -124,10 +124,10 @@ export const _toDart = (
     }
   }
 
-  if (request.urls[0].query) {
+  if (request.urls[0].queryList) {
     s +=
       "  var url = Uri.parse('" +
-      escape(request.urls[0].urlWithoutQuery, "'") +
+      escape(request.urls[0].urlWithoutQueryList, "'") +
       "?$query" +
       "');\n";
   } else {
