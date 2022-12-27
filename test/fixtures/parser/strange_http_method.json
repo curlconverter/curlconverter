@@ -2,16 +2,19 @@
   {
     "urls": [
       {
-        "url": "http://localhost:28139",
         "originalUrl": "localhost:28139",
         "urlWithoutQueryList": "http://localhost:28139",
+        "url": "http://localhost:28139",
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",
           "path": "",
           "query": "",
+          "originalQuery": "",
           "fragment": ""
         },
+        "urlWithOriginalQuery": "http://localhost:28139",
+        "urlWithoutQueryArray": "http://localhost:28139",
         "method": "wHat"
       }
     ],

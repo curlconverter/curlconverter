@@ -1,11 +1,5 @@
 import * as util from "../util.js";
-import type {
-  Request,
-  QueryList,
-  QueryDict,
-  Warnings,
-  DataParam,
-} from "../util.js";
+import type { Request, Warnings, DataParam } from "../util.js";
 
 import {
   parse as jsonParseLossless,
@@ -717,21 +711,6 @@ function objToPython(
   }
 }
 
-function objToDictOrListOfTuples(obj: QueryList | QueryDict): string {
-  if (!Array.isArray(obj)) {
-    return objToPython(obj);
-  }
-  if (obj.length === 0) {
-    return "[]";
-  }
-  let s = "[\n";
-  for (const vals of obj) {
-    s += "    (" + vals.map(objToPython).join(", ") + "),\n";
-  }
-  s += "]";
-  return s;
-}
-
 function decodePercentEncoding(s: string): string | null {
   let decoded;
   try {
@@ -820,7 +799,10 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
   return s;
 }
 
-function formatDataAsEntries(dataArray: DataParam[]): [string, string] | null {
+function formatDataAsEntries(
+  dataArray: DataParam[],
+  variableName: "data" | "params" = "data"
+): [string, string] | null {
   // This code is more complicated than you might expect because it needs
   // to handle a --data-urlencode that reads from a file followed by --json
   // because --json doesn't add an '&' before its value.  Specifically, we
@@ -964,14 +946,18 @@ function formatDataAsEntries(dataArray: DataParam[]): [string, string] | null {
   }
 
   return [
-    "data = " + dataEntriesToPython(dataEntries as [string, string][]) + "\n",
+    variableName +
+      " = " +
+      dataEntriesToPython(dataEntries as [string, string][]) +
+      "\n",
     percentWarn,
   ];
 }
 
 function formatDataAsStr(
   dataArray: DataParam[],
-  imports: Set<string>
+  imports: Set<string>,
+  variableName: "data" | "params" = "data"
 ): [string, boolean] {
   // If one of the arguments has to be binary, then they all have to be binary
   // because we can't mix bytes and str.
@@ -998,7 +984,7 @@ function formatDataAsStr(
   let i, d;
   for ([i, d] of dataArray.entries()) {
     const op = i === 0 ? "=" : "+=";
-    let line = "data " + op + " ";
+    let line = variableName + " " + op + " ";
 
     if (i < dataArray.length - 1 && typeof d === "string" && d.endsWith("&")) {
       // Put the trailing '&' on the next line so that we don't have single '&'s on their own lines
@@ -1169,7 +1155,7 @@ function getDataString(
     }
     if (percentWarn) {
       warnings.push([
-        "percent-encoded-spaces",
+        "percent-encoded-spaces-in-data",
         'data contains spaces encoded by curl as "%20" which will be sent as "+" instead: ' +
           JSON.stringify(percentWarn),
       ]);
@@ -1460,15 +1446,44 @@ const requestToPython = (
     certStr += "\n";
   }
 
-  // if there's only 1 URL, put params here, otherwise put it right before the URL
+  // if there's only 1 URL, put params all together here, unless it's just one string.
+  // if there's more than 1, if we have params that are added to each URL from
+  // --get --data or --url-query that need to read a file, put just the shared part
+  // here, then keep the query in the URL, in the URL.
+  // If there's no --get --data or --url-query, then
+  // put params (if it can be rendered as a list or dict) right before the requests line
+  // Otherwise, keep the query in the URL.
   let paramsStr;
-  if (request.urls[0].queryList && request.urls.length === 1) {
-    paramsStr =
-      "params = " +
-      objToDictOrListOfTuples(
-        request.urls[0].queryDict || request.urls[0].queryList
-      ) +
-      "\n";
+  let shouldEncodeParams; // TODO: necessary?
+  const readsFile = (paramArray: DataParam[]) =>
+    paramArray.some((p) => typeof p !== "string");
+  const paramArray =
+    request.urls.length === 1 ? request.urls[0].queryArray : request.queryArray;
+  if (
+    paramArray &&
+    (request.urls.length === 1 ||
+      (request.urls.length > 1 && readsFile(paramArray)))
+  ) {
+    const queryAsEntries = formatDataAsEntries(paramArray, "params");
+    if (queryAsEntries !== null) {
+      let percentWarn;
+      [paramsStr, percentWarn] = queryAsEntries;
+
+      if (percentWarn) {
+        warnings.push([
+          "percent-encoded-spaces-in-query",
+          // TODO: will they?
+          'URL query contains spaces encoded by curl as "%20" which will be sent as "+" instead: ' +
+            JSON.stringify(percentWarn),
+        ]);
+      }
+    } else if (readsFile(paramArray)) {
+      [paramsStr, shouldEncodeParams] = formatDataAsStr(
+        paramArray,
+        imports,
+        "params"
+      );
+    }
   }
 
   const contentType = util.getHeader(request, "content-type");
@@ -1639,12 +1654,10 @@ const requestToPython = (
   // --output file
   // params= (because of the query string)
   // auth= (because the URL can have an auth string)
-  const isSession = hasMaxRedirects || request.cookieJar;
   const seenWarnings: Set<string> = new Set();
   const requestLines = [];
   let extraEmptyLine = false;
   for (const [urlObjIndex, urlObj] of request.urls.entries()) {
-    let requestLine = "";
     const requestsMethods = [
       "GET",
       "HEAD",
@@ -1670,10 +1683,53 @@ const requestToPython = (
         ]);
       }
     }
-    args.push(repr(urlObj.urlWithoutQueryList));
 
-    if (urlObj.queryList) {
-      args.push("params=params");
+    let urlParamsStr;
+    let url = urlObj.url;
+    if (request.urls.length === 1) {
+      if (paramsStr) {
+        url = urlObj.urlWithoutQueryArray;
+      } else {
+        url = urlObj.url;
+      }
+    } else {
+      if (paramsStr) {
+        url = urlObj.urlWithOriginalQuery;
+      } else {
+        if (urlObj.queryArray && urlObj.queryArray.length > 0) {
+          const urlQueryAsEntries = formatDataAsEntries(
+            urlObj.queryArray,
+            "params"
+          );
+          if (urlQueryAsEntries !== null) {
+            let percentWarn;
+            [urlParamsStr] = urlQueryAsEntries;
+            url = urlObj.urlWithoutQueryArray;
+
+            if (percentWarn) {
+              warnings.push([
+                "percent-encoded-spaces-in-query",
+                // TODO: will they?
+                'query contains spaces encoded by curl as "%20" which will be sent as "+" instead: ' +
+                  JSON.stringify(percentWarn),
+              ]);
+            }
+          } else if (readsFile(urlObj.queryArray)) {
+            [urlParamsStr, shouldEncodeParams] = formatDataAsStr(
+              urlObj.queryArray,
+              imports,
+              "params"
+            );
+            url = urlObj.urlWithoutQueryArray;
+          }
+        }
+        // url = urlObj.url
+      }
+    }
+    args.push(repr(url));
+
+    if (paramsStr || urlParamsStr) {
+      args.push("params=params" + (shouldEncodeParams ? ".encode()" : ""));
     }
     if (cookieStr && !request.cookieJar) {
       args.push("cookies=cookies");
@@ -1824,6 +1880,10 @@ const requestToPython = (
       ]);
     }
 
+    let requestLine = "";
+    const isSession = hasMaxRedirects || request.cookieJar;
+    const indentLevel = isSession ? 1 : 0;
+
     if (isSession && urlObjIndex === 0) {
       requestLine += "with requests.Session() as session:\n";
       if (hasMaxRedirects) {
@@ -1833,34 +1893,30 @@ const requestToPython = (
         requestLine += `    session.cookies = cookies\n`;
       }
     }
-    const indentLevel = isSession ? 1 : 0;
 
-    if (urlObj.queryList && request.urls.length > 1) {
-      requestLine += indent(
-        "params = " +
-          objToDictOrListOfTuples(urlObj.queryDict || urlObj.queryList) +
-          "\n",
-        indentLevel
-      );
-    }
-
-    if (urlObj.uploadFile && request.urls.length > 1) {
-      let uploadFileLine = "";
-      // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
-      if (urlObj.uploadFile === "-" || urlObj.uploadFile === ".") {
-        uploadFileLine += "file_contents = sys.stdin.buffer.read()\n";
-        imports.add("sys");
-      } else {
-        uploadFileLine +=
-          "with open(" + repr(urlObj.uploadFile) + ", 'rb') as f:\n";
-        uploadFileLine += "    file_contents = f.read()\n";
+    if (request.urls.length > 1) {
+      if (urlParamsStr) {
+        requestLine += indent(urlParamsStr, indentLevel);
       }
-      requestLine += indent(uploadFileLine, indentLevel);
+
+      if (urlObj.uploadFile) {
+        let uploadFileLine = "";
+        // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
+        if (urlObj.uploadFile === "-" || urlObj.uploadFile === ".") {
+          uploadFileLine += "file_contents = sys.stdin.buffer.read()\n";
+          imports.add("sys");
+        } else {
+          uploadFileLine +=
+            "with open(" + repr(urlObj.uploadFile) + ", 'rb') as f:\n";
+          uploadFileLine += "    file_contents = f.read()\n";
+        }
+        requestLine += indent(uploadFileLine, indentLevel);
+      }
     }
 
-    const fnCallLine =
-      "response = " + (isSession ? "session." : "requests.") + fn;
-    requestLine += indent(fnCallLine + joinArgs(args) + "\n", indentLevel);
+    const fnToCall =
+      "response = " + (isSession ? "session" : "requests") + "." + fn;
+    requestLine += indent(fnToCall + joinArgs(args) + "\n", indentLevel);
 
     if (jsonDataString && dataString && !urlObj.uploadFile) {
       // Adding empty lines to a "with" block breaks the code when pasted in the REPL
@@ -1874,7 +1930,7 @@ const requestToPython = (
         "# Note: json_data will not be serialized by requests\n" +
         "# exactly as it was in the original request.\n";
       dataAlternative += commentOut(dataString);
-      dataAlternative += commentOut(fnCallLine + joinArgs(args) + "\n");
+      dataAlternative += commentOut(fnToCall + joinArgs(args) + "\n");
       requestLine += indent(dataAlternative, indentLevel);
     }
 

@@ -2,16 +2,19 @@
   {
     "urls": [
       {
-        "url": "http://localhost:28139/echo/html/",
         "originalUrl": "http://localhost:28139/echo/html/",
         "urlWithoutQueryList": "http://localhost:28139/echo/html/",
+        "url": "http://localhost:28139/echo/html/",
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",
           "path": "/echo/html/",
           "query": "",
+          "originalQuery": "",
           "fragment": ""
         },
+        "urlWithOriginalQuery": "http://localhost:28139/echo/html/",
+        "urlWithoutQueryArray": "http://localhost:28139/echo/html/",
         "method": "POST"
       }
     ],
@@ -56,6 +59,7 @@
       ]
     ],
     "data": "msg1=wow&msg2=such",
+    "dataIsSafe": true,
     "dataArray": [
       "msg1=wow&msg2=such"
     ],

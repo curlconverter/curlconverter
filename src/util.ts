@@ -97,6 +97,7 @@ interface OperationConfig {
   "proxy-header"?: string[];
   form?: SrcFormParam[];
   data?: SrcDataParam[];
+  "url-query"?: SrcDataParam[];
   "mail-rcpt"?: string[];
   resolve?: string[];
   "connect-to"?: string[];
@@ -119,6 +120,7 @@ const canBeList = new Set([
   "proxy-header",
   "form",
   "data",
+  "url-query",
   "mail-rcpt",
   "resolve",
   "connect-to",
@@ -225,7 +227,11 @@ function pushArgValue(
     case "json":
       config.json = true;
       return pushProp(config, "data", ["json", value]);
-    // TODO: case "url-query":
+    case "url-query":
+      if (value.startsWith("+")) {
+        return pushProp(config, "url-query", ["raw", value.slice(1)]);
+      }
+      return pushProp(config, "url-query", ["urlencode", value]);
 
     case "form":
       return pushProp(config, "form", { value, type: "form" });
@@ -316,7 +322,7 @@ function setArgValue(
       global[argName] = toggle;
       break;
     case "next":
-      // check that the last url node has a url
+      // curl ignores --next if the last url node doesn't have a url
       if (
         toggle &&
         config.url &&
@@ -363,7 +369,26 @@ const COMMON_SUPPORTED_ARGS: string[] = [
   "data-binary",
   "data-urlencode",
   "json",
+  "url-query",
 ];
+
+// Unsupported args that users wouldn't expect to be warned about
+const ignoredArgs = new Set([
+  "help",
+  "no-help",
+  "silent",
+  "no-silent",
+  "verbose",
+  "no-verbose",
+  "version",
+  "no-version",
+  "progress-bar",
+  "no-progress-bar",
+  "progress-meter",
+  "no-progress-meter",
+  "show-error",
+  "no-show-error",
+]);
 
 // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L60
 interface Curl_URL {
@@ -379,6 +404,7 @@ interface Curl_URL {
   // port: string;
   path: string;
   query: string;
+  originalQuery: string;
   fragment: string;
   // portnum: number /* the numerical version */;
 }
@@ -404,6 +430,12 @@ interface RequestUrl {
   // ?a=1&b=2&a=1 (doesn't work, queryList is defined but queryDict isn't)
   queryDict?: QueryDict;
 
+  urlWithoutQueryArray: string;
+  urlWithOriginalQuery: string;
+  // This includes the query in the URL and the query that comes from `--get --data` or `--url-query`
+  queryArray?: DataParam[];
+  // This is only the query in the URL
+  urlQueryArray?: DataParam[];
   uploadFile?: string;
   output?: string;
 
@@ -417,20 +449,23 @@ interface Request {
   // Will have at least one element (otherwise an error is raised)
   urls: RequestUrl[];
 
-  headers?: Headers;
-  stdin?: string;
-  stdinFile?: string;
-  multipartUploads?: FormParam[];
+  // Just the part that comes from `--get --data` or `--url-query` (not the query in the URL)
+  // unless there's only one URL, then it will include both.
+  queryArray?: DataParam[];
+
   authType: string;
   awsSigV4?: string;
   delegation?: string;
+
+  headers?: Headers;
   cookies?: Cookies;
   cookieFiles?: string[];
   cookieJar?: string;
   compressed?: boolean;
   dataArray?: DataParam[];
+  multipartUploads?: FormParam[];
   data?: string;
-  dataFiles?: Array<[string, string]>;
+  dataIsSafe?: boolean;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
   insecure?: boolean;
@@ -446,6 +481,9 @@ interface Request {
   maxRedirects?: string;
   http2?: boolean;
   http3?: boolean;
+
+  stdin?: string;
+  stdinFile?: string;
 }
 
 // BEGIN GENERATED CURL OPTIONS
@@ -478,6 +516,7 @@ const _curlLongOpts: _LongOpts = {
   alpn: { type: "bool" },
   "no-alpn": { type: "bool", name: "alpn", expand: false },
   "limit-rate": { type: "string" },
+  rate: { type: "string" },
   compressed: { type: "bool" },
   "no-compressed": { type: "bool", name: "compressed", expand: false },
   "tr-encoding": { type: "bool" },
@@ -699,6 +738,7 @@ const _curlLongOpts: _LongOpts = {
   "data-binary": { type: "string" },
   "data-urlencode": { type: "string" },
   json: { type: "string" },
+  "url-query": { type: "string" },
   "dump-header": { type: "string" },
   referer: { type: "string" },
   cert: { type: "string" },
@@ -799,6 +839,12 @@ const _curlLongOpts: _LongOpts = {
   },
   "fail-with-body": { type: "bool" },
   "no-fail-with-body": { type: "bool", name: "fail-with-body", expand: false },
+  "remove-on-error": { type: "bool" },
+  "no-remove-on-error": {
+    type: "bool",
+    name: "remove-on-error",
+    expand: false,
+  },
   form: { type: "string" },
   "form-string": { type: "string" },
   globoff: { type: "bool" },
@@ -852,6 +898,7 @@ const _curlLongOpts: _LongOpts = {
   "no-buffer": { type: "bool", name: "buffer", expand: false },
   output: { type: "string" },
   "remote-name": { type: "bool" },
+  "no-remote-name": { type: "bool", name: "remote-name", expand: false },
   "remote-name-all": { type: "bool" },
   "no-remote-name-all": {
     type: "bool",
@@ -859,6 +906,8 @@ const _curlLongOpts: _LongOpts = {
     expand: false,
   },
   "output-dir": { type: "string" },
+  clobber: { type: "bool" },
+  "no-clobber": { type: "bool", name: "clobber", expand: false },
   proxytunnel: { type: "bool" },
   "no-proxytunnel": { type: "bool", name: "proxytunnel", expand: false },
   "ftp-port": { type: "string" },
@@ -904,12 +953,12 @@ const _curlLongOpts: _LongOpts = {
 };
 
 const curlShortOpts: ShortOpts = {
-  0: "http1.0",
-  1: "tlsv1",
-  2: "sslv2",
-  3: "sslv3",
-  4: "ipv4",
-  6: "ipv6",
+  "0": "http1.0",
+  "1": "tlsv1",
+  "2": "sslv2",
+  "3": "sslv3",
+  "4": "ipv4",
+  "6": "ipv6",
   a: "append",
   A: "user-agent",
   b: "cookie",
@@ -1043,24 +1092,6 @@ const changedShortOpts: { [key: string]: string } = {
   "*": "used to be another way to specify the url until curl 7.49.0",
   "~": "used to be short for --xattr until curl 7.49.0",
 };
-
-// These are args that users wouldn't expect to be warned about
-const ignoredArgs = new Set([
-  "help",
-  "no-help",
-  "silent",
-  "no-silent",
-  "verbose",
-  "no-verbose",
-  "version",
-  "no-version",
-  "progress-bar",
-  "no-progress-bar",
-  "progress-meter",
-  "no-progress-meter",
-  "show-error",
-  "no-show-error",
-]);
 
 const shortened: { [key: string]: LongShort[] } = {};
 for (const [opt, val] of Object.entries(_curlLongOpts)) {
@@ -1773,14 +1804,11 @@ export function parseQueryString(
   return [asList, asDict];
 }
 
-export function buildURL(
+export function parseurl(
   global: GlobalConfig,
   config: OperationConfig,
-  url: string,
-  uploadFile: string | undefined,
-  dataStr: string,
-  dataStrIsSafe: boolean
-): [Curl_URL, string, string, QueryList | null, QueryDict | null] {
+  url: string
+): Curl_URL {
   // This is curl's parseurl()
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1144
   // Except we want to accept all URLs.
@@ -1791,6 +1819,7 @@ export function buildURL(
     host: "",
     path: "", // with leading '/'
     query: "", // with leading '?'
+    originalQuery: "", // with leading '?'
     fragment: "", // with leading '#'
   };
 
@@ -1901,6 +1930,27 @@ export function buildURL(
   //   }
   // }
 
+  return u;
+}
+
+export function buildURL(
+  global: GlobalConfig,
+  config: OperationConfig,
+  url: string,
+  uploadFile?: string
+): [
+  Curl_URL,
+  string,
+  string,
+  QueryList | null,
+  QueryDict | null,
+  string,
+  string,
+  DataParam[] | null,
+  DataParam[] | null
+] {
+  const u = parseurl(global, config, url);
+
   // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L1124
   // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operhlp.c#L76
   if (uploadFile) {
@@ -1910,28 +1960,8 @@ export function buildURL(
     } else if (u.path.endsWith("/")) {
       u.path += uploadFile;
     }
-  }
-  // If --get and --data, convert --data to query string
-  // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L721
-  if (config.get && config.data) {
-    // TODO: check the curl source code
-    if (u.query) {
-      if (!u.query.endsWith("&")) {
-        u.query += "&";
-      }
-    } else {
-      u.query = "?";
-    }
-    u.query += dataStr;
 
-    if (!dataStrIsSafe) {
-      warnf(global, [
-        "unsafe-data",
-        // TODO: better wording
-        "the URL query string is not correct because --data contains @filenames",
-      ]);
-    }
-    if (uploadFile) {
+    if (config.get) {
       warnf(global, [
         "data-ignored",
         "curl doesn't let you pass --get and --upload-file together",
@@ -1939,19 +1969,215 @@ export function buildURL(
     }
   }
 
+  // TODO: remove .originalQuery
+  const urlWithOriginalQuery =
+    u.scheme + "://" + u.host + u.path + u.query + u.fragment;
+
+  // curl example.com example.com?foo=bar --url-query isshared=t
+  // will make requests for
+  // example.com/?isshared=t
+  // example.com/?foo=bar&isshared=t
+  //
+  // so the query could come from
+  //   1. `--url` (i.e. the requested URL)
+  //   2. `--url-query` or `--get --data` (the latter takes precedence)
+  //
+  // If it comes from the latter, we might need to generate code to read
+  // from one or more files.
+  // When there's multiple urls, the latter applies to all of them
+  // but the query from --url only applies to that URL.
+  //
+  // There's 3 cases for the query:
+  // 1. it's well-formed and can be expressed as a list of tuples (or a dict)
+  //   `?one=1&one=1&two=2`
+  // 2. it can't, for example because one of the pieces doesn't have a '='
+  //   `?one`
+  // 3. we need to generate code that reads from a file
+  //
+  // If there's only one URL we merge the query from the URL with the shared part.
+  //
+  // If there's multiple URLs and a shared part that reads from a file (case 3),
+  // we only write the file reading code once, pass it as the params= argument
+  // and the part from the URL has to be passed as a string in the URL
+  // and requests will combine the query in the URL with the query in params=.
+  //
+  // Otherwise, we print each query for each URL individually, either as a
+  // list of tuples if we can or in the URL if we can't.
+  //
+  // When files are passed in through --data-urlencode or --url-query
+  // we can usually treat them as case 1 as well (in Python), but that would
+  // generate code slightly different from curl because curl reads the file once
+  // upfront, whereas we would read the file multiple times and it might contain
+  // different data each time (for example if it's /dev/urandom).
+  let urlQueryArray: DataParam[] | null = null;
+  let queryArray: DataParam[] | null = null;
+  if (u.query || (config["url-query"] && config["url-query"].length)) {
+    let queryStr;
+    let queryStrIsSafe;
+
+    let queryParts: SrcDataParam[] = [];
+    if (u.query) {
+      // remove the leading '?'
+      queryParts.push(["raw", u.query.slice(1)]);
+      [queryArray, queryStr, queryStrIsSafe] = buildData(queryParts);
+      urlQueryArray = queryArray;
+    }
+    if (config["url-query"]) {
+      queryParts = queryParts.concat(config["url-query"]);
+      [queryArray, queryStr, queryStrIsSafe] = buildData(queryParts);
+    }
+
+    // TODO: check the curl source code
+    // TODO: curl localhost:8888/?
+    // will request /?
+    // but
+    // curl localhost:8888/? --url-query ''
+    // (or --get --data '') will request /
+    u.query = "";
+    if (queryStr) {
+      u.query = "?" + queryStr;
+    }
+
+    // TODO: not true for Python
+    if (!queryStrIsSafe) {
+      warnf(global, [
+        "unsafe-data",
+        // TODO: better wording
+        "the URL query string is not correct because --data contains @filenames",
+      ]);
+    }
+  }
+  const urlWithoutQueryArray = u.scheme + "://" + u.host + u.path + u.fragment;
+
   url = u.scheme + "://" + u.host + u.path + u.query + u.fragment;
+  let urlWithoutQueryList = url;
   // TODO: parseQueryString() doesn't accept leading '?'
-  const [queryList, queryDict] = parseQueryString(
+  let [queryList, queryDict] = parseQueryString(
     u.query ? u.query.slice(1) : ""
   );
   if (queryList && queryList.length) {
     // TODO: remove the fragment too?
-    const urlWithoutQueryList = u.scheme + "://" + u.host + u.path + u.fragment;
-    return [u, url, urlWithoutQueryList, queryList, queryDict];
+    urlWithoutQueryList = u.scheme + "://" + u.host + u.path + u.fragment;
+  } else {
+    queryList = null;
+    queryDict = null;
   }
 
   // TODO: --path-as-is
-  return [u, url, url, null, null];
+  return [
+    u,
+    url,
+
+    urlWithoutQueryList,
+    queryList,
+    queryDict,
+
+    urlWithoutQueryArray,
+    urlWithOriginalQuery,
+    queryArray,
+    urlQueryArray,
+  ];
+}
+
+function buildData(
+  configData: SrcDataParam[],
+  stdin?: string,
+  stdinFile?: string
+): [DataParam[], string, boolean] {
+  const data: DataParam[] = [];
+  let dataStrState = "";
+  for (const [i, x] of configData.entries()) {
+    const type = x[0];
+    let value = x[1];
+    let name: string | null = null;
+
+    if (i > 0 && type !== "json") {
+      dataStrState += "&";
+    }
+
+    if (type === "urlencode") {
+      // curl checks for = before @
+      const splitOn = value.includes("=") || !value.includes("@") ? "=" : "@";
+      const splitOnRegex = splitOn === "=" ? /=(.*)/s : /@(.*)/s;
+      // If there's no = or @ then the entire content is treated as a value and encoded
+      if (value.includes("@") || value.includes("=")) {
+        [name, value] = value.split(splitOnRegex, 2);
+      }
+
+      if (splitOn === "=") {
+        if (name) {
+          dataStrState += name + "=";
+        }
+        // curl's --data-urlencode percent-encodes spaces as "+"
+        // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_getparam.c#L630
+        dataStrState += percentEncodePlus(value);
+        continue;
+      }
+
+      name = name ? name : null;
+      value = "@" + value;
+    }
+
+    let filename: string | null = null;
+
+    if (type !== "raw" && value.startsWith("@")) {
+      filename = value.slice(1);
+      if (filename === "-") {
+        if (stdin !== undefined) {
+          switch (type) {
+            case "binary":
+            case "json":
+              value = stdin;
+              break;
+            case "urlencode":
+              value = (name ? name + "=" : "") + percentEncodePlus(stdin);
+              break;
+            default:
+              value = stdin.replace(/[\n\r]/g, "");
+          }
+          filename = null;
+        } else if (stdinFile !== undefined) {
+          filename = stdinFile;
+        } else {
+          // TODO: if stdin is read twice, it will be empty the second time
+          // TODO: `STDIN_SENTINEL` so that we can tell the difference between
+          // a stdinFile called "-" and stdin for the error message
+        }
+      }
+    }
+
+    if (filename !== null) {
+      if (dataStrState) {
+        data.push(dataStrState);
+        dataStrState = "";
+      }
+      // If `filename` isn't null, then `type` can't be "raw"
+      data.push([type as FileParamType, name, filename]);
+    } else {
+      dataStrState += value;
+    }
+  }
+  if (dataStrState) {
+    data.push(dataStrState);
+  }
+
+  let dataStrIsSafe = true;
+  const dataStr = data
+    .map((d) => {
+      if (Array.isArray(d)) {
+        dataStrIsSafe = false;
+        const name = d[1];
+        const filename = d[2];
+        if (name) {
+          return `${name}=@${filename}`;
+        }
+        return "@" + filename;
+      }
+      return d;
+    })
+    .join("");
+
+  return [data, dataStr, dataStrIsSafe];
 }
 
 function buildRequest(
@@ -2057,104 +2283,26 @@ function buildRequest(
     _setHeaderIfMissing(headers, header, timecond, lowercase);
   }
 
-  const data: Array<DataParam> = [];
-  let dataStrState = "";
+  let data;
+  let dataStr;
+  let dataStrIsSafe;
+  let queryArray;
   if (config.data && config.data.length) {
-    for (const [i, x] of config.data.entries()) {
-      const type = x[0];
-      let value = x[1];
-      let name: string | null = null;
-
-      if (i > 0 && type !== "json") {
-        dataStrState += "&";
-      }
-
-      if (type === "urlencode") {
-        // curl checks for = before @
-        const splitOn = value.includes("=") || !value.includes("@") ? "=" : "@";
-        const splitOnRegex = splitOn === "=" ? /=(.*)/s : /@(.*)/s;
-        // If there's no = or @ then the entire content is treated as a value and encoded
-        if (value.includes("@") || value.includes("=")) {
-          [name, value] = value.split(splitOnRegex, 2);
-        }
-
-        if (splitOn === "=") {
-          if (name) {
-            dataStrState += name + "=";
-          }
-          // curl's --data-urlencode percent-encodes spaces as "+"
-          // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_getparam.c#L630
-          dataStrState += percentEncodePlus(value);
-          continue;
-        }
-
-        name = name ? name : null;
-        value = "@" + value;
-      }
-
-      let filename: string | null = null;
-
-      if (type !== "raw" && value.startsWith("@")) {
-        filename = value.slice(1);
-        if (filename === "-") {
-          if (stdin !== undefined) {
-            switch (type) {
-              case "binary":
-              case "json":
-                value = stdin;
-                break;
-              case "urlencode":
-                value = (name ? name + "=" : "") + percentEncodePlus(stdin);
-                break;
-              default:
-                value = stdin.replace(/[\n\r]/g, "");
-            }
-            filename = null;
-          } else if (stdinFile !== undefined) {
-            filename = stdinFile;
-          } else {
-            // TODO: if stdin is read twice, it will be empty the second time
-            // TODO: `STDIN_SENTINEL` so that we can tell the difference between
-            // a stdinFile called "-" and stdin for the error message
-          }
-        }
-      }
-
-      if (filename !== null) {
-        if (dataStrState) {
-          data.push(dataStrState);
-          dataStrState = "";
-        }
-        data.push([
-          // If filename isn't null then type can't be "raw"
-          type as FileParamType,
-          name,
-          filename,
-        ]);
-      } else {
-        dataStrState += value;
-      }
-    }
-    if (dataStrState) {
-      data.push(dataStrState);
+    if (config.get) {
+      // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L721
+      // --get --data will overwrite --url-query, but if there's no --data, for example,
+      // curl --url-query bar --get example.com
+      // it won't
+      // https://daniel.haxx.se/blog/2022/11/10/append-data-to-the-url-query/
+      config["url-query"] = config.data;
+      delete config.data;
+    } else {
+      [data, dataStr, dataStrIsSafe] = buildData(config.data, stdin, stdinFile);
     }
   }
-
-  let dataStrIsSafe = true;
-  const dataStr = data
-    .map((d) => {
-      if (Array.isArray(d)) {
-        dataStrIsSafe = false;
-        const name = d[1];
-        const filename = d[2];
-        if (name) {
-          return `${name}=@${filename}`;
-        }
-        return "@" + filename;
-      }
-      return d;
-    })
-    .join("");
+  if (config["url-query"]) {
+    [queryArray] = buildData(config["url-query"], stdin, stdinFile);
+  }
 
   const urls: RequestUrl[] = [];
   const uploadFiles = config["upload-file"] || [];
@@ -2164,14 +2312,19 @@ function buildRequest(
     const uploadFile: string | undefined = uploadFiles[i];
     const output: string | undefined = outputFiles[i];
 
-    const [urlObj, url, urlWithoutQueryList, queryList, queryDict] = buildURL(
-      global,
-      config,
-      originalUrl,
-      uploadFile,
-      dataStr,
-      dataStrIsSafe
-    );
+    const [
+      urlObj,
+      url,
+
+      urlWithoutQueryList,
+      queryList,
+      queryDict,
+
+      urlWithoutQueryArray,
+      urlWithOriginalQuery,
+      queryArray,
+      urlQueryArray,
+    ] = buildURL(global, config, originalUrl, uploadFile);
 
     // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
     // will send, but most APIs will helpfully uppercase what you pass in as the method.
@@ -2196,10 +2349,12 @@ function buildRequest(
     }
 
     const requestUrl: RequestUrl = {
-      url,
       originalUrl,
       urlWithoutQueryList,
+      url,
       urlObj,
+      urlWithOriginalQuery,
+      urlWithoutQueryArray,
       method,
     };
     if (queryList) {
@@ -2208,6 +2363,12 @@ function buildRequest(
         requestUrl.queryDict = queryDict;
       }
     }
+    if (queryArray) {
+      requestUrl.queryArray = queryArray;
+    }
+    if (urlQueryArray) {
+      requestUrl.urlQueryArray = urlQueryArray;
+    }
     if (uploadFile) {
       requestUrl.uploadFile = uploadFile;
     }
@@ -2215,9 +2376,9 @@ function buildRequest(
       requestUrl.output = output;
     }
 
+    // --user takes precedence over the URL
     const auth = config.user || urlObj.auth;
     if (auth) {
-      // --user takes precedence over the URL
       const [user, pass] = auth.split(/:(.*)/s, 2);
       requestUrl.auth = [user, pass || ""];
     }
@@ -2341,11 +2502,18 @@ function buildRequest(
 
   if (config.data && config.data.length) {
     request.data = dataStr;
+    request.dataIsSafe = dataStrIsSafe;
     request.dataArray = data;
-    request.isDataRaw = false; // TODO: remove this
-    request.isDataBinary = data.some(
+    // TODO: remove these
+    request.isDataRaw = false;
+    request.isDataBinary = (data || []).some(
       (d) => Array.isArray(d) && d[0] === "binary"
     );
+  }
+  if (queryArray) {
+    // If we have to generate code that reads from a file, we
+    // need to do it once for all URLs.
+    request.queryArray = queryArray;
   }
 
   if (config.insecure) {

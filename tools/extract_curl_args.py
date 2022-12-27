@@ -71,25 +71,19 @@ CLI_VERSION_LINE_START = "const VERSION = "
 # These are options with the same `letter`, which are options that were
 # renamed, along with their new name.
 DUPES = {
-    "krb": "krb",
     "krb4": "krb",
     "ftp-ssl": "ssl",
-    "ssl": "ssl",
     "ftp-ssl-reqd": "ssl-reqd",
-    "ssl-reqd": "ssl-reqd",
-    "proxy-service-name": "proxy-service-name",
     "socks5-gssapi-service": "proxy-service-name",
     # These argument names have been deleted,
     # they should appear as deleted options.
-    "request": "request",
     "http-request": "request",
-    "use-ascii": "use-ascii",
     "ftp-ascii": "use-ascii",
     "ftpport": "ftp-port",
-    "ftp-port": "ftp-port",
     "socks": "socks5",
-    "socks5": "socks5",
 }
+for value in list(DUPES.values()):
+    DUPES[value] = value
 
 if not OUTPUT_FILE.is_file():
     sys.exit(
@@ -243,8 +237,8 @@ def split(aliases):
     return long_args, short_args
 
 
-def format_as_js(d, var_name, indent="\t", indent_level=0):
-    yield f"{indent * indent_level}const {var_name} = {{"
+def format_as_js(d, var_name, type_name, indent="  ", indent_level=0):
+    yield f"{indent * indent_level}const {var_name}: {type_name} = {{"
     for top_key, opt in d.items():
 
         def quote(key):
@@ -426,9 +420,9 @@ if __name__ == "__main__":
     )
     long_args, short_args = split(current_aliases)
 
-    js_params_lines = list(format_as_js(long_args, "curlLongOpts", indent="  "))
+    js_params_lines = list(format_as_js(long_args, "_curlLongOpts", "_LongOpts"))
     js_params_lines += [""]  # separate by a newline
-    js_params_lines += list(format_as_js(short_args, "curlShortOpts", indent="  "))
+    js_params_lines += list(format_as_js(short_args, "curlShortOpts", "ShortOpts"))
 
     new_lines = []
     with open(OUTPUT_FILE) as f:
@@ -454,7 +448,7 @@ if __name__ == "__main__":
     with open(PACKAGE_JSON) as f:
         package_version = json.load(f)["version"]
     cli_version = f"{package_version} (curl {curl_version})"
-    cli_version_line = CLI_VERSION_LINE_START + repr(cli_version) + "\n"
+    cli_version_line = CLI_VERSION_LINE_START + f'"{cli_version}";\n'
     with open(CLI_FILE) as f:
         for line in f:
             if line.strip().startswith(CLI_VERSION_LINE_START):

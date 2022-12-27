@@ -2,16 +2,19 @@
   {
     "urls": [
       {
-        "url": "http://localhost:28139/ajax/demo_post.asp",
         "originalUrl": "http://localhost:28139/ajax/demo_post.asp",
         "urlWithoutQueryList": "http://localhost:28139/ajax/demo_post.asp",
+        "url": "http://localhost:28139/ajax/demo_post.asp",
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",
           "path": "/ajax/demo_post.asp",
           "query": "",
+          "originalQuery": "",
           "fragment": ""
         },
+        "urlWithOriginalQuery": "http://localhost:28139/ajax/demo_post.asp",
+        "urlWithoutQueryArray": "http://localhost:28139/ajax/demo_post.asp",
         "method": "POST"
       }
     ],
