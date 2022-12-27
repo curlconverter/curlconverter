@@ -126,7 +126,6 @@ const getDataString = (request: Request): [string, string | null] => {
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [queryList, queryDict] = util.parseQueryString(request.data);
       if (queryList) {
         // Technically node-fetch sends
@@ -162,6 +161,16 @@ const requestToJavaScriptOrNode = (
   imports: Set<[string, string]>,
   isNode: boolean
 ): string => {
+  if (request.dataReadsFile) {
+    warnings.push([
+      "unsafe-data",
+      // TODO: better wording
+      "the data is not correct, " +
+        JSON.stringify("@" + request.dataReadsFile) +
+        " means it should read the file " +
+        JSON.stringify(request.dataReadsFile),
+    ]);
+  }
   if (request.cookieFiles) {
     warnings.push([
       "cookie-files",
@@ -228,7 +237,16 @@ const requestToJavaScriptOrNode = (
 
   for (const urlObj of request.urls) {
     code += "fetch(" + repr(urlObj.url);
-
+    if (urlObj.queryReadsFile) {
+      warnings.push([
+        "unsafe-query",
+        // TODO: better wording
+        "the URL query string is not correct, " +
+          JSON.stringify("@" + urlObj.queryReadsFile) +
+          " means it should read the file " +
+          JSON.stringify(urlObj.queryReadsFile),
+      ]);
+    }
     const method = urlObj.method.toLowerCase();
 
     if (

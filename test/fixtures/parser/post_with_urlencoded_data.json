@@ -59,7 +59,6 @@
       ]
     ],
     "data": "msg1=wow&msg2=such",
-    "dataIsSafe": true,
     "dataArray": [
       "msg1=wow&msg2=such"
     ],

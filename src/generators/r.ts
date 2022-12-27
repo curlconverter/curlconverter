@@ -101,6 +101,26 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
         request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
     ]);
   }
+  if (request.dataReadsFile) {
+    warnings.push([
+      "unsafe-data",
+      // TODO: better wording
+      "the data is not correct, " +
+        JSON.stringify("@" + request.dataReadsFile) +
+        " means it should read the file " +
+        JSON.stringify(request.dataReadsFile),
+    ]);
+  }
+  if (request.urls[0].queryReadsFile) {
+    warnings.push([
+      "unsafe-query",
+      // TODO: better wording
+      "the URL query string is not correct, " +
+        JSON.stringify("@" + request.urls[0].queryReadsFile) +
+        " means it should read the file " +
+        JSON.stringify(request.urls[0].queryReadsFile),
+    ]);
+  }
 
   let cookieDict;
   if (request.cookies) {

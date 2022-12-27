@@ -44,7 +44,6 @@ const _getDataString = (request: Request): [string | null, string | null] => {
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [queryList, queryDict] = util.parseQueryString(request.data);
     if (queryList) {
       // Technically axios sends
@@ -219,6 +218,23 @@ export const _toNodeAxios = (
     ]);
   }
   const request = requests[0];
+  if (request.dataReadsFile) {
+    warnings.push([
+      "unsafe-data",
+      // TODO: better wording
+      "the data is not correct, " +
+        JSON.stringify("@" + request.dataReadsFile) +
+        " means it should read the file " +
+        JSON.stringify(request.dataReadsFile),
+    ]);
+  }
+  if (request.cookieFiles) {
+    warnings.push([
+      "cookie-files",
+      "passing a file for --cookie/-b is not supported: " +
+        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+    ]);
+  }
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -228,11 +244,14 @@ export const _toNodeAxios = (
         request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
     ]);
   }
-  if (request.cookieFiles) {
+  if (request.urls[0].queryReadsFile) {
     warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+      "unsafe-query",
+      // TODO: better wording
+      "the URL query string is not correct, " +
+        JSON.stringify("@" + request.urls[0].queryReadsFile) +
+        " means it should read the file " +
+        JSON.stringify(request.urls[0].queryReadsFile),
     ]);
   }
 

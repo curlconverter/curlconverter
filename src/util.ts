@@ -417,6 +417,12 @@ interface RequestUrl {
   // The url exactly as it was passed in, used for error messages
   originalUrl: string;
   url: string;
+  // the query string can contain instructions to
+  // read the query string from a file, for example with
+  // --url-query @filename
+  // In that case we put "@filename" in the query string and "filename" here and
+  // warn the user that they'll need to modify the code to read that file.
+  queryReadsFile?: string;
 
   urlObj: Curl_URL;
 
@@ -465,7 +471,7 @@ interface Request {
   dataArray?: DataParam[];
   multipartUploads?: FormParam[];
   data?: string;
-  dataIsSafe?: boolean;
+  dataReadsFile?: string;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
   insecure?: boolean;
@@ -1941,6 +1947,7 @@ export function buildURL(
 ): [
   Curl_URL,
   string,
+  string | null,
   string,
   QueryList | null,
   QueryDict | null,
@@ -2011,20 +2018,20 @@ export function buildURL(
   // different data each time (for example if it's /dev/urandom).
   let urlQueryArray: DataParam[] | null = null;
   let queryArray: DataParam[] | null = null;
+  let queryStrReadsFile: string | null = null;
   if (u.query || (config["url-query"] && config["url-query"].length)) {
     let queryStr;
-    let queryStrIsSafe;
 
     let queryParts: SrcDataParam[] = [];
     if (u.query) {
       // remove the leading '?'
       queryParts.push(["raw", u.query.slice(1)]);
-      [queryArray, queryStr, queryStrIsSafe] = buildData(queryParts);
+      [queryArray, queryStr, queryStrReadsFile] = buildData(queryParts);
       urlQueryArray = queryArray;
     }
     if (config["url-query"]) {
       queryParts = queryParts.concat(config["url-query"]);
-      [queryArray, queryStr, queryStrIsSafe] = buildData(queryParts);
+      [queryArray, queryStr, queryStrReadsFile] = buildData(queryParts);
     }
 
     // TODO: check the curl source code
@@ -2036,15 +2043,6 @@ export function buildURL(
     u.query = "";
     if (queryStr) {
       u.query = "?" + queryStr;
-    }
-
-    // TODO: not true for Python
-    if (!queryStrIsSafe) {
-      warnf(global, [
-        "unsafe-data",
-        // TODO: better wording
-        "the URL query string is not correct because --data contains @filenames",
-      ]);
     }
   }
   const urlWithoutQueryArray = u.scheme + "://" + u.host + u.path + u.fragment;
@@ -2067,6 +2065,7 @@ export function buildURL(
   return [
     u,
     url,
+    queryStrReadsFile,
 
     urlWithoutQueryList,
     queryList,
@@ -2083,7 +2082,7 @@ function buildData(
   configData: SrcDataParam[],
   stdin?: string,
   stdinFile?: string
-): [DataParam[], string, boolean] {
+): [DataParam[], string, string | null] {
   const data: DataParam[] = [];
   let dataStrState = "";
   for (const [i, x] of configData.entries()) {
@@ -2161,13 +2160,13 @@ function buildData(
     data.push(dataStrState);
   }
 
-  let dataStrIsSafe = true;
+  let dataStrReadsFile: string | null = null;
   const dataStr = data
     .map((d) => {
       if (Array.isArray(d)) {
-        dataStrIsSafe = false;
         const name = d[1];
         const filename = d[2];
+        dataStrReadsFile ||= filename; // report first file
         if (name) {
           return `${name}=@${filename}`;
         }
@@ -2177,7 +2176,7 @@ function buildData(
     })
     .join("");
 
-  return [data, dataStr, dataStrIsSafe];
+  return [data, dataStr, dataStrReadsFile];
 }
 
 function buildRequest(
@@ -2285,7 +2284,7 @@ function buildRequest(
 
   let data;
   let dataStr;
-  let dataStrIsSafe;
+  let dataStrReadsFile;
   let queryArray;
   if (config.data && config.data.length) {
     if (config.get) {
@@ -2297,7 +2296,11 @@ function buildRequest(
       config["url-query"] = config.data;
       delete config.data;
     } else {
-      [data, dataStr, dataStrIsSafe] = buildData(config.data, stdin, stdinFile);
+      [data, dataStr, dataStrReadsFile] = buildData(
+        config.data,
+        stdin,
+        stdinFile
+      );
     }
   }
   if (config["url-query"]) {
@@ -2315,6 +2318,7 @@ function buildRequest(
     const [
       urlObj,
       url,
+      queryReadsFile,
 
       urlWithoutQueryList,
       queryList,
@@ -2357,6 +2361,9 @@ function buildRequest(
       urlWithoutQueryArray,
       method,
     };
+    if (queryReadsFile) {
+      requestUrl.queryReadsFile = queryReadsFile;
+    }
     if (queryList) {
       requestUrl.queryList = queryList;
       if (queryDict) {
@@ -2502,7 +2509,9 @@ function buildRequest(
 
   if (config.data && config.data.length) {
     request.data = dataStr;
-    request.dataIsSafe = dataStrIsSafe;
+    if (dataStrReadsFile) {
+      request.dataReadsFile = dataStrReadsFile;
+    }
     request.dataArray = data;
     // TODO: remove these
     request.isDataRaw = false;
