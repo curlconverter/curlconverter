@@ -46,7 +46,7 @@ import { _toRust, toRustWarn } from "./generators/rust.js";
 import fs from "fs";
 
 // This line is updated by extract_curl_args.py
-const VERSION = "4.4.1 (curl 7.82.0)";
+const VERSION = "4.4.1 (curl 7.87.0)";
 
 // sets a default in case --language isn't passed
 const defaultLanguage = "python";

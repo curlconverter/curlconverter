@@ -58,7 +58,7 @@
   },
   "scripts": {
     "compile": "tsc",
-    "watch": "tsc -watch -p ./",
+    "start": "tsc -watch -p ./",
     "pretest": "TSC_COMPILE_ON_ERROR=true npm run compile || exit 0",
     "test": "NODE_OPTIONS=\"--enable-source-maps --unhandled-rejections=strict\" npx tape dist/test/test.js",
     "prelint": "npm run compile",

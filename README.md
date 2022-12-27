@@ -5,7 +5,7 @@ Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python and 
 Try it on [curlconverter.com](https://curlconverter.com) or from the command line:
 
 ```shell
-$ curlconverter --data-raw "hello=world" example.com
+$ curlconverter --data "hello=world" example.com
 import requests
 
 data = {
@@ -32,9 +32,8 @@ Features:
 Limitations:
 
 - Only HTTP is supported
-- If multiple URLs are passed only the first one is used
-- By default, curl doesn't follow redirects or decompress the response but the generated code will do whatever the default is for that runtime, to keep it simpler. For example Python's Requests follows redirects by default, so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the resulting code will not do what curl would do if the server responds with a redirect
 - Code generators for other languages are less thorough than the Python generator
+- By default, curl doesn't follow redirects or decompress gzip-compressed responses but the generated code will do whatever the default is for that runtime, to keep it simpler. For example Python's Requests library [follows redirects by default](https://requests.readthedocs.io/en/latest/user/quickstart/#redirection-and-history), so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the resulting code will not do what curl would do if the server responds with a redirect
 - and much more
 
 ## Install
