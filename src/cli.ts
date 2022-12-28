@@ -29,6 +29,7 @@ import {
   _toNodeAxios,
   toNodeAxiosWarn,
 } from "./generators/javascript/axios.js";
+import { _toNodeGot, toNodeGotWarn } from "./generators/javascript/got.js";
 import {
   _toNodeRequest,
   toNodeRequestWarn,
@@ -72,16 +73,19 @@ const translate: {
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocument alias
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
+  "javascript-got": [_toNodeGot, toNodeGotWarn], // undocument alias
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
   json: [_toJsonString, toJsonStringWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
   "node-fetch": [_toNode, toNodeWarn], // undocument alias
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],
+  "node-got": [_toNodeGot, toNodeGotWarn],
   "node-request": [_toNodeRequest, toNodeRequestWarn],
   nodejs: [_toNode, toNodeWarn], // undocument alias
   "nodejs-fetch": [_toNode, toNodeWarn], // undocument alias
   "nodejs-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
+  "nodejs-got": [_toNodeGot, toNodeGotWarn], // undocument alias
   "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
   php: [_toPhp, toPhpWarn],
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],

@@ -2461,6 +2461,7 @@ function buildRequest(
       lowercase
     );
   } else if (config.form) {
+    // TODO: set content-type?
     request.multipartUploads = [];
     for (const multipartArgument of config.form) {
       if (!multipartArgument.value.includes("=")) {
