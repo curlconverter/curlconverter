@@ -207,6 +207,10 @@ const buildOptionsObject = (
         code += "        connect: " + request.connectTimeout + " * 1000,\n";
       }
     }
+    if (code.endsWith(",\n")) {
+      code = code.slice(0, -2);
+      code += "\n";
+    }
     code += "    },\n";
   }
 
@@ -310,7 +314,6 @@ export const _toNodeGot = (
     ]);
   }
 
-  let importCode = "import got from 'got';\n";
   const imports = new Set<[string, string]>();
 
   let code = "";
@@ -393,6 +396,7 @@ export const _toNodeGot = (
 
   code += ");\n";
 
+  let importCode = "import got from 'got';\n";
   for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
     importCode += "import " + varName + " from " + repr(imp) + ";\n";
   }
