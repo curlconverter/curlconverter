@@ -58,81 +58,69 @@ const reprAsStringToStringDict = (
   return code;
 };
 
-// TODO: @
-const _getDataString = (
-  request: Request,
-  simpleString: string
-): [string | null, string | null] => {
-  if (!request.data) {
-    return [null, null];
-  }
-
+const getBodyString = (request: Request): [string | null, string | null] => {
   // can have things like ; charset=utf-8 which we want to preserve
   const exactContentType = util.getHeader(request, "content-type");
   const contentType = util.getContentType(request);
 
-  if (contentType === "application/json") {
-    const parsed = JSON.parse(request.data);
-    const roundtrips = JSON.stringify(parsed) === request.data;
-    const jsonAsJavaScript = "json: " + reprObj(parsed, 1);
-    if (roundtrips && exactContentType === "application/json") {
-      util.deleteHeader(request, "content-type");
+  if (request.multipartUploads) {
+    if (contentType === "multipart/form-data") {
+      util.deleteHeader(request, "content-type"); // TODO: comment it out instead?
     }
-    return [jsonAsJavaScript, roundtrips ? null : simpleString];
-  } else if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = util.parseQueryString(request.data);
-    if (
-      queryDict &&
-      Object.values(queryDict).every((v) => typeof v === "string")
-    ) {
-      if (exactContentType === "application/x-www-form-urlencoded") {
-        util.deleteHeader(request, "content-type");
-      }
-      return [
-        "form: " +
-          reprAsStringToStringDict(
-            Object.entries(queryDict as { [key: string]: string }),
-            1
-          ),
-        null,
-      ];
-    }
-    if (queryList) {
-      let paramsCode = "body: new URLSearchParams([\n";
-      for (const [key, val] of queryList) {
-        paramsCode += `        [${repr(key)}, ${repr(val)}],\n`;
-      }
-      if (paramsCode.endsWith(",\n")) {
-        paramsCode = paramsCode.slice(0, -2);
-        paramsCode += "\n";
-      }
-      paramsCode += "    ]).toString()";
-      // TODO: check roundtrip, add a comment
-      // TODO: more indents?
-      return [paramsCode, null];
-    }
+    return ["body: form", null];
   }
-  return [null, null];
-};
-const getDataString = (request: Request): [string | null, string | null] => {
+
   if (!request.data) {
     return [null, null];
   }
 
+  // TODO: @
   const simpleString = "body: " + repr(request.data);
 
-  let dataString = null;
-  let commentedOutDataString = null;
   try {
-    [dataString, commentedOutDataString] = _getDataString(
-      request,
-      simpleString
-    );
+    if (contentType === "application/json") {
+      const parsed = JSON.parse(request.data);
+      const roundtrips = JSON.stringify(parsed) === request.data;
+      const jsonAsJavaScript = "json: " + reprObj(parsed, 1);
+      if (roundtrips && exactContentType === "application/json") {
+        util.deleteHeader(request, "content-type");
+      }
+      return [jsonAsJavaScript, roundtrips ? null : simpleString];
+    }
+    if (contentType === "application/x-www-form-urlencoded") {
+      const [queryList, queryDict] = util.parseQueryString(request.data);
+      if (
+        queryDict &&
+        Object.values(queryDict).every((v) => typeof v === "string")
+      ) {
+        if (exactContentType === "application/x-www-form-urlencoded") {
+          util.deleteHeader(request, "content-type");
+        }
+        return [
+          "form: " +
+            reprAsStringToStringDict(
+              Object.entries(queryDict as { [key: string]: string }),
+              1
+            ),
+          null,
+        ];
+      }
+      if (queryList) {
+        let paramsCode = "body: new URLSearchParams([\n";
+        for (const [key, val] of queryList) {
+          paramsCode += `        [${repr(key)}, ${repr(val)}],\n`;
+        }
+        if (paramsCode.endsWith(",\n")) {
+          paramsCode = paramsCode.slice(0, -2);
+          paramsCode += "\n";
+        }
+        paramsCode += "    ]).toString()";
+        return [paramsCode, null];
+      }
+    }
   } catch {}
-  if (!dataString) {
-    dataString = simpleString;
-  }
-  return [dataString, commentedOutDataString];
+
+  return [simpleString, null];
 };
 
 const buildOptionsObject = (
@@ -171,7 +159,7 @@ const buildOptionsObject = (
     code += "    ]),\n";
   }
 
-  const [dataString, commentedOutDataString] = getDataString(request); // can delete headers
+  const [bodyString, commentedOutBodyString] = getBodyString(request); // can delete headers
 
   if (request.headers && request.headers.length) {
     code +=
@@ -189,18 +177,16 @@ const buildOptionsObject = (
     }
   }
 
-  if (request.data) {
-    if (commentedOutDataString) {
-      code += "    // " + commentedOutDataString + ",\n";
+  if (request.data || request.multipartUploads) {
+    if (commentedOutBodyString) {
+      code += "    // " + commentedOutBodyString + ",\n";
     }
-    code += "    " + dataString + ",\n";
+    code += "    " + bodyString + ",\n";
 
     // TODO: Does this work for HEAD?
     if (nonDataMethods.includes(method.toUpperCase())) {
       code += "    allowGetBody: true,\n";
     }
-  } else if (request.multipartUploads) {
-    code += "    body: form,\n";
   }
 
   if (request.timeout || request.connectTimeout) {
