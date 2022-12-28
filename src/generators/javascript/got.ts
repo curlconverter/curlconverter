@@ -25,6 +25,32 @@ const supportedArgs = new Set([
   "form-string",
 ]);
 
+const reprAsStringToStringDict = (
+  d: [string, string | null][],
+  indentLevel = 0,
+  indent = "    "
+): string => {
+  if (d.length === 0) {
+    return "{}";
+  }
+
+  let code = "{\n";
+  for (const [key, value] of d) {
+    code +=
+      indent.repeat(indentLevel + 1) +
+      repr(key) +
+      ": " +
+      repr(value || "") +
+      ",\n";
+  }
+  if (code.endsWith(",\n")) {
+    code = code.slice(0, -2);
+    code += "\n";
+  }
+  code += indent.repeat(indentLevel) + "}";
+  return code;
+};
+
 // TODO: @
 const _getDataString = (
   request: Request,
@@ -55,7 +81,14 @@ const _getDataString = (
       if (exactContentType === "application/x-www-form-urlencoded") {
         util.deleteHeader(request, "content-type");
       }
-      return ["form: " + reprObj(queryDict, 1), null];
+      return [
+        "form: " +
+          reprAsStringToStringDict(
+            Object.entries(queryDict as { [key: string]: string }),
+            1
+          ),
+        null,
+      ];
     }
     if (queryList) {
       let paramsCode = "body: new URLSearchParams([\n";
@@ -113,7 +146,12 @@ const buildOptionsObject = (
     !Object.values(request.urls[0].queryDict).some((qv) => Array.isArray(qv))
   ) {
     code +=
-      "    searchParams: " + reprObj(request.urls[0].queryDict, 1) + ",\n";
+      "    searchParams: " +
+      reprAsStringToStringDict(
+        Object.entries(request.urls[0].queryDict as { [key: string]: string }),
+        1
+      ) +
+      ",\n";
   } else if (request.urls[0].queryList) {
     code += "    searchParams: new URLSearchParams([\n";
     for (const [key, val] of request.urls[0].queryList) {
@@ -129,15 +167,8 @@ const buildOptionsObject = (
   const [dataString, commentedOutDataString] = getDataString(request); // can delete headers
 
   if (request.headers && request.headers.length) {
-    code += "    headers: {\n";
-    for (const [key, value] of request.headers || []) {
-      code += "        " + repr(key) + ": " + repr(value || "") + ",\n";
-    }
-    if (code.endsWith(",\n")) {
-      code = code.slice(0, -2);
-      code += "\n";
-    }
-    code += "    },\n";
+    code +=
+      "    headers: " + reprAsStringToStringDict(request.headers, 1) + ",\n";
   }
 
   if (request.urls[0].auth) {
