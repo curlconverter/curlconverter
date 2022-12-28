@@ -370,6 +370,10 @@ const COMMON_SUPPORTED_ARGS: string[] = [
   "data-urlencode",
   "json",
   "url-query",
+
+  // Trivial support for globoff means controlling whether or not
+  // backslash-escaped [] {} will have the backslash removed.
+  "globoff",
 ];
 
 // Unsupported args that users wouldn't expect to be warned about
@@ -1828,6 +1832,12 @@ export function parseurl(
     originalQuery: "", // with leading '?'
     fragment: "", // with leading '#'
   };
+
+  // Remove url glob escapes
+  // https://github.com/curl/curl/blob/curl-7_87_0/src/tool_urlglob.c#L395-L398
+  if (!config.globoff) {
+    url = url.replace(/\\([[\]{}])/g, "$1");
+  }
 
   // curl automatically prepends 'http' if the scheme is missing,
   // but many libraries fail if your URL doesn't have it,
