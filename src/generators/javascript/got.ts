@@ -380,8 +380,8 @@ export const toNodeGotWarn = (
   warnings: Warnings = []
 ): [string, Warnings] => {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const nodeAxios = _toNodeGot(requests, warnings);
-  return [nodeAxios, warnings];
+  const nodeGot = _toNodeGot(requests, warnings);
+  return [nodeGot, warnings];
 };
 export const toNodeGot = (curlCommand: string | string[]): string => {
   return toNodeGotWarn(curlCommand)[0];
