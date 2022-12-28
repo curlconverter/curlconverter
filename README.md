@@ -111,7 +111,7 @@ You can choose the output language by passing `--language <language>`. The optio
 - `elixir`
 - `go`
 - `java`
-- `javascript`, `node`, `node-axios`, `node-request`
+- `javascript`, `node`, `node-axios`, `node-got`, `node-request`
 - `json`
 - `matlab`
 - `php`, `php-request`

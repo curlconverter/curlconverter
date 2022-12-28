@@ -314,6 +314,7 @@ export const _toNodeAxios = (
   // You can also post data with OPTIONS, but that has to go in the config object
   const dataMethods = ["post", "put", "patch"];
   let needsConfig = !!(
+    !methods.includes(method) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
     request.headers ||
@@ -356,6 +357,7 @@ export const _toNodeAxios = (
 
   // getDataString() can delete a header, so we can end up with an empty config
   needsConfig = !!(
+    !methods.includes(method) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
     (request.headers && request.headers.length) ||

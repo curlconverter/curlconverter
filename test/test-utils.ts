@@ -29,6 +29,7 @@ type Converter =
   | "matlab"
   | "node"
   | "node-axios"
+  | "node-got"
   | "node-request"
   | "php"
   | "python"
@@ -96,6 +97,11 @@ const converters = {
     name: "Node",
     extension: ".js",
     converter: curlconverter.toNodeAxios,
+  },
+  "node-got": {
+    name: "Node",
+    extension: ".js",
+    converter: curlconverter.toNodeGot,
   },
   "node-request": {
     name: "Node",
