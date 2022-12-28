@@ -23,6 +23,13 @@ const supportedArgs = new Set([
 
   "form",
   "form-string",
+
+  // TODO:
+  // "cookie-jar", // and cookie files
+  // TODO: tls using https: and agent:
+  // TODO: proxy stuff using agent:
+  // TODO: retry:
+  // TODO: methodRewriting: true to match curl?
 ]);
 
 const reprAsStringToStringDict = (
