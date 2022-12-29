@@ -1167,21 +1167,24 @@ const parseWord = (str: string): string => {
   return str.replace(BACKSLASHES, unescapeChar);
 };
 // Expansions look ${like_this}
-// https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+// https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
 const parseExpansion = (str: string): string => {
   // TODO: warn if child node isn't simply "variable_name".
   return str.slice(2, -1);
 };
+// The backslash has no effect in single quotes
+// https://www.gnu.org/software/bash/manual/bash.html#Single-Quotes
 const parseSingleQuoteString = (str: string): string => {
-  const BACKSLASHES = /\\(\n|')/gs;
-  const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
-  return str.slice(1, -1).replace(BACKSLASHES, unescapeChar);
+  return str.slice(1, -1);
 };
+// https://www.gnu.org/software/bash/manual/bash.html#Double-Quotes
 const parseDoubleQuoteString = (str: string): string => {
-  const BACKSLASHES = /\\(\n|\\|")/gs;
+  const BACKSLASHES = /\\(\$|`|"|\\|\n)/gs;
   const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
   return str.slice(1, -1).replace(BACKSLASHES, unescapeChar);
 };
+// Locale-translated strings look $"like this" and essentially behave
+// like double-quoted strings.
 const parseTranslatedString = (str: string): string => {
   return parseDoubleQuoteString(str.slice(1));
 };
