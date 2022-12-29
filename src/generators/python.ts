@@ -491,12 +491,6 @@ export function reprb(s: string): string {
   return sEsc + ".encode()";
 }
 
-function reprWithVariable(value: string, hasEnvironmentVariable: boolean) {
-  // TODO: escape {}
-  // ? "f" + repr(value.replace(/{/g, "{{").replace(/}/g, "}}"))
-  return hasEnvironmentVariable ? "f" + repr(value) : repr(value);
-}
-
 // Port of Python's json.dumps() with its default options, which is what Requests uses
 // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
 // It's different from JSON.stringify(). Namely, it adds spaces after ',' and ':'
@@ -1223,79 +1217,6 @@ function getFilesString(request: Request): [string, boolean] {
   return [filesString, usesStdin];
 }
 
-// TODO: get this from the input AST because strings can contain $
-function detectEnvVar(inputString: string): [Set<string>, string] {
-  // Using state machine to detect environment variable
-  // Each character is an edge, state machine:
-  // IN_ENV_VAR: means that currently we are iterating inside a possible environment variable
-  // IN_STRING: means that currently we are iterating inside a normal string
-  // For example:
-  // "Hi my name is $USER_NAME !"
-  // '$' --> will move state from IN_STRING to IN_ENV_VAR
-  // ' ' --> will move state to IN_STRING, regardless the previous state
-
-  const IN_ENV_VAR = 0;
-  const IN_STRING = 1;
-
-  // We only care for the unique element
-  const detectedVariables = new Set<string>();
-  let currState = IN_STRING;
-  let envVarStartIndex = -1;
-
-  const whiteSpaceSet = new Set(" \n\t");
-
-  const modifiedString = [];
-  for (let idx = 0; idx < inputString.length; idx++) {
-    const currIdx = idx;
-    const currChar = inputString[currIdx];
-    if (currState === IN_ENV_VAR && whiteSpaceSet.has(currChar)) {
-      const newVariable = inputString.substring(envVarStartIndex, currIdx);
-
-      if (newVariable !== "") {
-        detectedVariables.add(newVariable);
-
-        // Change $ -> {
-        // Add } after the last variable name
-        modifiedString.push("{" + newVariable + "}" + currChar);
-      } else {
-        modifiedString.push("$" + currChar);
-      }
-      currState = IN_STRING;
-      envVarStartIndex = -1;
-      continue;
-    }
-
-    if (currState === IN_ENV_VAR) {
-      // Skip until we actually have the new variable
-      continue;
-    }
-
-    // currState === IN_STRING
-    if (currChar === "$") {
-      currState = IN_ENV_VAR;
-      envVarStartIndex = currIdx + 1;
-    } else {
-      modifiedString.push(currChar);
-    }
-  }
-
-  if (currState === IN_ENV_VAR) {
-    const newVariable = inputString.substring(
-      envVarStartIndex,
-      inputString.length
-    );
-
-    if (newVariable !== "") {
-      detectedVariables.add(newVariable);
-      modifiedString.push("{" + newVariable + "}");
-    } else {
-      modifiedString.push("$");
-    }
-  }
-
-  return [detectedVariables, modifiedString.join("")];
-}
-
 // Don't add indent/comment characters to empty lines, most importantly the last line
 // which will be empty when there's a trailing newline.
 function indent(s: string, level: number) {
@@ -1344,9 +1265,6 @@ const requestToPython = (
   imports: Set<string>,
   thirdPartyImports: Set<string>
 ): string => {
-  // Currently, only assuming that the env-var only used in
-  // the value part of cookies, params, or body
-  const osVariables = new Set();
   const commentedOutHeaders: { [key: string]: string } = {
     // TODO: add a warning why this should be commented out?
     "accept-encoding": "",
@@ -1363,19 +1281,7 @@ const requestToPython = (
     // TODO: handle duplicate cookie names
     cookieStr = "cookies = {\n";
     for (const [cookieName, cookieValue] of request.cookies) {
-      const [detectedVars, modifiedString] = detectEnvVar(cookieValue);
-      const hasEnvironmentVariable = detectedVars.size > 0;
-
-      for (const newVar of detectedVars) {
-        osVariables.add(newVar);
-      }
-
-      cookieStr +=
-        "    " +
-        repr(cookieName) +
-        ": " +
-        reprWithVariable(modifiedString, hasEnvironmentVariable) +
-        ",\n";
+      cookieStr += "    " + repr(cookieName) + ": " + repr(cookieValue) + ",\n";
     }
     cookieStr += "}\n";
     // Before Python 3.11, cookies= was sorted alphabetically
@@ -1551,13 +1457,6 @@ const requestToPython = (
       if (headerValue === null) {
         continue;
       }
-      const [detectedVars, modifiedString] = detectEnvVar(headerValue);
-
-      const hasVariable = detectedVars.size > 0;
-
-      for (const newVar of detectedVars) {
-        osVariables.add(newVar);
-      }
 
       let lineStart;
       if (util.has(commentedOutHeaders, headerName.toLowerCase())) {
@@ -1570,11 +1469,7 @@ const requestToPython = (
         lineStart = "    ";
       }
       headerDict +=
-        lineStart +
-        repr(headerName) +
-        ": " +
-        reprWithVariable(modifiedString, hasVariable) +
-        ",\n";
+        lineStart + repr(headerName) + ": " + repr(headerValue) + ",\n";
     }
     headerDict += "}\n";
     if (
@@ -1590,18 +1485,6 @@ const requestToPython = (
   }
 
   let pythonCode = "";
-  if (osVariables.size > 0) {
-    imports.add("os");
-  }
-  if (osVariables.size > 0) {
-    for (const osVar of osVariables) {
-      const line = `${osVar} = os.getenv('${osVar}')\n`;
-      pythonCode += line;
-    }
-
-    pythonCode += "\n";
-  }
-
   if (proxyDict) {
     pythonCode += proxyDict + "\n";
   }

@@ -16,6 +16,8 @@ const supportedArgs = new Set([
   "no-location-trusted",
   "max-redirs",
 
+  "compressed",
+
   "insecure",
 
   "http2",
