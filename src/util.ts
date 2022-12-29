@@ -1161,41 +1161,25 @@ function toBoolean(opt: string): boolean {
   return true;
 }
 
-const parseWord = (str: string): string => {
-  const BACKSLASHES = /\\./gs;
-  const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
-  return str.replace(BACKSLASHES, unescapeChar);
-};
-// Expansions look ${like_this}
-// https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
-const parseExpansion = (str: string): string => {
-  // TODO: warn if child node isn't simply "variable_name".
-  return str.slice(2, -1);
-};
-// The backslash has no effect in single quotes
-// https://www.gnu.org/software/bash/manual/bash.html#Single-Quotes
-const parseSingleQuoteString = (str: string): string => {
-  return str.slice(1, -1);
+const BACKSLASHES = /\\./gs;
+const removeBackslash = (m: string) =>
+  m.charAt(1) === "\n" ? "" : m.charAt(1);
+const removeBackslashes = (str: string): string => {
+  return str.replace(BACKSLASHES, removeBackslash);
 };
 // https://www.gnu.org/software/bash/manual/bash.html#Double-Quotes
-const parseDoubleQuoteString = (str: string): string => {
-  const BACKSLASHES = /\\(\$|`|"|\\|\n)/gs;
-  const unescapeChar = (m: string) => (m.charAt(1) === "\n" ? "" : m.charAt(1));
-  return str.slice(1, -1).replace(BACKSLASHES, unescapeChar);
-};
-// Locale-translated strings look $"like this" and essentially behave
-// like double-quoted strings.
-const parseTranslatedString = (str: string): string => {
-  return parseDoubleQuoteString(str.slice(1));
+const DOUBLE_QUOTE_BACKSLASHES = /\\[\\$`"\n]/gs;
+const removeDoubleQuoteBackslashes = (str: string): string => {
+  return str.replace(DOUBLE_QUOTE_BACKSLASHES, removeBackslash);
 };
 // ANSI-C quoted strings look $'like this'.
 // Not all shells have them but Bash does
 // https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
 //
 // https://git.savannah.gnu.org/cgit/bash.git/tree/lib/sh/strtrans.c
-const parseAnsiCString = (str: string): string => {
-  const ANSI_BACKSLASHES =
-    /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs;
+const ANSI_BACKSLASHES =
+  /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs;
+const removeAnsiCBackslashes = (str: string): string => {
   const unescapeChar = (m: string) => {
     switch (m.charAt(1)) {
       case "\\":
@@ -1266,7 +1250,7 @@ const parseAnsiCString = (str: string): string => {
     }
   };
 
-  return str.slice(2, -1).replace(ANSI_BACKSLASHES, unescapeChar);
+  return str.replace(ANSI_BACKSLASHES, unescapeChar);
 };
 
 const underlineBadNode = (
@@ -1297,30 +1281,83 @@ const underlineBadNodeEnd = (
   return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
 };
 
-function toVal(node: Parser.SyntaxNode, curlCommand: string): string {
+function toVal(
+  node: Parser.SyntaxNode,
+  curlCommand: string,
+  warnings: Warnings
+): string {
   switch (node.type) {
     case "word":
-    case "simple_expansion": // TODO: handle variables properly downstream
-      return parseWord(node.text);
-    case "string": // TODO: handle variables
-      return parseDoubleQuoteString(node.text);
+      return removeBackslashes(node.text);
     case "raw_string":
-      return parseSingleQuoteString(node.text);
+      return node.text.slice(1, -1);
     case "ansii_c_string":
-      return parseAnsiCString(node.text);
+      return removeAnsiCBackslashes(node.text.slice(2, -1));
+    case "string":
+    case "string_expansion": {
+      let prevEnd = node.type === "string" ? 1 : 2;
+
+      let res = "";
+      for (const child of node.namedChildren) {
+        res += removeDoubleQuoteBackslashes(
+          node.text.slice(prevEnd, child.startIndex - node.startIndex)
+        );
+        // expansion, simple_expansion or command_substitution (or concat?)
+        res += toVal(child, curlCommand, warnings);
+        prevEnd = child.endIndex - node.startIndex;
+      }
+      res += removeDoubleQuoteBackslashes(node.text.slice(prevEnd, -1));
+      return res;
+    }
+    case "simple_expansion":
+      // TODO: handle variables downstream
+      // '$' + variable_name or special_variable_name
+      warnings.push([
+        "expansion",
+        "found Bash environment variable\n" +
+          underlineBadNode(curlCommand, node),
+      ]);
+      if (
+        node.firstNamedChild &&
+        node.firstNamedChild.type === "special_variable_name"
+      ) {
+        // https://www.gnu.org/software/bash/manual/bash.html#Special-Parameters
+        // TODO: warning isn't printed
+        warnings.push([
+          "special_variable_name",
+          node.text +
+            " is a special Bash variable\n" +
+            underlineBadNode(curlCommand, node.firstNamedChild),
+        ]);
+      }
+      return node.text;
     case "expansion":
-      return parseExpansion(node.text);
-    case "string_expansion":
-      return parseTranslatedString(node.text);
-    case "concatenation":
+      // Expansions look ${like_this}
+      // https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
+      warnings.push([
+        "expansion",
+        "found expansion expression\n" + underlineBadNode(curlCommand, node),
+      ]);
+      // variable_name or subscript or no child
+      return "$" + node.text.slice(2, -1);
+    // TODO: could generate os.system() calls
+    // case "command_substitution":
+    case "concatenation": {
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
-      if (node.children.every((n: Parser.SyntaxNode) => n.type === "word")) {
-        return node.text;
+      let prevEnd = 0;
+      let res = "";
+      for (const child of node.children) {
+        // TODO: removeBackslashes()?
+        // Can we get anything other than []{} characters here?
+        res += node.text.slice(prevEnd, child.startIndex - node.startIndex);
+        prevEnd = child.endIndex - node.startIndex;
+
+        res += toVal(child, curlCommand, warnings);
       }
-      return node.children
-        .map((n: Parser.SyntaxNode) => toVal(n, curlCommand))
-        .join("");
+      res += node.text.slice(prevEnd);
+      return res;
+    }
     default:
       throw new CCError(
         "unexpected argument type " +
@@ -1349,14 +1386,18 @@ const tokenize = (
   //     name: (command_name (word))
   //     argument+: (
   //       word |
-  //       'string' |
-  //       "raw_string" |
+  //       "string" |
+  //       'raw_string' |
   //       $'ansii_c_string' |
   //       $"string_expansion" |
+  //       ${expansion} |
   //       $simple_expansion |
-  //       concaten[ation)))
-  //
-  // TODO: support strings with variable expansions inside
+  //       concatenation)))
+  // or
+  // (program
+  //   (redirected_statement
+  //     body: (command, same as above)
+  //     redirect))
   // TODO: support prefixed variables, e.g. "MY_VAR=hello curl example.com"
   // TODO: get only named children?
   if (ast.rootNode.type !== "program") {
@@ -1414,7 +1455,7 @@ const tokenize = (
       }
       const redirect = redirects[0];
       if (redirect.type === "file_redirect") {
-        stdinFile = toVal(redirect.namedChildren[0], curlCommand);
+        stdinFile = toVal(redirect.namedChildren[0], curlCommand, warnings);
       } else if (redirect.type === "heredoc_redirect") {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
@@ -1531,10 +1572,25 @@ const tokenize = (
     // TODO: better error message.
     throw new CCError('empty "command" node');
   }
-  // Use namedChildren so that variable_assignment/file_redirect is skipped
-  // TODO: warn when command variable_assignment is skipped
   // TODO: add childrenForFieldName to tree-sitter node/web bindings
-  const [cmdName, ...args] = command.namedChildren;
+  const commandChildren = command.namedChildren;
+  let commandNameLoc = 0;
+  // skip over variable_assignment and file_redirect, until we get to the command_name
+  for (const n of commandChildren) {
+    if (n.type === "variable_assignment" || n.type === "file_redirect") {
+      warnings.push([
+        "command-preamble",
+        "skipping " +
+          JSON.stringify(n.type) +
+          " expression\n" +
+          underlineBadNode(curlCommand, n),
+      ]);
+      commandNameLoc += 1;
+    } else {
+      break;
+    }
+  }
+  const [cmdName, ...args] = command.namedChildren.slice(commandNameLoc);
   if (cmdName.type !== "command_name") {
     throw new CCError(
       'expected a "command_name" AST node, found ' +
@@ -1551,8 +1607,8 @@ const tokenize = (
   }
 
   return {
-    cmdName: toVal(cmdName.firstChild!, curlCommand),
-    args: args.map((a: Parser.SyntaxNode) => toVal(a, curlCommand)),
+    cmdName: toVal(cmdName.firstChild!, curlCommand, warnings),
+    args: args.map((a: Parser.SyntaxNode) => toVal(a, curlCommand, warnings)),
     stdin,
     stdinFile,
   };
