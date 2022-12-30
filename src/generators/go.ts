@@ -10,9 +10,8 @@ const supportedArgs = new Set([
   "compressed",
   "no-compressed",
   "max-time",
-  // TODO
-  // "form",
-  // "form-string",
+  "form",
+  "form-string",
 ]);
 
 // https://go.dev/ref/spec#String_literals
@@ -25,6 +24,8 @@ const reprBacktick = (s: string): string => {
 const repr = (s: string): string => {
   return pyrepr(s, '"');
 };
+
+const errNil = "\tif err != nil {\n" + "\t\tlog.Fatal(err)\n" + "\t}\n";
 
 export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   if (requests.length > 1) {
@@ -75,13 +76,32 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
 
   let goCode = "package main\n\n";
 
+  const hasMultipartFiles =
+    request.multipartUploads &&
+    request.multipartUploads.some((m) => "contentFile" in m);
+
   goCode += "import (\n";
-  goCode += '\t"fmt"\n';
-  goCode += '\t"io/ioutil"\n';
-  goCode += '\t"log"\n';
-  goCode += '\t"net/http"\n';
+  if (request.multipartUploads) {
+    goCode += '\t"bytes"\n';
+  }
   if (request.insecure) {
     goCode += '\t"crypto/tls"\n';
+  }
+  goCode += '\t"fmt"\n';
+  if (hasMultipartFiles) {
+    goCode += '\t"io"\n';
+  }
+  goCode += '\t"io/ioutil"\n';
+  goCode += '\t"log"\n';
+  if (request.multipartUploads) {
+    goCode += '\t"mime/multipart"\n';
+  }
+  goCode += '\t"net/http"\n';
+  if (hasMultipartFiles) {
+    goCode += '\t"os"\n';
+  }
+  if (hasMultipartFiles) {
+    goCode += '\t"path/filepath"\n';
   }
   if (request.data) {
     goCode += '\t"strings"\n';
@@ -92,6 +112,45 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   goCode += ")\n\n";
 
   goCode += "func main() {\n";
+
+  if (request.multipartUploads) {
+    goCode += "\tform := new(bytes.Buffer)\n";
+    goCode += "\twriter := multipart.NewWriter(form)\n";
+    let firstFile = true;
+    let firstField = true;
+    for (const m of request.multipartUploads) {
+      if ("contentFile" in m) {
+        const op = firstFile ? ":=" : "=";
+        firstFile = false;
+        // TODO: Go sends name=<filename> but curl always sends name="data"
+        goCode += `\tfw, err ${op} writer.CreateFormFile(${repr(
+          m.contentFile
+        )}, filepath.Base(${repr(m.filename ?? m.contentFile)}))\n`;
+        goCode += errNil;
+
+        goCode += `\tfd, err ${op} os.Open(${repr(m.contentFile)})\n`;
+        goCode += errNil;
+        goCode += "\tdefer fd.Close()\n";
+        goCode += "\t_, err = io.Copy(fw, fd)\n";
+        goCode += errNil;
+      } else {
+        const op = firstField ? ":=" : "=";
+        firstField = false;
+        goCode += `\tformField, err ${op} writer.CreateFormField(${repr(
+          m.name
+        )})\n`;
+        goCode += errNil;
+        goCode += `\t_, err = formField.Write([]byte(${reprMaybeBacktick(
+          m.content
+        )}))\n`;
+      }
+      goCode += "\n";
+    }
+    goCode += "\twriter.Close()\n";
+    goCode += "\n";
+
+    util.deleteHeader(request, "content-type");
+  }
 
   if (request.insecure || request.compressed === false) {
     goCode += "\ttr := &http.Transport{\n";
@@ -129,10 +188,11 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
     repr(request.urls[0].method) +
     ", " +
     repr(request.urls[0].url);
-  goCode += ", " + (request.data ? "data" : "nil") + ")\n";
-  goCode += "\tif err != nil {\n";
-  goCode += "\t\tlog.Fatal(err)\n";
-  goCode += "\t}\n";
+  goCode +=
+    ", " +
+    (request.data ? "data" : request.multipartUploads ? "form" : "nil") +
+    ")\n";
+  goCode += errNil;
 
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers || []) {
@@ -158,6 +218,10 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
         ")\n";
     }
   }
+  if (request.multipartUploads) {
+    goCode +=
+      '\treq.Header.Set("Content-Type", writer.FormDataContentType())\n';
+  }
 
   if (request.urls[0].auth && request.authType === "basic") {
     const [user, password] = request.urls[0].auth;
@@ -166,14 +230,10 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   }
 
   goCode += "\tresp, err := client.Do(req)\n";
-  goCode += "\tif err != nil {\n";
-  goCode += "\t\tlog.Fatal(err)\n";
-  goCode += "\t}\n";
+  goCode += errNil;
   goCode += "\tdefer resp.Body.Close()\n";
   goCode += "\tbodyText, err := ioutil.ReadAll(resp.Body)\n";
-  goCode += "\tif err != nil {\n";
-  goCode += "\t\tlog.Fatal(err)\n";
-  goCode += "\t}\n";
+  goCode += errNil;
   goCode += '\tfmt.Printf("%s\\n", bodyText)\n';
   goCode += "}";
 
