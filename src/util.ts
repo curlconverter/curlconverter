@@ -2307,26 +2307,20 @@ function buildRequest(
     }
     // If they're all null, just use the first one
     if (repeatedHeaders.every((h) => h[1] === null)) {
+      const lastRepeat = repeatedHeaders[repeatedHeaders.length - 1];
       // Warn users if some are capitalized differently
       if (new Set(repeatedHeaders.map((h) => h[0])).size > 1) {
         warnf(global, [
           "repeated-header",
-          `found ${repeatedHeaders.length} empty headers with name "${repeatedHeaders[0][0]}", using last`,
+          `"${lastRepeat[0]}" header unset ${repeatedHeaders.length} times`,
         ]);
       }
-      headers.push(repeatedHeaders[repeatedHeaders.length - 1]);
+      headers.push(lastRepeat);
       continue;
     }
     // Otherwise there's at least one non-null value, so we can ignore the nulls
     const nonEmptyHeaders = repeatedHeaders.filter((h) => h[1] !== null);
     if (nonEmptyHeaders.length === 1) {
-      const numRemoved = repeatedHeaders.length - nonEmptyHeaders.length;
-      warnf(global, [
-        "repeated-header",
-        `found ${numRemoved} empty "${repeatedHeaders[0][0]}" header${
-          numRemoved === 1 ? "" : "s"
-        }, using the non-empty one`,
-      ]);
       headers.push(nonEmptyHeaders[0]);
       continue;
     }
@@ -2392,7 +2386,7 @@ function buildRequest(
       warnf(global, [
         "repeated-header",
         `merged ${nonEmptyHeaders.length} "${
-          nonEmptyHeaders[0][0]
+          nonEmptyHeaders[nonEmptyHeaders.length - 1][0]
         }" headers together with "${mergeChar.trim()}"`,
       ]);
       headers.push([nonEmptyHeaders[0][0], merged]);
@@ -2401,7 +2395,9 @@ function buildRequest(
 
     warnf(global, [
       "repeated-header",
-      `found ${nonEmptyHeaders.length} "${nonEmptyHeaders[0][0]}" headers, only the last one will be sent`,
+      `found ${nonEmptyHeaders.length} "${
+        nonEmptyHeaders[nonEmptyHeaders.length - 1][0]
+      }" headers, only the last one will be sent`,
     ]);
     headers = headers.concat(nonEmptyHeaders);
   }
