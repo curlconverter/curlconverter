@@ -2260,7 +2260,7 @@ function buildRequest(
     throw new CCError("no URL specified!");
   }
 
-  const headers: Headers = [];
+  let headers: Headers = [];
   if (config.header) {
     for (const header of config.header) {
       if (header.startsWith("@")) {
@@ -2287,6 +2287,124 @@ function buildRequest(
   }
   const lowercase =
     headers.length > 0 && headers.every((h) => h[0] === h[0].toLowerCase());
+
+  // Handle repeated headers
+  // For Cookie and Accept, merge the values using ';' and ',' respectively
+  // For other headers, warn about the repeated header
+  const uniqueHeaders: { [key: string]: [string, string | null][] } = {};
+  for (const [name, value] of headers) {
+    const lowerName = name.toLowerCase();
+    if (!uniqueHeaders[lowerName]) {
+      uniqueHeaders[lowerName] = [];
+    }
+    uniqueHeaders[lowerName].push([name, value]);
+  }
+  headers = [];
+  for (const [lowerName, repeatedHeaders] of Object.entries(uniqueHeaders)) {
+    if (repeatedHeaders.length === 1) {
+      headers.push(repeatedHeaders[0]);
+      continue;
+    }
+    // If they're all null, just use the first one
+    if (repeatedHeaders.every((h) => h[1] === null)) {
+      // Warn users if some are capitalized differently
+      if (new Set(repeatedHeaders.map((h) => h[0])).size > 1) {
+        warnf(global, [
+          "repeated-header",
+          `found ${repeatedHeaders.length} empty headers with name "${repeatedHeaders[0][0]}", using last`,
+        ]);
+      }
+      headers.push(repeatedHeaders[repeatedHeaders.length - 1]);
+      continue;
+    }
+    // Otherwise there's at least one non-null value, so we can ignore the nulls
+    const nonEmptyHeaders = repeatedHeaders.filter((h) => h[1] !== null);
+    if (nonEmptyHeaders.length === 1) {
+      const numRemoved = repeatedHeaders.length - nonEmptyHeaders.length;
+      warnf(global, [
+        "repeated-header",
+        `found ${numRemoved} empty "${repeatedHeaders[0][0]}" header${
+          numRemoved === 1 ? "" : "s"
+        }, using the non-empty one`,
+      ]);
+      headers.push(nonEmptyHeaders[0]);
+      continue;
+    }
+    // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Standard_request_fields
+    // and then searched for "#" in the RFCs that define each header
+    const commaSeparatedHeaders = new Set(
+      [
+        "A-IM",
+        "Accept",
+        "Accept-Charset",
+        // "Accept-Datetime",
+        "Accept-Encoding",
+        "Accept-Language",
+        // "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+        // TODO: auth-scheme [ 1*SP ( token68 / #auth-param ) ]
+        // "Authorization",
+        "Cache-Control",
+        "Connection",
+        "Content-Encoding",
+        // "Content-Length",
+        // "Content-MD5",
+        // "Content-Type", // semicolon
+        // "Cookie", // semicolon
+        // "Date",
+        "Expect",
+        "Forwarded",
+        // "From",
+        // "Host",
+        // "HTTP2-Settings",
+        "If-Match",
+        // "If-Modified-Since",
+        "If-None-Match",
+        // "If-Range",
+        // "If-Unmodified-Since",
+        // "Max-Forwards",
+        // "Origin",
+        // "Pragma",
+        // "Prefer", // semicolon
+        // "Proxy-Authorization",
+        "Range",
+        // "Referer",
+        "TE",
+        "Trailer",
+        "Transfer-Encoding",
+        // "User-Agent",
+        "Upgrade",
+        "Via",
+        "Warning",
+      ].map((h) => h.toLowerCase())
+    );
+    const semicolonSeparatedHeaders = new Set(
+      ["Content-Type", "Cookie", "Prefer"].map((h) => h.toLowerCase())
+    );
+    let mergeChar = "";
+    if (commaSeparatedHeaders.has(lowerName)) {
+      mergeChar = ", ";
+    } else if (semicolonSeparatedHeaders.has(lowerName)) {
+      mergeChar = "; ";
+    }
+    if (mergeChar) {
+      const merged = nonEmptyHeaders.map((h) => h[1]).join(mergeChar);
+      warnf(global, [
+        "repeated-header",
+        `merged ${nonEmptyHeaders.length} "${
+          nonEmptyHeaders[0][0]
+        }" headers together with "${mergeChar.trim()}"`,
+      ]);
+      headers.push([nonEmptyHeaders[0][0], merged]);
+      continue;
+    }
+
+    warnf(global, [
+      "repeated-header",
+      `found ${nonEmptyHeaders.length} "${nonEmptyHeaders[0][0]}" headers, only the last one will be sent`,
+    ]);
+    headers = headers.concat(nonEmptyHeaders);
+  }
 
   let cookies;
   const cookieFiles: string[] = [];
