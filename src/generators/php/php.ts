@@ -138,7 +138,7 @@ export const _toPhp = (
     request.urls[0].method +
     "');\n";
 
-  if (request.headers || request.compressed) {
+  if ((request.headers && request.headers.length) || request.compressed) {
     let headersArrayCode = "[\n";
 
     if (request.compressed) {

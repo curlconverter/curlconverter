@@ -2428,7 +2428,10 @@ function buildRequest(
     if (cookieStrings.length) {
       const cookieString = config.cookie.join("; ");
       _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
-      cookies = parseCookies(cookieString);
+      const parsedCookies = parseCookies(cookieString);
+      if (parsedCookies) {
+        cookies = parsedCookies;
+      }
     }
   }
 
@@ -2950,10 +2953,13 @@ const parseCookiesStrict = (cookieString: string): Cookies | null => {
     }
     cookies.push([name, value]);
   }
+  if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
+    return null;
+  }
   return cookies;
 };
 
-const parseCookies = (cookieString: string): Cookies => {
+const parseCookies = (cookieString: string): Cookies | null => {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.trim();
@@ -2961,7 +2967,10 @@ const parseCookies = (cookieString: string): Cookies => {
       continue;
     }
     const [name, value] = cookie.split(/=(.*)/s, 2);
-    cookies.push([name, value || ""]);
+    cookies.push([name.trim(), (value || "").trim()]);
+  }
+  if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
+    return null;
   }
   return cookies;
 };
