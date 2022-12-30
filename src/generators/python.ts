@@ -1290,7 +1290,7 @@ const requestToPython = (
     if (request.cookieFiles) {
       warnings.push([
         "cookie-files",
-        "passing both cookies and cookie files is not supported",
+        "passing both cookies and cookie files with --cookie/-b is not supported",
       ]);
     }
     if (request.cookieJar) {

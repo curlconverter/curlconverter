@@ -128,7 +128,6 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
     cookieDict += request.cookies
       .map((c: Cookie) => "  " + repr(c[0]) + " = " + repr(c[1]))
       .join(",\n");
-    // TODO: isn't this an extra \n?
     cookieDict += "\n)\n";
     util.deleteHeader(request, "Cookie");
   }
@@ -141,7 +140,7 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
   }
 
   let headerDict;
-  if (request.headers) {
+  if (request.headers && request.headers.length) {
     const hels = [];
     headerDict = "headers = c(\n";
     for (const [headerName, headerValue] of request.headers) {

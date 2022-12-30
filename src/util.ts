@@ -2260,7 +2260,7 @@ function buildRequest(
     throw new CCError("no URL specified!");
   }
 
-  const headers: Headers = [];
+  let headers: Headers = [];
   if (config.header) {
     for (const header of config.header) {
       if (header.startsWith("@")) {
@@ -2288,6 +2288,120 @@ function buildRequest(
   const lowercase =
     headers.length > 0 && headers.every((h) => h[0] === h[0].toLowerCase());
 
+  // Handle repeated headers
+  // For Cookie and Accept, merge the values using ';' and ',' respectively
+  // For other headers, warn about the repeated header
+  const uniqueHeaders: { [key: string]: [string, string | null][] } = {};
+  for (const [name, value] of headers) {
+    const lowerName = name.toLowerCase();
+    if (!uniqueHeaders[lowerName]) {
+      uniqueHeaders[lowerName] = [];
+    }
+    uniqueHeaders[lowerName].push([name, value]);
+  }
+  headers = [];
+  for (const [lowerName, repeatedHeaders] of Object.entries(uniqueHeaders)) {
+    if (repeatedHeaders.length === 1) {
+      headers.push(repeatedHeaders[0]);
+      continue;
+    }
+    // If they're all null, just use the first one
+    if (repeatedHeaders.every((h) => h[1] === null)) {
+      const lastRepeat = repeatedHeaders[repeatedHeaders.length - 1];
+      // Warn users if some are capitalized differently
+      if (new Set(repeatedHeaders.map((h) => h[0])).size > 1) {
+        warnf(global, [
+          "repeated-header",
+          `"${lastRepeat[0]}" header unset ${repeatedHeaders.length} times`,
+        ]);
+      }
+      headers.push(lastRepeat);
+      continue;
+    }
+    // Otherwise there's at least one non-null value, so we can ignore the nulls
+    const nonEmptyHeaders = repeatedHeaders.filter((h) => h[1] !== null);
+    if (nonEmptyHeaders.length === 1) {
+      headers.push(nonEmptyHeaders[0]);
+      continue;
+    }
+    // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Standard_request_fields
+    // and then searched for "#" in the RFCs that define each header
+    const commaSeparatedHeaders = new Set(
+      [
+        "A-IM",
+        "Accept",
+        "Accept-Charset",
+        // "Accept-Datetime",
+        "Accept-Encoding",
+        "Accept-Language",
+        // "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+        // TODO: auth-scheme [ 1*SP ( token68 / #auth-param ) ]
+        // "Authorization",
+        "Cache-Control",
+        "Connection",
+        "Content-Encoding",
+        // "Content-Length",
+        // "Content-MD5",
+        // "Content-Type", // semicolon
+        // "Cookie", // semicolon
+        // "Date",
+        "Expect",
+        "Forwarded",
+        // "From",
+        // "Host",
+        // "HTTP2-Settings",
+        "If-Match",
+        // "If-Modified-Since",
+        "If-None-Match",
+        // "If-Range",
+        // "If-Unmodified-Since",
+        // "Max-Forwards",
+        // "Origin",
+        // "Pragma",
+        // "Prefer", // semicolon
+        // "Proxy-Authorization",
+        "Range",
+        // "Referer",
+        "TE",
+        "Trailer",
+        "Transfer-Encoding",
+        // "User-Agent",
+        "Upgrade",
+        "Via",
+        "Warning",
+      ].map((h) => h.toLowerCase())
+    );
+    const semicolonSeparatedHeaders = new Set(
+      ["Content-Type", "Cookie", "Prefer"].map((h) => h.toLowerCase())
+    );
+    let mergeChar = "";
+    if (commaSeparatedHeaders.has(lowerName)) {
+      mergeChar = ", ";
+    } else if (semicolonSeparatedHeaders.has(lowerName)) {
+      mergeChar = "; ";
+    }
+    if (mergeChar) {
+      const merged = nonEmptyHeaders.map((h) => h[1]).join(mergeChar);
+      warnf(global, [
+        "repeated-header",
+        `merged ${nonEmptyHeaders.length} "${
+          nonEmptyHeaders[nonEmptyHeaders.length - 1][0]
+        }" headers together with "${mergeChar.trim()}"`,
+      ]);
+      headers.push([nonEmptyHeaders[0][0], merged]);
+      continue;
+    }
+
+    warnf(global, [
+      "repeated-header",
+      `found ${nonEmptyHeaders.length} "${
+        nonEmptyHeaders[nonEmptyHeaders.length - 1][0]
+      }" headers, only the last one will be sent`,
+    ]);
+    headers = headers.concat(nonEmptyHeaders);
+  }
+
   let cookies;
   const cookieFiles: string[] = [];
   const cookieHeaders = headers.filter((h) => h[0].toLowerCase() === "cookie");
@@ -2310,7 +2424,10 @@ function buildRequest(
     if (cookieStrings.length) {
       const cookieString = config.cookie.join("; ");
       _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
-      cookies = parseCookies(cookieString);
+      const parsedCookies = parseCookies(cookieString);
+      if (parsedCookies) {
+        cookies = parsedCookies;
+      }
     }
   }
 
@@ -2832,10 +2949,13 @@ const parseCookiesStrict = (cookieString: string): Cookies | null => {
     }
     cookies.push([name, value]);
   }
+  if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
+    return null;
+  }
   return cookies;
 };
 
-const parseCookies = (cookieString: string): Cookies => {
+const parseCookies = (cookieString: string): Cookies | null => {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.trim();
@@ -2843,7 +2963,10 @@ const parseCookies = (cookieString: string): Cookies => {
       continue;
     }
     const [name, value] = cookie.split(/=(.*)/s, 2);
-    cookies.push([name, value || ""]);
+    cookies.push([name.trim(), (value || "").trim()]);
+  }
+  if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
+    return null;
   }
   return cookies;
 };

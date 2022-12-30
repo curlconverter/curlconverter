@@ -25,6 +25,8 @@ const prepareHeaders = (request: Request): string | null => {
       }
       switch (key) {
         case "Cookie":
+          // TODO: curl -H 'Cookie: foo=bar' example.com
+          // adds an extra newline before the cookie
           break;
         case "Accept": {
           const accepts = value.split(",");
