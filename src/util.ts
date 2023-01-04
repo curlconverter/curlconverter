@@ -166,12 +166,12 @@ const CURLAUTH_ANY = ~CURLAUTH_DIGEST_IE;
 // Curl also filters out auth schemes it doesn't support,
 // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L970
 // but we support all of them, so we don't need to do that.
-function pickAuth(mask: number): string {
+function pickAuth(mask: number): AuthType {
   if (mask === CURLAUTH_ANY) {
     return "basic";
   }
 
-  const auths: [number, string][] = [
+  const auths: [number, AuthType][] = [
     [CURLAUTH_NEGOTIATE, "negotiate"],
     [CURLAUTH_BEARER, "bearer"],
     [CURLAUTH_DIGEST, "digest"],
@@ -394,6 +394,16 @@ const ignoredArgs = new Set([
   "no-show-error",
 ]);
 
+type AuthType =
+  | "basic"
+  | "digest"
+  | "ntlm"
+  | "ntlm-wb"
+  | "negotiate"
+  | "bearer"
+  | "aws-sigv4"
+  | "none";
+
 // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L60
 interface Curl_URL {
   scheme: string;
@@ -463,7 +473,7 @@ interface Request {
   // unless there's only one URL, then it will include both.
   queryArray?: DataParam[];
 
-  authType: string;
+  authType: AuthType;
   awsSigV4?: string;
   delegation?: string;
 
@@ -2998,5 +3008,6 @@ export type {
   QueryList,
   QueryDict,
   DataParam,
+  AuthType,
   Warnings,
 };
