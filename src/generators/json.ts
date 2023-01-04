@@ -1,14 +1,35 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from "../util.js";
-import type { Request, QueryDict, Warnings } from "../util.js";
+import type { AuthType, Request, QueryDict, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
+
   "insecure",
   "no-insecure",
+
   "form",
   "form-string",
+
+  "location",
+
+  "max-time",
+  "connect-timeout",
+
+  "anyauth",
+  "no-anyauth",
+  "digest",
+  "no-digest",
+  "aws-sigv4",
+  "negotiate",
+  "no-negotiate",
+  "delegation", // GSS/kerberos
+  // "service-name", // GSS/kerberos, not supported
+  "ntlm",
+  "no-ntlm",
+  "ntlm-wb",
+  "no-ntlm-wb",
 ]);
 
 type JSONOutput = {
@@ -23,7 +44,16 @@ type JSONOutput = {
   files?: { [key: string]: string };
   // raw_files: string[],
   insecure?: boolean;
+
   auth?: { user: string; password: string };
+  auth_type?: AuthType;
+  aws_sigv4?: string;
+  delegation?: string;
+
+  follow_redirects?: boolean; // --location
+
+  timeout?: number; // --max-time
+  connect_timeout?: number;
 };
 
 function getDataString(request: Request): {
@@ -186,6 +216,26 @@ export const _toJsonString = (
       user: user,
       password: password,
     };
+    if (request.authType) {
+      requestJson.auth_type = request.authType;
+    }
+  }
+  if (request.awsSigV4) {
+    requestJson.aws_sigv4 = request.awsSigV4;
+  }
+  if (request.delegation) {
+    requestJson.delegation = request.delegation;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(request, "followRedirects")) {
+    requestJson.follow_redirects = request.followRedirects;
+  }
+
+  if (request.timeout) {
+    requestJson.timeout = parseFloat(request.timeout);
+  }
+  if (request.connectTimeout) {
+    requestJson.connect_timeout = parseFloat(request.connectTimeout);
   }
 
   return (
