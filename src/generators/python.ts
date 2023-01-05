@@ -1,5 +1,5 @@
 import * as util from "../util.js";
-import type { Request, Warnings, DataParam } from "../util.js";
+import type { Word, ShellWord, Request, Warnings, DataParam } from "../util.js";
 
 import {
   parse as jsonParseLossless,
@@ -378,7 +378,7 @@ const unsupportedArgs = [
 const regexSingleEscape = /'|\\|\p{C}|\p{Z}/gu;
 const regexDoubleEscape = /"|\\|\p{C}|\p{Z}/gu;
 
-export function repr(s: string, quote?: '"' | "'"): string {
+export function reprStr(s: string, quote?: '"' | "'"): string {
   if (quote === undefined) {
     quote = "'";
     if (s.includes("'") && !s.includes('"')) {
@@ -478,8 +478,8 @@ export function pybescComplex(s: string): string {
   );
 }
 
-export function reprb(s: string): string {
-  const sEsc = repr(s);
+export function reprStrBinary(s: string): string {
+  const sEsc = reprStr(s);
   // We check until 0x7F instead of 0xFF because curl (running in a UTF-8 terminal) when it gets
   // bytes sends them as is, but if we pass b'\x80' to Requests, it will encode that byte as
   // Latin-1 (presumably for backwards compatibility) instead of UTF-8.
@@ -489,6 +489,249 @@ export function reprb(s: string): string {
   // TODO: unmatched surrogates will generate code that throws an error
   // e.g.: '\uDC00'.encode()
   return sEsc + ".encode()";
+}
+// https://docs.python.org/3/reference/lexical_analysis.html#identifiers
+// Convert Bash variable names into variables that can be used in Python.
+// First we replace all invalid characters with underscores.
+// Then we prepend an underscore if the first character is a digit.
+// Then we prepend an underscore if the name is a Python keyword or builtin.
+// TODO: is this really helpful? just inline the os.getenv() calls?
+const invalidStart = /[^_\p{L}\p{Nl}\u1885\u1886\u2118\u212E\u309B\u309C]/gu;
+const invalidContinue =
+  /[^_\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\u00B7\u0387\u1369-\u1371\u19DA]/gu;
+const reservedVariables = new Set([
+  // keywords
+  "False",
+  "None",
+  "True",
+  "and",
+  "as",
+  "assert",
+  "async",
+  "await",
+  "break",
+  "class",
+  "continue",
+  "def",
+  "del",
+  "elif",
+  "else",
+  "except",
+  "finally",
+  "for",
+  "from",
+  "global",
+  "if",
+  "import",
+  "in",
+  "is",
+  "lambda",
+  "nonlocal",
+  "not",
+  "or",
+  "pass",
+  "raise",
+  "return",
+  "try",
+  "while",
+  "with",
+  "yield",
+  // soft keywords
+  "match",
+  "case",
+  // "_",
+  // builtins
+  "abs",
+  "aiter",
+  "all",
+  "any",
+  "anext",
+  "ascii",
+  "bin",
+  "bool",
+  "breakpoint",
+  "bytearray",
+  "bytes",
+  "callable",
+  "chr",
+  "classmethod",
+  "compile",
+  "complex",
+  "delattr",
+  "dict",
+  "dir",
+  "divmod",
+  "enumerate",
+  "eval",
+  "exec",
+  "filter",
+  "float",
+  "format",
+  "frozenset",
+  "getattr",
+  "globals",
+  "hasattr",
+  "hash",
+  "help",
+  "hex",
+  "id",
+  "input",
+  "int",
+  "isinstance",
+  "issubclass",
+  "iter",
+  "len",
+  "list",
+  "locals",
+  "map",
+  "max",
+  "memoryview",
+  "min",
+  "next",
+  "object",
+  "oct",
+  "open",
+  "ord",
+  "pow",
+  "print",
+  "property",
+  "range",
+  "repr",
+  "reversed",
+  "round",
+  "set",
+  "setattr",
+  "slice",
+  "sorted",
+  "staticmethod",
+  "str",
+  "sum",
+  "super",
+  "tuple",
+  "type",
+  "vars",
+  "zip",
+  "__import__",
+  // dir()
+  "__annotations__",
+  "__builtins__",
+  "__doc__",
+  "__loader__",
+  "__name__",
+  "__package__",
+  "__spec__",
+  // can interfere with generated code
+  // variables
+  "data",
+  "json_data",
+  "params",
+  "cookies",
+  "headers",
+  "file_contents",
+  "files",
+  "proxies",
+  "cert",
+  "session",
+  "f",
+  // imported
+  "sys",
+  "math",
+  "json",
+  "quote_plus",
+  "MozillaCookieJar",
+  // imported, 3rd party
+  "requests",
+  "HTTPDigestAuth",
+  "HttpNtlmAuth",
+  "HTTPSPNEGOAuth",
+  "AWSRequestsAuth",
+]);
+function toPythonVariable(s: string): string {
+  if (s === "") {
+    return "_";
+  }
+  s = s.normalize("NFKC");
+  s = s.replace(invalidContinue, "_");
+  if (s[0].match(invalidStart)) {
+    s = "_" + s;
+  }
+  while (reservedVariables.has(s)) {
+    s = "_" + s;
+  }
+  return s;
+}
+type OSVars = { [key: string]: string };
+
+export function reprShell(
+  word: ShellWord,
+  osVars: OSVars,
+  binary = false
+): string {
+  const reprs = [];
+  for (const t of word.tokens) {
+    if (typeof t === "string") {
+      reprs.push(reprStr(t));
+    } else if (t.type === "variable") {
+      let pyVar = toPythonVariable(t.value);
+      // TODO: getenvb() is not available on Windows
+      const fn = binary ? "os.getenvb" : "os.getenv";
+      const getEnvCall = fn + "(" + reprStr(t.value) + ")";
+      while (pyVar in osVars && osVars[pyVar] !== getEnvCall) {
+        pyVar += "_";
+      }
+      osVars[pyVar] = getEnvCall;
+      reprs.push(pyVar);
+    } else if (t.type === "command") {
+      // TODO: warn that shell=True is a bad idea
+      // or properly parse the subcommand and render it as an array
+      let subprocessCall =
+        "subprocess.run(" +
+        reprStr(t.value) +
+        ", shell=True, capture_output=True";
+      if (!binary) {
+        subprocessCall += ", text=True";
+      }
+      subprocessCall += ").stdout";
+
+      // TODO: generate a descriptive command name with ChatGPT
+      let i = 1;
+      let pyVar = "command" + i;
+      // We need to check because we often try to represent the same
+      // token twice and discard one of the attempts.
+      // This is linear time but hopefully there's not that many subcommands.
+      while (pyVar in osVars && osVars[pyVar] !== subprocessCall) {
+        i++;
+        pyVar = "command" + i;
+        if (i > Number.MAX_SAFE_INTEGER) {
+          throw new util.CCError("lol");
+        }
+      }
+      osVars[pyVar] = subprocessCall;
+      reprs.push(pyVar);
+    }
+  }
+  return reprs.join(" + ");
+}
+
+function repr(word: Word, osVars?: OSVars): string {
+  if (typeof word === "string") {
+    return reprStr(word);
+  }
+
+  if (osVars === undefined) {
+    throw new util.CCError("osVars must be defined when rerp()ing a ShellWord");
+  }
+  return reprShell(word, osVars, false);
+}
+function reprb(word: Word, osVars?: OSVars): string {
+  if (typeof word === "string") {
+    return reprStrBinary(word);
+  }
+
+  if (osVars === undefined) {
+    throw new util.CCError("osVars must be defined when rerp()ing a ShellWord");
+  }
+  return reprShell(word, osVars, true);
 }
 
 // Port of Python's json.dumps() with its default options, which is what Requests uses
@@ -795,6 +1038,7 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
 
 function formatDataAsEntries(
   dataArray: DataParam[],
+  osVars: OSVars,
   variableName: "data" | "params" = "data"
 ): [string, string] | null {
   // This code is more complicated than you might expect because it needs
@@ -919,10 +1163,9 @@ function formatDataAsEntries(
     const name = d[1];
     const filename = d[2];
     // TODO: I bet Python doesn't treat file paths identically to curl
-    const readFile =
-      filename === "-"
-        ? "sys.stdin.read()"
-        : "open(" + repr(filename) + ").read()";
+    const readFile = util.eq(filename, "-")
+      ? "sys.stdin.read()"
+      : "open(" + repr(filename, osVars) + ").read()";
 
     if (!name) {
       dataEntries.push([readFile, null]);
@@ -951,6 +1194,7 @@ function formatDataAsEntries(
 function formatDataAsStr(
   dataArray: DataParam[],
   imports: Set<string>,
+  osVars: OSVars,
   variableName: "data" | "params" = "data"
 ): [string, boolean] {
   // If one of the arguments has to be binary, then they all have to be binary
@@ -1008,11 +1252,15 @@ function formatDataAsStr(
     }
 
     let readFile = "";
-    if (filename === "-") {
+    if (util.eq(filename, "-")) {
       readFile += binary ? "sys.stdin.buffer" : "sys.stdin";
       imports.add("sys");
     } else {
-      line = "with open(" + repr(filename) + mode + ") as f:\n    " + line;
+      // TODO: if filename is a command, this won't work because unlike bash,
+      // Python won't remove the trailing newline from the result of a command
+      // we need to add .trim()
+      line =
+        "with open(" + repr(filename, osVars) + mode + ") as f:\n    " + line;
       readFile += "f";
     }
     readFile += ".read()";
@@ -1050,7 +1298,8 @@ function formatDataAsStr(
 
 function formatDataAsJson(
   d: DataParam,
-  imports: Set<string>
+  imports: Set<string>,
+  osVars: OSVars
 ): [string | null, boolean] {
   if (typeof d === "string") {
     // Try to parse using lossless-json first, then fall back to JSON.parse
@@ -1084,7 +1333,7 @@ function formatDataAsJson(
     } catch {}
   } else if (d[0] === "json") {
     let jsonDataString = "";
-    jsonDataString += "with open(" + repr(d[2]) + ") as f:\n";
+    jsonDataString += "with open(" + repr(d[2], osVars) + ") as f:\n";
     jsonDataString += "    json_data = json.load(f)\n";
     imports.add("json");
     return [jsonDataString, false];
@@ -1095,6 +1344,7 @@ function formatDataAsJson(
 
 function getDataString(
   request: Request,
+  osVars: OSVars,
   warnings: Warnings
 ): [string | null, boolean | null, string | null, Set<string>] {
   const imports = new Set<string>();
@@ -1126,7 +1376,8 @@ function getDataString(
   ) {
     [dataAsJson, jsonRoundtrips] = formatDataAsJson(
       request.dataArray[0],
-      imports
+      imports,
+      osVars
     );
   }
   if (jsonRoundtrips) {
@@ -1138,7 +1389,7 @@ function getDataString(
   //   there is a --data-urlencode without a name= or name@
   //   if you split the input on & and there's a value that doesn't contain an = (e.g. --data "foo=bar&" or simply --data "&")
   //   there is a name or value that doesn't roundtrip through percent encoding
-  const dataAsEntries = formatDataAsEntries(request.dataArray);
+  const dataAsEntries = formatDataAsEntries(request.dataArray, osVars);
   if (dataAsEntries !== null) {
     const [dataEntries, percentWarn] = dataAsEntries;
     if (
@@ -1159,7 +1410,8 @@ function getDataString(
 
   const [dataAsString, shouldEncode] = formatDataAsStr(
     request.dataArray,
-    imports
+    imports,
+    osVars
   );
   return [dataAsString, shouldEncode, dataAsJson, imports];
 }
@@ -1265,6 +1517,7 @@ const requestToPython = (
   imports: Set<string>,
   thirdPartyImports: Set<string>
 ): string => {
+  const osVars: OSVars = {};
   const commentedOutHeaders: { [key: string]: string } = {
     // TODO: add a warning why this should be commented out?
     "accept-encoding": "",
@@ -1370,7 +1623,7 @@ const requestToPython = (
     (request.urls.length === 1 ||
       (request.urls.length > 1 && readsFile(paramArray)))
   ) {
-    const queryAsEntries = formatDataAsEntries(paramArray, "params");
+    const queryAsEntries = formatDataAsEntries(paramArray, osVars, "params");
     if (queryAsEntries !== null) {
       let percentWarn;
       [paramsStr, percentWarn] = queryAsEntries;
@@ -1387,6 +1640,7 @@ const requestToPython = (
       [paramsStr, shouldEncodeParams] = formatDataAsStr(
         paramArray,
         imports,
+        osVars,
         "params"
       );
     }
@@ -1414,6 +1668,7 @@ const requestToPython = (
     let dataImports: Set<string>;
     [dataString, shouldEncode, jsonDataString, dataImports] = getDataString(
       request,
+      osVars,
       warnings
     );
     dataImports.forEach(imports.add, imports);
@@ -1485,6 +1740,21 @@ const requestToPython = (
   }
 
   let pythonCode = "";
+
+  // It would be more correct to run the commands whenever we need
+  // their values instead of running them all at the beginning.
+  if (Object.keys(osVars).length) {
+    for (const [varName, expr] of Object.entries(osVars)) {
+      pythonCode += `${varName} = ${expr}\n`;
+      if (expr.startsWith("os.")) {
+        imports.add("os");
+      } else if (expr.startsWith("subprocess.")) {
+        imports.add("subprocess");
+      }
+    }
+    pythonCode += "\n";
+  }
+
   if (proxyDict) {
     pythonCode += proxyDict + "\n";
   }
@@ -1582,6 +1852,7 @@ const requestToPython = (
         if (urlObj.queryArray && urlObj.queryArray.length > 0) {
           const urlQueryAsEntries = formatDataAsEntries(
             urlObj.queryArray,
+            osVars,
             "params"
           );
           if (urlQueryAsEntries !== null) {
@@ -1601,6 +1872,7 @@ const requestToPython = (
             [urlParamsStr, shouldEncodeParams] = formatDataAsStr(
               urlObj.queryArray,
               imports,
+              osVars,
               "params"
             );
             url = urlObj.urlWithoutQueryArray;

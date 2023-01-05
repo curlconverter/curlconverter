@@ -27,6 +27,173 @@ function isInt(s: string): boolean {
   return /^\s*[+-]?\d+$/.test(s);
 }
 
+interface ShellToken {
+  type: "variable" | "command";
+  value: string;
+  // For error reporting
+  text: string;
+  syntaxNode: Parser.SyntaxNode;
+}
+
+// A shell ShellWord is like a string, except it can contain shell variables or
+// expressions, which are treated as if they were a single character.
+class ShellWord implements Iterable<string | ShellToken> {
+  tokens: (string | ShellToken)[];
+  length: number;
+
+  constructor(tokens: (string | ShellToken)[]) {
+    // If we have strings in a row, merge them
+    this.tokens = [];
+    this.length = 0;
+    for (const t of tokens) {
+      if (typeof t === "string") {
+        if (
+          this.tokens.length > 0 &&
+          typeof this.tokens[this.tokens.length - 1] === "string"
+        ) {
+          this.tokens[this.tokens.length - 1] += t;
+        } else {
+          this.tokens.push(t);
+        }
+        this.length += t.length;
+      } else {
+        this.tokens.push(t);
+        this.length += 1;
+      }
+    }
+  }
+
+  *[Symbol.iterator](): Iterator<string | ShellToken> {
+    for (const t of this.tokens) {
+      if (typeof t === "string") {
+        for (const c of t) {
+          yield c;
+        }
+      } else {
+        yield t;
+      }
+    }
+  }
+
+  get(index: number): string | ShellToken {
+    let i = 0;
+    for (const t of this.tokens) {
+      if (typeof t === "string") {
+        if (i + t.length > index) {
+          return t[index - i];
+        }
+        i += t.length;
+      } else {
+        if (i === index) {
+          return t;
+        }
+        i += 1;
+      }
+    }
+    throw new CCError("Index out of bounds");
+  }
+
+  slice(start: number, end?: number): ShellWord {
+    if (end === undefined) {
+      end = this.length;
+    }
+    const tokens: (string | ShellToken)[] = [];
+    let i = 0;
+    for (const t of this.tokens) {
+      if (typeof t === "string") {
+        if (i + t.length > start) {
+          if (i >= end) {
+            break;
+          }
+          tokens.push(
+            t.slice(Math.max(0, start - i), Math.min(t.length, end - i))
+          );
+        }
+        i += t.length;
+      } else {
+        if (i >= start && i < end) {
+          tokens.push(t);
+        }
+        i += 1;
+      }
+    }
+    return new ShellWord(tokens);
+  }
+
+  // works exactly like String.split(), i.e. it stops when limit entries have
+  // been placed in the array. Any leftover text is not included in the array at all.
+  split(separator: string, limit?: number): ShellWord[] {
+    const ret: ShellWord[] = [];
+    let i = 0;
+    let start = 0;
+    while (i < this.length) {
+      if (this.get(i) === separator) {
+        ret.push(this.slice(start, i));
+        start = i + 1;
+        if (limit !== undefined && ret.length === limit - 1) {
+          break;
+        }
+      }
+      i += 1;
+    }
+    if (start < this.length) {
+      ret.push(this.slice(start));
+    }
+    return ret;
+  }
+
+  firstShellToken(): ShellToken | null {
+    for (const t of this.tokens) {
+      if (typeof t !== "string") {
+        return t;
+      }
+    }
+    return null;
+  }
+
+  startsWith(prefix: string): boolean {
+    if (this.tokens.length === 0) {
+      return false;
+    }
+    if (typeof this.tokens[0] === "string") {
+      return this.tokens[0].startsWith(prefix);
+    }
+    return false;
+  }
+
+  // This destroys the information about the original tokenization
+  toString() {
+    return this.tokens
+      .map((t) => (typeof t === "string" ? t : t.text))
+      .join("");
+  }
+  valueOf = toString;
+}
+type Word = string | ShellWord;
+
+function eq(it: Word, other: string): boolean {
+  if (typeof it === "string") {
+    return it === other;
+  }
+  return (
+    it.tokens.length === 1 &&
+    typeof it.tokens[0] === "string" &&
+    it.tokens[0] === other
+  );
+}
+function getChar(word: Word, index: number): string | ShellToken {
+  if (typeof word === "string") {
+    return word[index];
+  }
+  return word.get(index);
+}
+function firstShellToken(word: Word): ShellToken | null {
+  if (typeof word === "string") {
+    return null;
+  }
+  return word.firstShellToken();
+}
+
 interface _LongShort {
   name?: string; // added dynamically
   type: "string" | "number" | "bool";
@@ -72,7 +239,7 @@ type DataType = FileParamType | "raw";
 
 type SrcDataParam = [DataType, string];
 
-type FileDataParam = [FileParamType, string | null, string];
+type FileDataParam = [FileParamType, string | null, Word];
 // "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
 // when we have its contents (because it comes from a pipe) are converted
 // to plain strings
@@ -1263,10 +1430,14 @@ const removeAnsiCBackslashes = (str: string): string => {
   return str.replace(ANSI_BACKSLASHES, unescapeChar);
 };
 
-const underlineBadNode = (
-  curlCommand: string,
-  node: Parser.SyntaxNode
+const underlineNode = (
+  node: Parser.SyntaxNode,
+  curlCommand?: string
 ): string => {
+  // TODO: If this needs to be desirialized, it would be more efficient
+  // to pass the original command as a string.
+  curlCommand = node.tree.rootNode.text;
+
   // TODO: is this exactly how tree-sitter splits lines?
   const line = curlCommand.split("\n")[node.startPosition.row];
   const onOneLine = node.endPosition.row === node.startPosition.row;
@@ -1279,10 +1450,12 @@ const underlineBadNode = (
   );
 };
 
-const underlineBadNodeEnd = (
-  curlCommand: string,
-  node: Parser.SyntaxNode
+const underlineNodeEnd = (
+  node: Parser.SyntaxNode,
+  curlCommand?: string
 ): string => {
+  curlCommand = node.tree.rootNode.text;
+
   // TODO: is this exactly how tree-sitter splits lines?
   const line = curlCommand.split("\n")[node.endPosition.row];
   const onOneLine = node.endPosition.row === node.startPosition.row;
@@ -1291,18 +1464,19 @@ const underlineBadNodeEnd = (
   return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
 };
 
-function toVal(
+function _toVal(
   node: Parser.SyntaxNode,
   curlCommand: string,
   warnings: Warnings
-): string {
+): (string | ShellToken)[] {
+  let vals: (string | ShellToken)[] = [];
   switch (node.type) {
     case "word":
-      return removeBackslashes(node.text);
+      return [removeBackslashes(node.text)];
     case "raw_string":
-      return node.text.slice(1, -1);
+      return [node.text.slice(1, -1)];
     case "ansii_c_string":
-      return removeAnsiCBackslashes(node.text.slice(2, -1));
+      return [removeAnsiCBackslashes(node.text.slice(2, -1))];
     case "string":
     case "string_expansion": {
       let prevEnd = node.type === "string" ? 1 : 2;
@@ -1313,19 +1487,30 @@ function toVal(
           node.text.slice(prevEnd, child.startIndex - node.startIndex)
         );
         // expansion, simple_expansion or command_substitution (or concat?)
-        res += toVal(child, curlCommand, warnings);
+        const subVal = _toVal(child, curlCommand, warnings);
+        if (typeof subVal === "string") {
+          res += subVal;
+        } else {
+          if (res) {
+            vals.push(res);
+            res = "";
+          }
+          vals = vals.concat(subVal);
+        }
         prevEnd = child.endIndex - node.startIndex;
       }
       res += removeDoubleQuoteBackslashes(node.text.slice(prevEnd, -1));
-      return res;
+      if (res || vals.length === 0) {
+        vals.push(res);
+      }
+      return vals;
     }
     case "simple_expansion":
       // TODO: handle variables downstream
       // '$' + variable_name or special_variable_name
       warnings.push([
         "expansion",
-        "found Bash environment variable\n" +
-          underlineBadNode(curlCommand, node),
+        "found shell environment variable\n" + underlineNode(node, curlCommand),
       ]);
       if (
         node.firstNamedChild &&
@@ -1337,21 +1522,48 @@ function toVal(
           "special_variable_name",
           node.text +
             " is a special Bash variable\n" +
-            underlineBadNode(curlCommand, node.firstNamedChild),
+            underlineNode(node.firstNamedChild, curlCommand),
         ]);
       }
-      return node.text;
+      return [
+        {
+          type: "variable",
+          value: node.text.slice(1),
+          text: node.text,
+          syntaxNode: node,
+        },
+      ];
     case "expansion":
       // Expansions look ${like_this}
       // https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
       warnings.push([
         "expansion",
-        "found expansion expression\n" + underlineBadNode(curlCommand, node),
+        "found expansion expression\n" + underlineNode(node, curlCommand),
       ]);
       // variable_name or subscript or no child
-      return "$" + node.text.slice(2, -1);
-    // TODO: could generate os.system() calls
-    // case "command_substitution":
+      // TODO: handle substitutions
+      return [
+        {
+          type: "variable",
+          value: node.text.slice(2, -1),
+          text: node.text,
+          syntaxNode: node,
+        },
+      ];
+    case "command_substitution":
+      warnings.push([
+        "expansion",
+        "found command substitution expression\n" +
+          underlineNode(node, curlCommand),
+      ]);
+      return [
+        {
+          type: "command",
+          value: node.text.slice(node.text.startsWith("$(") ? 2 : 1, -1),
+          text: node.text,
+          syntaxNode: node,
+        },
+      ];
     case "concatenation": {
       // item[]=1 turns into item=1 if we don't do this
       // https://github.com/tree-sitter/tree-sitter-bash/issues/104
@@ -1363,26 +1575,68 @@ function toVal(
         res += node.text.slice(prevEnd, child.startIndex - node.startIndex);
         prevEnd = child.endIndex - node.startIndex;
 
-        res += toVal(child, curlCommand, warnings);
+        const subVal = _toVal(child, curlCommand, warnings);
+        if (typeof subVal === "string") {
+          res += subVal;
+        } else {
+          if (res) {
+            vals.push(res);
+            res = "";
+          }
+          vals = vals.concat(subVal);
+        }
       }
       res += node.text.slice(prevEnd);
-      return res;
+      if (res || vals.length === 0) {
+        vals.push(res);
+      }
+      return vals;
     }
     default:
       throw new CCError(
         "unexpected argument type " +
           JSON.stringify(node.type) +
           '. Must be one of "word", "string", "raw_string", "ansii_c_string", "expansion", "simple_expansion", "string_expansion" or "concatenation"\n' +
-          underlineBadNode(curlCommand, node)
+          underlineNode(node, curlCommand)
       );
   }
 }
 
+function toVal(
+  node: Parser.SyntaxNode,
+  curlCommand: string,
+  warnings: Warnings
+): Word {
+  const val = _toVal(node, curlCommand, warnings);
+
+  // merge adjacent strings
+  const mergedVal = [];
+  for (const t of val) {
+    if (typeof t === "string") {
+      if (
+        mergedVal.length > 0 &&
+        typeof mergedVal[mergedVal.length - 1] === "string"
+      ) {
+        mergedVal[mergedVal.length - 1] += t;
+      } else {
+        mergedVal.push(t);
+      }
+    } else {
+      mergedVal.push(t);
+    }
+  }
+
+  if (mergedVal.length === 1 && typeof mergedVal[0] === "string") {
+    return mergedVal[0];
+  }
+  return new ShellWord(mergedVal);
+}
+
 interface TokenizeResult {
   cmdName: string;
-  args: string[];
+  args: Word[];
   stdin?: string;
-  stdinFile?: string;
+  stdinFile?: Word;
 }
 const tokenize = (
   curlCommand: string,
@@ -1445,7 +1699,7 @@ const tokenize = (
           'got "redirected_statement" AST node whose first child is not a "command", got ' +
             command.type +
             " instead\n" +
-            underlineBadNode(curlCommand, command)
+            underlineNode(command, curlCommand)
         );
       }
       if (n.childCount < 2) {
@@ -1460,7 +1714,7 @@ const tokenize = (
           "found " +
             redirects.length +
             " redirect nodes. Only the first one will be used:\n" +
-            underlineBadNode(curlCommand, redirects[1]),
+            underlineNode(redirects[1], curlCommand),
         ]);
       }
       const redirect = redirects[0];
@@ -1517,7 +1771,7 @@ const tokenize = (
     } else if (n.type === "ERROR") {
       throw new CCError(
         `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
-          underlineBadNode(curlCommand, n)
+          underlineNode(n, curlCommand)
       );
     } else {
       // TODO: better error message.
@@ -1525,7 +1779,7 @@ const tokenize = (
         'expected a "command" or "redirected_statement" AST node, instead got ' +
           ast.rootNode.children[0].type +
           "\n" +
-          underlineBadNode(curlCommand, ast.rootNode.children[0])
+          underlineNode(ast.rootNode.children[0], curlCommand)
       );
     }
   }
@@ -1537,7 +1791,7 @@ const tokenize = (
       `curl command ends on line ${
         lastNode.endPosition.row + 1
       }, everything after this is ignored:\n` +
-        underlineBadNodeEnd(curlCommand, lastNode),
+        underlineNodeEnd(lastNode, curlCommand),
     ]);
 
     const curlCommandLines = curlCommand.split("\n");
@@ -1573,7 +1827,7 @@ const tokenize = (
       warnings.push([
         "bash",
         `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
-          underlineBadNode(curlCommand, n),
+          underlineNode(n, curlCommand),
       ]);
     }
   }
@@ -1593,7 +1847,7 @@ const tokenize = (
         "skipping " +
           JSON.stringify(n.type) +
           " expression\n" +
-          underlineBadNode(curlCommand, n),
+          underlineNode(n, curlCommand),
       ]);
       commandNameLoc += 1;
     } else {
@@ -1606,19 +1860,37 @@ const tokenize = (
       'expected a "command_name" AST node, found ' +
         cmdName.type +
         " instead\n" +
-        underlineBadNode(curlCommand, cmdName)
+        underlineNode(cmdName, curlCommand)
     );
   }
   if (cmdName.childCount < 1) {
     throw new CCError(
       'found empty "command_name" AST node\n' +
-        underlineBadNode(curlCommand, cmdName)
+        underlineNode(cmdName, curlCommand)
     );
   }
 
+  const cmdNameNode = toVal(cmdName.firstChild!, curlCommand, warnings);
+  const cmdNameShellToken = firstShellToken(cmdNameNode);
+  // The most common reason for the error below is probably accidentally copying
+  // a $ from the shell prompt without a space after it
+  let cmdNameStr = cmdNameNode.toString();
+  if (cmdNameStr === "$curl") {
+    cmdNameStr = "curl";
+  } else if (cmdNameShellToken) {
+    // TODO: just assume it evaluates to "curl"?
+    throw new CCError(
+      "expected command name to be a simple value but found an expression\n" +
+        // TODO: hightlight the expression within the name node
+        underlineNode(cmdNameShellToken.syntaxNode, curlCommand)
+    );
+  }
+  const argsNodes = args.map((a: Parser.SyntaxNode) =>
+    toVal(a, curlCommand, warnings)
+  );
   return {
-    cmdName: toVal(cmdName.firstChild!, curlCommand, warnings),
-    args: args.map((a: Parser.SyntaxNode) => toVal(a, curlCommand, warnings)),
+    cmdName: cmdNameStr,
+    args: argsNodes,
     stdin,
     stdinFile,
   };
@@ -1649,7 +1921,7 @@ const checkShortOpt = (
 };
 
 const parseArgs = (
-  args: string[],
+  args: Word[],
   longOpts: LongOpts,
   shortOpts: ShortOpts,
   supportedOpts?: Set<string>,
@@ -1658,37 +1930,50 @@ const parseArgs = (
   let config: OperationConfig = { authtype: CURLAUTH_BASIC };
   const global: GlobalConfig = { configs: [config], warnings };
   for (let i = 0, stillflags = true; i < args.length; i++) {
-    let arg: string | string[] = args[i];
-    let argRepr = arg;
+    const arg: Word = args[i];
     if (stillflags && arg.startsWith("-")) {
-      if (arg === "--") {
+      if (eq(arg, "--")) {
         /* This indicates the end of the flags and thus enables the
            following (URL) argument to start with -. */
         stillflags = false;
       } else if (arg.startsWith("--")) {
-        const lookup = arg.slice(2);
+        const shellToken = firstShellToken(arg);
+        if (shellToken) {
+          // TODO: if there's any text after the "--" or after the variable
+          // we could narrow it down.
+          throw new CCError(
+            "this " +
+              shellToken.type +
+              " could " +
+              (shellToken.type === "command" ? "return" : "be") +
+              " anything\n" +
+              underlineNode(shellToken.syntaxNode)
+          );
+        }
+        const argStr = arg.toString();
+
+        const lookup = argStr.slice(2);
         const longArg = longOpts[lookup];
         if (longArg === null) {
-          throw new CCError("option " + arg + ": is ambiguous");
+          throw new CCError("option " + argStr + ": is ambiguous");
         }
         if (typeof longArg === "undefined") {
           // TODO: extract a list of deleted arguments to check here
-          throw new CCError("option " + arg + ": is unknown");
+          throw new CCError("option " + argStr + ": is unknown");
         }
 
         if (longArg.type === "string") {
-          if (i + 1 < args.length) {
-            i++;
-            pushArgValue(global, config, longArg.name, args[i]);
-          } else {
-            throw new CCError("option " + arg + ": requires parameter");
+          i++;
+          if (i >= args.length) {
+            throw new CCError("option " + argStr + ": requires parameter");
           }
+          pushArgValue(global, config, longArg.name, args[i].toString());
         } else {
           config = setArgValue(
             global,
             config,
             longArg.name,
-            toBoolean(arg.slice(2))
+            toBoolean(argStr.slice(2))
           ); // TODO: all shortened args work correctly?
         }
         if (supportedOpts) {
@@ -1707,29 +1992,51 @@ const parseArgs = (
         // "-" passed to curl as an argument raises an error,
         // curlconverter's command line uses it to read from stdin
         if (arg.length === 1) {
-          if (has(shortOpts, "")) {
-            arg = ["-", ""];
-            argRepr = "-";
+          if (Object.prototype.hasOwnProperty.call(shortOpts, "")) {
+            const shortFor: string = shortOpts[""];
+            const longArg = longOpts[shortFor];
+            if (longArg === null) {
+              throw new CCError("option -: is unknown");
+            }
+            config = setArgValue(
+              global,
+              config,
+              longArg.name,
+              toBoolean(shortFor)
+            );
           } else {
-            throw new CCError("option " + argRepr + ": is unknown");
+            throw new CCError("option -: is unknown");
           }
         }
+
         for (let j = 1; j < arg.length; j++) {
-          if (!has(shortOpts, arg[j])) {
-            if (has(changedShortOpts, arg[j])) {
+          const jthChar = getChar(arg, j);
+          if (typeof jthChar !== "string") {
+            // A bash variable in the middle of a short option
+            throw new CCError(
+              "this " +
+                jthChar.type +
+                " could " +
+                (jthChar.type === "command" ? "return" : "be") +
+                " anything\n" +
+                underlineNode(jthChar.syntaxNode)
+            );
+          }
+          if (!has(shortOpts, jthChar)) {
+            if (has(changedShortOpts, jthChar)) {
               throw new CCError(
-                "option " + argRepr + ": " + changedShortOpts[arg[j]]
+                "option " + arg + ": " + changedShortOpts[jthChar]
               );
             }
             // TODO: there are a few deleted short options we could report
-            throw new CCError("option " + argRepr + ": is unknown");
+            throw new CCError("option " + arg + ": is unknown");
           }
-          const lookup = arg[j];
+          const lookup = jthChar;
           const shortFor = shortOpts[lookup];
           const longArg = longOpts[shortFor];
           if (longArg === null) {
             // This could happen if curlShortOpts points to a renamed option or has a typo
-            throw new CCError("ambiguous short option -" + arg[j]);
+            throw new CCError("ambiguous short option -" + jthChar);
           }
           if (longArg.type === "string") {
             let val;
@@ -1741,9 +2048,9 @@ const parseArgs = (
               i++;
               val = args[i];
             } else {
-              throw new CCError("option " + argRepr + ": requires parameter");
+              throw new CCError("option " + arg + ": requires parameter");
             }
-            pushArgValue(global, config, longArg.name, val as string);
+            pushArgValue(global, config, longArg.name, val.toString());
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
@@ -1760,7 +2067,21 @@ const parseArgs = (
         }
       }
     } else {
-      pushArgValue(global, config, "url", arg);
+      if (
+        typeof arg !== "string" &&
+        arg.tokens.length &&
+        typeof arg.tokens[0] !== "string"
+      ) {
+        const isOrBeginsWith = arg.tokens.length === 1 ? "is" : "begins with";
+        warnings.push([
+          "ambiguous argument",
+          "argument " +
+            isOrBeginsWith +
+            " a variable, assuming it's a URL\n" +
+            underlineNode(arg.tokens[0].syntaxNode),
+        ]);
+      }
+      pushArgValue(global, config, "url", arg.toString());
     }
   }
 
@@ -2022,7 +2343,9 @@ export function buildURL(
   global: GlobalConfig,
   config: OperationConfig,
   url: string,
-  uploadFile?: string
+  uploadFile?: string,
+  stdin?: string,
+  stdinFile?: Word
 ): [
   Curl_URL,
   string,
@@ -2105,12 +2428,20 @@ export function buildURL(
     if (u.query) {
       // remove the leading '?'
       queryParts.push(["raw", u.query.slice(1)]);
-      [queryArray, queryStr, queryStrReadsFile] = buildData(queryParts);
+      [queryArray, queryStr, queryStrReadsFile] = buildData(
+        queryParts,
+        stdin,
+        stdinFile
+      );
       urlQueryArray = queryArray;
     }
     if (config["url-query"]) {
       queryParts = queryParts.concat(config["url-query"]);
-      [queryArray, queryStr, queryStrReadsFile] = buildData(queryParts);
+      [queryArray, queryStr, queryStrReadsFile] = buildData(
+        queryParts,
+        stdin,
+        stdinFile
+      );
     }
 
     // TODO: check the curl source code
@@ -2160,7 +2491,7 @@ export function buildURL(
 function buildData(
   configData: SrcDataParam[],
   stdin?: string,
-  stdinFile?: string
+  stdinFile?: Word
 ): [DataParam[], string, string | null] {
   const data: DataParam[] = [];
   let dataStrState = "";
@@ -2196,11 +2527,11 @@ function buildData(
       value = "@" + value;
     }
 
-    let filename: string | null = null;
+    let filename: Word | null = null;
 
     if (type !== "raw" && value.startsWith("@")) {
-      filename = value.slice(1);
-      if (filename === "-") {
+      filename = new ShellWord([value.slice(1)]);
+      if (eq(filename, "-")) {
         if (stdin !== undefined) {
           switch (type) {
             case "binary":
@@ -2244,7 +2575,7 @@ function buildData(
     .map((d) => {
       if (Array.isArray(d)) {
         const name = d[1];
-        const filename = d[2];
+        const filename = d[2].toString();
         dataStrReadsFile ||= filename; // report first file
         if (name) {
           return `${name}=@${filename}`;
@@ -2262,7 +2593,7 @@ function buildRequest(
   global: GlobalConfig,
   config: OperationConfig,
   stdin?: string,
-  stdinFile?: string
+  stdinFile?: Word
 ): Request {
   // TODO: handle multiple URLs
   if (!config.url || !config.url.length) {
@@ -2524,7 +2855,7 @@ function buildRequest(
       urlWithOriginalQuery,
       queryArray,
       urlQueryArray,
-    ] = buildURL(global, config, originalUrl, uploadFile);
+    ] = buildURL(global, config, originalUrl, uploadFile, stdin, stdinFile);
 
     // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
     // will send, but most APIs will helpfully uppercase what you pass in as the method.
@@ -2617,7 +2948,7 @@ function buildRequest(
     request.stdin = stdin;
   }
   if (stdinFile) {
-    request.stdinFile = stdinFile;
+    request.stdinFile = stdinFile.toString();
   }
 
   if (cookies) {
@@ -2795,7 +3126,7 @@ function buildRequest(
 function buildRequests(
   global: GlobalConfig,
   stdin?: string,
-  stdinFile?: string
+  stdinFile?: Word
 ): Request[] {
   if (!global.configs.length) {
     // shouldn't happen
@@ -2812,9 +3143,9 @@ function parseCurlCommand(
   warnings: Warnings = []
 ): Request[] {
   let cmdName: string,
-    args: string[],
+    args: Word[],
     stdin: undefined | string,
-    stdinFile: undefined | string;
+    stdinFile: undefined | Word;
   if (Array.isArray(curlCommand)) {
     [cmdName, ...args] = curlCommand;
     if (typeof cmdName === "undefined") {
@@ -2822,10 +3153,8 @@ function parseCurlCommand(
     }
   } else {
     ({ cmdName, args, stdin, stdinFile } = tokenize(curlCommand, warnings));
-    if (typeof cmdName === "undefined") {
-      throw new CCError("failed to parse input");
-    }
   }
+
   if (cmdName.trim() !== "curl") {
     const shortenedCmdName =
       cmdName.length > 30 ? cmdName.slice(0, 27) + "..." : cmdName;
@@ -2982,6 +3311,7 @@ const parseCookies = (cookieString: string): Cookies | null => {
 };
 
 export {
+  ShellWord,
   curlLongOpts,
   curlShortOpts,
   COMMON_SUPPORTED_ARGS,
@@ -2997,11 +3327,13 @@ export {
   has,
   isInt,
   UTF8encoder,
+  eq,
 };
 
 export type {
   LongOpts,
   ShortOpts,
+  Word,
   Request,
   Cookie,
   Cookies,

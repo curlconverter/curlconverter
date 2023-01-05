@@ -24,10 +24,12 @@ Features:
   - Reports syntax errors
 - Knows about all of curl's 300 or so arguments, including deleted ones, but most are ignored
 - Supports multiple short arguments passed as one, for example `-OvXPOST` instead of `-O -v -X POST`
-- `--data @filename` generates Python code that reads from that file
-- `--data @-` generates Python code that reads from stdin (or piped file/input)
 - Converts JSON to native objects
 - Warns about issues with the conversion
+
+Python-only features (mostly):
+- `--data @filename` generates code that reads from that file
+- `--data @-` generates code that reads from stdin (or piped file/input)
 
 Limitations:
 
@@ -38,49 +40,21 @@ Limitations:
 
 ## Install
 
-Install the JavaScript library for use in your own projects with
-
-```sh
-npm install curlconverter
-```
-
 Install the command line tool with
 
 ```sh
 npm install --global curlconverter
 ```
 
+Install the JavaScript library for use in your own projects with
+
+```sh
+npm install curlconverter
+```
+
 curlconverter requires Node 14+.
 
 ## Usage
-
-### Usage as a library
-
-The JavaScript API is a bunch of functions that can take either a string of Bash code or an array of already-parsed arguments (like [`process.argv`](https://nodejs.org/docs/latest/api/process.html#processargv)) and return a string with the resulting program:
-
-```js
-import * as curlconverter from 'curlconverter';
-
-curlconverter.toPython('curl example.com');
-curlconverter.toPython(['curl', 'example.com']);
-// "import requests\n\nresponse = requests.get('http://example.com')\n"
-```
-
-**Note**: add `"type": "module"` to your package.json for the `import` statement above to work.
-
-There's a corresponding set of functions that also return an array of warnings if there are any issues with the conversion:
-
-```js
-curlconverter.toPythonWarn('curl ftp://example.com');
-curlconverter.toPythonWarn(['curl', 'ftp://example.com']);
-// [
-//   "import requests\n\nresponse = requests.get('ftp://example.com')\n",
-//   [ [ 'bad-scheme', 'Protocol "ftp" not supported' ] ]
-// ]
-```
-
-If you want to host curlconverter yourself and use it in the browser, it needs two [WASM](https://developer.mozilla.org/en-US/docs/WebAssembly) files to work, `tree-sitter.wasm` and `tree-sitter-bash.wasm`, which it will request from the root directory of your web server. If you are hosting a static website and using Webpack, you need to copy these files from the node_modules/ directory to your server's root directory in order to serve them. You can look at the [webpack.config.js](https://github.com/curlconverter/curlconverter.github.io/blob/2e1722891be22b1bb5c47976fb7873f6eb86b94d/webpack.config.js#L130-L131) for [curlconverter.com](https://curlconverter.com/) to see how this is done. You will also need to set `{module: {experiments: {topLevelAwait: true}}}` in your webpack.config.js.
-
 
 ### Usage from the command line
 
@@ -119,6 +93,34 @@ You can choose the output language by passing `--language <language>`. The optio
 - `r`
 - `ruby`
 - `rust`
+
+### Usage as a library
+
+The JavaScript API is a bunch of functions that can take either a string of Bash code or an array of already-parsed arguments (like [`process.argv`](https://nodejs.org/docs/latest/api/process.html#processargv)) and return a string with the resulting program:
+
+```js
+import * as curlconverter from 'curlconverter';
+
+curlconverter.toPython('curl example.com');
+curlconverter.toPython(['curl', 'example.com']);
+// "import requests\n\nresponse = requests.get('http://example.com')\n"
+```
+
+**Note**: add `"type": "module"` to your package.json for the `import` statement above to work.
+
+There's a corresponding set of functions that also return an array of warnings if there are any issues with the conversion:
+
+```js
+curlconverter.toPythonWarn('curl ftp://example.com');
+curlconverter.toPythonWarn(['curl', 'ftp://example.com']);
+// [
+//   "import requests\n\nresponse = requests.get('ftp://example.com')\n",
+//   [ [ 'bad-scheme', 'Protocol "ftp" not supported' ] ]
+// ]
+```
+
+If you want to host curlconverter yourself and use it in the browser, it needs two [WASM](https://developer.mozilla.org/en-US/docs/WebAssembly) files to work, `tree-sitter.wasm` and `tree-sitter-bash.wasm`, which it will request from the root directory of your web server. If you are hosting a static website and using Webpack, you need to copy these files from the node_modules/ directory to your server's root directory in order to serve them. You can look at the [webpack.config.js](https://github.com/curlconverter/curlconverter.github.io/blob/2e1722891be22b1bb5c47976fb7873f6eb86b94d/webpack.config.js#L130-L131) for [curlconverter.com](https://curlconverter.com/) to see how this is done. You will also need to set `{module: {experiments: {topLevelAwait: true}}}` in your webpack.config.js.
+
 
 ### Usage in VS Code
 

@@ -9,7 +9,7 @@ import type {
   Warnings,
 } from "../util.js";
 
-import { repr as pyrepr } from "./python.js";
+import { reprStr as pyrepr } from "./python.js";
 
 const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
