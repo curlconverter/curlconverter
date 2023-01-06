@@ -15,7 +15,6 @@ import type { Converter } from "./test-utils.js";
 // we get a list of all input files, iterate over it, and if an
 // output file exists, compare the output.
 const curlCommandsDir = path.resolve(fixturesDir, "curl_commands");
-console.log(curlCommandsDir);
 
 const testArgs = await yargs(hideBin(process.argv))
   .scriptName("test.js")
@@ -98,6 +97,7 @@ for (const fileName of testFileNames) {
         console.error(
           "Failed converting " + fileName + " to " + converter.name + ":"
         );
+        console.error(inputFileContents);
         console.error(e);
         process.exit(1);
       }
