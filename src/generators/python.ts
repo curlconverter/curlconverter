@@ -1632,7 +1632,7 @@ const requestToPython = (
         warnings.push([
           "percent-encoded-spaces-in-query",
           // TODO: will they?
-          'URL query contains spaces encoded by curl as "%20" which will be sent as "+" instead: ' +
+          'URL querystring contains spaces encoded as "%20" which will be sent by Requests as "+" instead: ' +
             JSON.stringify(percentWarn),
         ]);
       }

@@ -59,10 +59,12 @@ STR_TYPES = ["string", "filename"]
 ALIAS_TYPES = BOOL_TYPES + STR_TYPES
 RAW_ALIAS_TYPES = ALIAS_TYPES + ["true", "false"]
 
-OUTPUT_FILE = Path(__file__).parent.parent / "src" / "util.ts"
+OUTPUT_FILE = Path(__file__).parent.parent / "src" / "curlopts.ts"
 
-JS_PARAMS_START = "BEGIN GENERATED CURL OPTIONS"
-JS_PARAMS_END = "END GENERATED CURL OPTIONS"
+JS_LONG_PARAMS_START = "BEGIN GENERATED LONG OPTIONS"
+JS_LONG_PARAMS_END = "END GENERATED LONG OPTIONS"
+JS_SHORT_PARAMS_START = "BEGIN GENERATED SHORT OPTIONS"
+JS_SHORT_PARAMS_END = "END GENERATED SHORT OPTIONS"
 
 PACKAGE_JSON = Path(__file__).parent.parent / "package.json"
 CLI_FILE = Path(__file__).parent.parent / "src" / "cli.ts"
@@ -85,6 +87,17 @@ DUPES = {
 for value in list(DUPES.values()):
     DUPES[value] = value
 
+
+def is_git_repo(git_dir=CURL_REPO):
+    result = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=git_dir,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
 if not OUTPUT_FILE.is_file():
     sys.exit(
         f"{OUTPUT_FILE} doesn't exist. You should run this script from curlconverter/"
@@ -96,6 +109,9 @@ if not CURL_REPO.is_dir():
         "git clone https://github.com/curl/curl ../curl"
         # or modify the CURL_REPO variable above
     )
+# TODO: check that repo is up to date
+if not is_git_repo(CURL_REPO):
+    sys.exit(f"{CURL_REPO} is not a git repo")
 
 
 def git_branch(git_dir=CURL_REPO):
@@ -107,16 +123,6 @@ def git_branch(git_dir=CURL_REPO):
         text=True,
     ).stdout
     return branch.strip()
-
-
-def is_git_repo(git_dir=CURL_REPO):
-    result = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"],
-        cwd=git_dir,
-        capture_output=True,
-        text=True,
-    )
-    return result.returncode == 0 and result.stdout.strip() == "true"
 
 
 def parse_aliases(lines):
@@ -187,6 +193,7 @@ def fill_out_aliases(aliases, add_no_options=True, assumptions=set()):
                     print(assumption, file=sys.stderr)
                 alias["name"] = without_no
 
+        alias["name"] = alias["lname"]
         if letter_count[alias["letter"]] > 1:
             # Raise KeyError if special case hasn't been added yet
             candidate = DUPES[alias["lname"]]
@@ -237,27 +244,27 @@ def split(aliases):
     return long_args, short_args
 
 
-def format_as_js(d, var_name, type_name, indent="  ", indent_level=0):
-    yield f"{indent * indent_level}const {var_name}: {type_name} = {{"
+def format_as_js(d, indent="  ", indent_level=0):
     for top_key, opt in d.items():
 
         def quote(key):
-            return key if key.isalpha() else repr(key)
+            return json.dumps(key, ensure_ascii=False)
 
         def val_to_js(val):
             if isinstance(val, str):
-                return repr(val)
+                return quote(val)
             if isinstance(val, bool):
                 return str(val).lower()
             raise TypeError(f"can't convert values of type {type(val)} to JS")
 
         if isinstance(opt, dict):
-            vals = [f"{quote(k)}: {val_to_js(v)}" for k, v in opt.items()]
-            yield f"{indent * (indent_level + 1)}{top_key!r}: {{{', '.join(vals)}}},"
+            vals = [
+                f"{k if k.isalpha() else quote(k)}: {val_to_js(v)}"
+                for k, v in opt.items()
+            ]
+            yield f"{indent * (indent_level + 1)}{quote(top_key)}: {{ {', '.join(vals)} }},"
         elif isinstance(opt, str):
-            yield f"{indent * (indent_level + 1)}{top_key!r}: {val_to_js(opt)},"
-
-    yield (indent * indent_level) + "};"
+            yield f"{indent * (indent_level + 1)}{quote(top_key)}: {val_to_js(opt)},"
 
 
 def parse_tag(tag):
@@ -420,26 +427,38 @@ if __name__ == "__main__":
     )
     long_args, short_args = split(current_aliases)
 
-    js_params_lines = list(format_as_js(long_args, "_curlLongOpts", "_LongOpts"))
-    js_params_lines += [""]  # separate by a newline
-    js_params_lines += list(format_as_js(short_args, "curlShortOpts", "ShortOpts"))
+    js_long_params_lines = list(format_as_js(long_args))
+    js_short_params_lines = list(format_as_js(short_args))
 
     new_lines = []
     with open(OUTPUT_FILE) as f:
-        for line in f:
-            new_lines.append(line)
-            if JS_PARAMS_START in line:
-                break
-        else:
-            raise ValueError(f"{'// ' + JS_PARAMS_START!r} not in {OUTPUT_FILE}")
 
-        new_lines += [l + "\n" for l in js_params_lines]
-        for line in f:
-            if JS_PARAMS_END in line:
+        def add_between(f, new_lines, adding_lines, start, end):
+            for line in f:
                 new_lines.append(line)
-                break
-        else:
-            raise ValueError(f"{'// ' + JS_PARAMS_END!r} not in {OUTPUT_FILE}")
+                if start in line:
+                    break
+            else:
+                raise ValueError(f"{'// ' + start!r} not in {OUTPUT_FILE}")
+
+            new_lines += [l + "\n" for l in adding_lines]
+            for line in f:
+                if end in line:
+                    new_lines.append(line)
+                    break
+            else:
+                raise ValueError(f"{'// ' + end!r} not in {OUTPUT_FILE}")
+
+        add_between(
+            f, new_lines, js_long_params_lines, JS_LONG_PARAMS_START, JS_LONG_PARAMS_END
+        )
+        add_between(
+            f,
+            new_lines,
+            js_short_params_lines,
+            JS_SHORT_PARAMS_START,
+            JS_SHORT_PARAMS_END,
+        )
         for line in f:
             new_lines.append(line)
 

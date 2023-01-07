@@ -1,15 +1,9 @@
 #!/usr/bin/env node
 
-import {
-  curlLongOpts,
-  curlShortOpts,
-  parseArgs,
-  buildRequests,
-  CCError,
-  has,
-  Warnings,
-} from "./util.js";
-import type { LongOpts, ShortOpts, Request } from "./util.js";
+import { curlLongOpts, curlShortOpts } from "./curlopts.js";
+import type { LongOpts, ShortOpts } from "./curlopts.js";
+import { parseArgs, buildRequests, CCError, has, Warnings } from "./util.js";
+import type { Request } from "./util.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
 import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
@@ -120,19 +114,21 @@ language: the language to convert the curl command to. The choices are
 
 -: read curl command from stdin
 
+--verbose/-v: print warnings and error tracebacks
+
 curl_options: these should be passed exactly as they would be passed to curl.
   see 'curl --help' or 'curl --manual' for which options are allowed here`;
 
-const curlConverterLongOpts: LongOpts = {
+const curlconverterLongOpts: LongOpts = {
   language: { type: "string", name: "language" },
   stdin: { type: "bool", name: "stdin" },
 };
-const curlConverterShortOpts: ShortOpts = {
-  // a single - (dash) tells curlconverter to read input from stdin
+const curlconverterShortOpts: ShortOpts = {
+  // a single "-" (dash) tells curlconverter to read input from stdin
   "": "stdin",
 };
-const longOpts: LongOpts = { ...curlLongOpts, ...curlConverterLongOpts };
-const shortOpts: ShortOpts = { ...curlShortOpts, ...curlConverterShortOpts };
+const longOpts: LongOpts = { ...curlLongOpts, ...curlconverterLongOpts };
+const shortOpts: ShortOpts = { ...curlShortOpts, ...curlconverterShortOpts };
 
 function printWarnings(warnings: Warnings, verbose: boolean): Warnings {
   if (!verbose) {
