@@ -39,7 +39,8 @@ type JSONOutput = {
   cookies?: { [key: string]: string };
   headers?: { [key: string]: string | null };
   queries?: QueryDict;
-  data?: { [key: string]: string };
+  // `| any` because of JSON
+  data?: { [key: string]: string } | any; // eslint-disable-line @typescript-eslint/no-explicit-any
   // raw_data?: string[],
   files?: { [key: string]: string };
   // raw_files: string[],
@@ -62,12 +63,14 @@ function getDataString(request: Request): {
   if (!request.data) {
     return {};
   }
-  /*
-    if ( !request.isDataRaw && request.data.startsWith('@') ) {
-   var filePath = request.data.slice(1);
-   return filePath;
-   }
-   */
+
+  const contentType = util.getContentType(request);
+  if (contentType === "application/json") {
+    try {
+      const json = JSON.parse(request.data);
+      return { data: json };
+    } catch (e) {}
+  }
 
   const [parsedQuery, parsedQueryDict] = util.parseQueryString(request.data);
   if (!parsedQuery || !parsedQuery.length) {
