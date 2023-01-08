@@ -2,25 +2,78 @@
   {
     "urls": [
       {
-        "originalUrl": "http://localhost:28139/",
-        "urlWithoutQueryList": "http://localhost:28139/",
-        "url": "http://localhost:28139/",
-        "urlObj": {
-          "scheme": "http",
-          "host": "localhost:28139",
-          "path": "/",
-          "query": "",
-          "originalQuery": "",
-          "fragment": ""
+        "originalUrl": {
+          "tokens": [
+            "http://localhost:28139/"
+          ]
         },
-        "urlWithOriginalQuery": "http://localhost:28139/",
-        "urlWithoutQueryArray": "http://localhost:28139/",
-        "method": "GET"
+        "urlWithoutQueryList": {
+          "tokens": [
+            "http://localhost:28139/"
+          ]
+        },
+        "url": {
+          "tokens": [
+            "http://localhost:28139/"
+          ]
+        },
+        "urlObj": {
+          "scheme": {
+            "tokens": [
+              "http"
+            ]
+          },
+          "host": {
+            "tokens": [
+              "localhost:28139"
+            ]
+          },
+          "path": {
+            "tokens": [
+              "/"
+            ]
+          },
+          "query": {
+            "tokens": [
+              ""
+            ]
+          },
+          "originalQuery": {
+            "tokens": [
+              ""
+            ]
+          },
+          "fragment": {
+            "tokens": [
+              ""
+            ]
+          }
+        },
+        "urlWithOriginalQuery": {
+          "tokens": [
+            "http://localhost:28139/"
+          ]
+        },
+        "urlWithoutQueryArray": {
+          "tokens": [
+            "http://localhost:28139/"
+          ]
+        },
+        "method": {
+          "tokens": [
+            "GET"
+          ]
+        }
       }
     ],
     "authType": "basic",
+    "lowercaseHeaders": false,
     "cookieFiles": [
-      "cookie.txt"
+      {
+        "tokens": [
+          "cookie.txt"
+        ]
+      }
     ]
   }
 ]

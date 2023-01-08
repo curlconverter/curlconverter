@@ -53,28 +53,14 @@ const inFiles =
     ? fs.readdirSync(curlCommandDir).filter((p) => p.endsWith(".sh"))
     : argv._;
 const inPaths = inFiles.map((infile) => {
-  infile = infile.toString();
-  // check that all files exist and add '.sh' to them if needed
-  const inPath = path.parse(infile);
-
-  if (inPath.ext && inPath.ext !== ".sh") {
-    console.error(
-      "unexpected file extension '" +
-        inPath.ext +
-        "' for " +
-        infile +
-        ". command_file should have no extension " +
-        "or end with '.sh'"
-    );
+  // Remove path and file extension
+  const filename = path.parse(infile.toString()).name;
+  const testfile = path.join(curlCommandDir, filename + ".sh");
+  if (!fs.existsSync(testfile)) {
+    console.error("no such file: " + testfile);
     process.exit();
   }
-  inPath.dir = inPath.dir ? path.resolve(inPath.dir) : curlCommandDir;
-  const fullPath = path.join(inPath.dir, inPath.name + ".sh");
-  if (!fs.existsSync(fullPath)) {
-    console.error("no such file: " + fullPath);
-    process.exit();
-  }
-  return fullPath;
+  return testfile;
 });
 
 const printEachFile =
@@ -111,18 +97,18 @@ for (const inPath of inPaths) {
 
     fs.writeFileSync(outPath, code);
     if (printEachFile) {
-      console.error("wrote to", outPath);
+      console.error("wrote to " + outPath);
     } else {
       total += 1;
     }
   }
 }
 if (!printEachFile) {
-  console.error("wrote", total, "file" + (total === 1 ? "" : "s"));
+  console.error("wrote " + total + " file" + (total === 1 ? "" : "s"));
 }
 
-if (inPaths.length && languages.length) {
-  console.error(
-    "Please carefully check all the output for correctness before committing."
-  );
-}
+// if (inPaths.length && languages.length) {
+//   console.error(
+//     "Please carefully check all the output for correctness before committing."
+//   );
+// }

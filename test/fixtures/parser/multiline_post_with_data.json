@@ -2,36 +2,109 @@
   {
     "urls": [
       {
-        "originalUrl": "http://localhost:28139/echo/html/",
-        "urlWithoutQueryList": "http://localhost:28139/echo/html/",
-        "url": "http://localhost:28139/echo/html/",
-        "urlObj": {
-          "scheme": "http",
-          "host": "localhost:28139",
-          "path": "/echo/html/",
-          "query": "",
-          "originalQuery": "",
-          "fragment": ""
+        "originalUrl": {
+          "tokens": [
+            "http://localhost:28139/echo/html/"
+          ]
         },
-        "urlWithOriginalQuery": "http://localhost:28139/echo/html/",
-        "urlWithoutQueryArray": "http://localhost:28139/echo/html/",
-        "method": "GET"
+        "urlWithoutQueryList": {
+          "tokens": [
+            "http://localhost:28139/echo/html/"
+          ]
+        },
+        "url": {
+          "tokens": [
+            "http://localhost:28139/echo/html/"
+          ]
+        },
+        "urlObj": {
+          "scheme": {
+            "tokens": [
+              "http"
+            ]
+          },
+          "host": {
+            "tokens": [
+              "localhost:28139"
+            ]
+          },
+          "path": {
+            "tokens": [
+              "/echo/html/"
+            ]
+          },
+          "query": {
+            "tokens": [
+              ""
+            ]
+          },
+          "originalQuery": {
+            "tokens": [
+              ""
+            ]
+          },
+          "fragment": {
+            "tokens": [
+              ""
+            ]
+          }
+        },
+        "urlWithOriginalQuery": {
+          "tokens": [
+            "http://localhost:28139/echo/html/"
+          ]
+        },
+        "urlWithoutQueryArray": {
+          "tokens": [
+            "http://localhost:28139/echo/html/"
+          ]
+        },
+        "method": {
+          "tokens": [
+            "GET"
+          ]
+        }
       }
     ],
     "authType": "basic",
+    "lowercaseHeaders": false,
     "headers": [
       [
-        "Origin",
-        "http://fiddle.jshell.net"
+        {
+          "tokens": [
+            "Origin"
+          ]
+        },
+        {
+          "tokens": [
+            "http://fiddle.jshell.net"
+          ]
+        }
       ],
       [
-        "Content-Type",
-        "application/x-www-form-urlencoded"
+        {
+          "tokens": [
+            "Content-Type"
+          ]
+        },
+        {
+          "tokens": [
+            "application/x-www-form-urlencoded"
+          ]
+        }
       ]
     ],
-    "data": "msg1=value1&msg2=value2",
+    "data": {
+      "tokens": [
+        "msg1=value1&msg2=value2"
+      ]
+    },
     "dataArray": [
-      "msg1=value1&msg2=value2"
+      {
+        "tokens": [
+          "msg1=value1&msg2=value2"
+        ]
+      }
     ],
     "isDataRaw": false,
     "isDataBinary": false

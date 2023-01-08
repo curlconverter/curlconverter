@@ -1,8 +1,9 @@
+import os
 import requests
 
 headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer $DO_API_TOKEN',
+    'Authorization': 'Bearer ' + os.getenv('DO_API_TOKEN', ''),
 }
 
 params = {

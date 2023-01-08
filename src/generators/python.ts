@@ -1,5 +1,5 @@
 import * as util from "../util.js";
-import type { Word, ShellWord, Request, Warnings, DataParam } from "../util.js";
+import { Word, Request, Warnings, DataParam } from "../util.js";
 
 import {
   parse as jsonParseLossless,
@@ -495,7 +495,6 @@ export function reprStrBinary(s: string): string {
 // First we replace all invalid characters with underscores.
 // Then we prepend an underscore if the first character is a digit.
 // Then we prepend an underscore if the name is a Python keyword or builtin.
-// TODO: is this really helpful? just inline the os.getenv() calls?
 const invalidStart = /[^_\p{L}\p{Nl}\u1885\u1886\u2118\u212E\u309B\u309C]/gu;
 const invalidContinue =
   /[^_\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\u00B7\u0387\u1369-\u1371\u19DA]/gu;
@@ -646,7 +645,8 @@ const reservedVariables = new Set([
   "HTTPSPNEGOAuth",
   "AWSRequestsAuth",
 ]);
-function toPythonVariable(s: string): string {
+// TODO: not used, delete?
+export function toPythonVariable(s: string): string {
   if (s === "") {
     return "_";
   }
@@ -662,9 +662,10 @@ function toPythonVariable(s: string): string {
 }
 type OSVars = { [key: string]: string };
 
-export function reprShell(
-  word: ShellWord,
+export function repr(
+  word: Word,
   osVars: OSVars,
+  imports: Set<string>,
   binary = false
 ): string {
   const reprs = [];
@@ -672,15 +673,13 @@ export function reprShell(
     if (typeof t === "string") {
       reprs.push(reprStr(t));
     } else if (t.type === "variable") {
-      let pyVar = toPythonVariable(t.value);
       // TODO: getenvb() is not available on Windows
       const fn = binary ? "os.getenvb" : "os.getenv";
-      const getEnvCall = fn + "(" + reprStr(t.value) + ")";
-      while (pyVar in osVars && osVars[pyVar] !== getEnvCall) {
-        pyVar += "_";
-      }
-      osVars[pyVar] = getEnvCall;
-      reprs.push(pyVar);
+      const reprFn = binary ? reprStrBinary : reprStr;
+      const getEnvCall = fn + "(" + reprFn(t.value) + ", " + reprFn("") + ")";
+      reprs.push(getEnvCall);
+      // TODO: if the result of a repr() is discarded, this adds an unused import
+      imports.add("os");
     } else if (t.type === "command") {
       // TODO: warn that shell=True is a bad idea
       // or properly parse the subcommand and render it as an array
@@ -694,6 +693,7 @@ export function reprShell(
       subprocessCall += ").stdout";
 
       // TODO: generate a descriptive command name with ChatGPT
+      // TODO: if there's only one command, it would be nice to name the variable "command"
       let i = 1;
       let pyVar = "command" + i;
       // We need to check because we often try to represent the same
@@ -708,30 +708,15 @@ export function reprShell(
       }
       osVars[pyVar] = subprocessCall;
       reprs.push(pyVar);
+      // TODO: if the result of a repr() is discarded, this adds an unused import
+      imports.add("subprocess");
     }
   }
   return reprs.join(" + ");
 }
 
-function repr(word: Word, osVars?: OSVars): string {
-  if (typeof word === "string") {
-    return reprStr(word);
-  }
-
-  if (osVars === undefined) {
-    throw new util.CCError("osVars must be defined when rerp()ing a ShellWord");
-  }
-  return reprShell(word, osVars, false);
-}
-function reprb(word: Word, osVars?: OSVars): string {
-  if (typeof word === "string") {
-    return reprStrBinary(word);
-  }
-
-  if (osVars === undefined) {
-    throw new util.CCError("osVars must be defined when rerp()ing a ShellWord");
-  }
-  return reprShell(word, osVars, true);
+function reprb(word: Word, osVars: OSVars, imports: Set<string>): string {
+  return repr(word, osVars, imports, true);
 }
 
 // Port of Python's json.dumps() with its default options, which is what Requests uses
@@ -901,7 +886,7 @@ function objToPython(
 
   switch (typeof obj) {
     case "string":
-      return repr(obj);
+      return reprStr(obj);
     case "number":
       // TODO: there are differences in number serialization between Python and JavaScript
       // TODO: if the number in the JSON file is too big for JavaScript, we will lose information
@@ -933,7 +918,7 @@ function objToPython(
           // repr() because JSON keys must be strings.
           s +=
             " ".repeat(indent + 4) +
-            repr(k) +
+            reprStr(k) +
             ": " +
             objToPython(v, indent + 4) +
             ",\n";
@@ -948,12 +933,12 @@ function objToPython(
   }
 }
 
-function decodePercentEncoding(s: string): string | null {
+function decodePercentEncoding(s: Word): Word | null {
   let decoded;
   try {
     // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
     // before decoding.
-    decoded = decodeURIComponent(s.replace(/\+/g, " "));
+    decoded = util.wordDecodeURIComponent(s.replace(/\+/g, " "));
   } catch (e) {
     if (e instanceof URIError) {
       // String contains invalid percent encoded characters
@@ -964,7 +949,10 @@ function decodePercentEncoding(s: string): string | null {
   // If the query string doesn't round-trip, we cannot properly convert it.
   const roundTripKey = util.percentEncode(decoded);
   // If the original data used %20 instead of + (what requests will send), that's close enough
-  if (roundTripKey !== s && roundTripKey.replace(/%20/g, "+") !== s) {
+  if (
+    !util.eq(roundTripKey, s) &&
+    !util.eq(roundTripKey.replace(/%20/g, "+"), s)
+  ) {
     return null;
   }
   return decoded;
@@ -1039,6 +1027,7 @@ function dataEntriesToPython(dataEntries: Array<[string, string]>): string {
 function formatDataAsEntries(
   dataArray: DataParam[],
   osVars: OSVars,
+  imports: Set<string>,
   variableName: "data" | "params" = "data"
 ): [string, string] | null {
   // This code is more complicated than you might expect because it needs
@@ -1073,9 +1062,9 @@ function formatDataAsEntries(
   }
 
   const dataEntries: Array<[string, string | null]> = [];
-  let percentWarn = "";
+  let percentWarn = new Word();
   for (const [i, d] of dataArray.entries()) {
-    if (typeof d === "string") {
+    if (d instanceof Word) {
       let newEntries = d.split("&");
 
       const prevEntry = i > 0 ? dataEntries[dataEntries.length - 1] : null;
@@ -1084,7 +1073,7 @@ function formatDataAsEntries(
         // because it would be part of the current `d` string if it didn't.
         const [first, ...rest] = newEntries;
         if (first.includes("=") && prevEntry[1] === null) {
-          const [key, val] = first.split(/=(.*)/s, 2);
+          const [key, val] = first.split("=", 2);
           const decodedKey = decodePercentEncoding(key);
           if (decodedKey === null) {
             return null;
@@ -1093,12 +1082,12 @@ function formatDataAsEntries(
           if (decodedVal === null) {
             return null;
           }
-          if (key) {
-            prevEntry[0] += " + " + repr(decodedKey);
+          if (key.toBool()) {
+            prevEntry[0] += " + " + repr(decodedKey, osVars, imports);
           }
-          prevEntry[1] = repr(decodedVal);
+          prevEntry[1] = repr(decodedVal, osVars, imports);
 
-          if (!percentWarn) {
+          if (!percentWarn.toBool()) {
             if (key.includes("%20")) {
               percentWarn = key;
             }
@@ -1107,14 +1096,14 @@ function formatDataAsEntries(
             }
           }
         } else if (!first.includes("=") && prevEntry[1] !== null) {
-          if (first) {
+          if (first.toBool()) {
             const decodedVal = decodePercentEncoding(first);
             if (decodedVal === null) {
               return null;
             }
-            prevEntry[1] += " + " + repr(decodedVal);
+            prevEntry[1] += " + " + repr(decodedVal, osVars, imports);
 
-            if (!percentWarn && first.includes("%20")) {
+            if (!percentWarn.toBool() && first.includes("%20")) {
               percentWarn = first;
             }
           }
@@ -1126,7 +1115,7 @@ function formatDataAsEntries(
 
       for (const [j, entry] of newEntries.entries()) {
         if (
-          !entry &&
+          entry.isEmpty() &&
           j === newEntries.length - 1 &&
           i !== dataArray.length - 1
         ) {
@@ -1136,7 +1125,7 @@ function formatDataAsEntries(
         if (!entry.includes("=")) {
           return null;
         }
-        const [key, val] = entry.split(/=(.*)/s, 2);
+        const [key, val] = entry.split("=", 2);
         const decodedKey = decodePercentEncoding(key);
         if (decodedKey === null) {
           return null;
@@ -1145,9 +1134,12 @@ function formatDataAsEntries(
         if (decodedVal === null) {
           return null;
         }
-        dataEntries.push([repr(decodedKey), repr(decodedVal)]);
+        dataEntries.push([
+          repr(decodedKey, osVars, imports),
+          repr(decodedVal, osVars, imports),
+        ]);
 
-        if (!percentWarn) {
+        if (!percentWarn.toBool()) {
           if (key.includes("%20")) {
             percentWarn = key;
           }
@@ -1165,16 +1157,16 @@ function formatDataAsEntries(
     // TODO: I bet Python doesn't treat file paths identically to curl
     const readFile = util.eq(filename, "-")
       ? "sys.stdin.read()"
-      : "open(" + repr(filename, osVars) + ").read()";
+      : "open(" + repr(filename, osVars, imports) + ").read()";
 
     if (!name) {
       dataEntries.push([readFile, null]);
     } else {
       // Curl doesn't percent encode the name but Requests will
-      if (name !== util.percentEncode(name)) {
+      if (!util.eq(name, util.percentEncode(name))) {
         return null;
       }
-      dataEntries.push([repr(name), readFile]);
+      dataEntries.push([repr(name, osVars, imports), readFile]);
     }
   }
 
@@ -1187,7 +1179,7 @@ function formatDataAsEntries(
       " = " +
       dataEntriesToPython(dataEntries as [string, string][]) +
       "\n",
-    percentWarn,
+    percentWarn.toString(),
   ];
 }
 
@@ -1218,36 +1210,36 @@ function formatDataAsStr(
 
   const lines = [];
 
-  let extra = "";
+  let extra = new Word();
   let i, d;
   for ([i, d] of dataArray.entries()) {
     const op = i === 0 ? "=" : "+=";
     let line = variableName + " " + op + " ";
 
-    if (i < dataArray.length - 1 && typeof d === "string" && d.endsWith("&")) {
+    if (i < dataArray.length - 1 && d instanceof Word && d.endsWith("&")) {
       // Put the trailing '&' on the next line so that we don't have single '&'s on their own lines
-      extra = "&";
+      extra = new Word("&");
       d = d.slice(0, -1);
     }
 
-    if (typeof d === "string") {
-      if (d) {
-        line += reprFunc(d);
+    if (d instanceof Word) {
+      if (d.length) {
+        line += reprFunc(d, osVars, imports);
         lines.push(line);
-        encode ||= /[^\x00-\x7F]/.test(d);
+        encode ||= d.test(/[^\x00-\x7F]/);
       }
       continue;
     }
 
     const [type, name, filename] = d;
     if (type === "urlencode" && name) {
-      line += reprFunc(extra + name + "=") + " + ";
+      line += reprFunc(extra.add(name).append("="), osVars, imports) + " + ";
       encodeOnSeparateLine = true; // we would need to add parentheses because of the +
-    } else if (extra) {
-      line += reprFunc(extra) + " + ";
+    } else if (extra.toBool()) {
+      line += reprFunc(extra, osVars, imports) + " + ";
       encodeOnSeparateLine = true;
     }
-    if (extra) {
+    if (extra.toBool()) {
       encodeOnSeparateLine = true; // we would need to add parentheses because of the +
     }
 
@@ -1260,7 +1252,11 @@ function formatDataAsStr(
       // Python won't remove the trailing newline from the result of a command
       // we need to add .trim()
       line =
-        "with open(" + repr(filename, osVars) + mode + ") as f:\n    " + line;
+        "with open(" +
+        repr(filename, osVars, imports) +
+        mode +
+        ") as f:\n    " +
+        line;
       readFile += "f";
     }
     readFile += ".read()";
@@ -1283,7 +1279,7 @@ function formatDataAsStr(
 
     line += readFile;
     lines.push(line);
-    extra = "";
+    extra = new Word();
   }
 
   if (binary) {
@@ -1301,7 +1297,12 @@ function formatDataAsJson(
   imports: Set<string>,
   osVars: OSVars
 ): [string | null, boolean] {
-  if (typeof d === "string") {
+  if (d instanceof Word) {
+    if (!d.isString()) {
+      // TODO: a JSON parser that allows shell variables
+      return [null, false];
+    }
+
     // Try to parse using lossless-json first, then fall back to JSON.parse
     // TODO: repeated dictionary keys are discarded
     // https://github.com/josdejong/lossless-json/issues/244
@@ -1310,10 +1311,10 @@ function formatDataAsJson(
       // TODO: types
       // https://github.com/josdejong/lossless-json/issues/245
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      dataAsJson = jsonParseLossless(d) as any;
+      dataAsJson = jsonParseLossless(d.toString()) as any;
     } catch {
       try {
-        dataAsJson = JSON.parse(d);
+        dataAsJson = JSON.parse(d.toString());
       } catch {
         return [null, false];
       }
@@ -1327,13 +1328,13 @@ function formatDataAsJson(
       // ("\/" vs "/" or "\u0008" vs "\b") or duplicate object keys.
       let jsonRoundtrips = false;
       try {
-        jsonRoundtrips = jsonDumps(dataAsJson) === d;
+        jsonRoundtrips = jsonDumps(dataAsJson) === d.tokens[0];
       } catch {}
       return [jsonDataString, jsonRoundtrips];
     } catch {}
   } else if (d[0] === "json") {
     let jsonDataString = "";
-    jsonDataString += "with open(" + repr(d[2], osVars) + ") as f:\n";
+    jsonDataString += "with open(" + repr(d[2], osVars, imports) + ") as f:\n";
     jsonDataString += "    json_data = json.load(f)\n";
     imports.add("json");
     return [jsonDataString, false];
@@ -1372,7 +1373,7 @@ function getDataString(
   if (
     request.dataArray.length === 1 &&
     contentType &&
-    contentType.split(";")[0].trim() === "application/json"
+    contentType.split(";")[0].toString().trim() === "application/json"
   ) {
     [dataAsJson, jsonRoundtrips] = formatDataAsJson(
       request.dataArray[0],
@@ -1389,12 +1390,14 @@ function getDataString(
   //   there is a --data-urlencode without a name= or name@
   //   if you split the input on & and there's a value that doesn't contain an = (e.g. --data "foo=bar&" or simply --data "&")
   //   there is a name or value that doesn't roundtrip through percent encoding
-  const dataAsEntries = formatDataAsEntries(request.dataArray, osVars);
+  const dataAsEntries = formatDataAsEntries(request.dataArray, osVars, imports);
   if (dataAsEntries !== null) {
     const [dataEntries, percentWarn] = dataAsEntries;
     if (
-      util.getHeader(request, "content-type") ===
-      "application/x-www-form-urlencoded"
+      util.eq(
+        util.getHeader(request, "content-type"),
+        "application/x-www-form-urlencoded"
+      )
     ) {
       util.deleteHeader(request, "content-type");
     }
@@ -1416,7 +1419,11 @@ function getDataString(
   return [dataAsString, shouldEncode, dataAsJson, imports];
 }
 
-function getFilesString(request: Request): [string, boolean] {
+function getFilesString(
+  request: Request,
+  osVars: OSVars,
+  imports: Set<string>
+): [string, boolean] {
   let usesStdin = false;
   if (!request.multipartUploads) {
     return ["", usesStdin];
@@ -1430,23 +1437,35 @@ function getFilesString(request: Request): [string, boolean] {
     // (name, open(filename/contentFile))
     // (name, (filename, open(contentFile))
     // (name, (filename, open(contentFile), contentType, headers)) // this isn't parsed from --form yet
-    const name = m.name ? repr(m.name) : "None";
+    const name = m.name ? repr(m.name, osVars, imports) : "None";
     const sentFilename =
-      "filename" in m && m.filename ? repr(m.filename) : "None";
+      "filename" in m && m.filename
+        ? repr(m.filename, osVars, imports)
+        : "None";
     if ("contentFile" in m) {
-      if (m.contentFile === "-") {
+      if (util.eq(m.contentFile, "-")) {
         // TODO: use piped stdin if we have it
         usesStdin = true;
         return [name, "(" + sentFilename + ", sys.stdin.buffer.read())"];
-      } else if (m.contentFile === m.filename) {
-        return [name, "open(" + repr(m.contentFile) + ", 'rb')"];
+      } else if (util.eq(m.contentFile, m.filename)) {
+        return [
+          name,
+          "open(" + repr(m.contentFile, osVars, imports) + ", 'rb')",
+        ];
       }
       return [
         name,
-        "(" + sentFilename + ", open(" + repr(m.contentFile) + ", 'rb'))",
+        "(" +
+          sentFilename +
+          ", open(" +
+          repr(m.contentFile, osVars, imports) +
+          ", 'rb'))",
       ];
     }
-    return [name, "(" + sentFilename + ", " + repr(m.content) + ")"];
+    return [
+      name,
+      "(" + sentFilename + ", " + repr(m.content, osVars, imports) + ")",
+    ];
   });
 
   const multipartUploadsAsDict = Object.fromEntries(multipartUploads);
@@ -1524,17 +1543,22 @@ const requestToPython = (
     "content-length": "",
   };
   // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
-  if (util.getHeader(request, "te") === "trailers") {
+  if (util.eq(util.getHeader(request, "te"), "trailers")) {
     commentedOutHeaders.te = "Requests doesn't support trailers";
   }
 
   let cookieStr;
-  let cookieFile: string | null = null;
+  let cookieFile: Word | null = null;
   if (request.cookies) {
     // TODO: handle duplicate cookie names
     cookieStr = "cookies = {\n";
     for (const [cookieName, cookieValue] of request.cookies) {
-      cookieStr += "    " + repr(cookieName) + ": " + repr(cookieValue) + ",\n";
+      cookieStr +=
+        "    " +
+        repr(cookieName, osVars, imports) +
+        ": " +
+        repr(cookieValue, osVars, imports) +
+        ",\n";
     }
     cookieStr += "}\n";
     // Before Python 3.11, cookies= was sorted alphabetically
@@ -1570,7 +1594,10 @@ const requestToPython = (
         ]);
       }
       // TODO: do we need to .load()?
-      cookieStr = "cookies = MozillaCookieJar(" + repr(cookieFile) + ")\n";
+      cookieStr =
+        "cookies = MozillaCookieJar(" +
+        repr(cookieFile, osVars, imports) +
+        ")\n";
     } else if (request.cookieJar) {
       cookieStr = "cookies = MozillaCookieJar()\n";
     }
@@ -1580,16 +1607,16 @@ const requestToPython = (
   if (request.proxy) {
     let proxy = request.proxy.includes("://")
       ? request.proxy
-      : "http://" + request.proxy;
+      : request.proxy.prepend("http://");
     const protocol = proxy.split("://")[0].toLowerCase();
-    if (protocol === "socks") {
+    if (util.eq(protocol, "socks")) {
       // https://github.com/curl/curl/blob/curl-7_86_0/lib/url.c#L2418-L2419
       proxy = proxy.replace("socks", "socks4");
     }
     proxyDict = "proxies = {\n";
-    proxyDict += "    'http': " + repr(proxy) + ",\n";
+    proxyDict += "    'http': " + repr(proxy, osVars, imports) + ",\n";
     // TODO: if (protocol !== "http") { ?
-    proxyDict += "    'https': " + repr(proxy) + ",\n";
+    proxyDict += "    'https': " + repr(proxy, osVars, imports) + ",\n";
     proxyDict += "}\n";
   }
 
@@ -1598,9 +1625,13 @@ const requestToPython = (
     certStr = "cert = ";
     if (Array.isArray(request.cert)) {
       certStr +=
-        "(" + repr(request.cert[0]) + ", " + repr(request.cert[1]) + ")";
+        "(" +
+        repr(request.cert[0], osVars, imports) +
+        ", " +
+        repr(request.cert[1], osVars, imports) +
+        ")";
     } else {
-      certStr += repr(request.cert);
+      certStr += repr(request.cert, osVars, imports);
     }
     certStr += "\n";
   }
@@ -1615,7 +1646,7 @@ const requestToPython = (
   let paramsStr;
   let shouldEncodeParams; // TODO: necessary?
   const readsFile = (paramArray: DataParam[]) =>
-    paramArray.some((p) => typeof p !== "string");
+    paramArray.some((p) => !(p instanceof Word));
   const paramArray =
     request.urls.length === 1 ? request.urls[0].queryArray : request.queryArray;
   if (
@@ -1623,7 +1654,12 @@ const requestToPython = (
     (request.urls.length === 1 ||
       (request.urls.length > 1 && readsFile(paramArray)))
   ) {
-    const queryAsEntries = formatDataAsEntries(paramArray, osVars, "params");
+    const queryAsEntries = formatDataAsEntries(
+      paramArray,
+      osVars,
+      imports,
+      "params"
+    );
     if (queryAsEntries !== null) {
       let percentWarn;
       [paramsStr, percentWarn] = queryAsEntries;
@@ -1654,17 +1690,21 @@ const requestToPython = (
   if (request.urls[0].uploadFile && request.urls.length === 1) {
     // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
     if (
-      request.urls[0].uploadFile === "-" ||
-      request.urls[0].uploadFile === "."
+      util.eq(request.urls[0].uploadFile, "-") ||
+      util.eq(request.urls[0].uploadFile, ".")
     ) {
       dataString = "data = sys.stdin.buffer.read()\n";
       imports.add("sys");
     } else {
       dataString =
-        "with open(" + repr(request.urls[0].uploadFile) + ", 'rb') as f:\n";
+        "with open(" +
+        repr(request.urls[0].uploadFile, osVars, imports) +
+        ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
     }
-  } else if (request.data) {
+  } else if (request.data && !request.data.isEmpty()) {
+    // !isEmpty() because passing data='' is the same as not passing data=
+    // We need to set the Content-Type header in headers= and not set data=
     let dataImports: Set<string>;
     [dataString, shouldEncode, jsonDataString, dataImports] = getDataString(
       request,
@@ -1678,13 +1718,13 @@ const requestToPython = (
       jsonDataString &&
       !dataString &&
       contentType &&
-      contentType.trim() === "application/json"
+      util.eq(contentType.trim(), "application/json")
     ) {
       commentedOutHeaders["content-type"] = "Already added when you pass json=";
     }
   } else if (request.multipartUploads) {
     let usesStdin = false;
-    [filesString, usesStdin] = getFilesString(request);
+    [filesString, usesStdin] = getFilesString(request, osVars, imports);
     if (usesStdin) {
       imports.add("sys");
     }
@@ -1695,7 +1735,7 @@ const requestToPython = (
     if (
       filesString &&
       contentType &&
-      contentType.trim() === "multipart/form-data" &&
+      util.eq(contentType.trim(), "multipart/form-data") &&
       !contentType.includes("boundary=")
     ) {
       // TODO: better wording
@@ -1714,22 +1754,26 @@ const requestToPython = (
       }
 
       let lineStart;
-      if (util.has(commentedOutHeaders, headerName.toLowerCase())) {
-        if (commentedOutHeaders[headerName.toLowerCase()]) {
-          headerDict +=
-            "    # " + commentedOutHeaders[headerName.toLowerCase()] + "\n";
+      const headerNameLower = headerName.toLowerCase().toString();
+      if (util.has(commentedOutHeaders, headerNameLower)) {
+        if (commentedOutHeaders[headerNameLower]) {
+          headerDict += "    # " + commentedOutHeaders[headerNameLower] + "\n";
         }
         lineStart = "    # ";
       } else {
         lineStart = "    ";
       }
       headerDict +=
-        lineStart + repr(headerName) + ": " + repr(headerValue) + ",\n";
+        lineStart +
+        repr(headerName, osVars, imports) +
+        ": " +
+        repr(headerValue, osVars, imports) +
+        ",\n";
     }
     headerDict += "}\n";
     if (
       request.headers.length > 1 &&
-      request.headers.every((h) => h[0] === h[0].toLowerCase()) &&
+      request.headers.every((h) => util.eq(h[0], h[0].toLowerCase())) &&
       !(request.http2 || request.http3)
     ) {
       warnings.push([
@@ -1740,20 +1784,6 @@ const requestToPython = (
   }
 
   let pythonCode = "";
-
-  // It would be more correct to run the commands whenever we need
-  // their values instead of running them all at the beginning.
-  if (Object.keys(osVars).length) {
-    for (const [varName, expr] of Object.entries(osVars)) {
-      pythonCode += `${varName} = ${expr}\n`;
-      if (expr.startsWith("os.")) {
-        imports.add("os");
-      } else if (expr.startsWith("subprocess.")) {
-        imports.add("subprocess");
-      }
-    }
-    pythonCode += "\n";
-  }
 
   if (proxyDict) {
     pythonCode += proxyDict + "\n";
@@ -1785,7 +1815,14 @@ const requestToPython = (
   // and it only matters when the server responds with a redirect, which isn't
   // that common.
   let followRedirects = request.followRedirects;
-  let maxRedirects = request.maxRedirects;
+  let maxRedirects = undefined;
+  if (request.maxRedirects !== undefined) {
+    if (request.maxRedirects.isString()) {
+      maxRedirects = request.maxRedirects.toString();
+    } else {
+      maxRedirects = "int(" + repr(request.maxRedirects, osVars, imports) + ")";
+    }
+  }
   if (followRedirects === undefined) {
     followRedirects = true;
 
@@ -1822,17 +1859,21 @@ const requestToPython = (
     ];
     let fn;
     const args = [];
-    if (requestsMethods.includes(urlObj.method)) {
-      fn = urlObj.method.toLowerCase();
+    const methodAsString = urlObj.method.toString();
+    if (urlObj.method.isString() && requestsMethods.includes(methodAsString)) {
+      fn = methodAsString.toLowerCase();
     } else {
       fn = "request";
-      args.push(repr(urlObj.method));
+      args.push(repr(urlObj.method, osVars, imports));
 
-      if (urlObj.method !== urlObj.method.toUpperCase()) {
+      if (
+        urlObj.method.isString() &&
+        methodAsString !== methodAsString.toUpperCase()
+      ) {
         warnings.push([
           "method",
           "Requests will uppercase the HTTP method: " +
-            JSON.stringify(urlObj.method),
+            JSON.stringify(methodAsString),
         ]);
       }
     }
@@ -1853,11 +1894,12 @@ const requestToPython = (
           const urlQueryAsEntries = formatDataAsEntries(
             urlObj.queryArray,
             osVars,
+            imports,
             "params"
           );
           if (urlQueryAsEntries !== null) {
             let percentWarn;
-            [urlParamsStr] = urlQueryAsEntries;
+            [urlParamsStr, percentWarn] = urlQueryAsEntries;
             url = urlObj.urlWithoutQueryArray;
 
             if (percentWarn) {
@@ -1881,7 +1923,7 @@ const requestToPython = (
         // url = urlObj.url
       }
     }
-    args.push(repr(url));
+    args.push(repr(url, osVars, imports));
 
     if (paramsStr || urlParamsStr) {
       args.push("params=params" + (shouldEncodeParams ? ".encode()" : ""));
@@ -1901,7 +1943,7 @@ const requestToPython = (
       } else {
         args.push("data=data");
       }
-    } else if (request.data) {
+    } else if (request.data && !request.data.isEmpty()) {
       if (jsonDataString) {
         args.push("json=json_data");
       } else {
@@ -1916,15 +1958,21 @@ const requestToPython = (
     if (certStr) {
       args.push("cert=cert");
     }
+    const certOrPath = request.cacert || request.capath;
     if (request.insecure) {
       args.push("verify=False");
-    } else if (request.cacert || request.capath) {
-      args.push("verify=" + repr((request.cacert || request.capath) as string));
+    } else if (certOrPath) {
+      args.push("verify=" + repr(certOrPath, osVars, imports));
     }
     // TODO: does this header check apply to all auth methods?
     if (urlObj.auth && !util.hasHeader(request, "Authorization")) {
       const [user, password] = urlObj.auth;
-      let auth = "(" + repr(user) + ", " + repr(password) + ")";
+      let auth =
+        "(" +
+        repr(user, osVars, imports) +
+        ", " +
+        repr(password, osVars, imports) +
+        ")";
       switch (request.authType) {
         case "basic":
           break;
@@ -1946,15 +1994,15 @@ const requestToPython = (
           thirdPartyImports.add("requests_gssapi.HTTPSPNEGOAuth");
           auth = "HTTPSPNEGOAuth(";
           if (request.delegation) {
-            if (request.delegation === "always") {
+            if (util.eq(request.delegation, "always")) {
               auth += "delegate=True";
-            } else if (request.delegation === "none") {
+            } else if (util.eq(request.delegation, "none")) {
               auth += "delegate=False";
             } else {
               uniqueWarn(seenWarnings, warnings, [
                 "delegation",
                 "--delegation value not supported: " +
-                  JSON.stringify(request.delegation),
+                  JSON.stringify(request.delegation.toString()),
               ]);
             }
           }
@@ -1972,16 +2020,16 @@ const requestToPython = (
           // TODO: try this.
           auth =
             "AWSRequestsAuth(aws_access_key=" +
-            repr(user) +
+            repr(user, osVars, imports) +
             ", aws_secret_access_key=" +
-            repr(password) +
+            repr(password, osVars, imports) +
             // TODO: parse
             ", aws_host=" +
-            repr(request.awsSigV4 || "") +
+            repr(request.awsSigV4 || new Word(), osVars, imports) +
             ", aws_region=" +
-            repr(request.awsSigV4 || "") +
+            repr(request.awsSigV4 || new Word(), osVars, imports) +
             ", aws_service=" +
-            repr(request.awsSigV4 || "") +
+            repr(request.awsSigV4 || new Word(), osVars, imports) +
             ")";
           uniqueWarn(seenWarnings, warnings, [
             "--aws-sigv4",
@@ -1997,21 +2045,33 @@ const requestToPython = (
       args.push("auth=" + auth);
     }
     if (request.timeout || request.connectTimeout) {
-      if (
-        request.timeout &&
-        request.connectTimeout &&
-        request.timeout !== request.connectTimeout
-      ) {
-        args.push(
-          "timeout=(" + request.connectTimeout + ", " + request.timeout + ")"
-        );
-      } else if (request.timeout) {
-        args.push("timeout=" + request.timeout);
-      } else if (request.connectTimeout) {
-        args.push("timeout=(" + request.connectTimeout + ", None)");
+      let connectTimeout = null;
+      if (request.connectTimeout) {
+        if (request.connectTimeout.isString()) {
+          connectTimeout = request.connectTimeout.toString();
+        } else {
+          connectTimeout =
+            "float(" + repr(request.connectTimeout, osVars, imports) + ")";
+        }
+      }
+      let timeout = null;
+      if (request.timeout) {
+        if (request.timeout.isString()) {
+          timeout = request.timeout.toString();
+        } else {
+          timeout = "float(" + repr(request.timeout, osVars, imports) + ")";
+        }
       }
 
-      if (request.timeout) {
+      if (timeout && connectTimeout && timeout !== connectTimeout) {
+        args.push("timeout=(" + connectTimeout + ", " + timeout + ")");
+      } else if (timeout) {
+        args.push("timeout=" + timeout);
+      } else if (connectTimeout) {
+        args.push("timeout=(" + connectTimeout + ", None)");
+      }
+
+      if (timeout) {
         uniqueWarn(seenWarnings, warnings, [
           "--max-time",
           // https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
@@ -2057,12 +2117,17 @@ const requestToPython = (
       if (urlObj.uploadFile) {
         let uploadFileLine = "";
         // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
-        if (urlObj.uploadFile === "-" || urlObj.uploadFile === ".") {
+        if (
+          util.eq(urlObj.uploadFile, "-") ||
+          util.eq(urlObj.uploadFile, ".")
+        ) {
           uploadFileLine += "file_contents = sys.stdin.buffer.read()\n";
           imports.add("sys");
         } else {
           uploadFileLine +=
-            "with open(" + repr(urlObj.uploadFile) + ", 'rb') as f:\n";
+            "with open(" +
+            repr(urlObj.uploadFile, osVars, imports) +
+            ", 'rb') as f:\n";
           uploadFileLine += "    file_contents = f.read()\n";
         }
         requestLine += indent(uploadFileLine, indentLevel);
@@ -2089,14 +2154,17 @@ const requestToPython = (
       requestLine += indent(dataAlternative, indentLevel);
     }
 
-    if (urlObj.output && urlObj.output !== "/dev/null") {
+    if (urlObj.output && !util.eq(urlObj.output, "/dev/null")) {
       let outputLine = "";
-      if (request.urls[0].output === "-") {
+      if (util.eq(request.urls[0].output, "-")) {
         outputLine += "print(response.text)\n";
       } else {
         outputLine += isSession || request.urls.length > 1 ? "" : "\n";
 
-        outputLine += "with open(" + repr(urlObj.output) + ", 'wb') as f:\n";
+        outputLine +=
+          "with open(" +
+          repr(urlObj.output, osVars, imports) +
+          ", 'wb') as f:\n";
         outputLine += "    f.write(response.content)\n";
       }
       requestLine += indent(outputLine, indentLevel);
@@ -2105,10 +2173,10 @@ const requestToPython = (
     if (
       !isSession &&
       // request.urls.length > 1 &&
-      (urlObj.queryList ||
+      (urlParamsStr ||
         (dataString && jsonDataString) ||
         urlObj.uploadFile ||
-        (urlObj.output && urlObj.output !== "/dev/null"))
+        (urlObj.output && !util.eq(urlObj.output, "/dev/null")))
     ) {
       extraEmptyLine = true;
     }
@@ -2119,8 +2187,8 @@ const requestToPython = (
 
   if (request.cookieJar) {
     let cookieSaveLine = "cookies.save(";
-    if (request.cookieJar !== cookieFile) {
-      cookieSaveLine += repr(request.cookieJar) + ", ";
+    if (!util.eq(request.cookieJar, cookieFile)) {
+      cookieSaveLine += repr(request.cookieJar, osVars, imports) + ", ";
     }
     cookieSaveLine += "ignore_discard=True, ignore_expires=True)\n"; // TODO: necessary?
     pythonCode += indent(cookieSaveLine, 1);
@@ -2139,7 +2207,17 @@ const requestToPython = (
     ]);
   }
 
-  return pythonCode;
+  // It would be more correct to run the commands whenever we need
+  // their values instead of running them all at the beginning.
+  let variableCode = "";
+  if (Object.keys(osVars).length) {
+    for (const [varName, expr] of Object.entries(osVars)) {
+      variableCode += `${varName} = ${expr}\n`;
+    }
+    variableCode += "\n";
+  }
+
+  return variableCode + pythonCode;
 };
 
 function printImports(imps: Set<string>): string {

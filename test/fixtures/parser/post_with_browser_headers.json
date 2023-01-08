@@ -2,74 +2,219 @@
   {
     "urls": [
       {
-        "originalUrl": "http://localhost:28139/ajax/demo_post.asp",
-        "urlWithoutQueryList": "http://localhost:28139/ajax/demo_post.asp",
-        "url": "http://localhost:28139/ajax/demo_post.asp",
-        "urlObj": {
-          "scheme": "http",
-          "host": "localhost:28139",
-          "path": "/ajax/demo_post.asp",
-          "query": "",
-          "originalQuery": "",
-          "fragment": ""
+        "originalUrl": {
+          "tokens": [
+            "http://localhost:28139/ajax/demo_post.asp"
+          ]
         },
-        "urlWithOriginalQuery": "http://localhost:28139/ajax/demo_post.asp",
-        "urlWithoutQueryArray": "http://localhost:28139/ajax/demo_post.asp",
-        "method": "POST"
+        "urlWithoutQueryList": {
+          "tokens": [
+            "http://localhost:28139/ajax/demo_post.asp"
+          ]
+        },
+        "url": {
+          "tokens": [
+            "http://localhost:28139/ajax/demo_post.asp"
+          ]
+        },
+        "urlObj": {
+          "scheme": {
+            "tokens": [
+              "http"
+            ]
+          },
+          "host": {
+            "tokens": [
+              "localhost:28139"
+            ]
+          },
+          "path": {
+            "tokens": [
+              "/ajax/demo_post.asp"
+            ]
+          },
+          "query": {
+            "tokens": [
+              ""
+            ]
+          },
+          "originalQuery": {
+            "tokens": [
+              ""
+            ]
+          },
+          "fragment": {
+            "tokens": [
+              ""
+            ]
+          }
+        },
+        "urlWithOriginalQuery": {
+          "tokens": [
+            "http://localhost:28139/ajax/demo_post.asp"
+          ]
+        },
+        "urlWithoutQueryArray": {
+          "tokens": [
+            "http://localhost:28139/ajax/demo_post.asp"
+          ]
+        },
+        "method": {
+          "tokens": [
+            "POST"
+          ]
+        }
       }
     ],
     "authType": "basic",
+    "lowercaseHeaders": false,
     "cookies": [
       [
-        "_gat",
-        "1"
+        {
+          "tokens": [
+            "_gat"
+          ]
+        },
+        {
+          "tokens": [
+            "1"
+          ]
+        }
       ],
       [
-        "ASPSESSIONIDACCRDTDC",
-        "MCMDKFMBLLLHGKCGNMKNGPKI"
+        {
+          "tokens": [
+            "ASPSESSIONIDACCRDTDC"
+          ]
+        },
+        {
+          "tokens": [
+            "MCMDKFMBLLLHGKCGNMKNGPKI"
+          ]
+        }
       ],
       [
-        "_ga",
-        "GA1.2.1424920226.1419478126"
+        {
+          "tokens": [
+            "_ga"
+          ]
+        },
+        {
+          "tokens": [
+            "GA1.2.1424920226.1419478126"
+          ]
+        }
       ]
     ],
     "compressed": true,
     "headers": [
       [
-        "Origin",
-        "http://www.w3schools.com"
+        {
+          "tokens": [
+            "Origin"
+          ]
+        },
+        {
+          "tokens": [
+            "http://www.w3schools.com"
+          ]
+        }
       ],
       [
-        "Accept-Encoding",
-        "gzip, deflate"
+        {
+          "tokens": [
+            "Accept-Encoding"
+          ]
+        },
+        {
+          "tokens": [
+            "gzip, deflate"
+          ]
+        }
       ],
       [
-        "Accept-Language",
-        "en-US,en;q=0.8"
+        {
+          "tokens": [
+            "Accept-Language"
+          ]
+        },
+        {
+          "tokens": [
+            "en-US,en;q=0.8"
+          ]
+        }
       ],
       [
-        "User-Agent",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+        {
+          "tokens": [
+            "User-Agent"
+          ]
+        },
+        {
+          "tokens": [
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+          ]
+        }
       ],
       [
-        "Accept",
-        "*/*"
+        {
+          "tokens": [
+            "Accept"
+          ]
+        },
+        {
+          "tokens": [
+            "*/*"
+          ]
+        }
       ],
       [
-        "Referer",
-        "http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511"
+        {
+          "tokens": [
+            "Referer"
+          ]
+        },
+        {
+          "tokens": [
+            "http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511"
+          ]
+        }
       ],
       [
-        "Cookie",
-        "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
+        {
+          "tokens": [
+            "Cookie"
+          ]
+        },
+        {
+          "tokens": [
+            "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
+          ]
+        }
       ],
       [
-        "Connection",
-        "keep-alive"
+        {
+          "tokens": [
+            "Connection"
+          ]
+        },
+        {
+          "tokens": [
+            "keep-alive"
+          ]
+        }
       ],
       [
-        "Content-Length",
-        "0"
+        {
+          "tokens": [
+            "Content-Length"
+          ]
+        },
+        {
+          "tokens": [
+            "0"
+          ]
+        }
       ]
     ]
   }

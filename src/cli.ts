@@ -2,7 +2,14 @@
 
 import { curlLongOpts, curlShortOpts } from "./curlopts.js";
 import type { LongOpts, ShortOpts } from "./curlopts.js";
-import { parseArgs, buildRequests, CCError, has, Warnings } from "./util.js";
+import {
+  parseArgs,
+  buildRequests,
+  CCError,
+  has,
+  Warnings,
+  Word,
+} from "./util.js";
 import type { Request } from "./util.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
@@ -62,25 +69,25 @@ const translate: {
   dart: [_toDart, toDartWarn],
   elixir: [_toElixir, toElixirWarn],
   go: [_toGo, toGoWarn],
-  golang: [_toGo, toGoWarn], // undocument alias
+  golang: [_toGo, toGoWarn], // undocumented alias
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
-  "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocument alias
-  "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
-  "javascript-got": [_toNodeGot, toNodeGotWarn], // undocument alias
-  "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
+  "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
+  "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
+  "javascript-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
+  "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   json: [_toJsonString, toJsonStringWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
-  "node-fetch": [_toNode, toNodeWarn], // undocument alias
+  "node-fetch": [_toNode, toNodeWarn], // undocumented alias
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],
   "node-got": [_toNodeGot, toNodeGotWarn],
   "node-request": [_toNodeRequest, toNodeRequestWarn],
-  nodejs: [_toNode, toNodeWarn], // undocument alias
-  "nodejs-fetch": [_toNode, toNodeWarn], // undocument alias
-  "nodejs-axios": [_toNodeAxios, toNodeAxiosWarn], // undocument alias
-  "nodejs-got": [_toNodeGot, toNodeGotWarn], // undocument alias
-  "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocument alias
+  nodejs: [_toNode, toNodeWarn], // undocumented alias
+  "nodejs-fetch": [_toNode, toNodeWarn], // undocumented alias
+  "nodejs-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
+  "nodejs-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
+  "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   php: [_toPhp, toPhpWarn],
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],
   python: [_toPython, toPythonWarn],
@@ -159,7 +166,7 @@ function exitWithError(error: unknown, verbose = false): never {
   process.exit(2); // curl exits with 2 so we do too
 }
 
-const argv = process.argv.slice(2);
+const argv = process.argv.slice(2).map((arg) => new Word(arg));
 let global;
 let warnings: Warnings = [];
 try {
@@ -245,7 +252,7 @@ if (commandFromStdin) {
   let stdin;
   if (!process.stdin.isTTY) {
     // TODO: what if there's an EOF character? does curl read each @- until EOF?
-    stdin = fs.readFileSync(0).toString();
+    stdin = new Word(fs.readFileSync(0).toString());
   }
   let requests;
   try {
