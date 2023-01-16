@@ -1,3 +1,3 @@
 require(httr)
 
-res <- httr::DELETE(url = 'http://localhost:28139/page')
+res <- httr::DELETE(url = "http://localhost:28139/page")
