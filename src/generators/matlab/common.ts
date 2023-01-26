@@ -1,15 +1,53 @@
 import { CCError } from "../../util.js";
 import type { Request } from "../../util.js";
 
-import { esc as jsesc } from "../javascript/javascript.js";
-
-const repr = (value?: string | null) => {
-  // In context of url parameters, don't accept nulls and such.
-  if (!value) {
+// Use negative lookahead because " " is a Z but we don't want to escape it
+// Wrap \p{C}|\p{Z} in brakets so that splitting keeps the characters to escape
+const regexEscape = /(?! )(\p{C}|\p{Z})/gu;
+// TODO: do we need to consider that some strings could be used
+// with sprintf() and have to have more stuff escaped?
+const repr = (s?: string | null) => {
+  if (!s) {
     return "''";
   }
 
-  return "'" + jsesc(value, "'").replace(/\\'/g, "''") + "'";
+  let mustBeList = false;
+  const parts = s
+    .replace(/'/g, "''")
+    .split(regexEscape)
+    .filter((x) => x) // empty strings between consecutive matches
+    .map((x) => {
+      if (x.match(regexEscape)) {
+        if (x.length === 1) {
+          switch (x) {
+            case "\x07":
+              return "sprintf('\\a')";
+            case "\b":
+              return "sprintf('\\b')";
+            case "\f":
+              return "sprintf('\\f')";
+            case "\n":
+              return "newline";
+            case "\r":
+              return "sprintf('\\r')";
+            case "\t":
+              return "sprintf('\\t')";
+            case "\v":
+              return "sprintf('\\v')";
+            default:
+              return `char(${x.charCodeAt(0)})`;
+          }
+        } else {
+          mustBeList = true;
+          return `char(${x.charCodeAt(0)}) char(${x.charCodeAt(1)})`;
+        }
+      }
+      return "'" + x + "'";
+    });
+  if (parts.length > 1 || mustBeList) {
+    return "[" + parts.join(" ") + "]";
+  }
+  return parts[0];
 };
 
 const setVariableValue = (

@@ -1979,6 +1979,9 @@ function buildRequest(
       continue;
     }
     // Otherwise there's at least one non-null value, so we can ignore the nulls
+    // TODO: if the values of the repeated headers are the same, just use the first one
+    //     'content-type': 'application/json; application/json',
+    // doesn't really make sense
     const nonEmptyHeaders = repeatedHeaders.filter((h) => h[1] !== null);
     if (nonEmptyHeaders.length === 1) {
       headers.push(nonEmptyHeaders[0]);
