@@ -88,10 +88,7 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
     goCode += '\t"crypto/tls"\n';
   }
   goCode += '\t"fmt"\n';
-  if (hasMultipartFiles) {
-    goCode += '\t"io"\n';
-  }
-  goCode += '\t"io/ioutil"\n';
+  goCode += '\t"io"\n';
   goCode += '\t"log"\n';
   if (request.multipartUploads) {
     goCode += '\t"mime/multipart"\n';
@@ -232,7 +229,7 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   goCode += "\tresp, err := client.Do(req)\n";
   goCode += errNil;
   goCode += "\tdefer resp.Body.Close()\n";
-  goCode += "\tbodyText, err := ioutil.ReadAll(resp.Body)\n";
+  goCode += "\tbodyText, err := io.ReadAll(resp.Body)\n";
   goCode += errNil;
   goCode += '\tfmt.Printf("%s\\n", bodyText)\n';
   goCode += "}";
