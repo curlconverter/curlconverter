@@ -106,7 +106,7 @@ const callFunction = (
 };
 
 const addCellArray = (
-  mapping: { [key: string]: string | null | (null | string)[] },
+  mapping: { [key: string]: string } | [string, string][],
   keysNotToQuote: string[],
   keyValSeparator: string,
   indentLevel: number,
@@ -116,12 +116,12 @@ const addCellArray = (
   const indent = indentUnit.repeat(indentLevel);
   const indentPrevLevel = indentUnit.repeat(indentLevel - 1);
 
-  const entries = Object.entries(mapping);
+  const entries = Array.isArray(mapping) ? mapping : Object.entries(mapping);
   if (entries.length === 0) return "";
 
   let response = pairs ? "" : "{";
   if (entries.length === 1) {
-    const [key, value] = entries.pop() as [string, string];
+    const [key, value] = entries[0];
     let val = value;
     if (keysNotToQuote && !keysNotToQuote.includes(key)) val = `${repr(value)}`;
     response += `${repr(key)}${keyValSeparator} ${val}`;
@@ -134,12 +134,8 @@ const addCellArray = (
         continue;
       }
       --counter;
-      if (keysNotToQuote && !keysNotToQuote.includes(key)) {
-        if (typeof val === "object") {
-          val = `[${val.map(repr).join()}]`;
-        } else {
-          val = `${repr(val)}`;
-        }
+      if (!keysNotToQuote || !keysNotToQuote.includes(key)) {
+        val = repr(val);
       }
       response += `\n${indent}${repr(key)}${keyValSeparator} ${val}`;
       if (pairs) {
@@ -221,8 +217,8 @@ const containsBody = (request: Request): boolean => {
 };
 
 const prepareQueryString = (request: Request): string | null => {
-  if (request.urls[0].queryDict) {
-    const params = addCellArray(request.urls[0].queryDict, [], "", 1);
+  if (request.urls[0].queryList) {
+    const params = addCellArray(request.urls[0].queryList, [], "", 1);
     return setVariableValue("params", params);
   }
   return null;

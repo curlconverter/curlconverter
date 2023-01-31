@@ -138,7 +138,7 @@ const prepareOptions = (
 
 const prepareBasicURI = (request: Request): string[] => {
   const response = [];
-  if (request.urls[0].queryDict) {
+  if (request.urls[0].queryList) {
     response.push(
       setVariableValue("baseURI", repr(request.urls[0].urlWithoutQueryList))
     );

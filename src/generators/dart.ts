@@ -110,7 +110,11 @@ export const _toDart = (
   }
 
   // TODO: Uri() can accept a params dict
-  if (request.urls[0].queryList) {
+  const queryIsRepresentable =
+    request.urls[0].queryList &&
+    request.urls[0].queryDict &&
+    Object.values(request.urls[0].queryDict).every((v) => !Array.isArray(v));
+  if (queryIsRepresentable && request.urls[0].queryList) {
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
     for (const [paramName, rawValue] of request.urls[0].queryList) {
@@ -118,6 +122,7 @@ export const _toDart = (
       s += "    " + repr(paramName) + ": " + paramValue + ",\n";
     }
     s += "  };\n";
+    // TODO: Uri() can accept a queryParameters dict, requires parsing out the port
     /* eslint-disable no-template-curly-in-string */
     s +=
       "  var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');\n";
@@ -140,7 +145,7 @@ export const _toDart = (
     }
   }
 
-  if (request.urls[0].queryList) {
+  if (queryIsRepresentable) {
     s +=
       "  var url = Uri.parse('" +
       escape(request.urls[0].urlWithoutQueryList, "'") +

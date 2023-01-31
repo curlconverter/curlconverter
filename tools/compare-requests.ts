@@ -19,35 +19,45 @@ const awaitableExec = promisify(exec);
 const DEFAULT_PORT = 28139; // chosen randomly
 const EXPECTED_URL = "localhost:" + DEFAULT_PORT;
 
-const executables = {
+const setup = {
   // ansible: '',
-  // browser: '',
-  // You need to run this first:
-  // cd /tmp && dotnet new console -o curlconverter-csharp
-  csharp:
-    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
-  // dart: '',
-  // You need to run this first:
-  // mix new /tmp/curlconverterelixir/
-  // sed -i 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs
-  // or (on macOS)
-  // sed -i '' 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs
-  // cd /tmp/curlconverterelixir/ && mix deps.get
+  csharp: "cd /tmp && dotnet new console -o curlconverter-csharp",
+  dart: "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
   elixir:
-    "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
-  // go: '',
+    "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
+  // (on not macOS (Linux and maybe Windows))
+  // elixir:
+  //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
+  go: "mkdir -p /tmp/curlconverter-go",
   // java: '',
   // json: '',
   // matlab: '',
-  // TODO: generated code uses require() so we can't run them
-  // because curlconverter is an ES6 module.
-  // node: 'node <file>',
-  // php: '',
+  node: "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
+  php: "",
+  python: "",
+  r: "",
+  ruby: "",
+  rust: "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
+} as const;
+
+const executables = {
+  // ansible: '',
+  csharp:
+    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
+  dart: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
+  elixir:
+    "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
+  go: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
+  // java: '',
+  // json: '',
+  // matlab: '',
+  node: "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
+  php: "php <file>",
   python: "python3 <file>",
   r: "r < <file> --no-save",
   ruby: "ruby <file>",
-  // rust: '',
-};
+  rust: "cp <file> /tmp/curlconverter-rust/src/main.rs && cd /tmp/curlconverter-rust && cargo run",
+} as const;
 
 const argv = await yargs(hideBin(process.argv))
   .scriptName("compare-request")
@@ -76,7 +86,14 @@ const argv = await yargs(hideBin(process.argv))
   .help()
   .parse();
 
-const testFile = async (testFilename: string): Promise<void> => {
+const languages: (keyof typeof executables)[] = Array.isArray(argv.language)
+  ? argv.language
+  : [argv.language];
+
+const testFile = async (
+  testFilename: string,
+  languages: (keyof typeof executables)[]
+): Promise<void> => {
   const rawRequests: string[] = [];
 
   const server = net.createServer();
@@ -145,7 +162,7 @@ const testFile = async (testFilename: string): Promise<void> => {
     await awaitableExec("bash " + inputFile);
   } catch (e) {}
 
-  const files = languages.map((l) =>
+  const files = languages.map((l: keyof typeof executables) =>
     path.join(fixturesDir, l, testFilename + converters[l].extension)
   );
   for (let i = 0; i < languages.length; i++) {
@@ -208,20 +225,28 @@ const testFile = async (testFilename: string): Promise<void> => {
   server.close();
 };
 
-let languages: "python"[];
-if (argv.language) {
-  languages = Array.isArray(argv.language) ? argv.language : [argv.language];
-}
-
 // if no tests were specified, run them all
 const tests = argv._.length
   ? argv._
   : fs
       .readdirSync(path.join(fixturesDir, "curl_commands"))
       .filter((n) => n.endsWith(".sh"));
+
+// await awaitableExec("rm -rf /tmp/curlconverter*");
+if (tests.length) {
+  for (const l of languages) {
+    const setupCommands = setup[l];
+    if (setupCommands) {
+      console.error("running");
+      console.error(setupCommands);
+      await awaitableExec(setupCommands);
+      console.error();
+    }
+  }
+}
 for (const test of tests) {
   const testName = path.parse(test.toString()).name;
-  await testFile(testName);
+  await testFile(testName, languages);
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
   await delay(1000);
