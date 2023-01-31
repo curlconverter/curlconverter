@@ -16,27 +16,6 @@ const toParser = (curl: string | string[]): string => {
 };
 
 // TODO: move this (or something like this) to index.js?
-// TODO: 'parser' ?
-type Converter =
-  | "ansible"
-  | "cfml"
-  | "dart"
-  | "elixir"
-  | "go"
-  | "java"
-  | "javascript"
-  | "json"
-  | "matlab"
-  | "node"
-  | "node-axios"
-  | "node-got"
-  | "node-request"
-  | "php"
-  | "python"
-  | "r"
-  | "ruby"
-  | "rust"
-  | "parser";
 const converters = {
   ansible: {
     name: "Ansible",
@@ -138,7 +117,8 @@ const converters = {
     extension: ".json",
     converter: toParser,
   },
-};
+} as const;
+type Converter = keyof typeof converters;
 
 // Check that we have at least one test for every generator
 // https://github.com/curlconverter/curlconverter/pull/299

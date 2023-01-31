@@ -1,7 +1,8 @@
 %% Web Access using Data Import and Export API
 params = {
     'page' '1'
-    'available' ['','1']
+    'available' ''
+    'available' '1'
     'location' '0'
     'city[id]' '0'
     'city[locality]' ''
@@ -51,7 +52,8 @@ import matlab.net.http.*
 
 params = {
     'page' '1'
-    'available' ['','1']
+    'available' ''
+    'available' '1'
     'location' '0'
     'city[id]' '0'
     'city[locality]' ''

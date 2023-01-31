@@ -368,7 +368,7 @@ const requestToRuby = (
     code += "uri = URI(" + repr(request.urls[0].urlWithoutQueryList) + ")\n";
     code += "params = {\n";
     for (const [key, value] of Object.entries(request.urls[0].queryDict)) {
-      code += "  :" + key + " => " + objToRuby(value) + ",\n";
+      code += "  :" + key + " => " + objToRuby(value, 2) + ",\n";
     }
     code += "}\n";
     code += "uri.query = URI.encode_www_form(params)\n\n";
