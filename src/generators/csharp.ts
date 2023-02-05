@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
@@ -22,7 +23,7 @@ const supportedArgs = new Set([
 
 // https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/
 const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
-export function repr(s: string): string {
+export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
@@ -71,6 +72,26 @@ export function repr(s: string): string {
     }) +
     '"'
   );
+}
+
+export function repr(w: Word | string): string {
+  if (typeof w === "string") {
+    return reprStr(w);
+  }
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      // TODO: using System;
+      args.push("Environment.GetEnvironmentVariable(" + reprStr(t.value) + ")");
+    } else {
+      // TODO: using System.Diagnostics
+      // TODO: this needs to be two arguments the command name + list of args
+      args.push("System.Diagnostics.Process.Start(" + reprStr(t.value) + ")");
+    }
+  }
+  return args.join(" + ");
 }
 
 export const _toCSharp = (
@@ -123,7 +144,7 @@ export const _toCSharp = (
     ]);
   }
 
-  const imports = new Set();
+  const imports = new Set<string>();
 
   const methods = {
     DELETE: "Delete",
@@ -142,13 +163,14 @@ export const _toCSharp = (
     PUT: "Put",
     TRACE: "Trace",
   };
+  const method = request.urls[0].method.toString();
   let methodStr = "new HttpMethod(" + repr(request.urls[0].method) + ")";
-  if (util.has(moreMethods, request.urls[0].method)) {
-    methodStr = "HttpMethod." + moreMethods[request.urls[0].method];
+  if (util.has(moreMethods, method)) {
+    methodStr = "HttpMethod." + moreMethods[method];
   }
 
   const simple =
-    util.has(methods, request.urls[0].method) &&
+    util.has(methods, method) &&
     !(
       request.headers ||
       (request.urls[0].auth && request.authType === "basic") ||
@@ -181,7 +203,7 @@ export const _toCSharp = (
   }
 
   if (simple) {
-    if (request.urls[0].method === "GET") {
+    if (method === "GET") {
       s +=
         "string responseBody = await client.GetStringAsync(" +
         repr(request.urls[0].url) +
@@ -189,7 +211,7 @@ export const _toCSharp = (
     } else {
       s +=
         "HttpResponseMessage response = await client." +
-        methods[request.urls[0].method] +
+        methods[method] +
         "Async(" +
         repr(request.urls[0].url) +
         ");\n";
@@ -218,10 +240,10 @@ export const _toCSharp = (
     "last-modified": "LastModified",
   };
   const reqHeaders = (request.headers || []).filter(
-    (h) => !Object.keys(contentHeaders).includes(h[0].toLowerCase())
+    (h) => !Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
   );
   const reqContentHeaders = (request.headers || []).filter((h) =>
-    Object.keys(contentHeaders).includes(h[0].toLowerCase())
+    Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
   );
 
   if (
@@ -233,7 +255,7 @@ export const _toCSharp = (
       if (headerValue === null) {
         continue;
       }
-      if (["accept-encoding"].includes(headerName.toLowerCase())) {
+      if (["accept-encoding"].includes(headerName.toLowerCase().toString())) {
         s += "// ";
       }
       s +=
@@ -245,10 +267,9 @@ export const _toCSharp = (
     }
     if (request.urls[0].auth && request.authType === "basic") {
       // TODO: add request.rawAuth?
-      const [user, password] = request.urls[0].auth;
       s +=
         'request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(' +
-        repr(user + ":" + password) +
+        repr(util.joinWords(request.urls[0].auth, ":")) +
         ")));\n";
     }
     s += "\n";
@@ -259,7 +280,7 @@ export const _toCSharp = (
       "request.Content = new ByteArrayContent(File.ReadAllBytes(" +
       repr(request.urls[0].uploadFile) +
       "));\n";
-  } else if (typeof request.data === "string") {
+  } else if (request.data) {
     // TODO: parse
     if (!request.isDataRaw && request.data.startsWith("@")) {
       // TODO: stdin
@@ -282,7 +303,7 @@ export const _toCSharp = (
       const sentFilename = "filename" in m && m.filename;
       s += "content.Add(new ";
       if ("contentFile" in m) {
-        if (m.contentFile === "-") {
+        if (util.eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             s +=
               "ByteArrayContent(File.ReadAllBytes(" +
@@ -334,7 +355,7 @@ export const _toCSharp = (
       if (headerValue === null) {
         continue;
       }
-      const headerNameLower = headerName.toLowerCase();
+      const headerNameLower = headerName.toLowerCase().toString();
       if (headerNameLower === "content-type") {
         imports.add("System.Net.Http.Headers");
         if (headerValue.includes(";")) {
@@ -349,7 +370,7 @@ export const _toCSharp = (
             ");\n";
         }
       } else if (headerNameLower === "content-length") {
-        if (!util.isInt(headerValue)) {
+        if (headerValue.isString() && !util.isInt(headerValue.toString())) {
           warnings.push([
             "content-length-not-int",
             "Content-Length header value is not a number: " + repr(headerValue),
@@ -357,7 +378,7 @@ export const _toCSharp = (
         }
         s +=
           "// request.Content.Headers.ContentLength = " +
-          headerValue.split(/\r?\n/)[0] +
+          headerValue.split("\n")[0].toString() + // TODO: might have variable
           ";\n";
       } else if (util.has(contentHeaders, headerNameLower)) {
         // placate type checker

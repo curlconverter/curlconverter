@@ -97,8 +97,8 @@ export const _toPhpRequests = (
     if (!parsedQueryString || !parsedQueryString.length) {
       dataString = "$data = " + repr(request.data) + ";";
     } else {
-      const terms = [];
-      for (const q in parsedQueryString) {
+      const terms: string[] = [];
+      for (const q of parsedQueryString) {
         const [key, value] = q;
         terms.push("    " + repr(key) + " => " + repr(value));
       }

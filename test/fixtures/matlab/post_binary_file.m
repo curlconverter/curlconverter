@@ -1,10 +1,10 @@
 %% Web Access using Data Import and Export API
 uri = 'http://localhost:28139/american-art/query';
 body = fileread('./sample.sparql');
-options = weboptions('HeaderFields', {
-    'Content-type' 'application/sparql-query'
-    'Accept' 'application/sparql-results+json'
-});
+options = weboptions(...
+    'MediaType', 'application/sparql-query',...
+    'HeaderFields', {'Accept' 'application/sparql-results+json'}...
+);
 response = webwrite(uri, body, options);
 
 %% HTTP Interface

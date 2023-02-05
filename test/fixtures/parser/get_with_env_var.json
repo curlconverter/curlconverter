@@ -1,0 +1,52 @@
+[
+  {
+    "urls": [
+      {
+        "originalUrl": "http://localhost:28139/v2/images?type=distribution",
+        "urlWithoutQueryList": "http://localhost:28139/v2/images",
+        "url": "http://localhost:28139/v2/images?type=distribution",
+        "urlObj": {
+          "scheme": "http",
+          "host": "localhost:28139",
+          "path": "/v2/images",
+          "query": "?type=distribution",
+          "originalQuery": "",
+          "fragment": ""
+        },
+        "urlWithOriginalQuery": "http://localhost:28139/v2/images?type=distribution",
+        "urlWithoutQueryArray": "http://localhost:28139/v2/images",
+        "method": "GET",
+        "queryList": [
+          [
+            "type",
+            "distribution"
+          ]
+        ],
+        "queryDict": [
+          [
+            "type",
+            "distribution"
+          ]
+        ],
+        "queryArray": [
+          "type=distribution"
+        ],
+        "urlQueryArray": [
+          "type=distribution"
+        ]
+      }
+    ],
+    "authType": "basic",
+    "lowercaseHeaders": false,
+    "headers": [
+      [
+        "Content-Type",
+        "application/json"
+      ],
+      [
+        "Authorization",
+        "Bearer $DO_API_TOKEN"
+      ]
+    ]
+  }
+]

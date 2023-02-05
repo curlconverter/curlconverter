@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
@@ -12,7 +13,7 @@ const supportedArgs = new Set([
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.3
 const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
 const regexDigit = /[0-9]/; // it's 0-7 actually but that would generate confusing code
-export const repr = (s: string): string =>
+export const reprStr = (s: string): string =>
   '"' +
   s.replace(regexEscape, (c: string, index: number, string: string) => {
     switch (c) {
@@ -51,6 +52,23 @@ export const repr = (s: string): string =>
     return "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0");
   }) +
   '"';
+
+function repr(w: Word): string {
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      // TODO: import?
+      args.push("System.getenv(" + reprStr(t.value) + ")");
+    } else {
+      // TODO: import?
+      // TODO: this needs to be on a separate line with reading stdout/stderr, etc.
+      args.push("Runtime.getRuntime().exec(" + reprStr(t.value) + ")");
+    }
+  }
+  return args.join(" + ");
+}
 
 export const _toJava = (
   requests: Request[],
@@ -139,7 +157,10 @@ export const _toJava = (
         ", " +
         repr(headerValue) +
         ");\n";
-      if (headerName.toLowerCase() === "accept-encoding" && headerValue) {
+      if (
+        headerName.toLowerCase().toString() === "accept-encoding" &&
+        headerValue
+      ) {
         gzip = headerValue.indexOf("gzip") !== -1;
       }
     }
@@ -149,7 +170,7 @@ export const _toJava = (
   if (request.urls[0].auth) {
     javaCode +=
       "\t\tbyte[] message = (" +
-      repr(request.urls[0].auth.join(":")) +
+      repr(util.joinWords(request.urls[0].auth, ":")) +
       ').getBytes("UTF-8");\n';
     javaCode +=
       "\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n";

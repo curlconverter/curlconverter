@@ -62,9 +62,8 @@ export const _toMATLAB = (
     ]);
   }
 
-  let webServicesLines, httpInterfaceLines;
-  [webServicesLines, warnings] = toWebServices(request, warnings);
-  [httpInterfaceLines, warnings] = toHTTPInterface(request, warnings);
+  const [webServicesLines] = toWebServices(request, warnings);
+  const [httpInterfaceLines] = toHTTPInterface(request, warnings);
   const lines = webServicesLines.concat("", httpInterfaceLines);
   return lines
     .flat()

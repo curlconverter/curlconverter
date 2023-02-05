@@ -1,6 +1,5 @@
-// Author: Bob Rudis (bob@rud.is)
-
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, QueryList, Warnings } from "../util.js";
 
 import { reprStr as pyrepr } from "./python.js";
@@ -14,15 +13,14 @@ const supportedArgs = new Set([
 ]);
 
 const regexBacktickEscape = /`|\\|\p{C}|\p{Z}/gu;
-function reprBacktick(s: string | null): string {
-  // back-tick quote names
-  if (!s) {
-    return "``";
+function reprBacktick(s: Word): string {
+  if (!s.isString()) {
+    // TODO: warn
   }
-
+  // back-tick quote names
   return (
     "`" +
-    s.replace(regexBacktickEscape, (c: string): string => {
+    s.toString().replace(regexBacktickEscape, (c: string): string => {
       switch (c) {
         case " ":
           return " ";
@@ -43,7 +41,7 @@ function reprBacktick(s: string | null): string {
         case "\\":
           return "\\\\";
         case "`":
-          return "\\'";
+          return "\\`";
       }
       const hex = (c.codePointAt(0) as number).toString(16);
       if (hex.length <= 2) {
@@ -59,10 +57,27 @@ function reprBacktick(s: string | null): string {
 }
 
 // https://stat.ethz.ch/R-manual/R-devel/doc/manual/R-lang.html#Literal-constants
-function repr(s: string): string {
+function reprStr(s: string): string {
   // R prefers double quotes
   const quote = s.includes('"') && !s.includes("'") ? "'" : '"';
   return pyrepr(s, quote);
+}
+
+export function repr(w: Word): string {
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      args.push("Sys.getenv(" + reprStr(t.value) + ")");
+    } else {
+      args.push("system(" + reprStr(t.value) + ", intern = TRUE)");
+    }
+  }
+  if (args.length === 1) {
+    return args[0];
+  }
+  return "paste(" + args.join(", ") + ', sep = "")';
 }
 
 function getCookieDict(request: Request): string | null {
@@ -71,11 +86,11 @@ function getCookieDict(request: Request): string | null {
   }
   let cookieDict = "cookies = c(\n";
 
-  const lines = [];
+  const lines: string[] = [];
   for (const [key, value] of request.cookies) {
     try {
       // httr percent-encodes cookie values
-      const decoded = decodeURIComponent(value.replace(/\+/g, " "));
+      const decoded = util.wordDecodeURIComponent(value.replace(/\+/g, " "));
       lines.push("  " + reprBacktick(key) + " = " + repr(decoded));
     } catch {
       return null;
@@ -183,7 +198,7 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
 
   let headerDict;
   if (request.headers && request.headers.length) {
-    const hels = [];
+    const hels: string[] = [];
     headerDict = "headers = c(\n";
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue !== null) {
@@ -232,17 +247,19 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
   // TODO: GET() and HEAD() don't support sending data, detect and use VERB() instead
   if (
     ["GET", "HEAD", "PATCH", "PUT", "DELETE", "POST"].includes(
-      request.urls[0].method
+      request.urls[0].method.toString()
     )
   ) {
-    requestLine += request.urls[0].method + "(";
+    requestLine += request.urls[0].method.toString() + "(";
   } else {
     requestLine += "VERB(" + repr(request.urls[0].method) + ", ";
-    if (request.urls[0].method !== request.urls[0].method.toUpperCase()) {
+    if (
+      !util.eq(request.urls[0].method, request.urls[0].method.toUpperCase())
+    ) {
       warnings.push([
         "non-uppercase-method",
         "httr will uppercase the method: " +
-          JSON.stringify(request.urls[0].method),
+          JSON.stringify(request.urls[0].method.toString()),
       ]);
     }
   }

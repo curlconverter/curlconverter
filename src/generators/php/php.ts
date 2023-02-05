@@ -1,4 +1,5 @@
 import * as util from "../../util.js";
+import { Word } from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
 const supportedArgs = new Set([
@@ -27,7 +28,7 @@ const supportedArgs = new Set([
 // https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
 const regexSingleEscape = /'|\\/gu;
 const regexDoubleEscape = /"|\$|\\|\p{C}|\p{Z}/gu;
-export const repr = (s: string): string => {
+export const reprStr = (s: string): string => {
   let [quote, regex] = ["'", regexSingleEscape];
   if ((s.includes("'") && !s.includes('"')) || /[^\x20-\x7E]/.test(s)) {
     [quote, regex] = ['"', regexDoubleEscape];
@@ -70,6 +71,20 @@ export const repr = (s: string): string => {
     }) +
     quote
   );
+};
+
+export const repr = (w: Word): string => {
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      args.push(); // TODO
+    } else if (t.type === "command") {
+      args.push(); // TODO
+    }
+  }
+  return args.join(" + ");
 };
 
 export const _toPhp = (
@@ -134,24 +149,23 @@ export const _toPhp = (
     "curl_setopt($ch, CURLOPT_URL, " + repr(request.urls[0].url) + ");\n";
   phpCode += "curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n";
   phpCode +=
-    "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, '" +
-    request.urls[0].method +
-    "');\n";
+    "curl_setopt($ch, CURLOPT_CUSTOMREQUEST, " +
+    repr(request.urls[0].method) +
+    ");\n";
 
   if ((request.headers && request.headers.length) || request.compressed) {
     let headersArrayCode = "[\n";
 
+    const headers = request.headers || [];
     if (request.compressed) {
-      if (request.headers) {
-        if (!util.hasHeader(request, "accept-encoding")) {
-          request.headers.push(["Accept-Encoding", "gzip"]);
-        }
-      } else {
-        headersArrayCode += "    'Accept-Encoding' => 'gzip',\n";
-      }
+      util._setHeaderIfMissing(
+        headers,
+        "Accept-Encoding",
+        new Word("gzip"),
+        request.lowercaseHeaders
+      );
     }
-
-    for (const [headerName, headerValue] of request.headers || []) {
+    for (const [headerName, headerValue] of headers || []) {
       if (headerValue === null) {
         continue;
       }
@@ -175,7 +189,7 @@ export const _toPhp = (
     phpCode += "curl_setopt($ch, CURLOPT_HTTPAUTH, " + authType + ");\n";
     phpCode +=
       "curl_setopt($ch, CURLOPT_USERPWD, " +
-      repr(request.urls[0].auth.join(":")) +
+      repr(util.joinWords(request.urls[0].auth, ":")) +
       ");\n";
   }
 
@@ -197,16 +211,12 @@ export const _toPhp = (
         }
       }
       requestDataCode += "]";
-    } else if (
-      request.isDataBinary &&
-      (request.data as string).charAt(0) === "@"
-    ) {
+    } else if (request.isDataBinary && request.data!.charAt(0) === "@") {
+      // TODO: check, used to be substring(1)
       requestDataCode =
-        "file_get_contents(" +
-        repr((request.data as string).substring(1)) +
-        ")";
+        "file_get_contents(" + repr(request.data!.slice(1)) + ")";
     } else {
-      requestDataCode = repr(request.data as string);
+      requestDataCode = repr(request.data!);
     }
     phpCode +=
       "curl_setopt($ch, CURLOPT_POSTFIELDS, " + requestDataCode + ");\n";
@@ -226,7 +236,7 @@ export const _toPhp = (
   if (request.timeout) {
     phpCode +=
       "curl_setopt($ch, CURLOPT_TIMEOUT, " +
-      (parseInt(request.timeout, 10) || 0) +
+      (parseInt(request.timeout.toString(), 10) || 0) +
       ");\n";
   }
 

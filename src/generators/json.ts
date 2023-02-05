@@ -1,7 +1,7 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from "../util.js";
-import type { AuthType, Request, QueryDict, Warnings } from "../util.js";
+import type { AuthType, Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
@@ -38,7 +38,7 @@ type JSONOutput = {
   method: string;
   cookies?: { [key: string]: string };
   headers?: { [key: string]: string | null };
-  queries?: QueryDict;
+  queries?: { [key: string]: string | string[] };
   // `| any` because of JSON
   data?: { [key: string]: string } | any; // eslint-disable-line @typescript-eslint/no-explicit-any
   // raw_data?: string[],
@@ -67,7 +67,7 @@ function getDataString(request: Request): {
   const contentType = util.getContentType(request);
   if (contentType === "application/json") {
     try {
-      const json = JSON.parse(request.data);
+      const json = JSON.parse(request.data.toString());
       return { data: json };
     } catch (e) {}
   }
@@ -77,15 +77,27 @@ function getDataString(request: Request): {
     // TODO: this is not a good API
     return {
       data: {
-        [request.data]: "",
+        [request.data.toString()]: "",
       },
     };
   }
   if (parsedQueryDict) {
-    return { data: parsedQueryDict };
+    const data = Object.fromEntries(
+      parsedQueryDict.map((param) => [
+        param[0].toString(),
+        Array.isArray(param[1])
+          ? param[1].map((v) => v.toString())
+          : param[1].toString(),
+      ])
+    );
+    return { data };
   } else {
-    // This loses data
-    return { data: Object.fromEntries(parsedQuery) };
+    return {
+      // .fromEntries() means we lose data when there are repeated keys
+      data: Object.fromEntries(
+        parsedQuery.map((param) => [param[0].toString(), param[1].toString()])
+      ),
+    };
   }
 }
 
@@ -108,9 +120,9 @@ function getFilesString(
   // TODO: this isn't great.
   for (const m of request.multipartUploads) {
     if ("contentFile" in m) {
-      data.files[m.name] = m.contentFile;
+      data.files[m.name.toString()] = m.contentFile.toString();
     } else {
-      data.data[m.name] = m.content;
+      data.data[m.name.toString()] = m.content.toString();
     }
   }
 
@@ -167,11 +179,13 @@ export const _toJsonString = (
     url: (request.urls[0].queryDict
       ? request.urls[0].urlWithoutQueryList
       : request.urls[0].url
-    ).replace(/\/$/, ""),
+    )
+      .toString()
+      .replace(/\/$/, ""),
     // url: request.queryDict ? request.urlWithoutQueryList : request.url,
-    raw_url: request.urls[0].url,
+    raw_url: request.urls[0].url.toString(),
     // TODO: move this after .query?
-    method: request.urls[0].method.toLowerCase(), // lowercase for backwards compatibility
+    method: request.urls[0].method.toLowerCase().toString(), // lowercase for backwards compatibility
   };
   // if (request.queryDict) {
   //   requestJson.query = request.queryDict
@@ -179,7 +193,9 @@ export const _toJsonString = (
 
   if (request.cookies) {
     // TODO: repeated cookies
-    requestJson.cookies = Object.fromEntries(request.cookies);
+    requestJson.cookies = Object.fromEntries(
+      request.cookies.map((c) => [c[0].toString(), c[1].toString()])
+    );
     // Normally when a generator uses .cookies, it should delete it from
     // headers, but users of the JSON output would expect to have all the
     // headers in .headers.
@@ -193,17 +209,26 @@ export const _toJsonString = (
   }
 
   if (request.headers) {
+    const headers = request.headers
+      .filter((h) => h[1] !== null)
+      // TODO: warn if contains variables
+      .map((h) => [h[0].toString(), h[1]!.toString()]);
     // TODO: what if Object.keys().length !== request.headers.length?
-    requestJson.headers = Object.fromEntries(request.headers);
+    requestJson.headers = Object.fromEntries(headers);
   }
 
   if (request.urls[0].queryDict) {
     // TODO: rename
-    requestJson.queries = request.urls[0].queryDict;
+    requestJson.queries = Object.fromEntries(
+      request.urls[0].queryDict.map((q) => [
+        q[0].toString(),
+        Array.isArray(q[1]) ? q[1].map((qq) => qq.toString()) : q[1].toString(),
+      ])
+    );
   }
 
   // TODO: not Object.assign, doesn't work with type system
-  if (request.data && typeof request.data === "string") {
+  if (request.data) {
     Object.assign(requestJson, getDataString(request));
   } else if (request.multipartUploads) {
     Object.assign(requestJson, getFilesString(request));
@@ -216,18 +241,18 @@ export const _toJsonString = (
   if (request.urls[0].auth) {
     const [user, password] = request.urls[0].auth;
     requestJson.auth = {
-      user: user,
-      password: password,
+      user: user.toString(),
+      password: password.toString(),
     };
     if (request.authType) {
       requestJson.auth_type = request.authType;
     }
   }
   if (request.awsSigV4) {
-    requestJson.aws_sigv4 = request.awsSigV4;
+    requestJson.aws_sigv4 = request.awsSigV4.toString();
   }
   if (request.delegation) {
-    requestJson.delegation = request.delegation;
+    requestJson.delegation = request.delegation.toString();
   }
 
   if (Object.prototype.hasOwnProperty.call(request, "followRedirects")) {
@@ -235,10 +260,10 @@ export const _toJsonString = (
   }
 
   if (request.timeout) {
-    requestJson.timeout = parseFloat(request.timeout);
+    requestJson.timeout = parseFloat(request.timeout.toString());
   }
   if (request.connectTimeout) {
-    requestJson.connect_timeout = parseFloat(request.connectTimeout);
+    requestJson.connect_timeout = parseFloat(request.connectTimeout.toString());
   }
 
   return (

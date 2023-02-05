@@ -5,6 +5,6 @@ void main() async {
   var res = await http.MultipartRequest('POST', url)
     ..fields['username'] = 'davidwalsh'
     ..fields['password'] = 'something'
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

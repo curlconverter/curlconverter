@@ -2,68 +2,20 @@
   {
     "urls": [
       {
-        "originalUrl": {
-          "tokens": [
-            "localhost:28139"
-          ]
-        },
-        "urlWithoutQueryList": {
-          "tokens": [
-            "http://localhost:28139"
-          ]
-        },
-        "url": {
-          "tokens": [
-            "http://localhost:28139"
-          ]
-        },
+        "originalUrl": "localhost:28139",
+        "urlWithoutQueryList": "http://localhost:28139",
+        "url": "http://localhost:28139",
         "urlObj": {
-          "scheme": {
-            "tokens": [
-              "http"
-            ]
-          },
-          "host": {
-            "tokens": [
-              "localhost:28139"
-            ]
-          },
-          "path": {
-            "tokens": [
-              ""
-            ]
-          },
-          "query": {
-            "tokens": [
-              ""
-            ]
-          },
-          "originalQuery": {
-            "tokens": [
-              ""
-            ]
-          },
-          "fragment": {
-            "tokens": [
-              ""
-            ]
-          }
+          "scheme": "http",
+          "host": "localhost:28139",
+          "path": "",
+          "query": "",
+          "originalQuery": "",
+          "fragment": ""
         },
-        "urlWithOriginalQuery": {
-          "tokens": [
-            "http://localhost:28139"
-          ]
-        },
-        "urlWithoutQueryArray": {
-          "tokens": [
-            "http://localhost:28139"
-          ]
-        },
-        "method": {
-          "tokens": [
-            "wHat"
-          ]
-        }
+        "urlWithOriginalQuery": "http://localhost:28139",
+        "urlWithoutQueryArray": "http://localhost:28139",
+        "method": "wHat"
       }
     ],
     "authType": "basic",

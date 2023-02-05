@@ -1,4 +1,5 @@
 import {
+  reprStr,
   repr,
   setVariableValue,
   callFunction,
@@ -7,74 +8,64 @@ import {
   prepareQueryString,
   prepareCookies,
 } from "./common.js";
+import { Word } from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
 const prepareHeaders = (request: Request): string | null => {
-  let response = null;
-
-  if (request.headers) {
-    // cookies are part of headers
-    const headerCount = request.headers.length + (request.cookies ? 1 : 0);
-
-    const headers = [];
-    let header = headerCount === 1 ? "" : "[";
-
-    for (const [key, value] of request.headers) {
-      if (value === null) {
-        continue;
-      }
-      switch (key) {
-        case "Cookie":
-          // TODO: curl -H 'Cookie: foo=bar' example.com
-          // adds an extra newline before the cookie
-          break;
-        case "Accept": {
-          const accepts = value.split(",");
-          if (accepts.length === 1) {
-            headers.push(`field.AcceptField(MediaType(${repr(value)}))`);
-          } else {
-            let acceptheader = "field.AcceptField([";
-            for (const accept of accepts) {
-              acceptheader += `\n        MediaType(${repr(accept.trim())})`;
-            }
-            acceptheader += "\n    ])";
-            headers.push(acceptheader);
-          }
-          break;
-        }
-        default:
-          headers.push(`HeaderField(${repr(key)}, ${repr(value)})`);
-      }
-    }
-
-    if (headerCount === 1) {
-      header += headers.pop();
-    } else {
-      header += "\n    " + headers.join("\n    ");
-      if (request.cookies) {
-        const cookieFieldParams = callFunction(
-          null,
-          "cellfun",
-          [
-            "@(x) Cookie(x{:})",
-            callFunction(null, "num2cell", ["cookies", "2"], ""),
-          ],
-          ""
-        );
-        header +=
-          "\n    " +
-          callFunction(null, "field.CookieField", cookieFieldParams, "");
-      }
-      header += "\n]'";
-    }
-    response = setVariableValue("header", header);
+  if (!request.headers) {
+    return null;
   }
 
-  return response;
+  const headerStrs: string[] = [];
+  for (const [key, value] of request.headers) {
+    if (value === null) {
+      continue;
+    }
+    const keyStr = key.toLowerCase().toString();
+    if (keyStr === "cookie" && request.cookies) {
+      // TODO: curl -H 'Cookie: foo=bar' example.com
+      // adds an extra newline before the cookie
+      const cookieFieldParams = callFunction(
+        null,
+        "cellfun",
+        [
+          "@(x) Cookie(x{:})",
+          callFunction(null, "num2cell", ["cookies", "2"], ""),
+        ],
+        ""
+      );
+      headerStrs.push(
+        callFunction(null, "field.CookieField", cookieFieldParams, "")
+      );
+    } else if (keyStr === "accept") {
+      const accepts = value.split(",");
+      if (accepts.length === 1) {
+        headerStrs.push(`field.AcceptField(MediaType(${repr(value)}))`);
+      } else {
+        let acceptheader = "field.AcceptField([";
+        for (const accept of accepts) {
+          acceptheader += `\n        MediaType(${repr(accept.trim())})`;
+        }
+        acceptheader += "\n    ])";
+        headerStrs.push(acceptheader);
+      }
+    } else {
+      headerStrs.push(`HeaderField(${repr(key)}, ${repr(value)})`);
+    }
+  }
+
+  if (headerStrs.length === 1) {
+    return setVariableValue("header", headerStrs[0]);
+  }
+
+  let header = "[\n";
+  header += "    " + headerStrs.join("\n    ") + "\n";
+  header += "]'";
+  return setVariableValue("header", header);
 };
 
 const prepareURI = (request: Request) => {
-  const uriParams = [];
+  const uriParams: string[] = [];
   if (request.urls[0].queryList) {
     uriParams.push(repr(request.urls[0].urlWithoutQueryList));
     uriParams.push("QueryParameter(params')");
@@ -85,19 +76,19 @@ const prepareURI = (request: Request) => {
 };
 
 const prepareAuth = (request: Request): string[] => {
-  const options = [];
-  const optionsParams = [];
+  const options: string[] = [];
+  const optionsParams: string[] = [];
   if (request.urls[0].auth) {
     const [usr, pass] = request.urls[0].auth;
     const userfield = `'Username', ${repr(usr)}`;
     const passfield = `'Password', ${repr(pass)}`;
-    const authparams = (usr ? `${userfield}, ` : "") + passfield;
-    optionsParams.push(repr("Credentials"), "cred");
+    const authparams = (usr.length ? `${userfield}, ` : "") + passfield;
+    optionsParams.push(reprStr("Credentials"), "cred");
     options.push(callFunction("cred", "Credentials", authparams));
   }
 
   if (request.insecure) {
-    optionsParams.push(repr("VerifyServerName"), "false");
+    optionsParams.push(reprStr("VerifyServerName"), "false");
   }
 
   if (optionsParams.length > 0) {
@@ -108,25 +99,24 @@ const prepareAuth = (request: Request): string[] => {
 };
 
 const prepareMultipartUploads = (request: Request): string | null => {
-  let response = null;
-  if (request.multipartUploads) {
-    const params: [string, string][] = [];
-    for (const m of request.multipartUploads) {
-      const value = "contentFile" in m ? "@" + m.contentFile : m.content; // TODO: something nicer
-      const fileProvider = prepareDataProvider(
-        value,
-        null,
-        "",
-        1,
-        true,
-        !("contentFile" in m)
-      );
-      params.push([repr(m.name), fileProvider as string]); // TODO: can this be not a string?
-    }
-    response = callFunction("body", "MultipartFormProvider", params);
+  if (!request.multipartUploads) {
+    return null;
   }
-
-  return response;
+  const params: [string, string][] = [];
+  for (const m of request.multipartUploads) {
+    const readsFile = "contentFile" in m;
+    const value = readsFile ? m.contentFile.prepend("@") : m.content; // TODO: something nicer
+    const fileProvider = prepareDataProvider(
+      value,
+      null,
+      "",
+      1,
+      true,
+      !readsFile
+    );
+    params.push([repr(m.name), fileProvider as string]); // TODO: can be a string[]
+  }
+  return callFunction("body", "MultipartFormProvider", params);
 };
 
 const isJsonString = (str: string): boolean => {
@@ -139,40 +129,39 @@ const isJsonString = (str: string): boolean => {
   return true;
 };
 
+// prepareDataProvider(value, null, "", 1, true, !readsFile);
+// prepareDataProvider(request.data, "body", ";", 0, request.isDataBinary, request.isDataRaw);
 const prepareDataProvider = (
-  value: string,
+  value: Word,
   output: string | null,
   termination: string,
   indentLevel: number,
-  isDataBinary?: boolean,
-  isDataRaw?: boolean
+  isDataBinary = true,
+  isDataRaw = false
 ): string | string[] => {
-  if (typeof indentLevel === "undefined" || indentLevel === null)
-    indentLevel = 0;
-  if (typeof isDataBinary === "undefined") isDataBinary = true;
-  if (!isDataRaw && value[0] === "@") {
+  if (!isDataRaw && value.charAt(0) === "@") {
     const filename = value.slice(1);
-    // >> imformats % for seeing MATLAB supported image formats
-    const isImageProvider = new Set(["jpeg", "jpg", "png", "tif", "gif"]).has(
-      filename.split(".")[1]
-    );
-    const provider = isImageProvider ? "ImageProvider" : "FileProvider";
     if (!isDataBinary) {
       return [
         callFunction(output, "fileread", repr(filename)),
         setVariableValue(`${output}(${output}==13 | ${output}==10)`, "[]"),
       ];
     }
+    // >> imformats % for seeing MATLAB supported image formats
+    const isImageProvider = new Set(["jpeg", "jpg", "png", "tif", "gif"]).has(
+      filename.split(".")[1].toString()
+    );
+    const provider = isImageProvider ? "ImageProvider" : "FileProvider";
     return callFunction(output, provider, repr(filename), termination);
   }
 
-  if (value === "") {
+  if (!value.length) {
     return callFunction(output, "FileProvider", "", termination);
   }
 
-  if (typeof value !== "number" && isJsonString(value)) {
-    const obj = JSON.parse(value);
-    // If fail to create a struct for the JSON, then return a string
+  if (value.isString() && isJsonString(value.toString())) {
+    const obj = JSON.parse(value.toString());
+    // If failed to create a struct for the JSON, then return a string
     try {
       const structure = structify(obj, indentLevel);
       return callFunction(output, "JSONProvider", structure, termination);
@@ -181,9 +170,7 @@ const prepareDataProvider = (
     }
   }
 
-  if (typeof value === "number") {
-    return callFunction(output, "FormProvider", repr(value), termination);
-  }
+  // TODO: StringProvider should be the default
   const formValue = value
     .split("&")
     .map((x) => x.split("=").map((x) => repr(x)));
@@ -191,62 +178,69 @@ const prepareDataProvider = (
 };
 
 const prepareData = (request: Request) => {
-  let response = null;
+  if (!request.data) {
+    return null;
+  }
+
   if (request.data && request.data.split("&", 2).length > 1) {
-    const data = request.data.split("&").map((x: string) =>
+    const data = request.data.split("&").map((x: Word) =>
       x.split("=").map((x) => {
         let ans = repr(x);
-        try {
-          const jsonData = JSON.parse(x);
-          if (typeof jsonData === "object") {
-            ans = callFunction(
-              null,
-              "JSONProvider",
-              structify(jsonData, 1),
-              ""
-            );
-          }
-        } catch (e) {}
+        if (x.isString()) {
+          try {
+            const jsonData = JSON.parse(x.toString());
+            if (typeof jsonData === "object") {
+              ans = callFunction(
+                null,
+                "JSONProvider",
+                structify(jsonData, 1),
+                ""
+              );
+            }
+          } catch (e) {}
+        }
 
         return ans;
       })
     );
+    return callFunction("body", "FormProvider", data);
+  }
 
-    response = callFunction("body", "FormProvider", data);
-  } else if (Object.prototype.hasOwnProperty.call(request, "data")) {
-    response = prepareDataProvider(
-      request.data as string,
-      "body",
-      ";",
-      0,
-      !!request.isDataBinary,
-      !!request.isDataRaw
-    );
-    if (!response) {
-      response = setVariableValue("body", repr(request.data));
-    }
+  let response = prepareDataProvider(
+    request.data,
+    "body",
+    ";",
+    0,
+    !!request.isDataBinary,
+    !!request.isDataRaw
+  );
+  if (!response) {
+    response = setVariableValue("body", repr(request.data));
   }
   return response;
 };
 
 const prepareRequestMessage = (request: Request): string => {
-  let reqMessage: string[] | string = [
-    repr(request.urls[0].method.toLowerCase()),
-  ];
-  if (request.cookies || request.headers) {
+  const method = request.urls[0].method.toLowerCase();
+  let reqMessage: string[] | string = [repr(method)];
+  if (request.headers) {
     reqMessage.push("header");
-  } else if (request.urls[0].method.toLowerCase() === "get") {
-    reqMessage = "";
   }
   if (containsBody(request)) {
     if (reqMessage.length === 1) {
-      // TODO: this could be a string actually
-      (reqMessage as string[]).push("[]");
+      reqMessage.push("[]");
     }
-    (reqMessage as string[]).push("body");
+    reqMessage.push("body");
   }
 
-  // list as many params as necessary
+  if (
+    !request.headers &&
+    !containsBody(request) &&
+    method.toString() === "get"
+  ) {
+    reqMessage = ""; // TODO: just empty array?
+  }
+
   const params = ["uri.EncodedURI"];
   if (request.urls[0].auth || request.insecure) {
     params.push("options");

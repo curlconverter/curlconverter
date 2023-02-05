@@ -45,8 +45,8 @@ header = [
         MediaType('*/*;q=0.8')
     ])
     HeaderField('Referer', 'http://www.wikipedia.org/')
-    HeaderField('Connection', 'keep-alive')
     field.CookieField(cellfun(@(x) Cookie(x{:}), num2cell(cookies, 2)))
+    HeaderField('Connection', 'keep-alive')
 ]';
 uri = URI('http://localhost:28139/');
 response = RequestMessage('get', header).send(uri.EncodedURI);

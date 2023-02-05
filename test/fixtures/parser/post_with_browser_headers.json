@@ -2,219 +2,75 @@
   {
     "urls": [
       {
-        "originalUrl": {
-          "tokens": [
-            "http://localhost:28139/ajax/demo_post.asp"
-          ]
-        },
-        "urlWithoutQueryList": {
-          "tokens": [
-            "http://localhost:28139/ajax/demo_post.asp"
-          ]
-        },
-        "url": {
-          "tokens": [
-            "http://localhost:28139/ajax/demo_post.asp"
-          ]
-        },
+        "originalUrl": "http://localhost:28139/ajax/demo_post.asp",
+        "urlWithoutQueryList": "http://localhost:28139/ajax/demo_post.asp",
+        "url": "http://localhost:28139/ajax/demo_post.asp",
         "urlObj": {
-          "scheme": {
-            "tokens": [
-              "http"
-            ]
-          },
-          "host": {
-            "tokens": [
-              "localhost:28139"
-            ]
-          },
-          "path": {
-            "tokens": [
-              "/ajax/demo_post.asp"
-            ]
-          },
-          "query": {
-            "tokens": [
-              ""
-            ]
-          },
-          "originalQuery": {
-            "tokens": [
-              ""
-            ]
-          },
-          "fragment": {
-            "tokens": [
-              ""
-            ]
-          }
+          "scheme": "http",
+          "host": "localhost:28139",
+          "path": "/ajax/demo_post.asp",
+          "query": "",
+          "originalQuery": "",
+          "fragment": ""
         },
-        "urlWithOriginalQuery": {
-          "tokens": [
-            "http://localhost:28139/ajax/demo_post.asp"
-          ]
-        },
-        "urlWithoutQueryArray": {
-          "tokens": [
-            "http://localhost:28139/ajax/demo_post.asp"
-          ]
-        },
-        "method": {
-          "tokens": [
-            "POST"
-          ]
-        }
+        "urlWithOriginalQuery": "http://localhost:28139/ajax/demo_post.asp",
+        "urlWithoutQueryArray": "http://localhost:28139/ajax/demo_post.asp",
+        "method": "POST"
       }
     ],
     "authType": "basic",
     "lowercaseHeaders": false,
     "cookies": [
       [
-        {
-          "tokens": [
-            "_gat"
-          ]
-        },
-        {
-          "tokens": [
-            "1"
-          ]
-        }
+        "_gat",
+        "1"
       ],
       [
-        {
-          "tokens": [
-            "ASPSESSIONIDACCRDTDC"
-          ]
-        },
-        {
-          "tokens": [
-            "MCMDKFMBLLLHGKCGNMKNGPKI"
-          ]
-        }
+        "ASPSESSIONIDACCRDTDC",
+        "MCMDKFMBLLLHGKCGNMKNGPKI"
       ],
       [
-        {
-          "tokens": [
-            "_ga"
-          ]
-        },
-        {
-          "tokens": [
-            "GA1.2.1424920226.1419478126"
-          ]
-        }
+        "_ga",
+        "GA1.2.1424920226.1419478126"
       ]
     ],
     "compressed": true,
     "headers": [
       [
-        {
-          "tokens": [
-            "Origin"
-          ]
-        },
-        {
-          "tokens": [
-            "http://www.w3schools.com"
-          ]
-        }
+        "Origin",
+        "http://www.w3schools.com"
       ],
       [
-        {
-          "tokens": [
-            "Accept-Encoding"
-          ]
-        },
-        {
-          "tokens": [
-            "gzip, deflate"
-          ]
-        }
+        "Accept-Encoding",
+        "gzip, deflate"
       ],
       [
-        {
-          "tokens": [
-            "Accept-Language"
-          ]
-        },
-        {
-          "tokens": [
-            "en-US,en;q=0.8"
-          ]
-        }
+        "Accept-Language",
+        "en-US,en;q=0.8"
       ],
       [
-        {
-          "tokens": [
-            "User-Agent"
-          ]
-        },
-        {
-          "tokens": [
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-          ]
-        }
+        "User-Agent",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
       ],
       [
-        {
-          "tokens": [
-            "Accept"
-          ]
-        },
-        {
-          "tokens": [
-            "*/*"
-          ]
-        }
+        "Accept",
+        "*/*"
       ],
       [
-        {
-          "tokens": [
-            "Referer"
-          ]
-        },
-        {
-          "tokens": [
-            "http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511"
-          ]
-        }
+        "Referer",
+        "http://www.w3schools.com/ajax/tryit_view.asp?x=0.07944501144811511"
       ],
       [
-        {
-          "tokens": [
-            "Cookie"
-          ]
-        },
-        {
-          "tokens": [
-            "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
-          ]
-        }
+        "Cookie",
+        "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126"
       ],
       [
-        {
-          "tokens": [
-            "Connection"
-          ]
-        },
-        {
-          "tokens": [
-            "keep-alive"
-          ]
-        }
+        "Connection",
+        "keep-alive"
       ],
       [
-        {
-          "tokens": [
-            "Content-Length"
-          ]
-        },
-        {
-          "tokens": [
-            "0"
-          ]
-        }
+        "Content-Length",
+        "0"
       ]
     ]
   }

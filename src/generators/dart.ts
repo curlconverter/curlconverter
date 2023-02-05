@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
@@ -15,9 +16,26 @@ function escape(value: string, quote: '"' | "'"): string {
   // TODO: does Dart have the same escape sequences as JS?
   return jsesc(value, quote).replace(/\$/g, "\\$");
 }
-function repr(value: string): string {
+function reprStr(value: string): string {
   const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
   return quote + escape(value, quote) + quote;
+}
+function repr(value: Word): string {
+  const ret: string[] = [];
+  for (const t of value.tokens) {
+    if (typeof t === "string") {
+      ret.push(reprStr(t));
+    } else if (t.type === "variable") {
+      // TODO: import 'dart:io' show Platform;
+      ret.push("Platform.environment[" + reprStr(t.value) + "]");
+    } else {
+      // TODO: import 'dart:io';
+      ret.push(
+        "Process.run(" + reprStr(t.value) + ", runInShell: true).stdout"
+      );
+    }
+  }
+  return ret.join(" + ");
 }
 
 export const _toDart = (
@@ -39,7 +57,9 @@ export const _toDart = (
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -66,7 +86,7 @@ export const _toDart = (
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
@@ -80,25 +100,29 @@ export const _toDart = (
     const [uname, pword] = request.urls[0].auth;
 
     s +=
-      "  var uname = '" +
-      uname +
-      "';\n" +
-      "  var pword = '" +
-      pword +
-      "';\n" +
+      "  var uname = " +
+      repr(uname) +
+      ";\n" +
+      "  var pword = " +
+      repr(pword) +
+      ";\n" +
       "  var authn = 'Basic ' + base64Encode(utf8.encode('$uname:$pword'));\n" +
       "\n";
   }
 
+  const methods = ["HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"];
+  const rawRequestObj =
+    request.multipartUploads ||
+    !methods.includes(request.urls[0].method.toString());
   const hasHeaders =
     request.headers ||
     request.compressed ||
     request.isDataBinary ||
-    request.urls[0].method.toLowerCase() === "put";
-  if (hasHeaders && !request.multipartUploads) {
+    request.urls[0].method.toLowerCase().toString() === "put";
+  if (hasHeaders && !rawRequestObj) {
     s += "  var headers = {\n";
     for (const [hname, hval] of request.headers || []) {
-      s += "    " + repr(hname) + ": " + repr(hval ?? "") + ",\n";
+      s += "    " + repr(hname) + ": " + repr(hval ?? new Word()) + ",\n";
     }
 
     if (request.urls[0].auth) s += "    'Authorization': authn,\n";
@@ -118,7 +142,7 @@ export const _toDart = (
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
     for (const [paramName, rawValue] of request.urls[0].queryList) {
-      const paramValue = repr(rawValue === null ? "" : rawValue);
+      const paramValue = repr(rawValue ?? new Word());
       s += "    " + repr(paramName) + ": " + paramValue + ",\n";
     }
     s += "  };\n";
@@ -146,20 +170,28 @@ export const _toDart = (
   }
 
   if (queryIsRepresentable) {
-    s +=
-      "  var url = Uri.parse('" +
-      escape(request.urls[0].urlWithoutQueryList, "'") +
-      "?$query" +
-      "');\n";
+    let urlString = repr(request.urls[0].urlWithoutQueryList);
+    // Use Dart's $var interpolation for the query
+    if (urlString.endsWith("'") || urlString.endsWith('"')) {
+      urlString = urlString.slice(0, -1) + "?$query" + urlString.slice(-1);
+    } else {
+      urlString += " + '?$query'";
+    }
+    s += "  var url = Uri.parse(" + urlString + ");\n";
   } else {
     s += "  var url = Uri.parse(" + repr(request.urls[0].url) + ");\n";
   }
 
-  if (request.multipartUploads) {
-    let multipart =
-      "http.MultipartRequest(" + repr(request.urls[0].method) + ", url)\n";
+  if (rawRequestObj) {
+    let multipart = "http.";
+    if (request.multipartUploads) {
+      multipart += "MultipartRequest";
+    } else {
+      multipart += "Request";
+    }
+    multipart += "(" + repr(request.urls[0].method) + ", url)\n";
 
-    for (const m of request.multipartUploads) {
+    for (const m of request.multipartUploads || []) {
       // MultipartRequest syntax looks like this:
       //   ..fields['user'] = 'nweiz@google.com'
       // or
@@ -170,7 +202,7 @@ export const _toDart = (
       const sentFilename = "filename" in m && m.filename;
       if ("contentFile" in m) {
         multipart += "    ..files.add(await http.MultipartFile.";
-        if (m.contentFile === "-") {
+        if (util.eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             multipart += "fromPath(\n";
             multipart += "      " + name + ", " + repr(request.stdinFile);
@@ -217,32 +249,47 @@ export const _toDart = (
     if (hasHeaders || request.urls[0].auth) {
       s += "  var req = new " + multipart;
       for (const [hname, hval] of request.headers || []) {
-        s += "  req.headers[" + repr(hname) + "] = " + repr(hval || "") + ";\n";
+        s +=
+          "  req.headers[" +
+          repr(hname) +
+          "] = " +
+          repr(hval || new Word()) +
+          ";\n";
       }
       if (request.urls[0].auth) {
         s += "  req.headers['Authorization'] = authn;\n";
       }
       s += "  var res = await req.send();\n";
     } else {
+      // TODO: this might not work, I think it's client.send(req)
       s += "  var res = await " + multipart;
     }
+
+    /* eslint-disable no-template-curly-in-string */
+    s +=
+      "  if (res.statusCode != 200) throw Exception('http.send" +
+      " error: statusCode= ${res.statusCode}');\n" +
+      "  print(res.body);\n" +
+      "}";
   } else {
     s +=
-      "  var res = await http." + request.urls[0].method.toLowerCase() + "(url";
+      "  var res = await http." +
+      request.urls[0].method.toLowerCase().toString() +
+      "(url";
 
     if (hasHeaders) s += ", headers: headers";
     else if (request.urls[0].auth) s += ", headers: {'Authorization': authn}";
     if (hasData) s += ", body: data";
     s += ");\n";
-  }
 
-  /* eslint-disable no-template-curly-in-string */
-  s +=
-    "  if (res.statusCode != 200) throw Exception('http." +
-    request.urls[0].method.toLowerCase() +
-    " error: statusCode= ${res.statusCode}');\n" +
-    "  print(res.body);\n" +
-    "}";
+    /* eslint-disable no-template-curly-in-string */
+    s +=
+      "  if (res.statusCode != 200) throw Exception('http." +
+      request.urls[0].method.toLowerCase().toString() +
+      " error: statusCode= ${res.statusCode}');\n" +
+      "  print(res.body);\n" +
+      "}";
+  }
 
   let importString = "";
   for (const imp of Array.from(imports).sort()) {

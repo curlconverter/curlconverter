@@ -1,4 +1,5 @@
 import {
+  reprStr,
   repr,
   setVariableValue,
   callFunction,
@@ -10,62 +11,96 @@ import {
   cookieString,
   paramsString,
 } from "./common.js";
+import { Word } from "../../util.js";
+import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-const isSupportedByWebServices = (request: Request): boolean => {
-  if (
-    !new Set(["get", "post", "put", "delete", "patch"]).has(
-      request.urls[0].method.toLowerCase()
-    )
-  ) {
-    return false;
-  }
-  return !request.multipartUploads && !request.insecure;
+const isSupportedByWebServices = (request: Request): boolean =>
+  ["get", "post", "put", "delete", "patch"].includes(
+    request.urls[0].method.toLowerCase().toString()
+  ) &&
+  !request.multipartUploads &&
+  !request.insecure;
+
+interface Options {
+  RequestMethod?: Word;
+
+  Username?: Word;
+  Password?: Word;
+
+  UserAgent?: Word;
+  MediaType?: Word;
+  ContentType?: string;
+  HeaderFields?: string;
+}
+
+const setHeader = (
+  headers: [Word, Word][],
+  header: Word,
+  value: Word,
+  lowercase: boolean
+) => {
+  headers.push([lowercase ? header.toLowerCase() : header, value]);
 };
 
-const parseWebOptions = (request: Request): { [key: string]: string } => {
-  const options: { [key: string]: string } = {};
+const parseWebOptions = (request: Request): Options => {
+  const options: Options = {};
 
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
   // thus, it is necessary to set the method for other requests
-  if (
-    request.urls[0].method.toLowerCase() !== "get" &&
-    request.urls[0].method.toLowerCase() !== "post"
-  ) {
+  const method = request.urls[0].method.toLowerCase().toString();
+  if (method !== "get" && method !== "post") {
     options.RequestMethod = request.urls[0].method.toLowerCase();
   }
 
-  const headers: { [key: string]: string } = {};
+  const headers: [Word, Word][] = [];
+  const preformattedHeaders: string[] = [];
   if (request.urls[0].auth) {
     const [username, password] = request.urls[0].auth;
-    if (username !== "") {
+    if (username.length) {
       options.Username = username;
       options.Password = password;
     } else {
-      headers.Authorization = `['Basic ' matlab.net.base64encode(${repr(
-        username + ":" + password
-      )})]`;
+      util._setHeaderIfMissing(
+        headers,
+        "Authorization",
+        `['Basic ' matlab.net.base64encode(${repr(
+          util.joinWords(request.urls[0].auth, ":")
+        )})]`,
+        request.lowercaseHeaders
+      );
+      preformattedHeaders.push("authorization");
     }
   }
 
   if (request.headers) {
-    for (const [key, value] of request.headers) {
+    for (const [header, value] of request.headers) {
       if (value === null) {
         continue;
       }
-      switch (key) {
-        case "User-Agent":
+      // Doing this case insensitively probably makes MATLAB send title-cased headers
+      switch (header.toLowerCase().toString()) {
         case "user-agent":
           options.UserAgent = value;
           break;
-        case "Content-Type":
+        case "content-type":
           options.MediaType = value;
           break;
-        case "Cookie":
-          headers.Cookie = value;
+        case "cookie":
+          if (request.cookies) {
+            util._setHeaderIfMissing(
+              headers,
+              "Cookie",
+              cookieString,
+              request.lowercaseHeaders
+            );
+            preformattedHeaders.push("cookie");
+          } else {
+            setHeader(headers, header, value, request.lowercaseHeaders);
+          }
           break;
-        case "Accept":
-          switch (value) {
+        case "accept":
+          switch (value.toLowerCase().toString()) {
             case "application/json":
               options.ContentType = "json";
               break;
@@ -92,29 +127,24 @@ const parseWebOptions = (request: Request): { [key: string]: string } => {
               } else if (value.startsWith("audio/")) {
                 options.ContentType = "audio";
               } else {
-                headers[key] = value;
+                setHeader(headers, header, value, request.lowercaseHeaders);
               }
           }
           break;
         default:
-          headers[key] = value;
+          setHeader(headers, header, value, request.lowercaseHeaders);
       }
     }
   }
 
-  if (request.cookies) {
-    headers.Cookie = cookieString;
-  }
-
-  if (Object.entries(headers).length > 0) {
+  if (headers.length > 0) {
     // If key is on the same line as 'weboptions', there is only one parameter
     // otherwise keys are indented by one level in the next line.
     // An extra indentation level is given to the values's new lines in cell array
     const indentLevel = 1 + (Object.keys(options).length === 0 ? 0 : 1);
     options.HeaderFields = addCellArray(
       headers,
-      ["Authorization", "Cookie"],
-      "",
+      preformattedHeaders,
       indentLevel
     );
   }
@@ -122,22 +152,24 @@ const parseWebOptions = (request: Request): { [key: string]: string } => {
   return options;
 };
 
-const prepareOptions = (
-  request: Request,
-  options: { [key: string]: string }
-): string[] => {
+const prepareOptions = (request: Request, options: Options): string[] => {
   const lines: string[] = [];
   if (Object.keys(options).length === 0) {
     return lines;
   }
-  const pairValues = addCellArray(options, ["HeaderFields"], ",", 1, true);
+  const pairValues = addCellArray(
+    Object.entries(options),
+    ["headerfields"],
+    1,
+    true
+  );
   lines.push(callFunction("options", "weboptions", pairValues));
 
   return lines;
 };
 
 const prepareBasicURI = (request: Request): string[] => {
-  const response = [];
+  const response: string[] = [];
   if (request.urls[0].queryList) {
     response.push(
       setVariableValue("baseURI", repr(request.urls[0].urlWithoutQueryList))
@@ -150,47 +182,42 @@ const prepareBasicURI = (request: Request): string[] => {
 };
 
 const prepareBasicData = (request: Request): string | string[] => {
+  if (request.data && request.data.length === 0) {
+    return setVariableValue("body", repr(new Word()));
+  }
+  if (!request.data) {
+    return [];
+  }
   let response: string | string[] = [];
-  if (Object.prototype.hasOwnProperty.call(request, "data")) {
-    if (request.data === "") {
-      response = setVariableValue("body", repr());
-    } else if ((request.data as string)[0] === "@") {
-      response.push(
-        callFunction(
-          "body",
-          "fileread",
-          repr((request.data as string).slice(1))
-        )
-      );
+  if (request.data.charAt(0) === "@") {
+    response.push(
+      callFunction("body", "fileread", repr(request.data.slice(1)))
+    );
 
-      if (!request.isDataBinary) {
-        response.push(setVariableValue("body(body==13 | body==10)", "[]"));
-      }
-    } else {
-      // if the data is in JSON, store it as struct in MATLAB
-      // otherwise just keep it as a char vector
-      try {
-        const jsonData = JSON.parse(request.data as string);
-        if (typeof jsonData === "object") {
-          let jsonText = structify(jsonData);
-          if (!jsonText.startsWith("struct")) jsonText = repr(jsonText);
-          response = setVariableValue("body", jsonText);
-        } else {
-          response = setVariableValue("body", repr(request.data));
-        }
-      } catch (e) {
+    if (!request.isDataBinary) {
+      response.push(setVariableValue("body(body==13 | body==10)", "[]"));
+    }
+  } else if (request.data.isString()) {
+    // if the data is in JSON, store it as struct in MATLAB
+    // otherwise just keep it as a char vector
+    try {
+      const jsonData = JSON.parse(request.data?.toString());
+      if (typeof jsonData === "object") {
+        let jsonText = structify(jsonData);
+        if (!jsonText.startsWith("struct")) jsonText = reprStr(jsonText);
+        response = setVariableValue("body", jsonText);
+      } else {
         response = setVariableValue("body", repr(request.data));
       }
+    } catch (e) {
+      response = setVariableValue("body", repr(request.data));
     }
   }
   return response;
 };
 
-const prepareWebCall = (
-  request: Request,
-  options: { [key: string]: string }
-): string[] => {
-  const lines = [];
+const prepareWebCall = (request: Request, options: Options): string[] => {
+  const lines: string[] = [];
   const webFunction = containsBody(request) ? "webwrite" : "webread";
 
   const params = ["uri"];

@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
@@ -18,7 +19,7 @@ const indent = (line: string, level = 1): string =>
 
 // https://doc.rust-lang.org/reference/tokens.html
 const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
-export function repr(s: string): string {
+export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
@@ -46,6 +47,27 @@ export function repr(s: string): string {
     }) +
     '"'
   );
+}
+
+export function repr(w: Word, imports: Set<string>): string {
+  const ret: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      ret.push(reprStr(t));
+    } else if (t.type === "variable") {
+      ret.push("env::var(" + reprStr(t.value) + ').unwrap_or("")');
+      imports.add("std::env");
+    } else {
+      // TODO: tokenize subcommand
+      // .new() is only passed the command name, args are given with .arg().arg() or .args([])
+      ret.push("Command::new(" + reprStr(t.value) + ").output().stdout");
+      imports.add("std::process::Command");
+    }
+  }
+  if (ret.length === 1) {
+    return ret[0];
+  }
+  return "[" + ret.join(", ") + "].concat()";
 }
 
 export const _toRust = (
@@ -98,22 +120,8 @@ export const _toRust = (
     ]);
   }
 
-  const lines = ["extern crate reqwest;"];
-  {
-    // Generate imports.
-    const imports = [
-      { want: "header", condition: !!request.headers },
-      { want: "blocking::multipart", condition: !!request.multipartUploads },
-    ]
-      .filter((i) => i.condition)
-      .map((i) => i.want);
-
-    if (imports.length > 1) {
-      lines.push(`use reqwest::{${imports.join(", ")}};`);
-    } else if (imports.length) {
-      lines.push(`use reqwest::${imports[0]};`);
-    }
-  }
+  const imports = new Set<string>();
+  const lines = [];
   lines.push("", "fn main() -> Result<(), Box<dyn std::error::Error>> {");
 
   if (request.headers) {
@@ -122,12 +130,15 @@ export const _toRust = (
       cookie: "header::COOKIE",
     };
     for (const [headerName, headerValue] of request.headers || []) {
-      const enumValue = headerEnum[headerName.toLowerCase()];
+      const enumValue = headerEnum[headerName.toLowerCase().toString()];
       const name = enumValue || `"${headerName}"`;
       if (headerValue !== null) {
         lines.push(
           indent(
-            `headers.insert(${name}, ${repr(headerValue)}.parse().unwrap());`
+            `headers.insert(${name}, ${repr(
+              headerValue,
+              imports
+            )}.parse().unwrap());`
           )
         );
       }
@@ -139,9 +150,15 @@ export const _toRust = (
     lines.push(indent("let form = multipart::Form::new()"));
     const parts = request.multipartUploads.map((m) => {
       if ("contentFile" in m) {
-        return indent(`.file(${repr(m.name)}, ${repr(m.contentFile)})?`, 2);
+        return indent(
+          `.file(${repr(m.name, imports)}, ${repr(m.contentFile, imports)})?`,
+          2
+        );
       }
-      return indent(`.text(${repr(m.name)}, ${repr(m.content)})`, 2);
+      return indent(
+        `.text(${repr(m.name, imports)}, ${repr(m.content, imports)})`,
+        2
+      );
     });
     parts[parts.length - 1] += ";";
     lines.push(...parts, "");
@@ -157,7 +174,7 @@ export const _toRust = (
     lines.push(indent("let client = reqwest::blocking::Client::new();"));
   } else {
     lines.push(indent("let client = reqwest::blocking::Client::builder()"));
-    if (request.maxRedirects === "-1") {
+    if (util.eq(request.maxRedirects, "-1")) {
       lines.push(
         indent(
           ".redirect(reqwest::redirect::Policy::custom(|attempt| { attempt.follow() }))",
@@ -180,20 +197,22 @@ export const _toRust = (
   }
 
   const reqwestMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
-  if (reqwestMethods.includes(request.urls[0].method)) {
+  if (reqwestMethods.includes(request.urls[0].method.toString())) {
     lines.push(
       indent(
         `let res = client.${request.urls[0].method.toLowerCase()}(${repr(
-          request.urls[0].url
+          request.urls[0].url,
+          imports
         )})`
       )
     );
   } else {
     lines.push(
       indent(
-        `let res = client.request(${repr(request.urls[0].method)}, ${repr(
-          request.urls[0].url
-        )})`
+        `let res = client.request(${repr(
+          request.urls[0].method,
+          imports
+        )}, ${repr(request.urls[0].url, imports)})`
       )
     );
   }
@@ -201,7 +220,10 @@ export const _toRust = (
   if (request.urls[0].auth) {
     const [user, password] = request.urls[0].auth;
     lines.push(
-      indent(`.basic_auth(${repr(user)}, Some(${repr(password)}))`, 2)
+      indent(
+        `.basic_auth(${repr(user, imports)}, Some(${repr(password, imports)}))`,
+        2
+      )
     );
   }
 
@@ -214,11 +236,16 @@ export const _toRust = (
   }
 
   if (request.data) {
-    if (typeof request.data === "string" && request.data.indexOf("\n") !== -1) {
+    if (request.data && request.data.indexOf("\n") !== -1) {
       // Use raw strings for multiline content
-      lines.push(indent('.body(r#"', 2), request.data, '"#', indent(")", 2));
+      lines.push(
+        indent('.body(r#"', 2),
+        request.data.toString(), // TODO: this is wrong
+        '"#',
+        indent(")", 2)
+      );
     } else {
-      lines.push(indent(`.body(${repr(request.data)})`, 2));
+      lines.push(indent(`.body(${repr(request.data, imports)})`, 2));
     }
   }
 
@@ -231,7 +258,27 @@ export const _toRust = (
     "}"
   );
 
-  return lines.join("\n") + "\n";
+  const preambleLines = ["extern crate reqwest;"];
+  {
+    // Generate imports.
+    const imports = [
+      { want: "header", condition: !!request.headers },
+      { want: "blocking::multipart", condition: !!request.multipartUploads },
+    ]
+      .filter((i) => i.condition)
+      .map((i) => i.want);
+
+    if (imports.length > 1) {
+      preambleLines.push(`use reqwest::{${imports.join(", ")}};`);
+    } else if (imports.length) {
+      preambleLines.push(`use reqwest::${imports[0]};`);
+    }
+  }
+  for (const imp of Array.from(imports).sort()) {
+    preambleLines.push("use " + imp + ";");
+  }
+
+  return [...preambleLines, ...lines].join("\n") + "\n";
 };
 export const toRustWarn = (
   curlCommand: string | string[],

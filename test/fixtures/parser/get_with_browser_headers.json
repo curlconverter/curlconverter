@@ -2,231 +2,79 @@
   {
     "urls": [
       {
-        "originalUrl": {
-          "tokens": [
-            "http://localhost:28139/"
-          ]
-        },
-        "urlWithoutQueryList": {
-          "tokens": [
-            "http://localhost:28139/"
-          ]
-        },
-        "url": {
-          "tokens": [
-            "http://localhost:28139/"
-          ]
-        },
+        "originalUrl": "http://localhost:28139/",
+        "urlWithoutQueryList": "http://localhost:28139/",
+        "url": "http://localhost:28139/",
         "urlObj": {
-          "scheme": {
-            "tokens": [
-              "http"
-            ]
-          },
-          "host": {
-            "tokens": [
-              "localhost:28139"
-            ]
-          },
-          "path": {
-            "tokens": [
-              "/"
-            ]
-          },
-          "query": {
-            "tokens": [
-              ""
-            ]
-          },
-          "originalQuery": {
-            "tokens": [
-              ""
-            ]
-          },
-          "fragment": {
-            "tokens": [
-              ""
-            ]
-          }
+          "scheme": "http",
+          "host": "localhost:28139",
+          "path": "/",
+          "query": "",
+          "originalQuery": "",
+          "fragment": ""
         },
-        "urlWithOriginalQuery": {
-          "tokens": [
-            "http://localhost:28139/"
-          ]
-        },
-        "urlWithoutQueryArray": {
-          "tokens": [
-            "http://localhost:28139/"
-          ]
-        },
-        "method": {
-          "tokens": [
-            "GET"
-          ]
-        }
+        "urlWithOriginalQuery": "http://localhost:28139/",
+        "urlWithoutQueryArray": "http://localhost:28139/",
+        "method": "GET"
       }
     ],
     "authType": "basic",
     "lowercaseHeaders": false,
     "cookies": [
       [
-        {
-          "tokens": [
-            "GeoIP"
-          ]
-        },
-        {
-          "tokens": [
-            "US:Albuquerque:35.1241:-106.7675:v4"
-          ]
-        }
+        "GeoIP",
+        "US:Albuquerque:35.1241:-106.7675:v4"
       ],
       [
-        {
-          "tokens": [
-            "uls-previous-languages"
-          ]
-        },
-        {
-          "tokens": [
-            "%5B%22en%22%5D"
-          ]
-        }
+        "uls-previous-languages",
+        "%5B%22en%22%5D"
       ],
       [
-        {
-          "tokens": [
-            "mediaWiki.user.sessionId"
-          ]
-        },
-        {
-          "tokens": [
-            "VaHaeVW3m0ymvx9kacwshZIDkv8zgF9y"
-          ]
-        }
+        "mediaWiki.user.sessionId",
+        "VaHaeVW3m0ymvx9kacwshZIDkv8zgF9y"
       ],
       [
-        {
-          "tokens": [
-            "centralnotice_buckets_by_campaign"
-          ]
-        },
-        {
-          "tokens": [
-            "%7B%22C14_enUS_dsk_lw_FR%22%3A%7B%22val%22%3A%220%22%2C%22start%22%3A1412172000%2C%22end%22%3A1422576000%7D%2C%22C14_en5C_dec_dsk_FR%22%3A%7B%22val%22%3A3%2C%22start%22%3A1417514400%2C%22end%22%3A1425290400%7D%2C%22C14_en5C_bkup_dsk_FR%22%3A%7B%22val%22%3A1%2C%22start%22%3A1417428000%2C%22end%22%3A1425290400%7D%7D"
-          ]
-        }
+        "centralnotice_buckets_by_campaign",
+        "%7B%22C14_enUS_dsk_lw_FR%22%3A%7B%22val%22%3A%220%22%2C%22start%22%3A1412172000%2C%22end%22%3A1422576000%7D%2C%22C14_en5C_dec_dsk_FR%22%3A%7B%22val%22%3A3%2C%22start%22%3A1417514400%2C%22end%22%3A1425290400%7D%2C%22C14_en5C_bkup_dsk_FR%22%3A%7B%22val%22%3A1%2C%22start%22%3A1417428000%2C%22end%22%3A1425290400%7D%7D"
       ],
       [
-        {
-          "tokens": [
-            "centralnotice_bannercount_fr12"
-          ]
-        },
-        {
-          "tokens": [
-            "22"
-          ]
-        }
+        "centralnotice_bannercount_fr12",
+        "22"
       ],
       [
-        {
-          "tokens": [
-            "centralnotice_bannercount_fr12-wait"
-          ]
-        },
-        {
-          "tokens": [
-            "14"
-          ]
-        }
+        "centralnotice_bannercount_fr12-wait",
+        "14"
       ]
     ],
     "compressed": true,
     "headers": [
       [
-        {
-          "tokens": [
-            "Accept-Encoding"
-          ]
-        },
-        {
-          "tokens": [
-            "gzip, deflate, sdch"
-          ]
-        }
+        "Accept-Encoding",
+        "gzip, deflate, sdch"
       ],
       [
-        {
-          "tokens": [
-            "Accept-Language"
-          ]
-        },
-        {
-          "tokens": [
-            "en-US,en;q=0.8"
-          ]
-        }
+        "Accept-Language",
+        "en-US,en;q=0.8"
       ],
       [
-        {
-          "tokens": [
-            "User-Agent"
-          ]
-        },
-        {
-          "tokens": [
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-          ]
-        }
+        "User-Agent",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
       ],
       [
-        {
-          "tokens": [
-            "Accept"
-          ]
-        },
-        {
-          "tokens": [
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-          ]
-        }
+        "Accept",
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
       ],
       [
-        {
-          "tokens": [
-            "Referer"
-          ]
-        },
-        {
-          "tokens": [
-            "http://www.wikipedia.org/"
-          ]
-        }
+        "Referer",
+        "http://www.wikipedia.org/"
       ],
       [
-        {
-          "tokens": [
-            "Cookie"
-          ]
-        },
-        {
-          "tokens": [
-            "GeoIP=US:Albuquerque:35.1241:-106.7675:v4; uls-previous-languages=%5B%22en%22%5D; mediaWiki.user.sessionId=VaHaeVW3m0ymvx9kacwshZIDkv8zgF9y; centralnotice_buckets_by_campaign=%7B%22C14_enUS_dsk_lw_FR%22%3A%7B%22val%22%3A%220%22%2C%22start%22%3A1412172000%2C%22end%22%3A1422576000%7D%2C%22C14_en5C_dec_dsk_FR%22%3A%7B%22val%22%3A3%2C%22start%22%3A1417514400%2C%22end%22%3A1425290400%7D%2C%22C14_en5C_bkup_dsk_FR%22%3A%7B%22val%22%3A1%2C%22start%22%3A1417428000%2C%22end%22%3A1425290400%7D%7D; centralnotice_bannercount_fr12=22; centralnotice_bannercount_fr12-wait=14"
-          ]
-        }
+        "Cookie",
+        "GeoIP=US:Albuquerque:35.1241:-106.7675:v4; uls-previous-languages=%5B%22en%22%5D; mediaWiki.user.sessionId=VaHaeVW3m0ymvx9kacwshZIDkv8zgF9y; centralnotice_buckets_by_campaign=%7B%22C14_enUS_dsk_lw_FR%22%3A%7B%22val%22%3A%220%22%2C%22start%22%3A1412172000%2C%22end%22%3A1422576000%7D%2C%22C14_en5C_dec_dsk_FR%22%3A%7B%22val%22%3A3%2C%22start%22%3A1417514400%2C%22end%22%3A1425290400%7D%2C%22C14_en5C_bkup_dsk_FR%22%3A%7B%22val%22%3A1%2C%22start%22%3A1417428000%2C%22end%22%3A1425290400%7D%7D; centralnotice_bannercount_fr12=22; centralnotice_bannercount_fr12-wait=14"
       ],
       [
-        {
-          "tokens": [
-            "Connection"
-          ]
-        },
-        {
-          "tokens": [
-            "keep-alive"
-          ]
-        }
+        "Connection",
+        "keep-alive"
       ]
     ]
   }

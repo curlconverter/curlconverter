@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
@@ -12,7 +13,11 @@ const supportedArgs = new Set([
   "proxy-user",
 ]);
 
-const repr = (s: string): string => {
+const repr = (w: Word | string): string => {
+  if (typeof w !== "string" && !w.isString()) {
+    // TODO: warn
+  }
+  let s = w.toString();
   let quote: "'" | '"' = '"';
   if (s.includes('"') && !s.includes("'")) {
     quote = "'";
@@ -79,8 +84,7 @@ export const _toCFML = (
   let cfmlCode = "";
 
   cfmlCode += "httpService = new http();\n";
-  cfmlCode +=
-    "httpService.setUrl(" + repr(request.urls[0].url as string) + ");\n";
+  cfmlCode += "httpService.setUrl(" + repr(request.urls[0].url) + ");\n";
   cfmlCode += "httpService.setMethod(" + repr(request.urls[0].method) + ");\n";
 
   if (request.cookies) {
@@ -101,14 +105,16 @@ export const _toCFML = (
         'httpService.addParam(type="header", name=' +
         repr(headerName) +
         ", value=" +
-        repr(headerValue as string) +
+        repr(headerValue || new Word()) +
         ");\n";
     }
   }
 
   if (request.timeout) {
     cfmlCode +=
-      "httpService.setTimeout(" + (parseInt(request.timeout, 10) || 0) + ");\n";
+      "httpService.setTimeout(" +
+      (parseInt(request.timeout.toString(), 10) || 0) +
+      ");\n";
   }
 
   if (request.urls[0].auth) {
@@ -118,11 +124,12 @@ export const _toCFML = (
   }
 
   if (request.proxy) {
-    let proxy = request.proxy;
+    const p = request.proxy.toString();
+    let proxy = p;
     let proxyPort = "1080";
-    const proxyPart = (request.proxy as string).match(/:([0-9]+)/);
+    const proxyPart = p.match(/:([0-9]+)/);
     if (proxyPart) {
-      proxy = request.proxy.slice(0, proxyPart.index);
+      proxy = p.slice(0, proxyPart.index);
       proxyPort = proxyPart[1];
     }
 
@@ -130,7 +137,9 @@ export const _toCFML = (
     cfmlCode += "httpService.setProxyPort(" + proxyPort.trim() + ");\n";
 
     if (request.proxyAuth) {
-      const [proxyUser, proxyPassword] = request.proxyAuth.split(/:(.*)/s, 2);
+      const [proxyUser, proxyPassword] = request.proxyAuth
+        .toString()
+        .split(/:(.*)/s, 2);
       cfmlCode += "httpService.setProxyUser(" + repr(proxyUser) + ");\n";
       cfmlCode +=
         "httpService.setProxyPassword(" + repr(proxyPassword || "") + ");\n";
@@ -158,18 +167,19 @@ export const _toCFML = (
       }
     } else if (
       !request.isDataRaw &&
-      (request.data as string).charAt(0) === "@"
+      request.data &&
+      request.data.charAt(0) === "@"
     ) {
       cfmlCode +=
         'httpService.addParam(type="body", value="#' +
         (request.isDataBinary ? "fileReadBinary" : "fileRead") +
         "(expandPath(" +
-        repr((request.data as string).substring(1)) +
+        repr(request.data.toString().substring(1)) +
         '))#");\n';
     } else {
       cfmlCode +=
         'httpService.addParam(type="body", value=' +
-        repr(request.data as string) +
+        repr(request.data!) +
         ");\n";
     }
   }

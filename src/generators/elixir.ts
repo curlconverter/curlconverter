@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
@@ -12,7 +13,7 @@ const supportedArgs = new Set([
 
 const regexEscape = /"|\\|\p{C}|\p{Z}|#\{/gu;
 
-export function repr(s: string | null): string {
+export function reprStr(s: string | null): string {
   if (s === null) {
     s = "";
   }
@@ -58,6 +59,26 @@ export function repr(s: string | null): string {
   );
 }
 
+export function repr(w: Word | string): string {
+  if (typeof w === "string") {
+    return reprStr(w);
+  }
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      // TODO: require System
+      args.push("System.get_env(" + reprStr(t.value) + ")");
+    } else {
+      // TODO: require System
+      // TODO: this needs to be two arguments the command name + list of args
+      args.push("System.cmd(" + reprStr(t.value) + ")");
+    }
+  }
+  return args.join(" + ");
+}
+
 function addIndent(value: string): string {
   // split on new lines and add 2 spaces of indentation to each line, except empty lines
   return value
@@ -71,15 +92,15 @@ function getCookies(request: Request): string {
     return "";
   }
 
-  const cookies = [];
-  for (const [cookieName, cookieValue] of request.cookies) {
-    cookies.push(`${cookieName}=${cookieValue}`);
-  }
-  return `cookie: [${repr(cookies.join("; "))}]`;
+  const cookies = util.joinWords(
+    request.cookies.map((c) => util.joinWords(c, "=")),
+    "; "
+  );
+  return `cookie: [${repr(cookies)}]`;
 }
 
 function getOptions(request: Request, params: string): [string, string] {
-  const hackneyOptions = [];
+  const hackneyOptions: string[] = [];
 
   const auth = getBasicAuth(request);
   if (auth) {
@@ -134,7 +155,7 @@ function getQueryDict(request: Request): string {
     return "[]";
   }
   let queryDict = "[\n";
-  const queryDictLines = [];
+  const queryDictLines: string[] = [];
   for (const [paramName, rawValue] of request.urls[0].queryList) {
     queryDictLines.push(`    {${repr(paramName)}, ${repr(rawValue)}}`);
   }
@@ -148,9 +169,9 @@ function getHeadersDict(request: Request): string {
     return "[]";
   }
   let dict = "[\n";
-  const dictLines = [];
+  const dictLines: string[] = [];
   for (const [headerName, headerValue] of request.headers) {
-    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue)}}`);
+    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue ?? "")}}`);
   }
   dict += dictLines.join(",\n");
   dict += "\n  ]";
@@ -225,12 +246,13 @@ function getDataString(request: Request): string {
   }
 
   if (
+    request.data.isString() &&
     !request.data.includes("|") &&
     request.data.split("\n", 4).length > 3 &&
     // No trailing whitespace, except possibly on the last line
     !request.data.match(/[^\S\r\n]\n/)
   ) {
-    return "~s|" + request.data + "|";
+    return "~s|" + request.data.toString() + "|";
   }
   return repr(request.data);
 }
@@ -286,14 +308,16 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   // put!(url, body \\ "", headers \\ [], options \\ [])
   const methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"];
   const bodyMethods = ["PATCH", "POST", "PUT"];
-  if (!methods.includes(request.urls[0].method)) {
+  const method = request.urls[0].method;
+  const methodStr = method.toString();
+  if (!methods.includes(methodStr)) {
     warnings.push([
       "bad-method",
-      "Unsupported method " + JSON.stringify(request.urls[0].method),
+      "Unsupported method " + JSON.stringify(methodStr),
     ]);
   }
 
-  const isBodyMethod = bodyMethods.includes(request.urls[0].method);
+  const isBodyMethod = bodyMethods.includes(methodStr);
   const body = getBody(request);
   const headers = getHeadersDict(request);
   const params = getQueryDict(request);
@@ -301,10 +325,10 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   // form, put them as a separate argument.
   const [options, optionsWithoutParams] = getOptions(request, params);
 
-  if (body === '""' || isBodyMethod) {
+  if (isBodyMethod || (body === '""' && methods.includes(methodStr))) {
     // Add args backwards. As soon as we see a non-default value, we have to
     // add all preceding arguments.
-    let args = [];
+    let args: string[] = [];
     let keepArgs = false;
     keepArgs ||= options !== "[]";
     if (keepArgs) {
@@ -321,8 +345,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
     args.push(repr(request.urls[0].urlWithoutQueryList));
     args = args.reverse();
 
-    let s =
-      "response = HTTPoison." + request.urls[0].method.toLowerCase() + "!(";
+    let s = "response = HTTPoison." + methodStr.toLowerCase() + "!(";
     if (args.length === 1) {
       // If we just need the method+URL, keep it all on one line
       s += args[0];
@@ -335,7 +358,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   }
 
   return `request = %HTTPoison.Request{
-  method: :${request.urls[0].method.toLowerCase()},
+  method: :${method.toLowerCase().toString()},
   url: ${repr(request.urls[0].urlWithoutQueryList)},
   body: ${body},
   headers: ${headers},

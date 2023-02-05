@@ -5,11 +5,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func main() {
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", "http://localhost:28139", nil)
+	var data = strings.NewReader(``)
+	req, err := http.NewRequest("POST", "http://localhost:28139", data)
 	if err != nil {
 		log.Fatal(err)
 	}

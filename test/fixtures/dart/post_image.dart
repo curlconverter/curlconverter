@@ -5,6 +5,6 @@ void main() async {
   var res = await http.MultipartRequest('POST', url)
     ..files.add(await http.MultipartFile.fromPath(
       'image', 'image.jpg'))
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

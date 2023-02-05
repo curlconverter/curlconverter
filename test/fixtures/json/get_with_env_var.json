@@ -1,0 +1,12 @@
+{
+    "url": "http://localhost:28139/v2/images",
+    "raw_url": "http://localhost:28139/v2/images?type=distribution",
+    "method": "get",
+    "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $DO_API_TOKEN"
+    },
+    "queries": {
+        "type": "distribution"
+    }
+}

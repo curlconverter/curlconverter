@@ -16,26 +16,23 @@ function getDataString(request: Request): [string, boolean] | undefined {
     return;
   }
 
-  if (!request.isDataRaw && request.data === "@-") {
-    if (request.stdinFile) {
-      request.data = "@" + request.stdinFile;
-    } else if (request.stdin) {
-      request.data = request.stdin;
-    }
-  }
-  const contentTypeHeader = util.getHeader(request, "content-type");
-  const isJson =
-    contentTypeHeader &&
-    contentTypeHeader.split(";")[0].trim() === "application/json";
-  if (isJson) {
+  // TODO: this is done earlier?
+  // if (!request.isDataRaw && request.data === "@-") {
+  //   if (request.stdinFile) {
+  //     request.data = "@" + request.stdinFile;
+  //   } else if (request.stdin) {
+  //     request.data = request.stdin;
+  //   }
+  // }
+
+  if (util.getContentType(request) === "application/json") {
+    // TODO: warn if contains variables
+    const dataStr = request.data.toString();
     try {
-      const dataAsJson = JSON.parse(request.data);
+      const dataAsJson = JSON.parse(dataStr);
       // TODO: we actually want to know how it's serialized by
-      // simplejson or Python's builtin json library,
-      // which is what Requests uses
-      // https://github.com/psf/requests/blob/b0e025ade7ed30ed53ab61f542779af7e024932e/requests/models.py#L473
-      // but this is hopefully good enough.
-      const roundtrips = JSON.stringify(dataAsJson) === request.data;
+      // Ansible, but this is hopefully good enough.
+      const roundtrips = JSON.stringify(dataAsJson) === dataStr;
       return [dataAsJson, roundtrips];
     } catch {}
   }
@@ -73,7 +70,9 @@ export const _toAnsible = (
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -105,38 +104,46 @@ export const _toAnsible = (
   }
 
   const r: AnsibleURI = {
-    url: request.urls[0].url,
-    method: request.urls[0].method, // TODO: toUpper()?
+    url: request.urls[0].url.toString(),
+    method: request.urls[0].method.toString(), // TODO: toUpper()?
   };
-  if (typeof request.data === "string" && request.data) {
+  if (request.data) {
     const asJson = getDataString(request);
     if (asJson) {
       r.body = asJson[0];
       r.body_format = "json";
     } else {
-      r.body = request.data;
+      r.body = request.data.toString();
     }
   }
-  if (request.headers) {
+  if (request.headers && request.headers.filter((h) => h[0]).length) {
     r.headers = {};
     for (const h of request.headers) {
       const [k, v] = h;
-      r.headers[k] = v || "";
+      if (v !== null) {
+        r.headers[k.toString()] = v.toString();
+      }
     }
   }
   if (request.urls[0].auth) {
-    if (request.urls[0].auth[0]) {
-      r.url_username = request.urls[0].auth[0];
+    if (request.urls[0].auth[0].toBool()) {
+      r.url_username = request.urls[0].auth[0].toString();
     }
-    if (request.urls[0].auth[1]) {
-      r.url_password = request.urls[0].auth[1];
+    if (request.urls[0].auth[1].toBool()) {
+      r.url_password = request.urls[0].auth[1].toString();
     }
   }
   if (request.insecure) {
     r.validate_certs = false;
   }
   return yaml.stringify(
-    [{ name: request.urls[0].urlWithoutQueryList, uri: r, register: "result" }],
+    [
+      {
+        name: request.urls[0].urlWithoutQueryList.toString(),
+        uri: r,
+        register: "result",
+      },
+    ],
     100,
     2
   );

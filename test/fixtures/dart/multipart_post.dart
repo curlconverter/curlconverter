@@ -8,6 +8,6 @@ void main() async {
       'file', 'myfile.jpg'))
   req.headers['Authorization'] = 'Bearer ACCESS_TOKEN';
   var res = await req.send();
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }
