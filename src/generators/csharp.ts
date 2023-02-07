@@ -74,21 +74,18 @@ export function reprStr(s: string): string {
   );
 }
 
-export function repr(w: Word | string): string {
-  if (typeof w === "string") {
-    return reprStr(w);
-  }
+export function repr(w: Word, imports: Set<string>): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
       args.push(reprStr(t));
     } else if (t.type === "variable") {
-      // TODO: using System;
       args.push("Environment.GetEnvironmentVariable(" + reprStr(t.value) + ")");
+      imports.add("System");
     } else {
-      // TODO: using System.Diagnostics
       // TODO: this needs to be two arguments the command name + list of args
       args.push("System.Diagnostics.Process.Start(" + reprStr(t.value) + ")");
+      imports.add("System.Diagnostics");
     }
   }
   return args.join(" + ");
@@ -144,7 +141,7 @@ export const _toCSharp = (
     ]);
   }
 
-  const imports = new Set<string>();
+  const imports = new Set<string>(["System.Net.Http"]);
 
   const methods = {
     DELETE: "Delete",
@@ -164,7 +161,8 @@ export const _toCSharp = (
     TRACE: "Trace",
   };
   const method = request.urls[0].method.toString();
-  let methodStr = "new HttpMethod(" + repr(request.urls[0].method) + ")";
+  let methodStr =
+    "new HttpMethod(" + repr(request.urls[0].method, imports) + ")";
   if (util.has(moreMethods, method)) {
     methodStr = "HttpMethod." + moreMethods[method];
   }
@@ -191,7 +189,8 @@ export const _toCSharp = (
     if (request.proxy) {
       // TODO: probably need to parse the value a bit
       // TODO: , true) ?
-      s += "handler.Proxy = new WebProxy(" + repr(request.proxy) + ");\n";
+      s +=
+        "handler.Proxy = new WebProxy(" + repr(request.proxy, imports) + ");\n";
     }
     if (request.compressed) {
       s += "handler.AutomaticDecompression = DecompressionMethods.All;\n";
@@ -206,14 +205,14 @@ export const _toCSharp = (
     if (method === "GET") {
       s +=
         "string responseBody = await client.GetStringAsync(" +
-        repr(request.urls[0].url) +
+        repr(request.urls[0].url, imports) +
         ");\n";
     } else {
       s +=
         "HttpResponseMessage response = await client." +
         methods[method] +
         "Async(" +
-        repr(request.urls[0].url) +
+        repr(request.urls[0].url, imports) +
         ");\n";
       s += "response.EnsureSuccessStatusCode();\n";
       s +=
@@ -226,7 +225,7 @@ export const _toCSharp = (
     "HttpRequestMessage request = new HttpRequestMessage(" +
     methodStr +
     ", " +
-    repr(request.urls[0].url) +
+    repr(request.urls[0].url, imports) +
     ");\n";
 
   // https://docs.microsoft.com/en-us/dotnet/api/system.net.http.headers.httpcontentheaders
@@ -260,16 +259,16 @@ export const _toCSharp = (
       }
       s +=
         "request.Headers.Add(" +
-        repr(headerName) +
+        repr(headerName, imports) +
         ", " +
-        repr(headerValue) +
+        repr(headerValue, imports) +
         ");\n";
     }
     if (request.urls[0].auth && request.authType === "basic") {
       // TODO: add request.rawAuth?
       s +=
         'request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(' +
-        repr(util.joinWords(request.urls[0].auth, ":")) +
+        repr(util.joinWords(request.urls[0].auth, ":"), imports) +
         ")));\n";
     }
     s += "\n";
@@ -278,7 +277,7 @@ export const _toCSharp = (
   if (request.urls[0].uploadFile) {
     s +=
       "request.Content = new ByteArrayContent(File.ReadAllBytes(" +
-      repr(request.urls[0].uploadFile) +
+      repr(request.urls[0].uploadFile, imports) +
       "));\n";
   } else if (request.data) {
     // TODO: parse
@@ -286,10 +285,13 @@ export const _toCSharp = (
       // TODO: stdin
       s +=
         "request.Content = new StringContent(File.ReadAllText(" +
-        repr(request.data.slice(1)) +
+        repr(request.data.slice(1), imports) +
         ').Replace("\\n", string.Empty).Replace("\\r", string.Empty));\n';
     } else {
-      s += "request.Content = new StringContent(" + repr(request.data) + ");\n";
+      s +=
+        "request.Content = new StringContent(" +
+        repr(request.data, imports) +
+        ");\n";
     }
   } else if (request.multipartUploads) {
     s += "\n";
@@ -299,7 +301,7 @@ export const _toCSharp = (
       // MultipartRequest syntax looks like this:
       //   content.Add(HttpContent(content), name, filename);
       // TODO: wrap name in extra "" to match curl?
-      const name = repr(m.name); // TODO: what if name is empty string?
+      const name = repr(m.name, imports); // TODO: what if name is empty string?
       const sentFilename = "filename" in m && m.filename;
       s += "content.Add(new ";
       if ("contentFile" in m) {
@@ -307,40 +309,41 @@ export const _toCSharp = (
           if (request.stdinFile) {
             s +=
               "ByteArrayContent(File.ReadAllBytes(" +
-              repr(request.stdinFile) +
+              repr(request.stdinFile, imports) +
               ")), " +
               name;
             if (sentFilename) {
-              s += ", Path.GetFileName(" + repr(sentFilename) + ")";
+              s += ", Path.GetFileName(" + repr(sentFilename, imports) + ")";
             }
             s += ");\n";
           } else if (request.stdin) {
-            s += "StringContent(" + repr(request.stdin) + "), " + name;
+            s += "StringContent(" + repr(request.stdin, imports) + "), " + name;
             if (sentFilename) {
-              s += ", Path.GetFileName(" + repr(sentFilename) + ")";
+              s += ", Path.GetFileName(" + repr(sentFilename, imports) + ")";
             }
             s += ");\n";
           } else {
             // TODO: read entire stdin
             s += "StringContent(Console.ReadLine()), " + name;
             if (sentFilename) {
-              s += ", Path.GetFileName(" + repr(sentFilename) + ")";
+              s += ", Path.GetFileName(" + repr(sentFilename, imports) + ")";
             }
             s += ");\n";
           }
         } else {
           s +=
             "ByteArrayContent(File.ReadAllBytes(" +
-            repr(m.contentFile) +
+            repr(m.contentFile, imports) +
             ")), " +
             name;
           if (sentFilename) {
-            s += ", Path.GetFileName(" + repr(sentFilename) + ")";
+            s += ", Path.GetFileName(" + repr(sentFilename, imports) + ")";
           }
           s += ");\n";
         }
       } else {
-        s += "StringContent(" + repr(m.content) + "), " + name + ");\n";
+        s +=
+          "StringContent(" + repr(m.content, imports) + "), " + name + ");\n";
       }
     }
     s += "request.Content = content;\n";
@@ -361,19 +364,20 @@ export const _toCSharp = (
         if (headerValue.includes(";")) {
           s +=
             "request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(" +
-            repr(headerValue) +
+            repr(headerValue, imports) +
             ");\n";
         } else {
           s +=
             "request.Content.Headers.ContentType = new MediaTypeHeaderValue(" +
-            repr(headerValue) +
+            repr(headerValue, imports) +
             ");\n";
         }
       } else if (headerNameLower === "content-length") {
         if (headerValue.isString() && !util.isInt(headerValue.toString())) {
           warnings.push([
             "content-length-not-int",
-            "Content-Length header value is not a number: " + repr(headerValue),
+            "Content-Length header value is not a number: " +
+              repr(headerValue, imports),
           ]);
         }
         s +=
@@ -387,7 +391,7 @@ export const _toCSharp = (
           "request.Content.Headers." +
           contentHeaders[headerNameLower] +
           " = " +
-          repr(headerValue) +
+          repr(headerValue, imports) +
           ";\n";
       }
     }
@@ -407,7 +411,7 @@ export const _toCSharp = (
   s += "string responseBody = await response.Content.ReadAsStringAsync();\n";
 
   if (imports.size) {
-    s = "using " + [...imports].join(";\nusing ") + ";\n\n" + s;
+    s = "using " + [...imports].sort().join(";\nusing ") + ";\n\n" + s;
   }
   return s;
 };

@@ -53,18 +53,19 @@ export const reprStr = (s: string): string =>
   }) +
   '"';
 
-function repr(w: Word): string {
+type Vars = { [key: string]: string };
+function repr(w: Word, imports: Set<string>): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
       args.push(reprStr(t));
     } else if (t.type === "variable") {
-      // TODO: import?
       args.push("System.getenv(" + reprStr(t.value) + ")");
+      imports.add("java.lang.System");
     } else {
-      // TODO: import?
-      // TODO: this needs to be on a separate line with reading stdout/stderr, etc.
-      args.push("Runtime.getRuntime().exec(" + reprStr(t.value) + ")");
+      args.push("exec(" + reprStr(t.value) + ")");
+      imports.add("java.lang.Runtime");
+      imports.add("java.util.Scanner");
     }
   }
   return args.join(" + ");
@@ -120,30 +121,24 @@ export const _toJava = (
     ]);
   }
 
+  const imports = new Set<string>([
+    "java.io.IOException",
+    "java.io.InputStream",
+    "java.net.HttpURLConnection",
+    "java.net.URL",
+    "java.util.Scanner",
+  ]);
+  const vars: Vars = {};
   let javaCode = "";
 
-  if (request.urls[0].auth) {
-    javaCode += "import javax.xml.bind.DatatypeConverter;\n";
-  }
-  javaCode += "import java.io.IOException;\n";
-  javaCode += "import java.io.InputStream;\n";
-  if (request.data) {
-    javaCode += "import java.io.OutputStreamWriter;\n";
-  }
-
-  javaCode += "import java.net.HttpURLConnection;\n";
-
-  javaCode += "import java.net.URL;\n";
-  javaCode += "import java.util.Scanner;\n";
-
-  javaCode += "\nclass Main {\n\n";
-
-  javaCode += "\tpublic static void main(String[] args) throws IOException {\n";
-  javaCode += "\t\tURL url = new URL(" + repr(request.urls[0].url) + ");\n";
+  javaCode +=
+    "\t\tURL url = new URL(" + repr(request.urls[0].url, imports) + ");\n";
   javaCode +=
     "\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n";
   javaCode +=
-    "\t\thttpConn.setRequestMethod(" + repr(request.urls[0].method) + ");\n\n";
+    "\t\thttpConn.setRequestMethod(" +
+    repr(request.urls[0].method, imports) +
+    ");\n\n";
 
   let gzip = false;
   if (request.headers) {
@@ -153,9 +148,9 @@ export const _toJava = (
       }
       javaCode +=
         "\t\thttpConn.setRequestProperty(" +
-        repr(headerName) +
+        repr(headerName, imports) +
         ", " +
-        repr(headerValue) +
+        repr(headerValue, imports) +
         ");\n";
       if (
         headerName.toLowerCase().toString() === "accept-encoding" &&
@@ -170,24 +165,28 @@ export const _toJava = (
   if (request.urls[0].auth) {
     javaCode +=
       "\t\tbyte[] message = (" +
-      repr(util.joinWords(request.urls[0].auth, ":")) +
+      repr(util.joinWords(request.urls[0].auth, ":"), imports) +
       ').getBytes("UTF-8");\n';
     javaCode +=
       "\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n";
     javaCode +=
       '\t\thttpConn.setRequestProperty("Authorization", "Basic " + basicAuth);\n';
     javaCode += "\n";
+
+    imports.add("javax.xml.bind.DatatypeConverter");
   }
 
   if (request.data) {
     javaCode += "\t\thttpConn.setDoOutput(true);\n";
     javaCode +=
       "\t\tOutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n";
-    javaCode += "\t\twriter.write(" + repr(request.data) + ");\n";
+    javaCode += "\t\twriter.write(" + repr(request.data, imports) + ");\n";
     javaCode += "\t\twriter.flush();\n";
     javaCode += "\t\twriter.close();\n";
     javaCode += "\t\thttpConn.getOutputStream().close();\n";
     javaCode += "\n";
+
+    imports.add("java.io.OutputStreamWriter");
   }
 
   javaCode +=
@@ -207,7 +206,45 @@ export const _toJava = (
   javaCode += "\t}\n";
   javaCode += "}";
 
-  return javaCode + "\n";
+  let preambleCode = "";
+  for (const imp of Array.from(imports).sort()) {
+    preambleCode += "import " + imp + ";\n";
+  }
+  if (imports.size) {
+    preambleCode += "\n";
+  }
+
+  for (const [name, expr] of Array.from(Object.entries(vars)).sort()) {
+    preambleCode += "\t" + name + ", err := " + expr + "\n";
+  }
+  for (const varExpr of Array.from(Object.values(vars)).sort()) {
+    preambleCode += "\t" + varExpr + "\n";
+  }
+  if (Object.values(vars).length) {
+    preambleCode += "\n";
+  }
+
+  preambleCode += "class Main {\n";
+  preambleCode += "\n";
+  if (imports.has("java.lang.Runtime")) {
+    // Helper function that runs a bash command and always returns a string
+    preambleCode += "\tpublic static String exec(String cmd) {\n";
+    preambleCode += "\t\ttry {\n";
+    preambleCode += "\t\t\tProcess p = Runtime.getRuntime().exec(cmd);\n";
+    preambleCode += "\t\t\tp.waitFor();\n";
+    preambleCode +=
+      '\t\t\tScanner s = new Scanner(p.getInputStream()).useDelimiter("\\\\A");\n';
+    preambleCode += '\t\t\treturn s.hasNext() ? s.next() : "";\n';
+    preambleCode += "\t\t} catch (Exception e) {\n";
+    preambleCode += '\t\t\treturn "";\n';
+    preambleCode += "\t\t}\n";
+    preambleCode += "\t}\n";
+    preambleCode += "\n";
+  }
+  preambleCode +=
+    "\tpublic static void main(String[] args) throws IOException {\n";
+
+  return preambleCode + javaCode + "\n";
 };
 export const toJavaWarn = (
   curlCommand: string | string[],

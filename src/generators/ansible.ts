@@ -16,15 +16,6 @@ function getDataString(request: Request): [string, boolean] | undefined {
     return;
   }
 
-  // TODO: this is done earlier?
-  // if (!request.isDataRaw && request.data === "@-") {
-  //   if (request.stdinFile) {
-  //     request.data = "@" + request.stdinFile;
-  //   } else if (request.stdin) {
-  //     request.data = request.stdin;
-  //   }
-  // }
-
   if (util.getContentType(request) === "application/json") {
     // TODO: warn if contains variables
     const dataStr = request.data.toString();

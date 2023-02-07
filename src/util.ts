@@ -1,6 +1,9 @@
 import parser from "./bash-parser.js";
 import type { Parser } from "./bash-parser.js";
 
+import { Word, eq, firstShellToken, mergeWords, joinWords } from "./word.js";
+import type { Token, ShellToken } from "./word.js";
+
 import {
   curlLongOpts,
   curlShortOpts,
@@ -36,512 +39,6 @@ function isInt(s: string): boolean {
   return /^\s*[+-]?\d+$/.test(s);
 }
 
-interface ShellToken {
-  type: "variable" | "command";
-  value: string;
-  text: string;
-  syntaxNode: Parser.SyntaxNode; // For error reporting
-}
-
-// A shell Word is like a string, except it can contain shell variables or
-// expressions, which are treated as if they were a single character.
-// TODO: ShellWords should keep a list of operations that happened to them
-// like .replace() so that we can generate code that also does that operation
-// on the contents of the environment variable or the output of the command.
-class Word implements Iterable<string | ShellToken> {
-  readonly tokens: (string | ShellToken)[];
-
-  constructor();
-  constructor(tokens: string);
-  constructor(tokens: (string | ShellToken)[]);
-  constructor(tokens?: string | (string | ShellToken)[]) {
-    if (typeof tokens === "string") {
-      tokens = [tokens];
-    }
-    if (tokens === undefined || tokens.length === 0) {
-      tokens = [""];
-    }
-
-    this.tokens = [];
-    for (const t of tokens) {
-      if (typeof t === "string") {
-        if (
-          this.tokens.length > 0 &&
-          typeof this.tokens[this.tokens.length - 1] === "string"
-        ) {
-          // If we have 2+ strings in a row, merge them
-          this.tokens[this.tokens.length - 1] += t;
-        } else if (t) {
-          // skip empty strings
-          this.tokens.push(t);
-        }
-      } else {
-        this.tokens.push(t);
-      }
-    }
-    if (this.tokens.length === 0) {
-      this.tokens.push("");
-    }
-  }
-
-  get length(): number {
-    let len = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        len += t.length;
-      } else {
-        len += 1;
-      }
-    }
-    return len;
-  }
-
-  *[Symbol.iterator](): Iterator<string | ShellToken> {
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        for (const c of t) {
-          yield c;
-        }
-      } else {
-        yield t;
-      }
-    }
-  }
-
-  get(index: number): string | ShellToken {
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > index) {
-          return t[index - i];
-        }
-        i += t.length;
-      } else {
-        if (i === index) {
-          return t;
-        }
-        i += 1;
-      }
-    }
-    throw new CCError("Index out of bounds");
-  }
-
-  indexOf(search: string, start?: number): number {
-    if (start === undefined) {
-      start = 0;
-    }
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > start) {
-          const index = t.indexOf(search, start - i);
-          if (index !== -1) {
-            return i + index;
-          }
-        }
-        i += t.length;
-      } else {
-        i += 1;
-      }
-    }
-    return -1;
-  }
-
-  // Like indexOf() but accepts a string of characters and returns the index of the first one
-  // it finds
-  indexOfFirstChar(search: string): number {
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        for (const c of t) {
-          if (search.includes(c)) {
-            return i;
-          }
-          i += 1;
-        }
-      } else {
-        i += 1;
-      }
-    }
-    return -1;
-  }
-
-  charAt(index = 0): string | ShellToken {
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > index) {
-          return t[index - i];
-        }
-        i += t.length;
-      } else {
-        if (i === index) {
-          return t;
-        }
-        i += 1;
-      }
-    }
-    return "";
-  }
-
-  removeFirstChar(c: string): Word {
-    if (this.length === 0) {
-      return new Word();
-    }
-    if (this.charAt(0) === c) {
-      return this.slice(1);
-    }
-    return this.copy();
-  }
-
-  copy(): Word {
-    return new Word(this.tokens);
-  }
-
-  // Works exactly like String.prototype.slice() except
-  // variables/commands are treated as single characters
-  //
-  // `slice()` extracts the text from one string and returns a new string. Changes to the text in one string do not affect the other string.
-  //
-  // `slice()` extracts up to but not including `indexEnd`. For example, `str.slice(1, 4)` extracts the second character through the fourth character (characters indexed `1`, `2`, and `3`).
-  //
-  // - If `indexStart >= str.length`, an empty string is returned.
-  // - If `indexStart < 0`, the index is counted from the end of the string. More formally, in this case, the substring starts at `max(indexStart + str.length, 0)`.
-  // - If `indexStart` is omitted, undefined, or cannot be converted to a number (using {{jsxref('Number', 'Number(indexStart)')}}), it's treated as `0`.
-  // - If `indexEnd` is omitted, undefined, or cannot be converted to a number (using {{jsxref('Number', 'Number(indexEnd)')}}), or if `indexEnd >= str.length`, `slice()` extracts to the end of the string.
-  // - If `indexEnd < 0`, the index is counted from the end of the string. More formally, in this case, the substring ends at `max(indexEnd + str.length, 0)`.
-  // - If `indexEnd <= indexStart` after normalizing negative values (i.e. `indexEnd` represents a character that's before `indexStart`), an empty string is returned.
-  slice(indexStart?: number, indexEnd?: number): Word {
-    if (indexStart === undefined) {
-      indexStart = this.length;
-    }
-    if (indexEnd === undefined) {
-      indexEnd = this.length;
-    }
-    if (indexStart >= this.length) {
-      return new Word();
-    }
-    if (indexStart < 0) {
-      indexStart = Math.max(indexStart + this.length, 0);
-    }
-    if (indexEnd < 0) {
-      indexEnd = Math.max(indexEnd + this.length, 0);
-    }
-    if (indexEnd <= indexStart) {
-      return new Word();
-    }
-
-    const ret = [];
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > indexStart) {
-          if (i < indexEnd) {
-            ret.push(t.slice(Math.max(indexStart - i, 0), indexEnd - i));
-          }
-        }
-        i += t.length;
-      } else {
-        if (i >= indexStart && i < indexEnd) {
-          ret.push(t);
-        }
-        i += 1;
-      }
-    }
-    return new Word(ret);
-  }
-
-  // TODO: check
-  includes(search: string, start?: number): boolean {
-    if (start === undefined) {
-      start = 0;
-    }
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > start) {
-          if (t.includes(search, start - i)) {
-            return true;
-          }
-        }
-        i += t.length;
-      } else {
-        i += 1;
-      }
-    }
-    return false;
-  }
-
-  test(search: RegExp): boolean {
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (search.test(t)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  prepend(c: string): Word {
-    const ret = this.copy();
-    if (ret.tokens.length && typeof ret.tokens[0] === "string") {
-      ret.tokens[0] = c + ret.tokens[0];
-    } else {
-      ret.tokens.unshift(c);
-    }
-    return ret;
-  }
-
-  append(c: string): Word {
-    const ret = this.copy();
-    if (
-      ret.tokens.length &&
-      typeof ret.tokens[ret.tokens.length - 1] === "string"
-    ) {
-      ret.tokens[ret.tokens.length - 1] += c;
-    } else {
-      ret.tokens.push(c);
-    }
-    return ret;
-  }
-
-  // Merges two Words into one new one
-  add(other: Word): Word {
-    const ret = this.copy();
-    if (
-      ret.tokens.length &&
-      typeof ret.tokens[ret.tokens.length - 1] === "string" &&
-      other.tokens.length &&
-      typeof other.tokens[0] === "string"
-    ) {
-      ret.tokens[ret.tokens.length - 1] += other.tokens[0];
-      ret.tokens.push(...other.tokens.slice(1));
-    } else {
-      ret.tokens.push(...other.tokens);
-    }
-    return ret;
-  }
-
-  // Returns the first match, searches each string independently
-  // TODO: improve this
-  match(regex: RegExp): RegExpMatchArray | null {
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        const match = t.match(regex);
-        if (match) {
-          return match;
-        }
-      }
-    }
-    return null;
-  }
-
-  // .replace() is called per-string, so it won't work through shell variables
-  replace(search: string | RegExp, replacement: string): Word {
-    const ret: (string | ShellToken)[] = [];
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        ret.push(t.replace(search, replacement));
-      } else {
-        ret.push(t);
-      }
-    }
-    return new Word(ret);
-  }
-
-  // splits correctly, not exactly like String.split(), i.e. the last entry
-  // can contain the separator if limit entries has been reached
-  // TODO: check above
-  split(separator: string, limit?: number): Word[] {
-    const ret: Word[] = [];
-    let i = 0;
-    let start = 0;
-    while (i < this.length) {
-      let match = true;
-      for (let j = 0; j < separator.length; j++) {
-        if (this.get(i + j) !== separator.charAt(j)) {
-          match = false;
-          break;
-        }
-      }
-      if (match) {
-        ret.push(this.slice(start, i));
-        i += separator.length;
-        start = i;
-        if (limit !== undefined && ret.length === limit - 1) {
-          break;
-        }
-      } else {
-        i += 1;
-      }
-    }
-    if (start <= this.length) {
-      ret.push(this.slice(start));
-    }
-    return ret;
-  }
-
-  toLowerCase(): Word {
-    return new Word(
-      this.tokens.map((t) => (typeof t === "string" ? t.toLowerCase() : t))
-    );
-  }
-
-  toUpperCase(): Word {
-    return new Word(
-      this.tokens.map((t) => (typeof t === "string" ? t.toUpperCase() : t))
-    );
-  }
-
-  trim(): Word {
-    const ret: (string | ShellToken)[] = [];
-    let i, t;
-    for ([i, t] of this.tokens.entries()) {
-      if (typeof t === "string") {
-        if (i === 0) {
-          t = t.trimStart();
-        }
-        if (i === this.tokens.length - 1) {
-          t = t.trimEnd();
-        }
-        if (t) {
-          ret.push(t);
-        }
-      } else {
-        ret.push(t);
-      }
-    }
-    if (ret.length === 0) {
-      return new Word();
-    }
-    return new Word(ret);
-  }
-
-  isEmpty(): boolean {
-    if (this.tokens.length === 0) {
-      return true;
-    }
-    if (this.tokens.length === 1 && typeof this.tokens[0] === "string") {
-      return this.tokens[0].length === 0;
-    }
-    return false;
-  }
-
-  toBool(): boolean {
-    return !this.isEmpty();
-  }
-
-  // Returns true if .tokens contains no variables/commands
-  isString(): boolean {
-    for (const t of this.tokens) {
-      if (typeof t !== "string") {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  firstShellToken(): ShellToken | null {
-    for (const t of this.tokens) {
-      if (typeof t !== "string") {
-        return t;
-      }
-    }
-    return null;
-  }
-
-  startsWith(prefix: string): boolean {
-    if (this.tokens.length === 0) {
-      return false;
-    }
-    if (typeof this.tokens[0] === "string") {
-      return this.tokens[0].startsWith(prefix);
-    }
-    return false;
-  }
-
-  endsWith(suffix: string): boolean {
-    if (this.tokens.length === 0) {
-      return false;
-    }
-    const lastToken = this.tokens[this.tokens.length - 1];
-    if (typeof lastToken === "string") {
-      return lastToken.endsWith(suffix);
-    }
-    return false;
-  }
-
-  // This destroys the information about the original tokenization
-  toString() {
-    return this.tokens
-      .map((t) => (typeof t === "string" ? t : t.text))
-      .join("");
-  }
-  valueOf = Word.toString;
-}
-
-function eq(
-  it: Word | undefined | null,
-  other: string | Word | undefined | null
-): boolean {
-  if (
-    it === undefined ||
-    it === null ||
-    other === undefined ||
-    other === null
-  ) {
-    return it === other;
-  }
-  if (typeof other === "string") {
-    return (
-      it.tokens.length === 1 &&
-      typeof it.tokens[0] === "string" &&
-      it.tokens[0] === other
-    );
-  }
-  return (
-    it.tokens.length === other.tokens.length &&
-    it.tokens.every((itToken, i) => {
-      const otherToken = other.tokens[i];
-      if (typeof itToken === "string") {
-        return itToken === otherToken;
-      } else if (typeof otherToken !== "string") {
-        return itToken.text === otherToken.text;
-      }
-      return false;
-    })
-  );
-}
-function getChar(word: Word, index: number): string | ShellToken {
-  if (typeof word === "string") {
-    return word[index];
-  }
-  return word.get(index);
-}
-function firstShellToken(word: string | Word): ShellToken | null {
-  if (typeof word === "string") {
-    return null;
-  }
-  return word.firstShellToken();
-}
-function mergeWords(words: Word[]): Word {
-  const ret: (string | ShellToken)[] = [];
-  for (const w of words) {
-    ret.push(...w.tokens);
-  }
-  return new Word(ret);
-}
-function joinWords(words: Word[], joinChar: string): Word {
-  const ret: (string | ShellToken)[] = [];
-  for (const w of words) {
-    if (ret.length) {
-      ret.push(joinChar);
-    }
-    ret.push(...w.tokens);
-  }
-  return new Word(ret);
-}
 type QueryList = Array<[Word, Word]>;
 type QueryDict = Array<[Word, Word | Array<Word>]>;
 
@@ -642,7 +139,7 @@ interface OperationConfig {
 // are always returned as a list.
 // Normally, if you specify some option more than once,
 // curl will just take the last one.
-const canBeList = new Set([
+const canBeList = new Set<keyof OperationConfig>([
   "url",
   "upload-file",
   "output",
@@ -661,12 +158,15 @@ const canBeList = new Set([
   "authArgs", // used for error messages
 ]);
 
+type Warnings = [string, string][];
+
 interface GlobalConfig {
   verbose?: boolean;
   help?: boolean;
   version?: boolean;
-  warnings?: Warnings;
+
   configs: OperationConfig[];
+  warnings: Warnings;
 
   // These are specific to the curlconverter cli
   language?: string;
@@ -674,9 +174,6 @@ interface GlobalConfig {
 }
 
 function warnf(global: GlobalConfig, warning: [string, string]) {
-  if (!global.warnings) {
-    global.warnings = [];
-  }
   global.warnings.push(warning);
 }
 
@@ -721,8 +218,6 @@ function pickAuth(mask: number): AuthType {
   }
   return "none";
 }
-
-type Warnings = [string, string][];
 
 function pushArgValue(
   global: GlobalConfig,
@@ -1008,7 +503,6 @@ interface Request {
   awsSigV4?: Word;
   delegation?: Word;
 
-  // TODO: check this comment
   // A null header means the command explicitly disabled sending this header
   headers?: Headers;
   lowercaseHeaders: boolean;
@@ -1177,12 +671,12 @@ const underlineNodeEnd = (
   return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
 };
 
-function _toVal(
+function toTokens(
   node: Parser.SyntaxNode,
   curlCommand: string,
   warnings: Warnings
-): (string | ShellToken)[] {
-  let vals: (string | ShellToken)[] = [];
+): Token[] {
+  let vals: Token[] = [];
   switch (node.type) {
     case "word":
       return [removeBackslashes(node.text)];
@@ -1192,6 +686,8 @@ function _toVal(
       return [removeAnsiCBackslashes(node.text.slice(2, -1))];
     case "string":
     case "string_expansion": {
+      // TODO: MISSING quotes, for example
+      // curl "example.com
       let prevEnd = node.type === "string" ? 1 : 2;
 
       let res = "";
@@ -1200,7 +696,7 @@ function _toVal(
           node.text.slice(prevEnd, child.startIndex - node.startIndex)
         );
         // expansion, simple_expansion or command_substitution (or concat?)
-        const subVal = _toVal(child, curlCommand, warnings);
+        const subVal = toTokens(child, curlCommand, warnings);
         if (typeof subVal === "string") {
           res += subVal;
         } else {
@@ -1249,6 +745,8 @@ function _toVal(
     case "expansion":
       // Expansions look ${like_this}
       // https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
+      // TODO: MISSING }, for example
+      // curl example${com
       warnings.push([
         "expansion",
         "found expansion expression\n" + underlineNode(node, curlCommand),
@@ -1264,6 +762,8 @@ function _toVal(
         },
       ];
     case "command_substitution":
+      // TODO: MISSING ), for example
+      // curl example$(com
       warnings.push([
         "expansion",
         "found command substitution expression\n" +
@@ -1290,7 +790,7 @@ function _toVal(
         res += node.text.slice(prevEnd, child.startIndex - node.startIndex);
         prevEnd = child.endIndex - node.startIndex;
 
-        const subVal = _toVal(child, curlCommand, warnings);
+        const subVal = toTokens(child, curlCommand, warnings);
         if (typeof subVal === "string") {
           res += subVal;
         } else {
@@ -1317,31 +817,12 @@ function _toVal(
   }
 }
 
-function toVal(
+function toWord(
   node: Parser.SyntaxNode,
   curlCommand: string,
   warnings: Warnings
 ): Word {
-  const val = _toVal(node, curlCommand, warnings);
-
-  // merge adjacent strings
-  const mergedVal = [];
-  for (const t of val) {
-    if (typeof t === "string") {
-      if (
-        mergedVal.length > 0 &&
-        typeof mergedVal[mergedVal.length - 1] === "string"
-      ) {
-        mergedVal[mergedVal.length - 1] += t;
-      } else {
-        mergedVal.push(t);
-      }
-    } else {
-      mergedVal.push(t);
-    }
-  }
-
-  return new Word(mergedVal);
+  return new Word(toTokens(node, curlCommand, warnings));
 }
 
 interface TokenizeResult {
@@ -1431,7 +912,7 @@ const tokenize = (
       }
       const redirect = redirects[0];
       if (redirect.type === "file_redirect") {
-        stdinFile = toVal(redirect.namedChildren[0], curlCommand, warnings);
+        stdinFile = toWord(redirect.namedChildren[0], curlCommand, warnings);
       } else if (redirect.type === "heredoc_redirect") {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
@@ -1582,7 +1063,8 @@ const tokenize = (
     );
   }
 
-  const cmdNameNode = toVal(cmdName.firstChild!, curlCommand, warnings);
+  const cmdNameNode = toWord(cmdName.firstChild!, curlCommand, warnings);
+
   const cmdNameShellToken = firstShellToken(cmdNameNode);
   // The most common reason for the error below is probably accidentally copying
   // a $ from the shell prompt without a space after it
@@ -1598,7 +1080,7 @@ const tokenize = (
     );
   }
   const argsNodes = args.map((a: Parser.SyntaxNode) =>
-    toVal(a, curlCommand, warnings)
+    toWord(a, curlCommand, warnings)
   );
   return {
     cmdName: cmdNameStr,
@@ -1722,7 +1204,7 @@ const parseArgs = (
         }
 
         for (let j = 1; j < arg.length; j++) {
-          const jthChar = getChar(arg, j);
+          const jthChar = arg.get(j);
           if (typeof jthChar !== "string") {
             // A bash variable in the middle of a short option
             throw new CCError(
@@ -1871,10 +1353,10 @@ export function wordDecodeURIComponent(s: Word): Word {
 }
 
 export function parseQueryString(
-  s: Word | null
-): [QueryList | null, QueryDict | null] {
   // if url is 'example.com?' => s is ''
   // if url is 'example.com'  => s is null
+  s: Word | null
+): [QueryList | null, QueryDict | null] {
   if (!s || s.isEmpty()) {
     return [null, null];
   }
@@ -1891,8 +1373,8 @@ export function parseQueryString(
     let decodedKey;
     let decodedVal;
     try {
-      // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
-      // before decoding.
+      // https://url.spec.whatwg.org/#urlencoded-parsing
+      // recommends replacing + with space before decoding.
       decodedKey = wordDecodeURIComponent(key.replace(/\+/g, " "));
       decodedVal = wordDecodeURIComponent(val.replace(/\+/g, " "));
     } catch (e) {
@@ -2128,7 +1610,7 @@ export function buildURL(
   // TODO: remove .originalQuery
   const urlWithOriginalQuery = mergeWords([
     u.scheme,
-    new Word("://"),
+    "://",
     u.host,
     u.path,
     u.query,
@@ -2210,20 +1692,12 @@ export function buildURL(
   }
   const urlWithoutQueryArray = mergeWords([
     u.scheme,
-    new Word("://"),
+    "://",
     u.host,
     u.path,
     u.fragment,
   ]);
-
-  url = mergeWords([
-    u.scheme,
-    new Word("://"),
-    u.host,
-    u.path,
-    u.query,
-    u.fragment,
-  ]);
+  url = mergeWords([u.scheme, "://", u.host, u.path, u.query, u.fragment]);
   let urlWithoutQueryList = url;
   // TODO: parseQueryString() doesn't accept leading '?'
   let [queryList, queryDict] = parseQueryString(
@@ -2233,7 +1707,7 @@ export function buildURL(
     // TODO: remove the fragment too?
     urlWithoutQueryList = mergeWords([
       u.scheme,
-      new Word("://"),
+      "://",
       u.host,
       u.path,
       u.fragment,
@@ -2244,6 +1718,7 @@ export function buildURL(
   }
 
   // TODO: --path-as-is
+  // TODO: --request-target
   return [
     u,
     url,
@@ -2352,7 +1827,7 @@ function buildData(
         const filename = d[2];
         dataStrReadsFile ||= filename.toString(); // report first file
         if (name) {
-          return mergeWords([name, new Word("=@"), filename]);
+          return mergeWords([name, "=@", filename]);
         }
         return filename.prepend("@");
       }
@@ -2403,16 +1878,6 @@ function buildRequest(
         headers.push([name, headerValue]);
       } else if (header.includes(";")) {
         const [name] = header.split(";", 2);
-        const nameToken = firstShellToken(name);
-        if (nameToken) {
-          warnf(global, [
-            "header-expression",
-            "ignoring " +
-              nameToken.type +
-              " in header \n" +
-              underlineNode(nameToken.syntaxNode),
-          ]);
-        }
         headers.push([name, new Word()]);
       } else {
         // TODO: warn that this header arg is ignored
@@ -3171,6 +2636,8 @@ export {
 };
 
 export type {
+  ShellToken,
+  Token,
   Request,
   Cookie,
   Cookies,

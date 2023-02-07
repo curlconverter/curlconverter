@@ -145,6 +145,7 @@ const testedConverters = Object.entries(converters).map(
   (c) => c[1].converter.name
 );
 const untestedConverters = ["toPhpRequests"];
+const notConverterExports = ["Word"];
 
 const availableConverters = Object.entries(curlconverter)
   .map((c) => c[1].name)
@@ -153,6 +154,7 @@ const missing = availableConverters.filter(
   (c) =>
     !testedConverters.includes(c) &&
     !untestedConverters.includes(c) &&
+    !notConverterExports.includes(c) &&
     !c.endsWith("Warn")
 );
 const extra = testedConverters.filter(

@@ -1,7 +1,13 @@
 import * as util from "../../util.js";
 import { Word } from "../../util.js";
-import { reprObj, bySecondElem, asParseFloatTimes1000 } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
+import {
+  reprObj,
+  asParseFloatTimes1000,
+  addImport,
+  reprImportsRequire,
+} from "./javascript.js";
+import type { JSImports } from "./javascript.js";
 
 import {
   reprStr,
@@ -21,12 +27,15 @@ const supportedArgs = new Set([
 ]);
 
 // TODO: @
-const _getDataString = (request: Request): [string | null, string | null] => {
+const _getDataString = (
+  request: Request,
+  imports: JSImports
+): [string | null, string | null] => {
   if (!request.data) {
     return [null, null];
   }
 
-  const originalStringRepr = repr(request.data);
+  const originalStringRepr = repr(request.data, imports);
 
   const contentType = util.getContentType(request);
   // can have things like ; charset=utf-8 which we want to preserve
@@ -65,8 +74,8 @@ const _getDataString = (request: Request): [string | null, string | null] => {
 
       const queryObj =
         queryDict && queryDict.every((q) => !Array.isArray(q[1]))
-          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1)
-          : reprAsStringTuples(queryList, 1);
+          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
+          : reprAsStringTuples(queryList, 1, imports);
       // TODO: check roundtrip, add a comment
       return ["new URLSearchParams(" + queryObj + ")", null];
     } else {
@@ -75,7 +84,10 @@ const _getDataString = (request: Request): [string | null, string | null] => {
   }
   return [null, null];
 };
-const getDataString = (request: Request): [string | null, string | null] => {
+const getDataString = (
+  request: Request,
+  imports: JSImports
+): [string | null, string | null] => {
   if (!request.data) {
     return [null, null];
   }
@@ -83,10 +95,10 @@ const getDataString = (request: Request): [string | null, string | null] => {
   let dataString: string | null = null;
   let commentedOutDataString: string | null = null;
   try {
-    [dataString, commentedOutDataString] = _getDataString(request);
+    [dataString, commentedOutDataString] = _getDataString(request, imports);
   } catch {}
   if (!dataString) {
-    dataString = repr(request.data);
+    dataString = repr(request.data, imports);
   }
   return [dataString, commentedOutDataString];
 };
@@ -99,13 +111,13 @@ const buildConfigObject = (
   methods: string[],
   dataMethods: string[],
   hasSearchParams: boolean,
-  warnings: Warnings
+  imports: JSImports
 ): string => {
   let code = "{\n";
 
   if (!methods.includes(methodStr)) {
     // Axios uppercases methods
-    code += "    method: " + repr(method) + ",\n";
+    code += "    method: " + repr(method, imports) + ",\n";
   }
   if (hasSearchParams) {
     // code += "    params,\n";
@@ -113,11 +125,11 @@ const buildConfigObject = (
   } else if (request.urls[0].queryDict) {
     code +=
       "    params: " +
-      reprStringToStringList(request.urls[0].queryDict, 1) +
+      reprStringToStringList(request.urls[0].queryDict, 1, imports) +
       ",\n";
   }
 
-  const [dataString, commentedOutDataString] = getDataString(request); // can delete headers
+  const [dataString, commentedOutDataString] = getDataString(request, imports); // can delete headers
 
   if ((request.headers && request.headers.length) || request.multipartUploads) {
     code += "    headers: {\n";
@@ -125,7 +137,12 @@ const buildConfigObject = (
       code += "        ...form.getHeaders(),\n";
     }
     for (const [key, value] of request.headers || []) {
-      code += "        " + repr(key) + ": " + repr(value ?? new Word()) + ",\n";
+      code +=
+        "        " +
+        repr(key, imports) +
+        ": " +
+        repr(value ?? new Word(), imports) +
+        ",\n";
     }
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
@@ -137,10 +154,10 @@ const buildConfigObject = (
   if (request.urls[0].auth) {
     const [username, password] = request.urls[0].auth;
     code += "    auth: {\n";
-    code += "        username: " + repr(username);
+    code += "        username: " + repr(username, imports);
     if (password.toBool()) {
       code += ",\n";
-      code += "        password: " + repr(password) + "\n";
+      code += "        password: " + repr(password, imports) + "\n";
     } else {
       code += "\n";
     }
@@ -160,7 +177,10 @@ const buildConfigObject = (
 
   if (request.timeout) {
     if (parseFloat(request.timeout.toString()) !== 0) {
-      code += "    timeout: " + asParseFloatTimes1000(request.timeout) + ",\n";
+      code +=
+        "    timeout: " +
+        asParseFloatTimes1000(request.timeout, imports) +
+        ",\n";
     }
   }
 
@@ -187,8 +207,8 @@ const buildConfigObject = (
     }
 
     code += "    proxy: {\n";
-    code += "        protocol: " + repr(protocol) + ",\n";
-    code += "        host: " + repr(host) + ",\n";
+    code += "        protocol: " + repr(protocol, imports) + ",\n";
+    code += "        host: " + repr(host, imports) + ",\n";
     if (util.isInt(port)) {
       code += "        port: " + port + ",\n";
     } else {
@@ -197,10 +217,10 @@ const buildConfigObject = (
     if (request.proxyAuth) {
       const [proxyUser, proxyPassword] = request.proxyAuth.split(":", 2);
       code += "        auth: {\n";
-      code += "            user: " + repr(proxyUser);
+      code += "            user: " + repr(proxyUser, imports);
       if (proxyPassword !== undefined) {
         code += ",\n";
-        code += "            password: " + repr(proxyPassword) + "\n";
+        code += "            password: " + repr(proxyPassword, imports) + "\n";
       } else {
         code += "\n";
       }
@@ -271,7 +291,7 @@ export const _toNodeAxios = (
   }
 
   let importCode = "const axios = require('axios');\n";
-  const imports = new Set<[string, string]>();
+  const imports: JSImports = [];
 
   let code = "";
 
@@ -283,28 +303,33 @@ export const _toNodeAxios = (
   if (hasSearchParams && request.urls[0].queryList) {
     code += "const params = new URLSearchParams();\n";
     for (const [key, value] of request.urls[0].queryList) {
-      code += "params.append(" + repr(key) + ", " + repr(value) + ");\n";
+      code +=
+        "params.append(" +
+        repr(key, imports) +
+        ", " +
+        repr(value, imports) +
+        ");\n";
     }
     code += "\n";
   }
 
   if (request.multipartUploads) {
-    imports.add(["FormData", "form-data"]);
+    addImport(imports, "FormData", "form-data");
     code += "const form = new FormData();\n";
     for (const m of request.multipartUploads) {
-      code += "form.append(" + repr(m.name) + ", ";
+      code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
-        imports.add(["fs", "fs"]);
+        addImport(imports, "fs", "fs");
         if (util.eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
-          code += "fs.readFileSync(" + repr(m.contentFile) + ")";
+          code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
         }
         if ("filename" in m && m.filename) {
-          code += ", " + repr(m.filename);
+          code += ", " + repr(m.filename, imports);
         }
       } else {
-        code += repr(m.content);
+        code += repr(m.content, imports);
       }
       code += ");\n";
     }
@@ -346,15 +371,15 @@ export const _toNodeAxios = (
   let dataString, commentedOutDataString;
   if (needsData) {
     code += "\n";
-    code += "    " + repr(url) + ",\n";
+    code += "    " + repr(url, imports) + ",\n";
     if (request.data) {
       try {
-        [dataString, commentedOutDataString] = getDataString(request);
+        [dataString, commentedOutDataString] = getDataString(request, imports);
         if (!dataString) {
-          dataString = repr(request.data);
+          dataString = repr(request.data, imports);
         }
       } catch {
-        dataString = repr(request.data);
+        dataString = repr(request.data, imports);
       }
       if (commentedOutDataString) {
         code += "    // " + commentedOutDataString + ",\n";
@@ -367,7 +392,7 @@ export const _toNodeAxios = (
       code += "    ''";
     }
   } else {
-    code += repr(url);
+    code += repr(url, imports);
   }
 
   // getDataString() can delete a header, so we can end up with an empty config
@@ -391,7 +416,7 @@ export const _toNodeAxios = (
       methods,
       dataMethods,
       !!hasSearchParams,
-      warnings
+      imports
     );
     if (needsData) {
       code += ",\n";
@@ -408,9 +433,7 @@ export const _toNodeAxios = (
 
   code += ");\n";
 
-  for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
-    importCode += "const " + varName + " = require('" + imp + "');\n";
-  }
+  importCode += reprImportsRequire(imports);
 
   return importCode + "\n" + code;
 };

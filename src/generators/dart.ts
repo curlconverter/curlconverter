@@ -20,19 +20,19 @@ function reprStr(value: string): string {
   const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
   return quote + escape(value, quote) + quote;
 }
-function repr(value: Word): string {
+function repr(value: Word, imports: Set<string>): string {
   const ret: string[] = [];
   for (const t of value.tokens) {
     if (typeof t === "string") {
       ret.push(reprStr(t));
     } else if (t.type === "variable") {
-      // TODO: import 'dart:io' show Platform;
-      ret.push("Platform.environment[" + reprStr(t.value) + "]");
+      ret.push("(Platform.environment[" + reprStr(t.value) + "] ?? '')");
+      imports.add("dart:io");
     } else {
-      // TODO: import 'dart:io';
       ret.push(
-        "Process.run(" + reprStr(t.value) + ", runInShell: true).stdout"
+        "(await Process.run(" + reprStr(t.value) + ", runInShell: true)).stdout"
       );
+      imports.add("dart:io");
     }
   }
   return ret.join(" + ");
@@ -101,10 +101,10 @@ export const _toDart = (
 
     s +=
       "  var uname = " +
-      repr(uname) +
+      repr(uname, imports) +
       ";\n" +
       "  var pword = " +
-      repr(pword) +
+      repr(pword, imports) +
       ";\n" +
       "  var authn = 'Basic ' + base64Encode(utf8.encode('$uname:$pword'));\n" +
       "\n";
@@ -122,7 +122,12 @@ export const _toDart = (
   if (hasHeaders && !rawRequestObj) {
     s += "  var headers = {\n";
     for (const [hname, hval] of request.headers || []) {
-      s += "    " + repr(hname) + ": " + repr(hval ?? new Word()) + ",\n";
+      s +=
+        "    " +
+        repr(hname, imports) +
+        ": " +
+        repr(hval ?? new Word(), imports) +
+        ",\n";
     }
 
     if (request.urls[0].auth) s += "    'Authorization': authn,\n";
@@ -142,8 +147,8 @@ export const _toDart = (
     // TODO: dict won't work with repeated keys
     s += "  var params = {\n";
     for (const [paramName, rawValue] of request.urls[0].queryList) {
-      const paramValue = repr(rawValue ?? new Word());
-      s += "    " + repr(paramName) + ": " + paramValue + ",\n";
+      const paramValue = repr(rawValue ?? new Word(), imports);
+      s += "    " + repr(paramName, imports) + ": " + paramValue + ",\n";
     }
     s += "  };\n";
     // TODO: Uri() can accept a queryParameters dict, requires parsing out the port
@@ -160,17 +165,17 @@ export const _toDart = (
       s += "  var data = {\n";
       for (const param of parsedQuery) {
         const [key, val] = param;
-        s += "    " + repr(key) + ": " + repr(val) + ",\n";
+        s += "    " + repr(key, imports) + ": " + repr(val, imports) + ",\n";
       }
       s += "  };\n";
       s += "\n";
     } else {
-      s += `  var data = ${repr(request.data)};\n\n`;
+      s += `  var data = ${repr(request.data, imports)};\n\n`;
     }
   }
 
   if (queryIsRepresentable) {
-    let urlString = repr(request.urls[0].urlWithoutQueryList);
+    let urlString = repr(request.urls[0].urlWithoutQueryList, imports);
     // Use Dart's $var interpolation for the query
     if (urlString.endsWith("'") || urlString.endsWith('"')) {
       urlString = urlString.slice(0, -1) + "?$query" + urlString.slice(-1);
@@ -179,7 +184,7 @@ export const _toDart = (
     }
     s += "  var url = Uri.parse(" + urlString + ");\n";
   } else {
-    s += "  var url = Uri.parse(" + repr(request.urls[0].url) + ");\n";
+    s += "  var url = Uri.parse(" + repr(request.urls[0].url, imports) + ");\n";
   }
 
   if (rawRequestObj) {
@@ -189,7 +194,7 @@ export const _toDart = (
     } else {
       multipart += "Request";
     }
-    multipart += "(" + repr(request.urls[0].method) + ", url)\n";
+    multipart += "(" + repr(request.urls[0].method, imports) + ", url)\n";
 
     for (const m of request.multipartUploads || []) {
       // MultipartRequest syntax looks like this:
@@ -198,25 +203,26 @@ export const _toDart = (
       // ..files.add(await http.MultipartFile.fromPath(
       //   'package', 'build/package.tar.gz',
       //   contentType: MediaType('application', 'x-tar')));
-      const name = repr(m.name); // TODO: what if name is empty string?
+      const name = repr(m.name, imports); // TODO: what if name is empty string?
       const sentFilename = "filename" in m && m.filename;
       if ("contentFile" in m) {
         multipart += "    ..files.add(await http.MultipartFile.";
         if (util.eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             multipart += "fromPath(\n";
-            multipart += "      " + name + ", " + repr(request.stdinFile);
+            multipart +=
+              "      " + name + ", " + repr(request.stdinFile, imports);
             if (sentFilename && request.stdinFile !== sentFilename) {
               multipart += ",\n";
-              multipart += "      filename: " + repr(sentFilename);
+              multipart += "      filename: " + repr(sentFilename, imports);
             }
             multipart += "))\n";
           } else if (request.stdin) {
             multipart += "fromString(\n";
-            multipart += "      " + name + ", " + repr(request.stdin);
+            multipart += "      " + name + ", " + repr(request.stdin, imports);
             if (sentFilename) {
               multipart += ",\n";
-              multipart += "      filename: " + repr(sentFilename);
+              multipart += "      filename: " + repr(sentFilename, imports);
             }
             multipart += "))\n";
           } else {
@@ -226,7 +232,7 @@ export const _toDart = (
               "      " + name + ", stdin.readLineSync(encoding: utf8)";
             if (sentFilename) {
               multipart += ",\n";
-              multipart += "      filename: " + repr(sentFilename);
+              multipart += "      filename: " + repr(sentFilename, imports);
             }
             multipart += "))\n";
             imports.add("dart:io");
@@ -234,15 +240,16 @@ export const _toDart = (
           }
         } else {
           multipart += "fromPath(\n";
-          multipart += "      " + name + ", " + repr(m.contentFile);
+          multipart += "      " + name + ", " + repr(m.contentFile, imports);
           if (sentFilename && m.contentFile !== sentFilename) {
             multipart += ",\n";
-            multipart += "      filename: " + repr(sentFilename);
+            multipart += "      filename: " + repr(sentFilename, imports);
           }
           multipart += "))\n";
         }
       } else {
-        multipart += "    ..fields[" + name + "] = " + repr(m.content) + "\n";
+        multipart +=
+          "    ..fields[" + name + "] = " + repr(m.content, imports) + "\n";
       }
     }
 
@@ -251,9 +258,9 @@ export const _toDart = (
       for (const [hname, hval] of request.headers || []) {
         s +=
           "  req.headers[" +
-          repr(hname) +
+          repr(hname, imports) +
           "] = " +
-          repr(hval || new Word()) +
+          repr(hval || new Word(), imports) +
           ";\n";
       }
       if (request.urls[0].auth) {

@@ -16,7 +16,7 @@ const javaScriptSupportedArgs = new Set([
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
 
-// TODO: implement
+// TODO: implement?
 export const reprObj = (value: object, indentLevel?: number): string => {
   const escaped = jsescObj(value, {
     quotes: "single",
@@ -35,7 +35,8 @@ export const reprPairs = (
   d: [Word, Word][],
   indentLevel = 0,
   indent = "    ",
-  list = true
+  list = true,
+  imports: JSImports
 ): string => {
   if (d.length === 0) {
     return list ? "[]" : "{}";
@@ -45,9 +46,9 @@ export const reprPairs = (
   for (const [i, [key, value]] of d.entries()) {
     code += indent.repeat(indentLevel + 1);
     if (list) {
-      code += "[" + repr(key) + ", " + repr(value) + "]";
+      code += "[" + repr(key, imports) + ", " + repr(value, imports) + "]";
     } else {
-      code += repr(key) + ": " + repr(value);
+      code += repr(key, imports) + ": " + repr(value, imports);
     }
     code += i < d.length - 1 ? ",\n" : "\n";
   }
@@ -57,22 +58,25 @@ export const reprPairs = (
 export const reprAsStringToStringDict = (
   d: [Word, Word][],
   indentLevel = 0,
+  imports: JSImports,
   indent = "    "
 ): string => {
-  return reprPairs(d, indentLevel, indent, false);
+  return reprPairs(d, indentLevel, indent, false, imports);
 };
 
 export const reprAsStringTuples = (
   d: [Word, Word][],
   indentLevel = 0,
+  imports: JSImports,
   indent = "    "
 ): string => {
-  return reprPairs(d, indentLevel, indent, true);
+  return reprPairs(d, indentLevel, indent, true, imports);
 };
 
 export const reprStringToStringList = (
   d: [Word, Word | Word[]][],
   indentLevel = 0,
+  imports: JSImports,
   indent = "    ",
   list = true
 ): string => {
@@ -84,13 +88,13 @@ export const reprStringToStringList = (
   for (const [i, [key, value]] of d.entries()) {
     let valueStr;
     if (Array.isArray(value)) {
-      valueStr = "[" + value.map((v) => repr(v)).join(", ") + "]";
+      valueStr = "[" + value.map((v) => repr(v, imports)).join(", ") + "]";
     } else {
-      valueStr = repr(value);
+      valueStr = repr(value, imports);
     }
 
     code += indent.repeat(indentLevel + 1);
-    code += repr(key) + ": " + valueStr;
+    code += repr(key, imports) + ": " + valueStr;
     code += i < d.length - 1 ? ",\n" : "\n";
   }
   code += indent.repeat(indentLevel) + "}";
@@ -162,34 +166,95 @@ export function reprStr(s: string, quote?: "'" | '"'): string {
   return quote + esc(s, quote) + quote;
 }
 
-export function repr(w: Word, quote?: "'" | '"'): string {
+export type JSImports = [string, string][];
+export function addImport(imports: JSImports, name: string, from: string) {
+  // TODO: this is linear
+  for (const [n, f] of imports) {
+    if (n === name && f === from) return;
+  }
+  imports.push([name, from]);
+}
+export function reprImports(imports: JSImports): string {
+  const ret: string[] = [];
+  for (const [name, from] of imports.sort(bySecondElem)) {
+    ret.push(`import { ${name} } from ${reprStr(from)};`);
+  }
+  return ret.join("\n");
+}
+export function reprImportsRequire(imports: JSImports): string {
+  const ret: string[] = [];
+
+  if (imports.length === 0) {
+    return "";
+  }
+
+  for (const [name, from] of imports.sort(bySecondElem)) {
+    if (name.startsWith("* as ")) {
+      ret.push(
+        `const ${name.slice("* as ".length)} = require(${reprStr(from)});`
+      );
+    } else if (name.includes(".")) {
+      ret.push(`const ${name} = require(${reprStr(from)}).${name};`);
+    } else {
+      ret.push(`const ${name} = require(${reprStr(from)});`);
+    }
+  }
+  return ret.join("\n") + "\n";
+}
+export function repr(w: Word, imports: JSImports): string {
+  // Node
   const ret: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
-      ret.push(reprStr(t, quote));
+      ret.push(reprStr(t));
     } else if (t.type === "variable") {
-      // TODO: can't be done on browser JS
-      ret.push("process.env[" + reprStr(t.value, quote) + "]");
+      ret.push("process.env[" + reprStr(t.value) + "]");
     } else {
-      // TODO: can't be done on browser JS
-      // TODO:
-      // const util = require('node:util');
-      // const exec = util.promisify(require('node:child_process').exec);
-      ret.push("await exec(" + reprStr(t.value, quote) + ").stdout");
+      ret.push("execSync(" + reprStr(t.value) + ").stdout");
+      // TODO: unified import data structure for JavaScript
+      addImport(imports, "execSync", "node:child_process");
     }
   }
   return ret.join(" + ");
 }
 
-export function reprFetch(w: Word, isNode: boolean): string {
+export function reprBrowser(w: Word, warnings: [string, string][]): string {
+  const ret: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      ret.push(reprStr(t));
+    } else {
+      ret.push(reprStr(t.text));
+      if (t.type === "variable") {
+        warnings.push([
+          "browser-has-no-env",
+          "Can't access environment variable in browser JS: " +
+            JSON.stringify(t.value),
+        ]);
+      } else {
+        warnings.push([
+          "browser-has-no-shell",
+          "Can't run subcommands in browser JS: " + JSON.stringify(t.value),
+        ]);
+      }
+    }
+  }
+  return ret.join(" + ");
+}
+
+export function reprFetch(
+  w: Word,
+  isNode: boolean,
+  imports: JSImports
+): string {
   if (!isNode) {
     // TODO: warn
     return reprStr(w.toString());
   }
-  return repr(w);
+  return repr(w, imports);
 }
 
-export const asParseFloat = (w: Word): string => {
+export const asParseFloat = (w: Word, imports: JSImports): string => {
   if (w.isString()) {
     const originalValue = w.toString();
     // TODO: reimplement curl's float parsing instead of parseFloat()
@@ -198,9 +263,9 @@ export const asParseFloat = (w: Word): string => {
       return originalValue;
     }
   }
-  return "parseFloat(" + repr(w) + ")";
+  return "parseFloat(" + repr(w, imports) + ")";
 };
-export const asParseFloatTimes1000 = (w: Word): string => {
+export const asParseFloatTimes1000 = (w: Word, imports: JSImports): string => {
   if (w.isString()) {
     const originalValue = w.toString();
     // TODO: reimplement curl's float parsing instead of parseFloat()
@@ -210,9 +275,9 @@ export const asParseFloatTimes1000 = (w: Word): string => {
       return asFloat.toString();
     }
   }
-  return "parseFloat(" + repr(w) + ") * 1000";
+  return "parseFloat(" + repr(w, imports) + ") * 1000";
 };
-export const asParseInt = (w: Word): string => {
+export const asParseInt = (w: Word, imports: JSImports): string => {
   if (w.isString()) {
     const originalValue = w.toString();
     // TODO: reimplement curl's float parsing instead of parseInt()
@@ -221,7 +286,7 @@ export const asParseInt = (w: Word): string => {
       return originalValue;
     }
   }
-  return "parseInt(" + repr(w) + ")";
+  return "parseInt(" + repr(w, imports) + ")";
 };
 
 export const bySecondElem = (
@@ -231,12 +296,13 @@ export const bySecondElem = (
 
 const getDataString = (
   request: Request,
-  isNode: boolean
+  isNode: boolean,
+  imports: JSImports
 ): [string, string | null] => {
   if (!request.data) {
     return ["", null];
   }
-  const originalStringRepr = reprFetch(request.data, isNode);
+  const originalStringRepr = reprFetch(request.data, isNode, imports);
 
   const contentType = util.getContentType(request);
   if (contentType === "application/json" && request.data.isString()) {
@@ -274,8 +340,8 @@ const getDataString = (
 
         const queryObj =
           queryDict && queryDict.every((q) => !Array.isArray(q[1]))
-            ? reprAsStringToStringDict(queryDict as [Word, Word][], 1)
-            : reprAsStringTuples(queryList, 1);
+            ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
+            : reprAsStringTuples(queryList, 1, imports);
         // TODO: check roundtrip, add a comment
         // TODO: this isn't a dict anymore
         return ["new URLSearchParams(" + queryObj + ")", null];
@@ -292,7 +358,7 @@ const requestToJavaScriptOrNode = (
   request: Request,
   warnings: Warnings,
   fetchImports: Set<string>,
-  imports: Set<[string, string]>,
+  imports: JSImports,
   isNode: boolean
 ): string => {
   if (request.dataReadsFile) {
@@ -323,25 +389,26 @@ const requestToJavaScriptOrNode = (
     code += "const form = new FormData();\n";
     for (const m of request.multipartUploads) {
       // TODO: use .set() if all names are unique?
-      code += "form.append(" + reprFetch(m.name, isNode) + ", ";
+      code += "form.append(" + reprFetch(m.name, isNode, imports) + ", ";
       if ("contentFile" in m) {
         if (isNode) {
           if (util.eq(m.contentFile, "-")) {
-            imports.add(["fs", "fs"]);
+            addImport(imports, "fs", "fs");
             code += "fs.readFileSync(0).toString()";
             if (m.filename) {
-              code += ", " + reprFetch(m.filename, isNode);
+              code += ", " + reprFetch(m.filename, isNode, imports);
             }
           } else {
             fetchImports.add("fileFromSync");
             // TODO: do this in a way that doesn't set filename="" if we don't have filename
-            code += "fileFromSync(" + reprFetch(m.contentFile, isNode) + ")";
+            code +=
+              "fileFromSync(" + reprFetch(m.contentFile, isNode, imports) + ")";
           }
         } else {
           // TODO: does the second argument get sent as filename="" ?
           code +=
             "File(['<data goes here>'], " +
-            reprFetch(m.contentFile, isNode) +
+            reprFetch(m.contentFile, isNode, imports) +
             ")";
           // TODO: (massive todo) we could read the file if we're running in the command line
           warnings.push([
@@ -350,7 +417,7 @@ const requestToJavaScriptOrNode = (
           ]);
         }
       } else {
-        code += reprFetch(m.content, isNode);
+        code += reprFetch(m.content, isNode, imports);
       }
       code += ");\n";
     }
@@ -358,23 +425,27 @@ const requestToJavaScriptOrNode = (
   }
 
   // Can delete content-type header
-  const [dataString, commentedOutDataString] = getDataString(request, isNode);
+  const [dataString, commentedOutDataString] = getDataString(
+    request,
+    isNode,
+    imports
+  );
 
   if (request.urls[0].auth && request.authType === "digest") {
     // TODO: if 'Authorization:' header is specified, don't set this
     const [user, password] = request.urls[0].auth;
-    imports.add(["* as DigestFetch", "digest-fetch"]);
+    addImport(imports, "* as DigestFetch", "digest-fetch");
     code +=
       "const client = new DigestFetch(" +
-      reprFetch(user, isNode) +
+      reprFetch(user, isNode, imports) +
       ", " +
-      reprFetch(password, isNode) +
+      reprFetch(password, isNode, imports) +
       ");\n";
     code += "client.";
   }
 
   for (const urlObj of request.urls) {
-    code += "fetch(" + reprFetch(urlObj.url, isNode);
+    code += "fetch(" + reprFetch(urlObj.url, isNode, imports);
     if (urlObj.queryReadsFile) {
       warnings.push([
         "unsafe-query",
@@ -403,7 +474,9 @@ const requestToJavaScriptOrNode = (
         // const methods = []
         // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
         code +=
-          "    method: " + reprFetch(request.urls[0].method, isNode) + ",\n";
+          "    method: " +
+          reprFetch(request.urls[0].method, isNode, imports) +
+          ",\n";
       }
 
       if (
@@ -414,16 +487,16 @@ const requestToJavaScriptOrNode = (
         for (const [headerName, headerValue] of request.headers || []) {
           code +=
             "        " +
-            reprFetch(headerName, isNode) +
+            reprFetch(headerName, isNode, imports) +
             ": " +
-            reprFetch(headerValue || new Word(), isNode) +
+            reprFetch(headerValue || new Word(), isNode, imports) +
             ",\n";
         }
         if (urlObj.auth && request.authType === "basic") {
           // TODO: if -H 'Authorization:' is passed, don't set this
           code +=
             "        'Authorization': 'Basic ' + btoa(" +
-            reprFetch(util.joinWords(urlObj.auth, ":"), isNode) +
+            reprFetch(util.joinWords(urlObj.auth, ":"), isNode, imports) +
             "),\n";
         }
 
@@ -439,12 +512,12 @@ const requestToJavaScriptOrNode = (
           fetchImports.add("fileFromSync");
           code +=
             "    body: fileFromSync(" +
-            reprFetch(urlObj.uploadFile, isNode) +
+            reprFetch(urlObj.uploadFile, isNode, imports) +
             "),\n";
         } else {
           code +=
             "    body: File(['<data goes here>'], " +
-            reprFetch(urlObj.uploadFile, isNode) +
+            reprFetch(urlObj.uploadFile, isNode, imports) +
             "),\n";
           warnings.push([
             "--form",
@@ -483,16 +556,16 @@ const requestToJavaScriptOrNode = (
           util.eq(protocol, "socks5h") ||
           util.eq(protocol, "socks4a")
         ) {
-          imports.add(["{ SocksProxyAgent }", "socks-proxy-agent"]);
+          addImport(imports, "{ SocksProxyAgent }", "socks-proxy-agent");
           code +=
             "    agent: new SocksProxyAgent(" +
-            reprFetch(proxy, isNode) +
+            reprFetch(proxy, isNode, imports) +
             "),\n";
         } else if (util.eq(protocol, "http") || util.eq(protocol, "https")) {
-          imports.add(["HttpsProxyAgent", "https-proxy-agent"]);
+          addImport(imports, "HttpsProxyAgent", "https-proxy-agent");
           code +=
             "    agent: new HttpsProxyAgent(" +
-            reprFetch(proxy, isNode) +
+            reprFetch(proxy, isNode, imports) +
             "),\n";
         } else {
           warnings.push([
@@ -523,7 +596,7 @@ export const _toJavaScriptOrNode = (
   isNode: boolean
 ): string => {
   const fetchImports = new Set<string>();
-  const imports = new Set<[string, string]>();
+  const imports: JSImports = [];
 
   const code = requests
     .map((r) =>
@@ -539,7 +612,7 @@ export const _toJavaScriptOrNode = (
     }
     importCode += " from 'node-fetch';\n";
   }
-  if (imports.size) {
+  if (imports.length) {
     for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
       importCode += "import " + varName + " from " + reprStr(imp) + ";\n";
     }

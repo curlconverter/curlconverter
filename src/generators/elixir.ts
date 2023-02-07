@@ -13,11 +13,7 @@ const supportedArgs = new Set([
 
 const regexEscape = /"|\\|\p{C}|\p{Z}|#\{/gu;
 
-export function reprStr(s: string | null): string {
-  if (s === null) {
-    s = "";
-  }
-
+export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
@@ -59,24 +55,20 @@ export function reprStr(s: string | null): string {
   );
 }
 
-export function repr(w: Word | string): string {
-  if (typeof w === "string") {
-    return reprStr(w);
-  }
+export function repr(w: Word): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
       args.push(reprStr(t));
     } else if (t.type === "variable") {
-      // TODO: require System
-      args.push("System.get_env(" + reprStr(t.value) + ")");
+      args.push("System.get_env(" + reprStr(t.value) + ', "")');
     } else {
-      // TODO: require System
-      // TODO: this needs to be two arguments the command name + list of args
-      args.push("System.cmd(" + reprStr(t.value) + ")");
+      // TODO: strip newline?
+      // TODO: use System.cmd(), which needs to be two arguments the command name + list of args
+      args.push("elem(System.shell(" + reprStr(t.value) + "), 0)");
     }
   }
-  return args.join(" + ");
+  return args.join(" <> ");
 }
 
 function addIndent(value: string): string {
@@ -168,10 +160,17 @@ function getHeadersDict(request: Request): string {
   if (!request.headers || !request.headers.length) {
     return "[]";
   }
+  const headers = request.headers.filter((h) => h[1] !== null) as [
+    Word,
+    Word
+  ][];
+  if (!headers.length) {
+    return "[]";
+  }
   let dict = "[\n";
   const dictLines: string[] = [];
-  for (const [headerName, headerValue] of request.headers) {
-    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue ?? "")}}`);
+  for (const [headerName, headerValue] of headers) {
+    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue)}}`);
   }
   dict += dictLines.join(",\n");
   dict += "\n  ]";

@@ -186,7 +186,7 @@ export const _toRust = (
       lines.push(
         indent(
           ".redirect(reqwest::redirect::Policy::limited(" +
-            request.maxRedirects.trim() +
+            request.maxRedirects.trim().toString() +
             "))",
           2
         )

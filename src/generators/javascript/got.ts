@@ -1,6 +1,7 @@
 import * as util from "../../util.js";
 import { Word } from "../../util.js";
-import { reprObj, bySecondElem } from "./javascript.js";
+import { reprObj, bySecondElem, addImport } from "./javascript.js";
+import type { JSImports } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
 
 import {
@@ -41,7 +42,10 @@ const supportedArgs = new Set([
   // TODO: methodRewriting: true to match curl?
 ]);
 
-const getBodyString = (request: Request): [string | null, string | null] => {
+const getBodyString = (
+  request: Request,
+  imports: JSImports
+): [string | null, string | null] => {
   // can have things like ; charset=utf-8 which we want to preserve
   const exactContentType = util.getHeader(request, "content-type");
   const contentType = util.getContentType(request);
@@ -59,7 +63,7 @@ const getBodyString = (request: Request): [string | null, string | null] => {
   }
 
   // TODO: @
-  const simpleString = "body: " + repr(request.data);
+  const simpleString = "body: " + repr(request.data, imports);
 
   try {
     if (contentType === "application/json" && request.data.isString()) {
@@ -79,14 +83,18 @@ const getBodyString = (request: Request): [string | null, string | null] => {
           util.deleteHeader(request, "content-type");
         }
         return [
-          "form: " + reprAsStringToStringDict(queryDict as [Word, Word][], 1),
+          "form: " +
+            reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports),
           null,
         ];
       }
       if (queryList) {
         let paramsCode = "body: new URLSearchParams([\n";
         for (const [key, val] of queryList) {
-          paramsCode += `        [${repr(key)}, ${repr(val)}],\n`;
+          paramsCode += `        [${repr(key, imports)}, ${repr(
+            val,
+            imports
+          )}],\n`;
         }
         if (paramsCode.endsWith(",\n")) {
           paramsCode = paramsCode.slice(0, -2);
@@ -107,12 +115,13 @@ const buildOptionsObject = (
   methodStr: string,
   methods: string[],
   nonDataMethods: string[],
-  warnings: Warnings
+  warnings: Warnings,
+  imports: JSImports
 ): string => {
   let code = "{\n";
 
   if (!method.isString || !methods.includes(methodStr.toUpperCase())) {
-    code += "    method: " + repr(method) + ",\n";
+    code += "    method: " + repr(method, imports) + ",\n";
   }
 
   if (
@@ -121,12 +130,16 @@ const buildOptionsObject = (
   ) {
     code +=
       "    searchParams: " +
-      reprAsStringToStringDict(request.urls[0].queryDict as [Word, Word][], 1) +
+      reprAsStringToStringDict(
+        request.urls[0].queryDict as [Word, Word][],
+        1,
+        imports
+      ) +
       ",\n";
   } else if (request.urls[0].queryList) {
     code += "    searchParams: new URLSearchParams([\n";
     for (const [key, val] of request.urls[0].queryList) {
-      code += `        [${repr(key)}, ${repr(val)}],\n`;
+      code += `        [${repr(key, imports)}, ${repr(val, imports)}],\n`;
     }
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
@@ -135,7 +148,7 @@ const buildOptionsObject = (
     code += "    ]),\n";
   }
 
-  const [bodyString, commentedOutBodyString] = getBodyString(request); // can delete headers
+  const [bodyString, commentedOutBodyString] = getBodyString(request, imports); // can delete headers
 
   if (request.headers && request.headers.length) {
     const headers = request.headers.filter((h) => h[1] !== null) as [
@@ -143,15 +156,16 @@ const buildOptionsObject = (
       Word
     ][];
     if (headers.length) {
-      code += "    headers: " + reprAsStringToStringDict(headers, 1) + ",\n";
+      code +=
+        "    headers: " + reprAsStringToStringDict(headers, 1, imports) + ",\n";
     }
   }
 
   if (request.urls[0].auth) {
     const [username, password] = request.urls[0].auth;
-    code += "    username: " + repr(username) + ",\n";
+    code += "    username: " + repr(username, imports) + ",\n";
     if (password.toBool()) {
-      code += "    password: " + repr(password) + ",\n";
+      code += "    password: " + repr(password, imports) + ",\n";
     }
     if (request.authType !== "basic") {
       // TODO: warn
@@ -174,12 +188,14 @@ const buildOptionsObject = (
     code += "    timeout: {\n";
     if (request.timeout) {
       code +=
-        "        request: " + asParseFloatTimes1000(request.timeout) + ",\n";
+        "        request: " +
+        asParseFloatTimes1000(request.timeout, imports) +
+        ",\n";
     }
     if (request.connectTimeout) {
       code +=
         "        connect: " +
-        asParseFloatTimes1000(request.connectTimeout) +
+        asParseFloatTimes1000(request.connectTimeout, imports) +
         ",\n";
     }
     if (code.endsWith(",\n")) {
@@ -195,7 +211,7 @@ const buildOptionsObject = (
     followRedirects = true;
   }
   let maxRedirects = request.maxRedirects
-    ? asParseInt(request.maxRedirects)
+    ? asParseInt(request.maxRedirects, imports)
     : null;
   const hasMaxRedirects =
     followRedirects &&
@@ -291,26 +307,26 @@ export const _toNodeGot = (
     ]);
   }
 
-  const imports = new Set<[string, string]>();
+  const imports: JSImports = [];
 
   let code = "";
 
   if (request.multipartUploads) {
     code += "const form = new FormData();\n";
     for (const m of request.multipartUploads) {
-      code += "form.append(" + repr(m.name) + ", ";
+      code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
-        imports.add(["* as fs", "fs"]);
+        addImport(imports, "* as fs", "fs");
         if (util.eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
-          code += "fs.readFileSync(" + repr(m.contentFile) + ")";
+          code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
         }
         if ("filename" in m && m.filename) {
-          code += ", " + repr(m.filename);
+          code += ", " + repr(m.filename, imports);
         }
       } else {
-        code += repr(m.content);
+        code += repr(m.content, imports);
       }
       code += ");\n";
     }
@@ -345,7 +361,7 @@ export const _toNodeGot = (
   const url = request.urls[0].queryList
     ? request.urls[0].urlWithoutQueryList
     : request.urls[0].url;
-  code += repr(url);
+  code += repr(url, imports);
 
   const needsOptions = !!(
     !method.isString() ||
@@ -372,7 +388,8 @@ export const _toNodeGot = (
       methodStr,
       methods,
       nonDataMethods,
-      warnings
+      warnings,
+      imports
     );
   }
 

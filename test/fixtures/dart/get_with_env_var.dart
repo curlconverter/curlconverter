@@ -1,9 +1,10 @@
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 void main() async {
   var headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + Platform.environment['DO_API_TOKEN'],
+    'Authorization': 'Bearer ' + (Platform.environment['DO_API_TOKEN'] ?? ''),
   };
 
   var url = Uri.parse('http://localhost:28139/v2/images?type=distribution');

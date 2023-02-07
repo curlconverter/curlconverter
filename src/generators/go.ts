@@ -60,7 +60,7 @@ const repr = (w: Word, vars: Vars, imports: Set<string>): string => {
           throw new util.CCError("lol");
         }
       }
-      vars[varName] = varName + ", err := " + execCall;
+      vars[varName] = execCall;
       args.push(varName);
       imports.add("os/exec");
     }
@@ -71,13 +71,12 @@ const repr = (w: Word, vars: Vars, imports: Set<string>): string => {
 const timeoutAtoi = (w: Word, vars: Vars, imports: Set<string>): string => {
   if (w.isString()) {
     const asStr = w.toString();
-    // TODO: use curl's syntax and check for Go's float syntax
+    // TODO: check using curl's syntax and convert to Go's float syntax
     if (/^\d+\.?\d*$/.test(asStr)) {
       return asStr;
     }
   }
-  vars["timeout"] =
-    "timeout, err := strconv.Atoi(" + repr(w, vars, imports) + ")";
+  vars["timeout"] = "strconv.Atoi(" + repr(w, vars, imports) + ")";
   imports.add("strconv");
   return "timeout";
 };
@@ -134,10 +133,10 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
 
   let goCode = "";
   if (request.multipartUploads) {
-    imports.add("bytes");
     goCode += "\tform := new(bytes.Buffer)\n";
-    imports.add("mime/multipart");
     goCode += "\twriter := multipart.NewWriter(form)\n";
+    imports.add("bytes");
+    imports.add("mime/multipart");
 
     let firstFile = true;
     let firstField = true;
@@ -146,7 +145,6 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
         const op = firstFile ? ":=" : "=";
         firstFile = false;
         // TODO: Go sends name=<filename> but curl always sends name="data"
-        imports.add("path/filepath");
         goCode += `\tfw, err ${op} writer.CreateFormFile(${repr(
           m.contentFile,
           vars,
@@ -157,14 +155,15 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
           imports
         )}))\n`;
         goCode += IF_ERR;
+        imports.add("path/filepath");
 
-        imports.add("os");
         goCode += `\tfd, err ${op} os.Open(${repr(
           m.contentFile,
           vars,
           imports
         )})\n`;
         goCode += IF_ERR;
+        imports.add("os");
         goCode += "\tdefer fd.Close()\n";
         goCode += "\t_, err = io.Copy(fw, fd)\n";
         goCode += IF_ERR;
@@ -204,18 +203,15 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   }
 
   goCode += "\tclient := &http.Client{";
-  // TODO: what?
   if (request.timeout) {
     goCode += "\n";
     if (request.insecure || request.compressed === false) {
       goCode += "\t\tTransport: tr,\n";
     }
-    if (request.timeout) {
-      goCode +=
-        "\t\tTimeout: " +
-        timeoutAtoi(request.timeout, vars, imports) +
-        " * time.Second,\n";
-    }
+    goCode +=
+      "\t\tTimeout: " +
+      timeoutAtoi(request.timeout, vars, imports) +
+      " * time.Second,\n";
     goCode += "\t";
     imports.add("time");
   } else if (request.insecure || request.compressed === false) {
@@ -296,6 +292,14 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   }
   preamble += ")\n\n";
   preamble += "func main() {\n";
+  // TODO: sorts wrong when >9 commands
+  for (const [name, expr] of Array.from(Object.entries(vars)).sort()) {
+    preamble += "\t" + name + ", err := " + expr + "\n";
+    preamble += IF_ERR;
+  }
+  if (Object.values(vars).length) {
+    preamble += "\n";
+  }
 
   return preamble + goCode + "\n";
 };

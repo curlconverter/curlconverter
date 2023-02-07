@@ -107,7 +107,7 @@ export const _toPhpRequests = (
   }
   let requestLine =
     "$response = Requests::" +
-    request.urls[0].method.toLowerCase() +
+    request.urls[0].method.toLowerCase().toString() +
     "(" +
     repr(request.urls[0].url);
   requestLine += ", $headers";
