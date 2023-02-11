@@ -79,12 +79,13 @@ export const repr = (w: Word): string => {
     if (typeof t === "string") {
       args.push(reprStr(t));
     } else if (t.type === "variable") {
-      args.push(); // TODO
+      args.push("getenv(" + reprStr(t.value) + ") ?? " + reprStr(""));
     } else if (t.type === "command") {
-      args.push(); // TODO
+      // TODO: use backticks instead
+      args.push("shell_exec(" + reprStr(t.value) + ")");
     }
   }
-  return args.join(" + ");
+  return args.join(" . ");
 };
 
 export const _toPhp = (
@@ -172,7 +173,7 @@ export const _toPhp = (
         continue;
       }
       headersArrayCode +=
-        "    " + repr(headerName) + " => " + repr(headerValue) + ",\n";
+        "    " + repr(util.joinWords([headerName, headerValue], ": ")) + ",\n";
     }
 
     headersArrayCode += "]";
