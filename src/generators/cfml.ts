@@ -50,7 +50,9 @@ export const _toCFML = (
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -77,7 +79,7 @@ export const _toCFML = (
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
@@ -137,9 +139,7 @@ export const _toCFML = (
     cfmlCode += "httpService.setProxyPort(" + proxyPort.trim() + ");\n";
 
     if (request.proxyAuth) {
-      const [proxyUser, proxyPassword] = request.proxyAuth
-        .toString()
-        .split(/:(.*)/s, 2);
+      const [proxyUser, proxyPassword] = request.proxyAuth.split(":", 2);
       cfmlCode += "httpService.setProxyUser(" + repr(proxyUser) + ");\n";
       cfmlCode +=
         "httpService.setProxyPassword(" + repr(proxyPassword || "") + ");\n";

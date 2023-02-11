@@ -490,183 +490,14 @@ export function reprStrBinary(s: string): string {
   // e.g.: '\uDC00'.encode()
   return sEsc + ".encode()";
 }
-// https://docs.python.org/3/reference/lexical_analysis.html#identifiers
-// Convert Bash variable names into variables that can be used in Python.
-// First we replace all invalid characters with underscores.
-// Then we prepend an underscore if the first character is a digit.
-// Then we prepend an underscore if the name is a Python keyword or builtin.
-const invalidStart = /[^_\p{L}\p{Nl}\u1885\u1886\u2118\u212E\u309B\u309C]/gu;
-const invalidContinue =
-  /[^_\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\u00B7\u0387\u1369-\u1371\u19DA]/gu;
-const reservedVariables = new Set([
-  // keywords
-  "False",
-  "None",
-  "True",
-  "and",
-  "as",
-  "assert",
-  "async",
-  "await",
-  "break",
-  "class",
-  "continue",
-  "def",
-  "del",
-  "elif",
-  "else",
-  "except",
-  "finally",
-  "for",
-  "from",
-  "global",
-  "if",
-  "import",
-  "in",
-  "is",
-  "lambda",
-  "nonlocal",
-  "not",
-  "or",
-  "pass",
-  "raise",
-  "return",
-  "try",
-  "while",
-  "with",
-  "yield",
-  // soft keywords
-  "match",
-  "case",
-  // "_",
-  // builtins
-  "abs",
-  "aiter",
-  "all",
-  "any",
-  "anext",
-  "ascii",
-  "bin",
-  "bool",
-  "breakpoint",
-  "bytearray",
-  "bytes",
-  "callable",
-  "chr",
-  "classmethod",
-  "compile",
-  "complex",
-  "delattr",
-  "dict",
-  "dir",
-  "divmod",
-  "enumerate",
-  "eval",
-  "exec",
-  "filter",
-  "float",
-  "format",
-  "frozenset",
-  "getattr",
-  "globals",
-  "hasattr",
-  "hash",
-  "help",
-  "hex",
-  "id",
-  "input",
-  "int",
-  "isinstance",
-  "issubclass",
-  "iter",
-  "len",
-  "list",
-  "locals",
-  "map",
-  "max",
-  "memoryview",
-  "min",
-  "next",
-  "object",
-  "oct",
-  "open",
-  "ord",
-  "pow",
-  "print",
-  "property",
-  "range",
-  "repr",
-  "reversed",
-  "round",
-  "set",
-  "setattr",
-  "slice",
-  "sorted",
-  "staticmethod",
-  "str",
-  "sum",
-  "super",
-  "tuple",
-  "type",
-  "vars",
-  "zip",
-  "__import__",
-  // dir()
-  "__annotations__",
-  "__builtins__",
-  "__doc__",
-  "__loader__",
-  "__name__",
-  "__package__",
-  "__spec__",
-  // can interfere with generated code
-  // variables
-  "data",
-  "json_data",
-  "params",
-  "cookies",
-  "headers",
-  "file_contents",
-  "files",
-  "proxies",
-  "cert",
-  "session",
-  "f",
-  // imported
-  "sys",
-  "math",
-  "json",
-  "quote_plus",
-  "MozillaCookieJar",
-  // imported, 3rd party
-  "requests",
-  "HTTPDigestAuth",
-  "HttpNtlmAuth",
-  "HTTPSPNEGOAuth",
-  "AWSRequestsAuth",
-]);
-// TODO: not used, delete?
-export function toPythonVariable(s: string): string {
-  if (s === "") {
-    return "_";
-  }
-  s = s.normalize("NFKC");
-  s = s.replace(invalidContinue, "_");
-  if (s[0].match(invalidStart)) {
-    s = "_" + s;
-  }
-  while (reservedVariables.has(s)) {
-    s = "_" + s;
-  }
-  return s;
-}
-type OSVars = { [key: string]: string };
 
+type OSVars = { [key: string]: string };
 export function repr(
   word: Word,
   osVars: OSVars,
   imports: Set<string>,
-  binary = false
+  binary = false,
+  errorOk = false // so we do open(None) and error instead of open('') if we don't have the env var
 ): string {
   const reprs = [];
   for (const t of word.tokens) {
@@ -676,7 +507,11 @@ export function repr(
       // TODO: getenvb() is not available on Windows
       const fn = binary ? "os.getenvb" : "os.getenv";
       const reprFn = binary ? reprStrBinary : reprStr;
-      const getEnvCall = fn + "(" + reprFn(t.value) + ", " + reprFn("") + ")";
+      let getEnvCall = fn + "(" + reprFn(t.value);
+      if (!errorOk || word.tokens.length > 1) {
+        getEnvCall += ", " + reprFn("");
+      }
+      getEnvCall += ")";
       reprs.push(getEnvCall);
       // TODO: if the result of a repr() is discarded, this adds an unused import
       imports.add("os");
@@ -1157,7 +992,7 @@ function formatDataAsEntries(
     // TODO: I bet Python doesn't treat file paths identically to curl
     const readFile = util.eq(filename, "-")
       ? "sys.stdin.read()"
-      : "open(" + repr(filename, osVars, imports) + ").read()";
+      : "open(" + repr(filename, osVars, imports, false, true) + ").read()";
 
     if (!name) {
       dataEntries.push([readFile, null]);
@@ -1253,7 +1088,7 @@ function formatDataAsStr(
       // we need to add .trim()
       line =
         "with open(" +
-        repr(filename, osVars, imports) +
+        repr(filename, osVars, imports, false, true) +
         mode +
         ") as f:\n    " +
         line;
@@ -1334,7 +1169,8 @@ function formatDataAsJson(
     } catch {}
   } else if (d[0] === "json") {
     let jsonDataString = "";
-    jsonDataString += "with open(" + repr(d[2], osVars, imports) + ") as f:\n";
+    jsonDataString +=
+      "with open(" + repr(d[2], osVars, imports, false, true) + ") as f:\n";
     jsonDataString += "    json_data = json.load(f)\n";
     imports.add("json");
     return [jsonDataString, false];
@@ -1450,7 +1286,9 @@ function getFilesString(
       } else if (util.eq(m.contentFile, m.filename)) {
         return [
           name,
-          "open(" + repr(m.contentFile, osVars, imports) + ", 'rb')",
+          "open(" +
+            repr(m.contentFile, osVars, imports, false, true) +
+            ", 'rb')",
         ];
       }
       return [
@@ -1458,7 +1296,7 @@ function getFilesString(
         "(" +
           sentFilename +
           ", open(" +
-          repr(m.contentFile, osVars, imports) +
+          repr(m.contentFile, osVars, imports, false, true) +
           ", 'rb'))",
       ];
     }
@@ -1590,7 +1428,7 @@ const requestToPython = (
           "cookie-files",
           // TODO: curl reads all of them.
           "multiple cookie files are not supported, using the last one: " +
-            JSON.stringify(cookieFile),
+            JSON.stringify(cookieFile.toString()),
         ]);
       }
       // TODO: do we need to .load()?
@@ -1698,7 +1536,7 @@ const requestToPython = (
     } else {
       dataString =
         "with open(" +
-        repr(request.urls[0].uploadFile, osVars, imports) +
+        repr(request.urls[0].uploadFile, osVars, imports, false, true) +
         ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
     }
@@ -2034,7 +1872,9 @@ const requestToPython = (
           uniqueWarn(seenWarnings, warnings, [
             "--aws-sigv4",
             "--aws-sigv4 value isn't parsed: " +
-              JSON.stringify(request.awsSigV4),
+              JSON.stringify(
+                request.awsSigV4 ? request.awsSigV4.toString() : ""
+              ),
           ]);
           break;
         case "bearer":
@@ -2126,7 +1966,7 @@ const requestToPython = (
         } else {
           uploadFileLine +=
             "with open(" +
-            repr(urlObj.uploadFile, osVars, imports) +
+            repr(urlObj.uploadFile, osVars, imports, false, true) +
             ", 'rb') as f:\n";
           uploadFileLine += "    file_contents = f.read()\n";
         }
@@ -2163,7 +2003,7 @@ const requestToPython = (
 
         outputLine +=
           "with open(" +
-          repr(urlObj.output, osVars, imports) +
+          repr(urlObj.output, osVars, imports, false, true) +
           ", 'wb') as f:\n";
         outputLine += "    f.write(response.content)\n";
       }

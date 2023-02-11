@@ -223,7 +223,7 @@ function pushArgValue(
   global: GlobalConfig,
   config: OperationConfig,
   argName: string,
-  value: string | Word
+  value: Word
 ) {
   // Note: cli.ts assumes that the property names on OperationConfig
   // are the same as the passed in argument in an error message, so
@@ -541,7 +541,7 @@ interface Request {
   http2?: boolean;
   http3?: boolean;
 
-  stdin?: Word; // TODO: this should be a Word too
+  stdin?: Word;
   stdinFile?: Word;
 }
 
@@ -939,10 +939,10 @@ const tokenize = (
         }
         // TODO: heredocs do variable expansion and stuff
         if (heredocStart.length) {
-          stdin = new Word([heredocBody.text.slice(0, -heredocStart.length)]);
+          stdin = new Word(heredocBody.text.slice(0, -heredocStart.length));
         } else {
           // this shouldn't happen
-          stdin = new Word([heredocBody.text]);
+          stdin = new Word(heredocBody.text);
         }
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
@@ -951,7 +951,7 @@ const tokenize = (
           );
         }
         // TODO: this just converts bash code to text
-        stdin = new Word([redirect.firstNamedChild.text]);
+        stdin = new Word(redirect.firstNamedChild.text);
       } else {
         throw new CCError(
           'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
@@ -2202,14 +2202,16 @@ function buildRequest(
     warnf(global, [
       "too-many-upload-files",
       "Got more --upload-file/-T options than URLs: " +
-        config["upload-file"]?.map((f) => JSON.stringify(f)).join(", "),
+        config["upload-file"]
+          ?.map((f) => JSON.stringify(f.toString()))
+          .join(", "),
     ]);
   }
   if ((config.output || []).length > config.url.length) {
     warnf(global, [
       "too-many-ouptut-files",
       "Got more --output/-o options than URLs: " +
-        config.output?.map((f) => JSON.stringify(f)).join(", "),
+        config.output?.map((f) => JSON.stringify(f.toString())).join(", "),
     ]);
   }
 
@@ -2247,7 +2249,7 @@ function buildRequest(
     _setHeaderIfMissing(
       headers,
       "Accept",
-      new Word(["application/json"]),
+      new Word("application/json"),
       lowercase
     );
   } else if (config.data) {
@@ -2267,7 +2269,7 @@ function buildRequest(
       if (!multipartArgument.value.includes("=")) {
         throw new CCError(
           "invalid value for --form/-F: " +
-            JSON.stringify(multipartArgument.value)
+            JSON.stringify(multipartArgument.value.toString())
         );
       }
       const [name, value] = multipartArgument.value.split("=", 2);
@@ -2365,7 +2367,7 @@ function buildRequest(
       warnf(global, [
         "max-time-not-number",
         "option --max-time: expected a proper numerical parameter: " +
-          JSON.stringify(config["max-time"]),
+          JSON.stringify(config["max-time"].toString()),
       ]);
     }
   }
@@ -2378,7 +2380,7 @@ function buildRequest(
       warnf(global, [
         "connect-timeout-not-number",
         "option --connect-timeout: expected a proper numerical parameter: " +
-          JSON.stringify(config["connect-timeout"]),
+          JSON.stringify(config["connect-timeout"].toString()),
       ]);
     }
   }
@@ -2397,7 +2399,7 @@ function buildRequest(
       warnf(global, [
         "max-redirs-not-int",
         "option --max-redirs: expected a proper numerical parameter: " +
-          JSON.stringify(config["max-redirs"]),
+          JSON.stringify(config["max-redirs"].toString()),
       ]);
     }
   }
@@ -2442,7 +2444,7 @@ function parseCurlCommand(
     if (typeof cmdName === "undefined") {
       throw new CCError("no arguments provided");
     }
-    args = rest.map((arg) => new Word([arg]));
+    args = rest.map((arg) => new Word(arg));
   } else {
     ({ cmdName, args, stdin, stdinFile } = tokenize(curlCommand, warnings));
   }
