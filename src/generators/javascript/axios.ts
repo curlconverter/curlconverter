@@ -200,7 +200,7 @@ const buildConfigObject = (
         : protocol.toLowerCase();
 
     let port = "1080";
-    const proxyPart = host.match(/:([0-9]+$)/); // TODO: this can't be a regex
+    const proxyPart = host.match(/:([0-9]+$)/); // TODO: this shouldn't be a regex
     if (proxyPart) {
       host = host.slice(0, proxyPart.index);
       port = proxyPart[1];

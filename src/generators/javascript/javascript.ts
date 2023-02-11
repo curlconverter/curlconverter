@@ -211,7 +211,6 @@ export function repr(w: Word, imports: JSImports): string {
       ret.push("process.env[" + reprStr(t.value) + "]");
     } else {
       ret.push("execSync(" + reprStr(t.value) + ").stdout");
-      // TODO: unified import data structure for JavaScript
       addImport(imports, "execSync", "node:child_process");
     }
   }

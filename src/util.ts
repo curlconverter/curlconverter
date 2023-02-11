@@ -78,7 +78,7 @@ interface OperationConfig {
   json?: boolean;
 
   // canBeList
-  url?: Word[]; // TODO: support Bash variables in URL
+  url?: Word[];
   "upload-file"?: Word[];
   output?: Word[];
   header?: Word[];
