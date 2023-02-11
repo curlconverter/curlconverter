@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 HttpClient client = new HttpClient();
 
 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:28139/synthetics/api/v3/monitors?test=2&limit=100&w=4");

@@ -28,7 +28,9 @@ export const _toPhpRequests = (
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -75,7 +77,7 @@ export const _toPhpRequests = (
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
@@ -97,8 +99,8 @@ export const _toPhpRequests = (
     if (!parsedQueryString || !parsedQueryString.length) {
       dataString = "$data = " + repr(request.data) + ";";
     } else {
-      const terms = [];
-      for (const q in parsedQueryString) {
+      const terms: string[] = [];
+      for (const q of parsedQueryString) {
         const [key, value] = q;
         terms.push("    " + repr(key) + " => " + repr(value));
       }
@@ -107,7 +109,7 @@ export const _toPhpRequests = (
   }
   let requestLine =
     "$response = Requests::" +
-    request.urls[0].method.toLowerCase() +
+    request.urls[0].method.toLowerCase().toString() +
     "(" +
     repr(request.urls[0].url);
   requestLine += ", $headers";

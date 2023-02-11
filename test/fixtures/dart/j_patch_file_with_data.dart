@@ -7,6 +7,6 @@ void main() async {
       'file1', './test/fixtures/curl_commands/delete.sh'))
     ..fields['form1'] = 'form+data+1'
     ..fields['form2'] = 'form_data_2'
-  if (res.statusCode != 200) throw Exception('http.patch error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

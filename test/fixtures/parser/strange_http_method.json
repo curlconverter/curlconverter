@@ -18,6 +18,7 @@
         "method": "wHat"
       }
     ],
-    "authType": "basic"
+    "authType": "basic",
+    "lowercaseHeaders": false
   }
 ]

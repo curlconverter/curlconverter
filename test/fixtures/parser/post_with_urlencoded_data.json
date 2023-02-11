@@ -19,6 +19,7 @@
       }
     ],
     "authType": "basic",
+    "lowercaseHeaders": false,
     "compressed": true,
     "headers": [
       [

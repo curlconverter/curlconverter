@@ -34,4 +34,5 @@ export { toNode as toNodeFetch } from "./generators/javascript/javascript.js";
 export { toJavaScriptWarn as toBrowserWarn } from "./generators/javascript/javascript.js";
 export { toNodeWarn as toNodeFetchWarn } from "./generators/javascript/javascript.js";
 
-export { CCError } from "./util.js";
+export { CCError, Word } from "./util.js";
+export type { ShellToken, Token } from "./util.js";

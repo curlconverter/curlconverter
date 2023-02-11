@@ -12,6 +12,6 @@ void main() async {
   req.headers['accept'] = 'application/json';
   req.headers['Content-Type'] = 'multipart/form-data';
   var res = await req.send();
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

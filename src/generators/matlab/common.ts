@@ -1,4 +1,4 @@
-import { CCError } from "../../util.js";
+import { CCError, Word } from "../../util.js";
 import type { Request } from "../../util.js";
 
 // Use negative lookahead because " " is a Z but we don't want to escape it
@@ -6,17 +6,15 @@ import type { Request } from "../../util.js";
 const regexEscape = /(?! )(\p{C}|\p{Z})/gu;
 // TODO: do we need to consider that some strings could be used
 // with sprintf() and have to have more stuff escaped?
-const repr = (s?: string | null) => {
+const strToParts = (s: string): string[] => {
   if (!s) {
-    return "''";
+    return ["''"];
   }
-
-  let mustBeList = false;
   const parts = s
     .replace(/'/g, "''")
     .split(regexEscape)
     .filter((x) => x) // empty strings between consecutive matches
-    .map((x) => {
+    .flatMap((x) => {
       if (x.match(regexEscape)) {
         if (x.length === 1) {
           switch (x) {
@@ -38,16 +36,45 @@ const repr = (s?: string | null) => {
               return `char(${x.charCodeAt(0)})`;
           }
         } else {
-          mustBeList = true;
-          return `char(${x.charCodeAt(0)}) char(${x.charCodeAt(1)})`;
+          return [`char(${x.charCodeAt(0)})`, `char(${x.charCodeAt(1)})`];
         }
       }
       return "'" + x + "'";
     });
-  if (parts.length > 1 || mustBeList) {
+  return parts;
+};
+const joinParts = (parts: string[]): string => {
+  if (parts.length > 1) {
     return "[" + parts.join(" ") + "]";
   }
+  if (parts.length === 0) {
+    return "''"; // shouldn't happen
+  }
   return parts[0];
+};
+const reprStr = (s: string): string => {
+  return joinParts(strToParts(s));
+};
+const repr = (w: Word | null) => {
+  // In context of url parameters, don't accept nulls and such.
+  if (w === null || w.length === 0) {
+    return "''";
+  }
+
+  let parts: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      parts = parts.concat(strToParts(t));
+    } else if (t.type === "variable") {
+      // https://www.mathworks.com/help/matlab/ref/getenv.html
+      parts.push("getenv(" + reprStr(t.value) + ")");
+    } else {
+      // TODO: is this array access correct?
+      // https://www.mathworks.com/help/matlab/ref/system.html
+      parts.push("system(" + reprStr(t.value) + "){2}");
+    }
+  }
+  return joinParts(parts);
 };
 
 const setVariableValue = (
@@ -106,46 +133,55 @@ const callFunction = (
 };
 
 const addCellArray = (
-  mapping: { [key: string]: string } | [string, string][],
-  keysNotToQuote: string[],
-  keyValSeparator: string,
-  indentLevel: number,
+  mapping: ([Word, Word] | [string, Word | string])[],
+  keysNotToQuote?: string[],
+  indentLevel = 1,
   pairs?: boolean
 ) => {
+  if (mapping.length === 0) return ""; // shouldn't happen
+
   const indentUnit = " ".repeat(4);
   const indent = indentUnit.repeat(indentLevel);
   const indentPrevLevel = indentUnit.repeat(indentLevel - 1);
+  const separator = pairs ? ", " : " ";
 
-  const entries = Array.isArray(mapping) ? mapping : Object.entries(mapping);
-  if (entries.length === 0) return "";
-
-  let response = pairs ? "" : "{";
-  if (entries.length === 1) {
-    const [key, value] = entries[0];
-    let val = value;
-    if (keysNotToQuote && !keysNotToQuote.includes(key)) val = `${repr(value)}`;
-    response += `${repr(key)}${keyValSeparator} ${val}`;
-  } else {
-    if (pairs) response += "...";
-    let counter = entries.length;
-    for (const [key, value] of entries) {
-      let val = value;
-      if (val === null) {
-        continue;
-      }
-      --counter;
-      if (!keysNotToQuote || !keysNotToQuote.includes(key)) {
-        val = repr(val);
-      }
-      response += `\n${indent}${repr(key)}${keyValSeparator} ${val}`;
-      if (pairs) {
-        if (counter !== 0) response += ",";
-        response += "...";
-      }
-    }
-    response += `\n${indentPrevLevel}`;
+  let response = "";
+  if (!pairs) {
+    response += "{";
   }
-  response += pairs ? "" : "}";
+  if (pairs && mapping.length > 1) {
+    response += "...";
+  }
+  for (const [counter, [key, value]] of mapping.entries()) {
+    const k = typeof key === "string" ? reprStr(key) : repr(key);
+    let val: string;
+    if (
+      keysNotToQuote &&
+      keysNotToQuote.includes(key.toLowerCase().toString())
+    ) {
+      val = value.toString();
+    } else {
+      val = typeof value === "string" ? reprStr(value) : repr(value);
+    }
+    if (mapping.length > 1) {
+      response += "\n" + indent;
+    }
+    response += k + separator + val;
+
+    if (pairs && mapping.length > 1) {
+      // Don't add trailing comma
+      if (counter !== mapping.length - 1) {
+        response += ",";
+      }
+      response += "...";
+    }
+  }
+  if (mapping.length > 1) {
+    response += "\n" + indentPrevLevel;
+  }
+  if (!pairs) {
+    response += "}";
+  }
   return response;
 };
 
@@ -159,7 +195,7 @@ const structify = (
   const prevIndent = " ".repeat(4 * (indentLevel - 1));
 
   if (obj instanceof Array) {
-    const list = [];
+    const list: string[] = [];
     let listContainsNumbers = true;
     for (const k in obj) {
       if (listContainsNumbers && typeof obj[k] !== "number") {
@@ -201,47 +237,37 @@ const structify = (
     response += `\n${prevIndent})`;
   } else if (typeof obj === "number") {
     // not an Object so obj[k] here is a value
-    response += `${obj}`;
+    response += obj.toString();
   } else {
-    response += `${repr(obj)}`;
+    response += obj === null ? "string(nan)" : reprStr(obj);
   }
 
   return response;
 };
 
 const containsBody = (request: Request): boolean => {
-  return Boolean(
-    Object.prototype.hasOwnProperty.call(request, "data") ||
-      request.multipartUploads
-  );
+  return Boolean(request.data || request.multipartUploads);
 };
 
 const prepareQueryString = (request: Request): string | null => {
-  if (request.urls[0].queryList) {
-    const params = addCellArray(request.urls[0].queryList, [], "", 1);
-    return setVariableValue("params", params);
+  if (!request.urls[0].queryList) {
+    return null;
   }
-  return null;
+  return setVariableValue("params", addCellArray(request.urls[0].queryList));
 };
 
 const prepareCookies = (request: Request): string | null => {
-  if (request.cookies) {
-    // TODO: throws away repeat cookies
-    const cookies = addCellArray(
-      Object.fromEntries(request.cookies),
-      [],
-      "",
-      1
-    );
-    return setVariableValue("cookies", cookies);
+  if (!request.cookies) {
+    return null;
   }
-  return null;
+  return setVariableValue("cookies", addCellArray(request.cookies));
 };
 
 const cookieString = "char(join(join(cookies, '='), '; '))";
 const paramsString = "char(join(join(params, '='), '&'))";
 
 export {
+  reprStr,
   repr,
   setVariableValue,
   callFunction,

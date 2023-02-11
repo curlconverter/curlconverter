@@ -4,10 +4,13 @@ var headers = {
     'Content-Type': 'application/x-www-form-urlencoded'
 };
 
+var dataString = '';
+
 var options = {
     url: 'http://localhost:28139',
     method: 'POST',
-    headers: headers
+    headers: headers,
+    body: dataString
 };
 
 function callback(error, response, body) {

@@ -3,17 +3,8 @@ const axios = require('axios');
 const response = await axios.post(
     'http://localhost:28139/',
     new URLSearchParams([
-        [
-            'foo',
-            'bar'
-        ],
-        [
-            'foo',
-            ''
-        ],
-        [
-            'foo',
-            'barbar'
-        ]
+        ['foo', 'bar'],
+        ['foo', ''],
+        ['foo', 'barbar']
     ])
 );

@@ -3,6 +3,7 @@
   uri:
     url: 'http://localhost:28139'
     method: POST
+    body: ""
     headers:
       Content-Type: application/x-www-form-urlencoded
   register: result

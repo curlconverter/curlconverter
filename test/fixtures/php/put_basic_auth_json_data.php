@@ -4,7 +4,7 @@ curl_setopt($ch, CURLOPT_URL, 'http://localhost:28139/test/_security');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Content-Type: application/x-www-form-urlencoded',
 ]);
 curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 curl_setopt($ch, CURLOPT_USERPWD, 'admin:123');

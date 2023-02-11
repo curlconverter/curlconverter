@@ -14,6 +14,6 @@ void main() async {
     ..fields['text'] = 'Testing the converter!'
   req.headers['Authorization'] = authn;
   var res = await req.send();
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

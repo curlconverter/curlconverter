@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 HttpClient client = new HttpClient();
 
 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:28139/page");

@@ -1,0 +1,9 @@
+-
+  name: 'http://localhost:28139/v2/images'
+  uri:
+    url: 'http://localhost:28139/v2/images?type=distribution'
+    method: GET
+    headers:
+      Content-Type: application/json
+      Authorization: 'Bearer $DO_API_TOKEN'
+  register: result

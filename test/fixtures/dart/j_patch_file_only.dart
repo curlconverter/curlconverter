@@ -5,6 +5,6 @@ void main() async {
   var res = await http.MultipartRequest('PATCH', url)
     ..files.add(await http.MultipartFile.fromPath(
       'file1', './test/fixtures/curl_commands/delete.sh'))
-  if (res.statusCode != 200) throw Exception('http.patch error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

@@ -9,6 +9,6 @@ void main() async {
   req.headers['Authorization'] = 'Bearer ACCESS_TOKEN';
   req.headers['X-Nice'] = 'Header';
   var res = await req.send();
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  if (res.statusCode != 200) throw Exception('http.send error: statusCode= ${res.statusCode}');
   print(res.body);
 }

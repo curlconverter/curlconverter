@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
@@ -12,6 +13,13 @@ class Main {
 		httpConn.setRequestMethod("POST");
 
 		httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+		httpConn.setDoOutput(true);
+		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
+		writer.write("");
+		writer.flush();
+		writer.close();
+		httpConn.getOutputStream().close();
 
 		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
 				? httpConn.getInputStream()

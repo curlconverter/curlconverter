@@ -5,8 +5,10 @@ void main() async {
     'Content-Type': 'application/x-www-form-urlencoded',
   };
 
+  var data = '';
+
   var url = Uri.parse('http://localhost:28139');
-  var res = await http.post(url, headers: headers);
+  var res = await http.post(url, headers: headers, body: data);
   if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
   print(res.body);
 }

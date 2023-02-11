@@ -1,5 +1,6 @@
 import * as curlconverter from "../src/index.js";
 import * as utils from "../src/util.js";
+import { Word } from "../src/util.js";
 
 import fs from "fs";
 import path from "path";
@@ -8,10 +9,28 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const fixturesDir = path.resolve(__dirname, "../../test/fixtures");
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stringifyWords = (o: any): any => {
+  if (o instanceof Word) {
+    return o.toString();
+  }
+  if (Array.isArray(o)) {
+    return o.map((oo) => stringifyWords(oo));
+  }
+  if (o && o.toString() == "[object Object]") {
+    return Object.fromEntries(
+      Object.entries(o).map((oo) => [
+        stringifyWords(oo[0]),
+        stringifyWords(oo[1]),
+      ])
+    );
+  }
+  return o;
+};
 // Special case that returns the parsed argument object
 const toParser = (curl: string | string[]): string => {
   const parserOutput = utils.parseCurlCommand(curl);
-  const code = JSON.stringify(parserOutput, null, 2);
+  const code = JSON.stringify(stringifyWords(parserOutput), null, 2);
   return code + "\n";
 };
 
@@ -126,6 +145,7 @@ const testedConverters = Object.entries(converters).map(
   (c) => c[1].converter.name
 );
 const untestedConverters = ["toPhpRequests"];
+const notConverterExports = ["Word"];
 
 const availableConverters = Object.entries(curlconverter)
   .map((c) => c[1].name)
@@ -134,6 +154,7 @@ const missing = availableConverters.filter(
   (c) =>
     !testedConverters.includes(c) &&
     !untestedConverters.includes(c) &&
+    !notConverterExports.includes(c) &&
     !c.endsWith("Warn")
 );
 const extra = testedConverters.filter(

@@ -1,8 +1,16 @@
 import * as util from "../../util.js";
-import { reprObj, bySecondElem } from "./javascript.js";
+import { Word } from "../../util.js";
+import { reprObj, bySecondElem, addImport } from "./javascript.js";
+import type { JSImports } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
 
-import { repr } from "./javascript.js";
+import {
+  reprStr,
+  repr,
+  reprAsStringToStringDict,
+  asParseFloatTimes1000,
+  asParseInt,
+} from "./javascript.js";
 
 const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
@@ -34,40 +42,18 @@ const supportedArgs = new Set([
   // TODO: methodRewriting: true to match curl?
 ]);
 
-const reprAsStringToStringDict = (
-  d: [string, string | null][],
-  indentLevel = 0,
-  indent = "    "
-): string => {
-  if (d.length === 0) {
-    return "{}";
-  }
-
-  let code = "{\n";
-  for (const [key, value] of d) {
-    code +=
-      indent.repeat(indentLevel + 1) +
-      repr(key) +
-      ": " +
-      repr(value || "") +
-      ",\n";
-  }
-  if (code.endsWith(",\n")) {
-    code = code.slice(0, -2);
-    code += "\n";
-  }
-  code += indent.repeat(indentLevel) + "}";
-  return code;
-};
-
-const getBodyString = (request: Request): [string | null, string | null] => {
+const getBodyString = (
+  request: Request,
+  imports: JSImports
+): [string | null, string | null] => {
   // can have things like ; charset=utf-8 which we want to preserve
   const exactContentType = util.getHeader(request, "content-type");
   const contentType = util.getContentType(request);
 
   if (request.multipartUploads) {
-    if (contentType === "multipart/form-data") {
-      util.deleteHeader(request, "content-type"); // TODO: comment it out instead?
+    if (util.eq(exactContentType, "multipart/form-data")) {
+      // TODO: comment it out instead?
+      util.deleteHeader(request, "content-type");
     }
     return ["body: form", null];
   }
@@ -77,40 +63,38 @@ const getBodyString = (request: Request): [string | null, string | null] => {
   }
 
   // TODO: @
-  const simpleString = "body: " + repr(request.data);
+  const simpleString = "body: " + repr(request.data, imports);
 
   try {
-    if (contentType === "application/json") {
-      const parsed = JSON.parse(request.data);
-      const roundtrips = JSON.stringify(parsed) === request.data;
+    if (contentType === "application/json" && request.data.isString()) {
+      const dataStr = request.data.toString();
+      const parsed = JSON.parse(dataStr);
+      const roundtrips = JSON.stringify(parsed) === dataStr;
       const jsonAsJavaScript = "json: " + reprObj(parsed, 1);
-      if (roundtrips && exactContentType === "application/json") {
+      if (roundtrips && util.eq(exactContentType, "application/json")) {
         util.deleteHeader(request, "content-type");
       }
       return [jsonAsJavaScript, roundtrips ? null : simpleString];
     }
     if (contentType === "application/x-www-form-urlencoded") {
       const [queryList, queryDict] = util.parseQueryString(request.data);
-      if (
-        queryDict &&
-        Object.values(queryDict).every((v) => typeof v === "string")
-      ) {
-        if (exactContentType === "application/x-www-form-urlencoded") {
+      if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
+        if (util.eq(exactContentType, "application/x-www-form-urlencoded")) {
           util.deleteHeader(request, "content-type");
         }
         return [
           "form: " +
-            reprAsStringToStringDict(
-              Object.entries(queryDict as { [key: string]: string }),
-              1
-            ),
+            reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports),
           null,
         ];
       }
       if (queryList) {
         let paramsCode = "body: new URLSearchParams([\n";
         for (const [key, val] of queryList) {
-          paramsCode += `        [${repr(key)}, ${repr(val)}],\n`;
+          paramsCode += `        [${repr(key, imports)}, ${repr(
+            val,
+            imports
+          )}],\n`;
         }
         if (paramsCode.endsWith(",\n")) {
           paramsCode = paramsCode.slice(0, -2);
@@ -127,32 +111,35 @@ const getBodyString = (request: Request): [string | null, string | null] => {
 
 const buildOptionsObject = (
   request: Request,
-  method: string,
+  method: Word,
+  methodStr: string,
   methods: string[],
   nonDataMethods: string[],
-  warnings: Warnings
+  warnings: Warnings,
+  imports: JSImports
 ): string => {
   let code = "{\n";
 
-  if (!methods.includes(method.toUpperCase())) {
-    code += "    method: " + repr(method) + ",\n";
+  if (!method.isString || !methods.includes(methodStr.toUpperCase())) {
+    code += "    method: " + repr(method, imports) + ",\n";
   }
 
   if (
     request.urls[0].queryDict &&
-    !Object.values(request.urls[0].queryDict).some((qv) => Array.isArray(qv))
+    request.urls[0].queryDict.every((v) => !Array.isArray(v[1]))
   ) {
     code +=
       "    searchParams: " +
       reprAsStringToStringDict(
-        Object.entries(request.urls[0].queryDict as { [key: string]: string }),
-        1
+        request.urls[0].queryDict as [Word, Word][],
+        1,
+        imports
       ) +
       ",\n";
   } else if (request.urls[0].queryList) {
     code += "    searchParams: new URLSearchParams([\n";
     for (const [key, val] of request.urls[0].queryList) {
-      code += `        [${repr(key)}, ${repr(val)}],\n`;
+      code += `        [${repr(key, imports)}, ${repr(val, imports)}],\n`;
     }
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
@@ -161,18 +148,24 @@ const buildOptionsObject = (
     code += "    ]),\n";
   }
 
-  const [bodyString, commentedOutBodyString] = getBodyString(request); // can delete headers
+  const [bodyString, commentedOutBodyString] = getBodyString(request, imports); // can delete headers
 
   if (request.headers && request.headers.length) {
-    code +=
-      "    headers: " + reprAsStringToStringDict(request.headers, 1) + ",\n";
+    const headers = request.headers.filter((h) => h[1] !== null) as [
+      Word,
+      Word
+    ][];
+    if (headers.length) {
+      code +=
+        "    headers: " + reprAsStringToStringDict(headers, 1, imports) + ",\n";
+    }
   }
 
   if (request.urls[0].auth) {
     const [username, password] = request.urls[0].auth;
-    code += "    username: " + repr(username) + ",\n";
-    if (password) {
-      code += "    password: " + repr(password) + ",\n";
+    code += "    username: " + repr(username, imports) + ",\n";
+    if (password.toBool()) {
+      code += "    password: " + repr(password, imports) + ",\n";
     }
     if (request.authType !== "basic") {
       // TODO: warn
@@ -186,7 +179,7 @@ const buildOptionsObject = (
     code += "    " + bodyString + ",\n";
 
     // TODO: Does this work for HEAD?
-    if (nonDataMethods.includes(method.toUpperCase())) {
+    if (nonDataMethods.includes(methodStr.toUpperCase())) {
       code += "    allowGetBody: true,\n";
     }
   }
@@ -194,20 +187,16 @@ const buildOptionsObject = (
   if (request.timeout || request.connectTimeout) {
     code += "    timeout: {\n";
     if (request.timeout) {
-      const timeoutAsFloat = parseFloat(request.timeout);
-      if (!isNaN(timeoutAsFloat)) {
-        code += "        request: " + timeoutAsFloat * 1000 + ",\n";
-      } else {
-        code += "        request: " + request.timeout + " * 1000,\n";
-      }
+      code +=
+        "        request: " +
+        asParseFloatTimes1000(request.timeout, imports) +
+        ",\n";
     }
     if (request.connectTimeout) {
-      const timeoutAsFloat = parseFloat(request.connectTimeout);
-      if (!isNaN(timeoutAsFloat)) {
-        code += "        connect: " + timeoutAsFloat * 1000 + ",\n";
-      } else {
-        code += "        connect: " + request.connectTimeout + " * 1000,\n";
-      }
+      code +=
+        "        connect: " +
+        asParseFloatTimes1000(request.connectTimeout, imports) +
+        ",\n";
     }
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
@@ -221,7 +210,9 @@ const buildOptionsObject = (
   if (followRedirects === undefined) {
     followRedirects = true;
   }
-  let maxRedirects = request.maxRedirects;
+  let maxRedirects = request.maxRedirects
+    ? asParseInt(request.maxRedirects, imports)
+    : null;
   const hasMaxRedirects =
     followRedirects &&
     maxRedirects &&
@@ -293,7 +284,7 @@ export const _toNodeGot = (
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
   if (request.urls.length > 1) {
@@ -302,7 +293,9 @@ export const _toNodeGot = (
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.urls[0].queryReadsFile) {
@@ -316,39 +309,41 @@ export const _toNodeGot = (
     ]);
   }
 
-  const imports = new Set<[string, string]>();
+  const imports: JSImports = [];
 
   let code = "";
 
   if (request.multipartUploads) {
-    // TODO: warn that Node 18 is required for FormData
-    // TODO: remove content-type header if it's multipart/form-data
     code += "const form = new FormData();\n";
     for (const m of request.multipartUploads) {
-      code += "form.append(" + repr(m.name) + ", ";
+      code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
-        imports.add(["* as fs", "fs"]);
-        if (m.contentFile === "-") {
+        addImport(imports, "* as fs", "fs");
+        if (util.eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
-          code += "fs.readFileSync(" + repr(m.contentFile) + ")";
+          code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
         }
         if ("filename" in m && m.filename) {
-          code += ", " + repr(m.filename);
+          code += ", " + repr(m.filename, imports);
         }
       } else {
-        code += repr(m.content);
+        code += repr(m.content, imports);
       }
       code += ");\n";
     }
     code += "\n";
+
+    // TODO: remove warning once Node 16 is EOL'd on 2023-09-11
+    warnings.push(["node-form-data", "Node 18 is required for FormData"]);
   }
 
   const method = request.urls[0].method;
-  if (method !== method.toUpperCase()) {
+  const methodStr = method.toString();
+  if (method.isString() && methodStr !== methodStr.toUpperCase()) {
     warnings.push([
       "lowercase-method",
-      "got will uppercase the method: " + JSON.stringify(method),
+      "got will uppercase the method: " + JSON.stringify(methodStr),
     ]);
   }
   // https://github.com/sindresorhus/got/blob/e24b89669931b36530219b9f49965d07da25a7e6/source/create.ts#L28
@@ -357,20 +352,22 @@ export const _toNodeGot = (
   const nonDataMethods = ["GET", "HEAD"];
   code += "const response = await got";
   if (
-    methods.includes(method.toUpperCase()) &&
-    method.toUpperCase() !== "GET"
+    method.isString() &&
+    methods.includes(methodStr.toUpperCase()) &&
+    methodStr.toUpperCase() !== "GET"
   ) {
-    code += "." + method.toLowerCase();
+    code += "." + methodStr.toLowerCase();
   }
   code += "(";
 
   const url = request.urls[0].queryList
     ? request.urls[0].urlWithoutQueryList
     : request.urls[0].url;
-  code += repr(url);
+  code += repr(url, imports);
 
   const needsOptions = !!(
-    !methods.includes(method.toUpperCase()) ||
+    !method.isString() ||
+    !methods.includes(methodStr.toUpperCase()) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
     request.headers ||
@@ -390,9 +387,11 @@ export const _toNodeGot = (
     code += buildOptionsObject(
       request,
       method,
+      methodStr,
       methods,
       nonDataMethods,
-      warnings
+      warnings,
+      imports
     );
   }
 
@@ -400,7 +399,7 @@ export const _toNodeGot = (
 
   let importCode = "import got from 'got';\n";
   for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
-    importCode += "import " + varName + " from " + repr(imp) + ";\n";
+    importCode += "import " + varName + " from " + reprStr(imp) + ";\n";
   }
 
   return importCode + "\n" + code;

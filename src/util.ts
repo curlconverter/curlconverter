@@ -1,6 +1,9 @@
 import parser from "./bash-parser.js";
 import type { Parser } from "./bash-parser.js";
 
+import { Word, eq, firstShellToken, mergeWords, joinWords } from "./word.js";
+import type { Token, ShellToken } from "./word.js";
+
 import {
   curlLongOpts,
   curlShortOpts,
@@ -12,6 +15,7 @@ import type { LongOpts, ShortOpts } from "./curlopts.js";
 export class CCError extends Error {}
 
 // Note: !has() will lead to type errors
+// TODO: replace with Object.hasOwn() once Node 16 is EOL'd on 2023-09-11
 function has<T, K extends PropertyKey>(
   obj: T,
   prop: K
@@ -35,204 +39,37 @@ function isInt(s: string): boolean {
   return /^\s*[+-]?\d+$/.test(s);
 }
 
-interface ShellToken {
-  type: "variable" | "command";
-  value: string;
-  // For error reporting
-  text: string;
-  syntaxNode: Parser.SyntaxNode;
-}
+type QueryList = Array<[Word, Word]>;
+type QueryDict = Array<[Word, Word | Array<Word>]>;
 
-// A shell ShellWord is like a string, except it can contain shell variables or
-// expressions, which are treated as if they were a single character.
-class ShellWord implements Iterable<string | ShellToken> {
-  tokens: (string | ShellToken)[];
-  length: number;
+type Headers = Array<[Word, Word | null]>;
 
-  constructor(tokens: (string | ShellToken)[]) {
-    // If we have strings in a row, merge them
-    this.tokens = [];
-    this.length = 0;
-    for (const t of tokens) {
-      if (typeof t === "string") {
-        if (
-          this.tokens.length > 0 &&
-          typeof this.tokens[this.tokens.length - 1] === "string"
-        ) {
-          this.tokens[this.tokens.length - 1] += t;
-        } else {
-          this.tokens.push(t);
-        }
-        this.length += t.length;
-      } else {
-        this.tokens.push(t);
-        this.length += 1;
-      }
-    }
-  }
-
-  *[Symbol.iterator](): Iterator<string | ShellToken> {
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        for (const c of t) {
-          yield c;
-        }
-      } else {
-        yield t;
-      }
-    }
-  }
-
-  get(index: number): string | ShellToken {
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > index) {
-          return t[index - i];
-        }
-        i += t.length;
-      } else {
-        if (i === index) {
-          return t;
-        }
-        i += 1;
-      }
-    }
-    throw new CCError("Index out of bounds");
-  }
-
-  slice(start: number, end?: number): ShellWord {
-    if (end === undefined) {
-      end = this.length;
-    }
-    const tokens: (string | ShellToken)[] = [];
-    let i = 0;
-    for (const t of this.tokens) {
-      if (typeof t === "string") {
-        if (i + t.length > start) {
-          if (i >= end) {
-            break;
-          }
-          tokens.push(
-            t.slice(Math.max(0, start - i), Math.min(t.length, end - i))
-          );
-        }
-        i += t.length;
-      } else {
-        if (i >= start && i < end) {
-          tokens.push(t);
-        }
-        i += 1;
-      }
-    }
-    return new ShellWord(tokens);
-  }
-
-  // works exactly like String.split(), i.e. it stops when limit entries have
-  // been placed in the array. Any leftover text is not included in the array at all.
-  split(separator: string, limit?: number): ShellWord[] {
-    const ret: ShellWord[] = [];
-    let i = 0;
-    let start = 0;
-    while (i < this.length) {
-      if (this.get(i) === separator) {
-        ret.push(this.slice(start, i));
-        start = i + 1;
-        if (limit !== undefined && ret.length === limit - 1) {
-          break;
-        }
-      }
-      i += 1;
-    }
-    if (start < this.length) {
-      ret.push(this.slice(start));
-    }
-    return ret;
-  }
-
-  firstShellToken(): ShellToken | null {
-    for (const t of this.tokens) {
-      if (typeof t !== "string") {
-        return t;
-      }
-    }
-    return null;
-  }
-
-  startsWith(prefix: string): boolean {
-    if (this.tokens.length === 0) {
-      return false;
-    }
-    if (typeof this.tokens[0] === "string") {
-      return this.tokens[0].startsWith(prefix);
-    }
-    return false;
-  }
-
-  // This destroys the information about the original tokenization
-  toString() {
-    return this.tokens
-      .map((t) => (typeof t === "string" ? t : t.text))
-      .join("");
-  }
-  valueOf = toString;
-}
-type Word = string | ShellWord;
-
-function eq(it: Word, other: string): boolean {
-  if (typeof it === "string") {
-    return it === other;
-  }
-  return (
-    it.tokens.length === 1 &&
-    typeof it.tokens[0] === "string" &&
-    it.tokens[0] === other
-  );
-}
-function getChar(word: Word, index: number): string | ShellToken {
-  if (typeof word === "string") {
-    return word[index];
-  }
-  return word.get(index);
-}
-function firstShellToken(word: Word): ShellToken | null {
-  if (typeof word === "string") {
-    return null;
-  }
-  return word.firstShellToken();
-}
-
-type QueryList = Array<[string, string]>;
-interface QueryDict {
-  [key: string]: string | Array<string>;
-}
-
-type Headers = Array<[string, string | null]>;
-
-type Cookie = [string, string];
+type Cookie = [Word, Word];
 type Cookies = Array<Cookie>;
 
 type FormType = "string" | "form";
-type SrcFormParam = { value: string; type: FormType };
+type SrcFormParam = { value: Word; type: FormType };
+// contentFile is the file to read the content from
+// filename is the name of the file to send to the server
 type FormParam = {
-  name: string;
-} & ({ content: string } | { contentFile: string; filename?: string });
+  name: Word;
+} & ({ content: Word } | { contentFile: Word; filename?: Word });
 
 type FileParamType = "string" | "binary" | "urlencode" | "json";
 type DataType = FileParamType | "raw";
 
-type SrcDataParam = [DataType, string];
+type SrcDataParam = [DataType, Word];
 
-type FileDataParam = [FileParamType, string | null, Word];
+type FileDataParam = [FileParamType, Word | null, Word];
 // "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
 // when we have its contents (because it comes from a pipe) are converted
 // to plain strings
-type DataParam = string | FileDataParam;
+type DataParam = Word | FileDataParam;
 
 // The keys should be named the same as the curl options that
 // set them because they appear in error messages.
 interface OperationConfig {
-  request?: string; // the HTTP method
+  request?: Word; // the HTTP method
 
   // Not the same name as the curl options that set it
   authtype: number;
@@ -241,20 +78,59 @@ interface OperationConfig {
   json?: boolean;
 
   // canBeList
-  url?: string[];
-  "upload-file"?: string[];
-  output?: string[];
-  header?: string[];
-  "proxy-header"?: string[];
+  url?: Word[];
+  "upload-file"?: Word[];
+  output?: Word[];
+  header?: Word[];
+  "proxy-header"?: Word[];
   form?: SrcFormParam[];
   data?: SrcDataParam[];
   "url-query"?: SrcDataParam[];
-  "mail-rcpt"?: string[];
-  resolve?: string[];
-  "connect-to"?: string[];
-  cookie?: string[];
-  quote?: string[];
-  "telnet-option"?: string[];
+  "mail-rcpt"?: Word[];
+  resolve?: Word[];
+  "connect-to"?: Word[];
+  cookie?: Word[];
+  quote?: Word[];
+  "telnet-option"?: Word[];
+
+  http2?: boolean;
+  http3?: boolean;
+
+  insecure?: boolean;
+  compressed?: boolean;
+
+  head?: boolean;
+  get?: boolean;
+
+  cacert?: Word;
+  capath?: Word;
+  cert?: Word;
+  key?: Word;
+
+  "proto-default"?: Word;
+  globoff?: boolean;
+
+  "max-redirs"?: Word;
+  location?: boolean;
+  "location-trusted"?: boolean;
+
+  proxy?: Word;
+  "proxy-user"?: Word;
+
+  range?: Word;
+  referer?: Word;
+  "time-cond"?: Word;
+  "user-agent"?: Word;
+
+  user?: Word;
+  "aws-sigv4"?: Word;
+  delegation?: Word;
+  "oauth2-bearer"?: Word;
+
+  "max-time"?: Word;
+  "connect-timeout"?: Word;
+
+  "cookie-jar"?: Word;
 
   // TODO: list every argument
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -263,7 +139,7 @@ interface OperationConfig {
 // are always returned as a list.
 // Normally, if you specify some option more than once,
 // curl will just take the last one.
-const canBeList = new Set([
+const canBeList = new Set<keyof OperationConfig>([
   "url",
   "upload-file",
   "output",
@@ -281,12 +157,16 @@ const canBeList = new Set([
 
   "authArgs", // used for error messages
 ]);
+
+type Warnings = [string, string][];
+
 interface GlobalConfig {
   verbose?: boolean;
   help?: boolean;
   version?: boolean;
-  warnings?: Warnings;
+
   configs: OperationConfig[];
+  warnings: Warnings;
 
   // These are specific to the curlconverter cli
   language?: string;
@@ -294,9 +174,6 @@ interface GlobalConfig {
 }
 
 function warnf(global: GlobalConfig, warning: [string, string]) {
-  if (!global.warnings) {
-    global.warnings = [];
-  }
   global.warnings.push(warning);
 }
 
@@ -342,13 +219,11 @@ function pickAuth(mask: number): AuthType {
   return "none";
 }
 
-type Warnings = [string, string][];
-
 function pushArgValue(
   global: GlobalConfig,
   config: OperationConfig,
   argName: string,
-  value: string
+  value: Word
 ) {
   // Note: cli.ts assumes that the property names on OperationConfig
   // are the same as the passed in argument in an error message, so
@@ -399,7 +274,7 @@ function pushArgValue(
       break;
 
     case "language": // --language is a curlconverter specific option
-      global[argName] = value;
+      global[argName] = value.toString();
       return;
   }
 
@@ -557,20 +432,20 @@ type AuthType =
 
 // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L60
 interface Curl_URL {
-  scheme: string;
+  scheme: Word;
 
-  auth?: string;
-  user?: string;
-  password?: string;
+  auth?: Word;
+  user?: Word;
+  password?: Word;
 
   // options: string /* IMAP only? */;
-  host: string;
+  host: Word;
   // zoneid: string /* for numerical IPv6 addresses */;
   // port: string;
-  path: string;
-  query: string;
-  originalQuery: string;
-  fragment: string;
+  path: Word;
+  query: Word;
+  originalQuery: Word;
+  fragment: Word;
   // portnum: number /* the numerical version */;
 }
 // struct getout
@@ -580,8 +455,8 @@ interface Curl_URL {
 // https://github.com/curl/curl/blob/curl-7_86_0/lib/urldata.h#L1336
 interface RequestUrl {
   // The url exactly as it was passed in, used for error messages
-  originalUrl: string;
-  url: string;
+  originalUrl: Word;
+  url: Word;
   // the query string can contain instructions to
   // read the query string from a file, for example with
   // --url-query @filename
@@ -594,24 +469,24 @@ interface RequestUrl {
   // If the ?query can't be losslessly parsed, then
   // .urlWithoutQueryList === .url
   // .queryList           === undefined
-  urlWithoutQueryList: string;
+  urlWithoutQueryList: Word;
   queryList?: QueryList;
   // When all repeated keys in queryList happen one after the other
   // ?a=1&a=1&b=2 (okay)
   // ?a=1&b=2&a=1 (doesn't work, queryList is defined but queryDict isn't)
   queryDict?: QueryDict;
 
-  urlWithoutQueryArray: string;
-  urlWithOriginalQuery: string;
+  urlWithoutQueryArray: Word;
+  urlWithOriginalQuery: Word;
   // This includes the query in the URL and the query that comes from `--get --data` or `--url-query`
   queryArray?: DataParam[];
   // This is only the query in the URL
   urlQueryArray?: DataParam[];
-  uploadFile?: string;
-  output?: string;
+  uploadFile?: Word;
+  output?: Word;
 
-  method: string;
-  auth?: [string, string];
+  method: Word;
+  auth?: [Word, Word];
   // TODO: should authType be per-url as well?
   // authType?: string;
 }
@@ -625,36 +500,49 @@ interface Request {
   queryArray?: DataParam[];
 
   authType: AuthType;
-  awsSigV4?: string;
-  delegation?: string;
+  awsSigV4?: Word;
+  delegation?: Word;
 
+  // A null header means the command explicitly disabled sending this header
   headers?: Headers;
+  lowercaseHeaders: boolean;
+
+  // .cookies is a parsed version of the Cookie header, if it can be parsed.
+  // Generators that use .cookies need to delete the header from .headers (usually).
   cookies?: Cookies;
-  cookieFiles?: string[];
-  cookieJar?: string;
+  cookieFiles?: Word[];
+  cookieJar?: Word;
+
   compressed?: boolean;
-  dataArray?: DataParam[];
+  insecure?: boolean;
+
   multipartUploads?: FormParam[];
-  data?: string;
+
+  dataArray?: DataParam[];
+  data?: Word;
   dataReadsFile?: string;
   isDataBinary?: boolean;
   isDataRaw?: boolean;
-  insecure?: boolean;
-  cert?: string | [string, string];
-  cacert?: string;
-  capath?: string;
-  proxy?: string;
-  proxyAuth?: string;
-  timeout?: string;
-  connectTimeout?: string;
+
+  cert?: Word | [Word, Word];
+  cacert?: Word;
+  capath?: Word;
+
+  proxy?: Word;
+  proxyAuth?: Word;
+
+  timeout?: Word;
+  connectTimeout?: Word;
+
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
-  maxRedirects?: string;
+  maxRedirects?: Word;
+
   http2?: boolean;
   http3?: boolean;
 
-  stdin?: string;
-  stdinFile?: string;
+  stdin?: Word;
+  stdinFile?: Word;
 }
 
 const BACKSLASHES = /\\./gs;
@@ -783,12 +671,12 @@ const underlineNodeEnd = (
   return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
 };
 
-function _toVal(
+function toTokens(
   node: Parser.SyntaxNode,
   curlCommand: string,
   warnings: Warnings
-): (string | ShellToken)[] {
-  let vals: (string | ShellToken)[] = [];
+): Token[] {
+  let vals: Token[] = [];
   switch (node.type) {
     case "word":
       return [removeBackslashes(node.text)];
@@ -798,6 +686,8 @@ function _toVal(
       return [removeAnsiCBackslashes(node.text.slice(2, -1))];
     case "string":
     case "string_expansion": {
+      // TODO: MISSING quotes, for example
+      // curl "example.com
       let prevEnd = node.type === "string" ? 1 : 2;
 
       let res = "";
@@ -806,7 +696,7 @@ function _toVal(
           node.text.slice(prevEnd, child.startIndex - node.startIndex)
         );
         // expansion, simple_expansion or command_substitution (or concat?)
-        const subVal = _toVal(child, curlCommand, warnings);
+        const subVal = toTokens(child, curlCommand, warnings);
         if (typeof subVal === "string") {
           res += subVal;
         } else {
@@ -855,6 +745,8 @@ function _toVal(
     case "expansion":
       // Expansions look ${like_this}
       // https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
+      // TODO: MISSING }, for example
+      // curl example${com
       warnings.push([
         "expansion",
         "found expansion expression\n" + underlineNode(node, curlCommand),
@@ -870,6 +762,8 @@ function _toVal(
         },
       ];
     case "command_substitution":
+      // TODO: MISSING ), for example
+      // curl example$(com
       warnings.push([
         "expansion",
         "found command substitution expression\n" +
@@ -878,6 +772,8 @@ function _toVal(
       return [
         {
           type: "command",
+          // TODO: further tokenize and pass an array of args
+          // to subprocess.run() or a command name + string args to C#
           value: node.text.slice(node.text.startsWith("$(") ? 2 : 1, -1),
           text: node.text,
           syntaxNode: node,
@@ -894,7 +790,7 @@ function _toVal(
         res += node.text.slice(prevEnd, child.startIndex - node.startIndex);
         prevEnd = child.endIndex - node.startIndex;
 
-        const subVal = _toVal(child, curlCommand, warnings);
+        const subVal = toTokens(child, curlCommand, warnings);
         if (typeof subVal === "string") {
           res += subVal;
         } else {
@@ -921,40 +817,18 @@ function _toVal(
   }
 }
 
-function toVal(
+function toWord(
   node: Parser.SyntaxNode,
   curlCommand: string,
   warnings: Warnings
 ): Word {
-  const val = _toVal(node, curlCommand, warnings);
-
-  // merge adjacent strings
-  const mergedVal = [];
-  for (const t of val) {
-    if (typeof t === "string") {
-      if (
-        mergedVal.length > 0 &&
-        typeof mergedVal[mergedVal.length - 1] === "string"
-      ) {
-        mergedVal[mergedVal.length - 1] += t;
-      } else {
-        mergedVal.push(t);
-      }
-    } else {
-      mergedVal.push(t);
-    }
-  }
-
-  if (mergedVal.length === 1 && typeof mergedVal[0] === "string") {
-    return mergedVal[0];
-  }
-  return new ShellWord(mergedVal);
+  return new Word(toTokens(node, curlCommand, warnings));
 }
 
 interface TokenizeResult {
   cmdName: string;
   args: Word[];
-  stdin?: string;
+  stdin?: Word;
   stdinFile?: Word;
 }
 const tokenize = (
@@ -1038,7 +912,7 @@ const tokenize = (
       }
       const redirect = redirects[0];
       if (redirect.type === "file_redirect") {
-        stdinFile = toVal(redirect.namedChildren[0], curlCommand, warnings);
+        stdinFile = toWord(redirect.namedChildren[0], curlCommand, warnings);
       } else if (redirect.type === "heredoc_redirect") {
         // heredoc bodies are children of the parent program node
         // https://github.com/tree-sitter/tree-sitter-bash/issues/118
@@ -1065,10 +939,10 @@ const tokenize = (
         }
         // TODO: heredocs do variable expansion and stuff
         if (heredocStart.length) {
-          stdin = heredocBody.text.slice(0, -heredocStart.length);
+          stdin = new Word(heredocBody.text.slice(0, -heredocStart.length));
         } else {
           // this shouldn't happen
-          stdin = heredocBody.text;
+          stdin = new Word(heredocBody.text);
         }
       } else if (redirect.type === "herestring_redirect") {
         if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
@@ -1077,7 +951,7 @@ const tokenize = (
           );
         }
         // TODO: this just converts bash code to text
-        stdin = redirect.firstNamedChild.text;
+        stdin = new Word(redirect.firstNamedChild.text);
       } else {
         throw new CCError(
           'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
@@ -1189,7 +1063,8 @@ const tokenize = (
     );
   }
 
-  const cmdNameNode = toVal(cmdName.firstChild!, curlCommand, warnings);
+  const cmdNameNode = toWord(cmdName.firstChild!, curlCommand, warnings);
+
   const cmdNameShellToken = firstShellToken(cmdNameNode);
   // The most common reason for the error below is probably accidentally copying
   // a $ from the shell prompt without a space after it
@@ -1205,7 +1080,7 @@ const tokenize = (
     );
   }
   const argsNodes = args.map((a: Parser.SyntaxNode) =>
-    toVal(a, curlCommand, warnings)
+    toWord(a, curlCommand, warnings)
   );
   return {
     cmdName: cmdNameStr,
@@ -1286,7 +1161,7 @@ const parseArgs = (
           if (i >= args.length) {
             throw new CCError("option " + argStr + ": requires parameter");
           }
-          pushArgValue(global, config, longArg.name, args[i].toString());
+          pushArgValue(global, config, longArg.name, args[i]);
         } else {
           config = setArgValue(
             global,
@@ -1329,7 +1204,7 @@ const parseArgs = (
         }
 
         for (let j = 1; j < arg.length; j++) {
-          const jthChar = getChar(arg, j);
+          const jthChar = arg.get(j);
           if (typeof jthChar !== "string") {
             // A bash variable in the middle of a short option
             throw new CCError(
@@ -1367,9 +1242,11 @@ const parseArgs = (
               i++;
               val = args[i];
             } else {
-              throw new CCError("option " + arg + ": requires parameter");
+              throw new CCError(
+                "option " + arg.toString() + ": requires parameter"
+              );
             }
-            pushArgValue(global, config, longArg.name, val.toString());
+            pushArgValue(global, config, longArg.name, val);
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
@@ -1396,11 +1273,13 @@ const parseArgs = (
           "ambiguous argument",
           "argument " +
             isOrBeginsWith +
-            " a variable, assuming it's a URL\n" +
+            " a " +
+            arg.tokens[0].type +
+            ", assuming it's a URL\n" +
             underlineNode(arg.tokens[0].syntaxNode),
         ]);
       }
-      pushArgValue(global, config, "url", arg.toString());
+      pushArgValue(global, config, "url", arg);
     }
   }
 
@@ -1420,7 +1299,7 @@ const parseArgs = (
 // both curl and Python let you do it by encoding each UTF-8 byte.
 // TODO: ignore hex case?
 const UTF8encoder = new TextEncoder();
-export const percentEncode = (s: string): string => {
+export const _percentEncode = (s: string): string => {
   return [...UTF8encoder.encode(s)]
     .map((b) => {
       if (
@@ -1442,15 +1321,43 @@ export const percentEncode = (s: string): string => {
     })
     .join("");
 };
-export const percentEncodePlus = (s: string): string =>
-  percentEncode(s).replace(/%20/g, "+");
+export function percentEncode(s: Word): Word {
+  const newTokens = [];
+  for (const token of s.tokens) {
+    newTokens.push(typeof token === "string" ? _percentEncode(token) : token);
+  }
+  return new Word(newTokens);
+}
+
+export function percentEncodePlus(s: Word): Word {
+  const newTokens = [];
+  for (const token of s.tokens) {
+    newTokens.push(
+      typeof token === "string"
+        ? _percentEncode(token).replace(/%20/g, "+")
+        : token
+    );
+  }
+  return new Word(newTokens);
+}
+
+// Reimplements decodeURIComponent but ignores variables/commands
+export function wordDecodeURIComponent(s: Word): Word {
+  const newTokens = [];
+  for (const token of s.tokens) {
+    newTokens.push(
+      typeof token === "string" ? decodeURIComponent(token) : token
+    );
+  }
+  return new Word(newTokens);
+}
 
 export function parseQueryString(
-  s: string | null
-): [QueryList | null, QueryDict | null] {
   // if url is 'example.com?' => s is ''
   // if url is 'example.com'  => s is null
-  if (!s) {
+  s: Word | null
+): [QueryList | null, QueryDict | null] {
+  if (!s || s.isEmpty()) {
     return [null, null];
   }
 
@@ -1462,14 +1369,14 @@ export function parseQueryString(
       return [null, null];
     }
 
-    const [key, val] = param.split(/=(.*)/s, 2);
+    const [key, val] = param.split("=", 2);
     let decodedKey;
     let decodedVal;
     try {
-      // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
-      // before decoding.
-      decodedKey = decodeURIComponent(key.replace(/\+/g, " "));
-      decodedVal = decodeURIComponent(val.replace(/\+/g, " "));
+      // https://url.spec.whatwg.org/#urlencoded-parsing
+      // recommends replacing + with space before decoding.
+      decodedKey = wordDecodeURIComponent(key.replace(/\+/g, " "));
+      decodedVal = wordDecodeURIComponent(val.replace(/\+/g, " "));
     } catch (e) {
       if (e instanceof URIError) {
         // Query string contains invalid percent encoded characters,
@@ -1486,8 +1393,8 @@ export function parseQueryString(
     const roundTripVal = percentEncode(decodedVal);
     // If the original data used %20 instead of + (what requests will send), that's close enough
     if (
-      (roundTripKey !== key && roundTripKey.replace(/%20/g, "+") !== key) ||
-      (roundTripVal !== val && roundTripVal.replace(/%20/g, "+") !== val)
+      (!eq(roundTripKey, key) && !eq(roundTripKey.replace(/%20/g, "+"), key)) ||
+      (!eq(roundTripVal, val) && !eq(roundTripVal.replace(/%20/g, "+"), val))
     ) {
       return [null, null];
     }
@@ -1495,29 +1402,29 @@ export function parseQueryString(
   }
 
   // Group keys
-  const asDict: QueryDict = {};
+  const keyWords: { [key: string]: Word } = {};
+  const uniqueKeys: { [key: string]: Array<Word> } = {};
   let prevKey = null;
   for (const [key, val] of asList) {
-    if (prevKey === key) {
-      (asDict[key] as Array<string>).push(val);
-    } else if (!Object.prototype.hasOwnProperty.call(asDict, key)) {
-      asDict[key] = [val];
+    const keyStr = key.toString(); // TODO: do this better
+    if (prevKey === keyStr) {
+      uniqueKeys[keyStr].push(val);
+    } else if (!Object.prototype.hasOwnProperty.call(uniqueKeys, keyStr)) {
+      uniqueKeys[keyStr] = [val];
+      keyWords[keyStr] = key;
     } else {
       // If there's a repeated key with a different key between
       // one of its repetitions, there is no way to represent
       // this query string as a dictionary.
       return [asList, null];
     }
-    prevKey = key;
+    prevKey = keyStr;
   }
 
   // Convert lists with 1 element to the element
-  for (const [key, val] of Object.entries(asDict)) {
-    // The type system doesn't know that val can only be an array here, but
-    // creating a second object and copying everything would be less efficient.
-    if (val.length === 1) {
-      asDict[key] = val[0];
-    }
+  const asDict: QueryDict = [];
+  for (const [keyStr, val] of Object.entries(uniqueKeys)) {
+    asDict.push([keyWords[keyStr], val.length === 1 ? val[0] : val]);
   }
 
   return [asList, asDict];
@@ -1526,7 +1433,7 @@ export function parseQueryString(
 export function parseurl(
   global: GlobalConfig,
   config: OperationConfig,
-  url: string
+  url: Word
 ): Curl_URL {
   // This is curl's parseurl()
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1144
@@ -1534,12 +1441,12 @@ export function parseurl(
   // curl further validates URLs in curl_url_get()
   // https://github.com/curl/curl/blob/curl-7_86_0/lib/urlapi.c#L1374
   const u: Curl_URL = {
-    scheme: "",
-    host: "",
-    path: "", // with leading '/'
-    query: "", // with leading '?'
-    originalQuery: "", // with leading '?'
-    fragment: "", // with leading '#'
+    scheme: new Word(),
+    host: new Word(),
+    path: new Word(), // with leading '/'
+    query: new Word(), // with leading '?'
+    originalQuery: new Word(), // with leading '?'
+    fragment: new Word(), // with leading '#'
   };
 
   // Remove url glob escapes
@@ -1548,34 +1455,37 @@ export function parseurl(
     url = url.replace(/\\([[\]{}])/g, "$1");
   }
 
-  // curl automatically prepends 'http' if the scheme is missing,
-  // but many libraries fail if your URL doesn't have it,
-  // we tack it on here to mimic curl
-  //
+  // Prepend "http"/"https" if the scheme is missing.
   // RFC 3986 3.1 says
   //   scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
   // but curl will accept a digit/plus/minus/dot in the first character
   // curl will also accept a url with one / like http:/localhost
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L960
-  const schemeMatch = url.match(/^([a-zA-Z0-9+-.]*):\/\/*/);
-  if (schemeMatch) {
-    u.scheme = schemeMatch[1].toLowerCase();
-    url = url.slice(schemeMatch[0].length);
-  } else {
-    // curl actually defaults to https://
-    // but we don't because unlike curl, most libraries won't downgrade to http if you ask for https
-    // TODO: handle file:// scheme
-    u.scheme = config["proto-default"] ?? "http";
+  let schemeMatch = null;
+  if (url.tokens.length && typeof url.tokens[0] === "string") {
+    schemeMatch = url.tokens[0].match(/^([a-zA-Z0-9+-.]*):\/\/*/);
   }
-  if (!["http", "https"].includes(u.scheme)) {
+  if (schemeMatch) {
+    const [schemeAndSlashes, scheme] = schemeMatch;
+    u.scheme = new Word(scheme.toLowerCase());
+    url = url.slice(schemeAndSlashes.length);
+  } else {
+    // curl defaults to https://
+    // we don't because most libraries won't downgrade to http
+    // if you ask for https, unlike curl.
+    // TODO: handle file:// scheme
+    u.scheme = config["proto-default"] ?? new Word("http");
+  }
+  if (!eq(u.scheme, "http") && !eq(u.scheme, "https")) {
     warnf(global, ["bad-scheme", `Protocol "${u.scheme}" not supported`]);
   }
 
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L992
-  const hostMatch = url.match(/^(.*?)[/?#]/); // .*? means we match until the first / ? or #
-  if (hostMatch) {
-    u.host = hostMatch[1];
-    u.path = url.slice(hostMatch[1].length); // keep leading '/'
+  const hostMatch = url.indexOfFirstChar("/?#");
+  if (hostMatch !== -1) {
+    u.host = url.slice(0, hostMatch);
+    // TODO: u.path might end up empty if indexOfFirstChar found ?#
+    u.path = url.slice(hostMatch); // keep leading '/' in .path
     // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1024
     const fragmentIndex = u.path.indexOf("#");
     const queryIndex = u.path.indexOf("?");
@@ -1599,19 +1509,19 @@ export function parseurl(
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1083
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L460
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/url.c#L2827
-  const authMatch = u.host.match(/^(.*?)@/);
-  if (authMatch) {
-    const auth = authMatch[1];
-    u.host = url.slice(authMatch[0].length); // throw away '@'
+  const authMatch = u.host.indexOf("@");
+  if (authMatch !== -1) {
+    const auth = u.host.slice(0, authMatch);
+    u.host = u.host.slice(authMatch + 1); // throw away '@'
     // TODO: this makes this command line option sort of supported but not really
     if (!config["disallow-username-in-url"]) {
       // Curl will exit if this is the case, but we just remove it from the URL
       u.auth = auth;
       if (auth.includes(":")) {
-        [u.user, u.password] = auth.split(/:(.*)/s, 2);
+        [u.user, u.password] = auth.split(":", 2);
       } else {
         u.user = auth;
-        u.password = ""; // if there's no ':', curl will append it
+        u.password = new Word(); // if there's no ':', curl will append it
       }
     }
   }
@@ -1661,19 +1571,19 @@ export function parseurl(
 export function buildURL(
   global: GlobalConfig,
   config: OperationConfig,
-  url: string,
-  uploadFile?: string,
-  stdin?: string,
+  url: Word,
+  uploadFile?: Word,
+  stdin?: Word,
   stdinFile?: Word
 ): [
   Curl_URL,
-  string,
+  Word,
   string | null,
-  string,
+  Word,
   QueryList | null,
   QueryDict | null,
-  string,
-  string,
+  Word,
+  Word,
   DataParam[] | null,
   DataParam[] | null
 ] {
@@ -1683,10 +1593,10 @@ export function buildURL(
   // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operhlp.c#L76
   if (uploadFile) {
     // TODO: it's more complicated
-    if (!u.path) {
-      u.path = "/" + uploadFile;
+    if (u.path.isEmpty()) {
+      u.path = uploadFile.prepend("/");
     } else if (u.path.endsWith("/")) {
-      u.path += uploadFile;
+      u.path = u.path.add(uploadFile);
     }
 
     if (config.get) {
@@ -1698,8 +1608,14 @@ export function buildURL(
   }
 
   // TODO: remove .originalQuery
-  const urlWithOriginalQuery =
-    u.scheme + "://" + u.host + u.path + u.query + u.fragment;
+  const urlWithOriginalQuery = mergeWords([
+    u.scheme,
+    "://",
+    u.host,
+    u.path,
+    u.query,
+    u.fragment,
+  ]);
 
   // curl example.com example.com?foo=bar --url-query isshared=t
   // will make requests for
@@ -1740,11 +1656,11 @@ export function buildURL(
   let urlQueryArray: DataParam[] | null = null;
   let queryArray: DataParam[] | null = null;
   let queryStrReadsFile: string | null = null;
-  if (u.query || (config["url-query"] && config["url-query"].length)) {
-    let queryStr;
+  if (u.query.toBool() || (config["url-query"] && config["url-query"].length)) {
+    let queryStr: Word | null = null;
 
     let queryParts: SrcDataParam[] = [];
-    if (u.query) {
+    if (u.query.toBool()) {
       // remove the leading '?'
       queryParts.push(["raw", u.query.slice(1)]);
       [queryArray, queryStr, queryStrReadsFile] = buildData(
@@ -1769,28 +1685,40 @@ export function buildURL(
     // but
     // curl localhost:8888/? --url-query ''
     // (or --get --data '') will request /
-    u.query = "";
-    if (queryStr) {
-      u.query = "?" + queryStr;
+    u.query = new Word();
+    if (queryStr && queryStr.toBool()) {
+      u.query = queryStr.prepend("?");
     }
   }
-  const urlWithoutQueryArray = u.scheme + "://" + u.host + u.path + u.fragment;
-
-  url = u.scheme + "://" + u.host + u.path + u.query + u.fragment;
+  const urlWithoutQueryArray = mergeWords([
+    u.scheme,
+    "://",
+    u.host,
+    u.path,
+    u.fragment,
+  ]);
+  url = mergeWords([u.scheme, "://", u.host, u.path, u.query, u.fragment]);
   let urlWithoutQueryList = url;
   // TODO: parseQueryString() doesn't accept leading '?'
   let [queryList, queryDict] = parseQueryString(
-    u.query ? u.query.slice(1) : ""
+    u.query.toBool() ? u.query.slice(1) : new Word()
   );
   if (queryList && queryList.length) {
     // TODO: remove the fragment too?
-    urlWithoutQueryList = u.scheme + "://" + u.host + u.path + u.fragment;
+    urlWithoutQueryList = mergeWords([
+      u.scheme,
+      "://",
+      u.host,
+      u.path,
+      u.fragment,
+    ]);
   } else {
     queryList = null;
     queryDict = null;
   }
 
   // TODO: --path-as-is
+  // TODO: --request-target
   return [
     u,
     url,
@@ -1809,47 +1737,46 @@ export function buildURL(
 
 function buildData(
   configData: SrcDataParam[],
-  stdin?: string,
+  stdin?: Word,
   stdinFile?: Word
-): [DataParam[], string, string | null] {
+): [DataParam[], Word, string | null] {
   const data: DataParam[] = [];
-  let dataStrState = "";
+  let dataStrState = new Word();
   for (const [i, x] of configData.entries()) {
     const type = x[0];
     let value = x[1];
-    let name: string | null = null;
+    let name: Word | null = null;
 
     if (i > 0 && type !== "json") {
-      dataStrState += "&";
+      dataStrState = dataStrState.append("&");
     }
 
     if (type === "urlencode") {
       // curl checks for = before @
       const splitOn = value.includes("=") || !value.includes("@") ? "=" : "@";
-      const splitOnRegex = splitOn === "=" ? /=(.*)/s : /@(.*)/s;
       // If there's no = or @ then the entire content is treated as a value and encoded
       if (value.includes("@") || value.includes("=")) {
-        [name, value] = value.split(splitOnRegex, 2);
+        [name, value] = value.split(splitOn, 2);
       }
 
       if (splitOn === "=") {
-        if (name) {
-          dataStrState += name + "=";
+        if (name && name.toBool()) {
+          dataStrState = dataStrState.add(name).append("=");
         }
         // curl's --data-urlencode percent-encodes spaces as "+"
         // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_getparam.c#L630
-        dataStrState += percentEncodePlus(value);
+        dataStrState = dataStrState.add(percentEncodePlus(value));
         continue;
       }
 
-      name = name ? name : null;
-      value = "@" + value;
+      name = name && name.toBool() ? name : null;
+      value = value.prepend("@");
     }
 
     let filename: Word | null = null;
 
     if (type !== "raw" && value.startsWith("@")) {
-      filename = new ShellWord([value.slice(1)]);
+      filename = value.slice(1);
       if (eq(filename, "-")) {
         if (stdin !== undefined) {
           switch (type) {
@@ -1858,7 +1785,10 @@ function buildData(
               value = stdin;
               break;
             case "urlencode":
-              value = (name ? name + "=" : "") + percentEncodePlus(stdin);
+              value = mergeWords([
+                name && name.length ? name.append("=") : new Word(),
+                percentEncodePlus(stdin),
+              ]);
               break;
             default:
               value = stdin.replace(/[\n\r]/g, "");
@@ -1875,35 +1805,35 @@ function buildData(
     }
 
     if (filename !== null) {
-      if (dataStrState) {
+      if (dataStrState.toBool()) {
         data.push(dataStrState);
-        dataStrState = "";
+        dataStrState = new Word();
       }
       // If `filename` isn't null, then `type` can't be "raw"
       data.push([type as FileParamType, name, filename]);
     } else {
-      dataStrState += value;
+      dataStrState = dataStrState.add(value);
     }
   }
-  if (dataStrState) {
+  if (dataStrState.toBool()) {
     data.push(dataStrState);
   }
 
   let dataStrReadsFile: string | null = null;
-  const dataStr = data
-    .map((d) => {
+  const dataStr = mergeWords(
+    data.map((d) => {
       if (Array.isArray(d)) {
         const name = d[1];
-        const filename = d[2].toString();
-        dataStrReadsFile ||= filename; // report first file
+        const filename = d[2];
+        dataStrReadsFile ||= filename.toString(); // report first file
         if (name) {
-          return `${name}=@${filename}`;
+          return mergeWords([name, "=@", filename]);
         }
-        return "@" + filename;
+        return filename.prepend("@");
       }
       return d;
     })
-    .join("");
+  );
 
   return [data, dataStr, dataStrReadsFile];
 }
@@ -1911,10 +1841,9 @@ function buildData(
 function buildRequest(
   global: GlobalConfig,
   config: OperationConfig,
-  stdin?: string,
+  stdin?: Word,
   stdinFile?: Word
 ): Request {
-  // TODO: handle multiple URLs
   if (!config.url || !config.url.length) {
     // TODO: better error message (could be parsing fail)
     throw new CCError("no URL specified!");
@@ -1927,33 +1856,44 @@ function buildRequest(
         warnf(global, [
           "header-file",
           "passing a file for --header/-H is not supported: " +
-            JSON.stringify(header),
+            JSON.stringify(header.toString()),
         ]);
         continue;
       }
 
       if (header.includes(":")) {
-        const [name, value] = header.split(/:(.*)/s, 2);
-        if (!value.trim()) {
-          headers.push([name, null]);
-        } else {
-          headers.push([name, value.replace(/^ /, "")]);
+        const [name, value] = header.split(":", 2);
+        const nameToken = firstShellToken(name);
+        if (nameToken) {
+          warnf(global, [
+            "header-expression",
+            "ignoring " +
+              nameToken.type +
+              " in header name\n" +
+              underlineNode(nameToken.syntaxNode),
+          ]);
         }
+        const hasValue = value && value.trim().toBool();
+        const headerValue = hasValue ? value.removeFirstChar(" ") : null;
+        headers.push([name, headerValue]);
       } else if (header.includes(";")) {
-        const [name] = header.split(/;(.*)/s, 2);
-        headers.push([name, ""]);
+        const [name] = header.split(";", 2);
+        headers.push([name, new Word()]);
+      } else {
+        // TODO: warn that this header arg is ignored
       }
     }
   }
   const lowercase =
-    headers.length > 0 && headers.every((h) => h[0] === h[0].toLowerCase());
+    headers.length > 0 && headers.every((h) => eq(h[0], h[0].toLowerCase()));
 
   // Handle repeated headers
   // For Cookie and Accept, merge the values using ';' and ',' respectively
   // For other headers, warn about the repeated header
-  const uniqueHeaders: { [key: string]: [string, string | null][] } = {};
+  const uniqueHeaders: { [key: string]: [Word, Word | null][] } = {};
   for (const [name, value] of headers) {
-    const lowerName = name.toLowerCase();
+    // TODO: something better, at least warn that variable is ignored
+    const lowerName = name.toLowerCase().toString();
     if (!uniqueHeaders[lowerName]) {
       uniqueHeaders[lowerName] = [];
     }
@@ -2045,7 +1985,10 @@ function buildRequest(
       mergeChar = "; ";
     }
     if (mergeChar) {
-      const merged = nonEmptyHeaders.map((h) => h[1]).join(mergeChar);
+      const merged = joinWords(
+        nonEmptyHeaders.map((h) => h[1]) as Word[],
+        mergeChar
+      );
       warnf(global, [
         "repeated-header",
         `merged ${nonEmptyHeaders.length} "${
@@ -2066,8 +2009,10 @@ function buildRequest(
   }
 
   let cookies;
-  const cookieFiles: string[] = [];
-  const cookieHeaders = headers.filter((h) => h[0].toLowerCase() === "cookie");
+  const cookieFiles: Word[] = [];
+  const cookieHeaders = headers.filter(
+    (h) => h[0].toLowerCase().toString() === "cookie"
+  );
   if (cookieHeaders.length === 1 && cookieHeaders[0][1] !== null) {
     const parsedCookies = parseCookiesStrict(cookieHeaders[0][1]);
     if (parsedCookies) {
@@ -2075,7 +2020,7 @@ function buildRequest(
     }
   } else if (cookieHeaders.length === 0 && config.cookie) {
     // If there is a Cookie header, --cookies is ignored
-    const cookieStrings: string[] = [];
+    const cookieStrings: Word[] = [];
     for (const c of config.cookie) {
       // a --cookie without a = character reads from it as a filename
       if (c.includes("=")) {
@@ -2085,7 +2030,7 @@ function buildRequest(
       }
     }
     if (cookieStrings.length) {
-      const cookieString = config.cookie.join("; ");
+      const cookieString = joinWords(config.cookie, "; ");
       _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
       const parsedCookies = parseCookies(cookieString);
       if (parsedCookies) {
@@ -2100,21 +2045,21 @@ function buildRequest(
   if (config.referer) {
     // referer can be ";auto" or followed by ";auto", we ignore that.
     const referer = config.referer.replace(/;auto$/, "");
-    if (referer) {
+    if (referer.length) {
       _setHeaderIfMissing(headers, "Referer", referer, lowercase);
     }
   }
   if (config.range) {
-    let range = "bytes=" + config.range;
+    let range = config.range.prepend("bytes=");
     if (!range.includes("-")) {
-      range += "-";
+      range = range.append("-");
     }
     _setHeaderIfMissing(headers, "Range", range, lowercase);
   }
   if (config["time-cond"]) {
     let timecond = config["time-cond"];
     let header = "If-Modified-Since";
-    switch (timecond[0]) {
+    switch (timecond.charAt(0)) {
       case "+":
         timecond = timecond.slice(1);
         break;
@@ -2161,8 +2106,8 @@ function buildRequest(
   const outputFiles = config.output || [];
   // eslint-disable-next-line prefer-const
   for (let [i, originalUrl] of config.url.entries()) {
-    const uploadFile: string | undefined = uploadFiles[i];
-    const output: string | undefined = outputFiles[i];
+    const uploadFile: Word | undefined = uploadFiles[i];
+    const output: Word | undefined = outputFiles[i];
 
     const [
       urlObj,
@@ -2177,32 +2122,39 @@ function buildRequest(
       urlWithOriginalQuery,
       queryArray,
       urlQueryArray,
-    ] = buildURL(global, config, originalUrl, uploadFile, stdin, stdinFile);
+    ] = buildURL(
+      global,
+      config,
+      originalUrl, // TODO: support tokens in url
+      uploadFile,
+      stdin,
+      stdinFile
+    );
 
     // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
     // will send, but most APIs will helpfully uppercase what you pass in as the method.
     //
     // There are many places where curl determines the method, this is the last one:
     // https://github.com/curl/curl/blob/curl-7_85_0/lib/http.c#L2032
-    let method = "GET";
+    let method = new Word("GET");
     if (
-      has(config, "request") &&
+      config.request &&
       // Safari adds `-X null` if it can't determine the request type
       // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
-      config.request !== "null"
+      !eq(config.request, "null")
     ) {
-      method = config.request as string;
+      method = config.request;
     } else if (config.head) {
-      method = "HEAD";
+      method = new Word("HEAD");
     } else if (uploadFile) {
       // --upload-file '' doesn't do anything.
-      method = "PUT";
-    } else if ((has(config, "data") || has(config, "form")) && !config.get) {
-      method = "POST";
+      method = new Word("PUT");
+    } else if (!config.get && (has(config, "data") || has(config, "form"))) {
+      method = new Word("POST");
     }
 
     const requestUrl: RequestUrl = {
-      originalUrl,
+      originalUrl: originalUrl,
       urlWithoutQueryList,
       url,
       urlObj,
@@ -2235,8 +2187,8 @@ function buildRequest(
     // --user takes precedence over the URL
     const auth = config.user || urlObj.auth;
     if (auth) {
-      const [user, pass] = auth.split(/:(.*)/s, 2);
-      requestUrl.auth = [user, pass || ""];
+      const [user, pass] = auth.split(":", 2);
+      requestUrl.auth = [user, pass ? pass : new Word()];
     }
 
     urls.push(requestUrl);
@@ -2250,27 +2202,30 @@ function buildRequest(
     warnf(global, [
       "too-many-upload-files",
       "Got more --upload-file/-T options than URLs: " +
-        config["upload-file"]?.map((f) => JSON.stringify(f)).join(", "),
+        config["upload-file"]
+          ?.map((f) => JSON.stringify(f.toString()))
+          .join(", "),
     ]);
   }
   if ((config.output || []).length > config.url.length) {
     warnf(global, [
       "too-many-ouptut-files",
       "Got more --output/-o options than URLs: " +
-        config.output?.map((f) => JSON.stringify(f)).join(", "),
+        config.output?.map((f) => JSON.stringify(f.toString())).join(", "),
     ]);
   }
 
   const request: Request = {
     urls,
     authType: pickAuth(config.authtype),
+    lowercaseHeaders: lowercase,
   };
   // TODO: warn about unused stdin?
   if (stdin) {
     request.stdin = stdin;
   }
   if (stdinFile) {
-    request.stdinFile = stdinFile.toString();
+    request.stdinFile = stdinFile;
   }
 
   if (cookies) {
@@ -2291,7 +2246,12 @@ function buildRequest(
 
   if (config.json) {
     _setHeaderIfMissing(headers, "Content-Type", "application/json", lowercase);
-    _setHeaderIfMissing(headers, "Accept", "application/json", lowercase);
+    _setHeaderIfMissing(
+      headers,
+      "Accept",
+      new Word("application/json"),
+      lowercase
+    );
   } else if (config.data) {
     _setHeaderIfMissing(
       headers,
@@ -2303,17 +2263,17 @@ function buildRequest(
     // TODO: set content-type?
     request.multipartUploads = [];
     for (const multipartArgument of config.form) {
-      if (!multipartArgument.value.includes("=")) {
-        throw new CCError(
-          "invalid value for --form/-F: " +
-            JSON.stringify(multipartArgument.value)
-        );
-      }
-
       // TODO: https://curl.se/docs/manpage.html#-F
       // -F is the most complicated option, we only handle
       // name=value and name=@file and name=<file
-      const [name, value] = multipartArgument.value.split(/=(.*)/s, 2);
+      if (!multipartArgument.value.includes("=")) {
+        throw new CCError(
+          "invalid value for --form/-F: " +
+            JSON.stringify(multipartArgument.value.toString())
+        );
+      }
+      const [name, value] = multipartArgument.value.split("=", 2);
+
       const isString = multipartArgument.type === "string";
 
       if (!isString && value.charAt(0) === "@") {
@@ -2335,11 +2295,11 @@ function buildRequest(
     request.authType = "aws-sigv4";
     request.awsSigV4 = config["aws-sigv4"];
   }
-  if (request.authType === "bearer") {
+  if (request.authType === "bearer" && config["oauth2-bearer"]) {
     _setHeaderIfMissing(
       headers,
       "Authorization",
-      "Bearer " + config["oauth2-bearer"],
+      config["oauth2-bearer"].prepend("Bearer "),
       lowercase
     );
   }
@@ -2399,21 +2359,28 @@ function buildRequest(
   }
   if (config["max-time"]) {
     request.timeout = config["max-time"];
-    if (isNaN(parseFloat(config["max-time"]))) {
+    if (
+      config["max-time"].isString() &&
+      // TODO: parseFloat() like curl
+      isNaN(parseFloat(config["max-time"].toString()))
+    ) {
       warnf(global, [
         "max-time-not-number",
         "option --max-time: expected a proper numerical parameter: " +
-          JSON.stringify(config["max-time"]),
+          JSON.stringify(config["max-time"].toString()),
       ]);
     }
   }
   if (config["connect-timeout"]) {
     request.connectTimeout = config["connect-timeout"];
-    if (isNaN(parseFloat(config["connect-timeout"]))) {
+    if (
+      config["connect-timeout"].isString() &&
+      isNaN(parseFloat(config["connect-timeout"].toString()))
+    ) {
       warnf(global, [
         "connect-timeout-not-number",
         "option --connect-timeout: expected a proper numerical parameter: " +
-          JSON.stringify(config["connect-timeout"]),
+          JSON.stringify(config["connect-timeout"].toString()),
       ]);
     }
   }
@@ -2425,11 +2392,14 @@ function buildRequest(
   }
   if (config["max-redirs"]) {
     request.maxRedirects = config["max-redirs"].trim();
-    if (!isInt(config["max-redirs"])) {
+    if (
+      config["max-redirs"].isString() &&
+      !isInt(config["max-redirs"].toString())
+    ) {
       warnf(global, [
         "max-redirs-not-int",
         "option --max-redirs: expected a proper numerical parameter: " +
-          JSON.stringify(config["max-redirs"]),
+          JSON.stringify(config["max-redirs"].toString()),
       ]);
     }
   }
@@ -2447,7 +2417,7 @@ function buildRequest(
 
 function buildRequests(
   global: GlobalConfig,
-  stdin?: string,
+  stdin?: Word,
   stdinFile?: Word
 ): Request[] {
   if (!global.configs.length) {
@@ -2466,13 +2436,15 @@ function parseCurlCommand(
 ): Request[] {
   let cmdName: string,
     args: Word[],
-    stdin: undefined | string,
+    stdin: undefined | Word,
     stdinFile: undefined | Word;
   if (Array.isArray(curlCommand)) {
-    [cmdName, ...args] = curlCommand;
+    let rest;
+    [cmdName, ...rest] = curlCommand;
     if (typeof cmdName === "undefined") {
       throw new CCError("no arguments provided");
     }
+    args = rest.map((arg) => new Word(arg));
   } else {
     ({ cmdName, args, stdin, stdinFile } = tokenize(curlCommand, warnings));
   }
@@ -2508,13 +2480,13 @@ function parseCurlCommand(
 const getHeader = (
   request: Request,
   header: string
-): string | null | undefined => {
+): Word | null | undefined => {
   if (!request.headers) {
     return undefined;
   }
   const lookup = header.toLowerCase();
   for (const [h, v] of request.headers) {
-    if (h.toLowerCase() === lookup) {
+    if (h.toLowerCase().toString() === lookup) {
       return v;
     }
   }
@@ -2529,20 +2501,20 @@ const getContentType = (request: Request): string | null | undefined => {
   if (!contentTypeHeader) {
     return contentTypeHeader;
   }
-  return contentTypeHeader.split(";")[0].trim();
+  return contentTypeHeader.split(";")[0].trim().toString();
 };
 
-const _hasHeader = (headers: Headers, header: string): boolean => {
+const _hasHeader = (headers: Headers, header: Word | string): boolean => {
   const lookup = header.toLowerCase();
   for (const h of headers) {
-    if (h[0].toLowerCase() === lookup) {
+    if (eq(h[0].toLowerCase(), lookup)) {
       return true;
     }
   }
   return false;
 };
 
-const hasHeader = (request: Request, header: string): boolean | undefined => {
+const hasHeader = (request: Request, header: Word | string): boolean => {
   if (!request.headers) {
     return false;
   }
@@ -2551,32 +2523,42 @@ const hasHeader = (request: Request, header: string): boolean | undefined => {
 
 const _setHeaderIfMissing = (
   headers: Headers,
-  header: string,
-  value: string,
+  header: Word | string,
+  value: Word | string,
   lowercase: boolean | number = false
 ): boolean => {
   if (_hasHeader(headers, header)) {
     return false;
   }
-  headers.push([lowercase ? header.toLowerCase() : header, value]);
+
+  if (lowercase) {
+    header = header.toLowerCase();
+  }
+  if (typeof header === "string") {
+    header = new Word(header);
+  }
+  if (typeof value === "string") {
+    value = new Word(value);
+  }
+  headers.push([header, value]);
   return true;
 };
-const setHeaderIfMissing = (
-  request: Request,
-  header: string,
-  value: string,
-  lowercase: boolean | number = false
-) => {
+const setHeaderIfMissing = (request: Request, header: string, value: Word) => {
   if (!request.headers) {
     return;
   }
-  return _setHeaderIfMissing(request.headers, header, value, lowercase);
+  return _setHeaderIfMissing(
+    request.headers,
+    header,
+    value,
+    request.lowercaseHeaders
+  );
 };
 
 const _deleteHeader = (headers: Headers, header: string) => {
   const lookup = header.toLowerCase();
   for (let i = headers.length - 1; i >= 0; i--) {
-    if (headers[i][0].toLowerCase() === lookup) {
+    if (headers[i][0].toLowerCase().toString() === lookup) {
       headers.splice(i, 1);
     }
   }
@@ -2593,18 +2575,18 @@ const countHeader = (request: Request, header: string) => {
   let count = 0;
   const lookup = header.toLowerCase();
   for (const h of request.headers || []) {
-    if (h[0].toLowerCase() === lookup) {
+    if (h[0].toLowerCase().toString() === lookup) {
       count += 1;
     }
   }
   return count;
 };
 
-const parseCookiesStrict = (cookieString: string): Cookies | null => {
+const parseCookiesStrict = (cookieString: Word): Cookies | null => {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.replace(/^ /, "");
-    const [name, value] = cookie.split(/=(.*)/s, 2);
+    const [name, value] = cookie.split("=", 2);
     if (value === undefined) {
       return null;
     }
@@ -2616,14 +2598,14 @@ const parseCookiesStrict = (cookieString: string): Cookies | null => {
   return cookies;
 };
 
-const parseCookies = (cookieString: string): Cookies | null => {
+const parseCookies = (cookieString: Word): Cookies | null => {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.trim();
     if (!cookie) {
       continue;
     }
-    const [name, value] = cookie.split(/=(.*)/s, 2);
+    const [name, value] = cookie.split("=", 2);
     cookies.push([name.trim(), (value || "").trim()]);
   }
   if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
@@ -2633,7 +2615,9 @@ const parseCookies = (cookieString: string): Cookies | null => {
 };
 
 export {
-  ShellWord,
+  Word,
+  mergeWords,
+  joinWords,
   curlLongOpts,
   curlShortOpts,
   COMMON_SUPPORTED_ARGS,
@@ -2644,6 +2628,7 @@ export {
   getContentType,
   hasHeader,
   countHeader,
+  _setHeaderIfMissing,
   setHeaderIfMissing,
   deleteHeader,
   has,
@@ -2653,7 +2638,8 @@ export {
 };
 
 export type {
-  Word,
+  ShellToken,
+  Token,
   Request,
   Cookie,
   Cookies,

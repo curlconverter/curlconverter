@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 HttpClientHandler handler = new HttpClientHandler();
 handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 

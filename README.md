@@ -1,8 +1,8 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python and other languages.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python, JavaScript, Java, C#, PHP, Go, Dart, R, Ruby, Rust, MATLAB, Elixir, CFML, Ansible or JSON.
 
-Try it on [curlconverter.com](https://curlconverter.com) or from the command line:
+Try it on [curlconverter.com](https://curlconverter.com) or from the command line as a drop-in replacement for `curl`:
 
 ```shell
 $ curlconverter --data "hello=world" example.com
@@ -17,14 +17,15 @@ response = requests.post('http://example.com', data=data)
 
 Features:
 
-- Understands most Bash syntax
-  - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) (which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150))
-  - Piped file or input (such as [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents))
-  - Ignores comments
-  - Reports syntax errors
 - Knows about all of curl's 300 or so arguments, including deleted ones, but most are ignored
 - Supports multiple short arguments passed as one, for example `-OvXPOST` instead of `-O -v -X POST`
 - Converts JSON to native objects
+- Understands most Bash syntax
+  - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) (which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150))
+  - Piped file or input (such as [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents))
+  - Generated code reads environment variables and runs subcommands at runtime
+  - Ignores comments
+  - Reports syntax errors
 - Warns about issues with the conversion
 
 Python-only features (mostly):
@@ -36,6 +37,8 @@ Limitations:
 - Only HTTP is supported
 - Code generators for other languages are less thorough than the Python generator
 - By default, curl doesn't follow redirects or decompress gzip-compressed responses but the generated code will do whatever the default is for that runtime, to keep it simpler. For example Python's Requests library [follows redirects by default](https://requests.readthedocs.io/en/latest/user/quickstart/#redirection-and-history), so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the resulting code will not do what curl would do if the server responds with a redirect
+- the contents of shell variables can usually arbitrarily change how the command would be parsed at runtime. For example, in a command like `curl example.com?foo=bar&baz=$VAR`, if `$VAR` contains `=` or `&` characters or percent encoded characters, that could make the generated code wrong. The code assumes that environment variables don't contain significant characters
+- only simple subcommands such as `curl $(echo example.com)` work, more complicated subcommands (such as nested commands or subcommands that redirect the output) won't generate valid code
 - and much more
 
 ## Install

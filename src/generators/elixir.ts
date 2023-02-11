@@ -1,4 +1,5 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
@@ -12,11 +13,7 @@ const supportedArgs = new Set([
 
 const regexEscape = /"|\\|\p{C}|\p{Z}|#\{/gu;
 
-export function repr(s: string | null): string {
-  if (s === null) {
-    s = "";
-  }
-
+export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
@@ -58,6 +55,22 @@ export function repr(s: string | null): string {
   );
 }
 
+export function repr(w: Word): string {
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      args.push("System.get_env(" + reprStr(t.value) + ', "")');
+    } else {
+      // TODO: strip newline?
+      // TODO: use System.cmd(), which needs to be two arguments the command name + list of args
+      args.push("elem(System.shell(" + reprStr(t.value) + "), 0)");
+    }
+  }
+  return args.join(" <> ");
+}
+
 function addIndent(value: string): string {
   // split on new lines and add 2 spaces of indentation to each line, except empty lines
   return value
@@ -71,15 +84,15 @@ function getCookies(request: Request): string {
     return "";
   }
 
-  const cookies = [];
-  for (const [cookieName, cookieValue] of request.cookies) {
-    cookies.push(`${cookieName}=${cookieValue}`);
-  }
-  return `cookie: [${repr(cookies.join("; "))}]`;
+  const cookies = util.joinWords(
+    request.cookies.map((c) => util.joinWords(c, "=")),
+    "; "
+  );
+  return `cookie: [${repr(cookies)}]`;
 }
 
 function getOptions(request: Request, params: string): [string, string] {
-  const hackneyOptions = [];
+  const hackneyOptions: string[] = [];
 
   const auth = getBasicAuth(request);
   if (auth) {
@@ -134,7 +147,7 @@ function getQueryDict(request: Request): string {
     return "[]";
   }
   let queryDict = "[\n";
-  const queryDictLines = [];
+  const queryDictLines: string[] = [];
   for (const [paramName, rawValue] of request.urls[0].queryList) {
     queryDictLines.push(`    {${repr(paramName)}, ${repr(rawValue)}}`);
   }
@@ -147,9 +160,16 @@ function getHeadersDict(request: Request): string {
   if (!request.headers || !request.headers.length) {
     return "[]";
   }
+  const headers = request.headers.filter((h) => h[1] !== null) as [
+    Word,
+    Word
+  ][];
+  if (!headers.length) {
+    return "[]";
+  }
   let dict = "[\n";
-  const dictLines = [];
-  for (const [headerName, headerValue] of request.headers) {
+  const dictLines: string[] = [];
+  for (const [headerName, headerValue] of headers) {
     dictLines.push(`    {${repr(headerName)}, ${repr(headerValue)}}`);
   }
   dict += dictLines.join(",\n");
@@ -225,12 +245,13 @@ function getDataString(request: Request): string {
   }
 
   if (
+    request.data.isString() &&
     !request.data.includes("|") &&
     request.data.split("\n", 4).length > 3 &&
     // No trailing whitespace, except possibly on the last line
     !request.data.match(/[^\S\r\n]\n/)
   ) {
-    return "~s|" + request.data + "|";
+    return "~s|" + request.data.toString() + "|";
   }
   return repr(request.data);
 }
@@ -242,7 +263,9 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -273,7 +296,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
@@ -286,14 +309,16 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   // put!(url, body \\ "", headers \\ [], options \\ [])
   const methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"];
   const bodyMethods = ["PATCH", "POST", "PUT"];
-  if (!methods.includes(request.urls[0].method)) {
+  const method = request.urls[0].method;
+  const methodStr = method.toString();
+  if (!methods.includes(methodStr)) {
     warnings.push([
       "bad-method",
-      "Unsupported method " + JSON.stringify(request.urls[0].method),
+      "Unsupported method " + JSON.stringify(methodStr),
     ]);
   }
 
-  const isBodyMethod = bodyMethods.includes(request.urls[0].method);
+  const isBodyMethod = bodyMethods.includes(methodStr);
   const body = getBody(request);
   const headers = getHeadersDict(request);
   const params = getQueryDict(request);
@@ -301,10 +326,10 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   // form, put them as a separate argument.
   const [options, optionsWithoutParams] = getOptions(request, params);
 
-  if (body === '""' || isBodyMethod) {
+  if (isBodyMethod || (body === '""' && methods.includes(methodStr))) {
     // Add args backwards. As soon as we see a non-default value, we have to
     // add all preceding arguments.
-    let args = [];
+    let args: string[] = [];
     let keepArgs = false;
     keepArgs ||= options !== "[]";
     if (keepArgs) {
@@ -321,8 +346,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
     args.push(repr(request.urls[0].urlWithoutQueryList));
     args = args.reverse();
 
-    let s =
-      "response = HTTPoison." + request.urls[0].method.toLowerCase() + "!(";
+    let s = "response = HTTPoison." + methodStr.toLowerCase() + "!(";
     if (args.length === 1) {
       // If we just need the method+URL, keep it all on one line
       s += args[0];
@@ -335,7 +359,7 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
   }
 
   return `request = %HTTPoison.Request{
-  method: :${request.urls[0].method.toLowerCase()},
+  method: :${method.toLowerCase().toString()},
   url: ${repr(request.urls[0].urlWithoutQueryList)},
   body: ${body},
   headers: ${headers},

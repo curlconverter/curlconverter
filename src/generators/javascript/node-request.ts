@@ -1,7 +1,9 @@
 import * as util from "../../util.js";
+import { Word } from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-import { repr } from "./javascript.js";
+import { repr, reprImportsRequire } from "./javascript.js";
+import type { JSImports } from "./javascript.js";
 
 const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
@@ -14,6 +16,7 @@ const requestToNodeRequest = (
   request: Request,
   requestIndex: number,
   definedVariables: Set<string>,
+  imports: JSImports,
   warnings: Warnings = []
 ): string => {
   if (request.urls.length > 1) {
@@ -22,7 +25,9 @@ const requestToNodeRequest = (
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -49,7 +54,7 @@ const requestToNodeRequest = (
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
@@ -60,7 +65,11 @@ const requestToNodeRequest = (
     let i = 0;
     for (const [headerName, headerValue] of request.headers || []) {
       nodeRequestCode +=
-        "    " + repr(headerName) + ": " + repr(headerValue || "") + "";
+        "    " +
+        repr(headerName, imports) +
+        ": " +
+        repr(headerValue || new Word(), imports) +
+        "";
       if (i < headerCount - 1) {
         nodeRequestCode += ",\n";
       } else {
@@ -75,15 +84,15 @@ const requestToNodeRequest = (
     nodeRequestCode += defVar(
       definedVariables,
       "dataString",
-      repr(request.data) + ";\n\n"
+      repr(request.data, imports) + ";\n\n"
     );
   }
 
   nodeRequestCode += defVar(definedVariables, "options", "{\n");
-  nodeRequestCode += "    url: " + repr(request.urls[0].url);
-  if (request.urls[0].method.toUpperCase() !== "GET") {
+  nodeRequestCode += "    url: " + repr(request.urls[0].url, imports);
+  if (!util.eq(request.urls[0].method.toUpperCase(), "GET")) {
     nodeRequestCode +=
-      ",\n    method: " + repr(request.urls[0].method.toUpperCase());
+      ",\n    method: " + repr(request.urls[0].method.toUpperCase(), imports);
   }
 
   if (request.headers) {
@@ -92,7 +101,9 @@ const requestToNodeRequest = (
 
     const h = util.getHeader(request, "accept-encoding");
     if (h) {
-      const acceptedEncodings = h.split(",").map((s) => s.trim().toLowerCase());
+      const acceptedEncodings = h
+        .split(",")
+        .map((s) => s.trim().toLowerCase().toString());
       if (
         acceptedEncodings.includes("gzip") ||
         acceptedEncodings.includes("deflate")
@@ -110,8 +121,8 @@ const requestToNodeRequest = (
     nodeRequestCode += ",\n";
     const [user, password] = request.urls[0].auth;
     nodeRequestCode += "    auth: {\n";
-    nodeRequestCode += "        'user': " + repr(user) + ",\n";
-    nodeRequestCode += "        'pass': " + repr(password) + "\n";
+    nodeRequestCode += "        'user': " + repr(user, imports) + ",\n";
+    nodeRequestCode += "        'pass': " + repr(password, imports) + "\n";
     nodeRequestCode += "    }\n";
   } else {
     nodeRequestCode += "\n";
@@ -146,13 +157,14 @@ export const _toNodeRequest = (
   requests: Request[],
   warnings: Warnings = []
 ): string => {
-  const code = "var request = require('request');\n\n";
+  const code = "var request = require('request');\n";
   const definedVariables = new Set(["request"]);
 
+  const imports: JSImports = [];
   const requestCode = requests.map((r, i) =>
-    requestToNodeRequest(r, i, definedVariables, warnings)
+    requestToNodeRequest(r, i, definedVariables, imports, warnings)
   );
-  return code + requestCode.join("\n\n");
+  return code + reprImportsRequire(imports) + "\n" + requestCode.join("\n\n");
 };
 
 export const toNodeRequestWarn = (

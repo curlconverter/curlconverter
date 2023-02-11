@@ -1,6 +1,6 @@
 import * as util from "../../util.js";
-import type { Warnings } from "../../util.js";
-import type { Request } from "../../util.js";
+import { Word } from "../../util.js";
+import type { Request, Warnings } from "../../util.js";
 
 import jsescObj from "jsesc";
 
@@ -16,7 +16,7 @@ const javaScriptSupportedArgs = new Set([
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
 
-// TODO: implement
+// TODO: implement?
 export const reprObj = (value: object, indentLevel?: number): string => {
   const escaped = jsescObj(value, {
     quotes: "single",
@@ -29,6 +29,76 @@ export const reprObj = (value: object, indentLevel?: number): string => {
     return "'" + escaped + "'";
   }
   return escaped;
+};
+
+export const reprPairs = (
+  d: [Word, Word][],
+  indentLevel = 0,
+  indent = "    ",
+  list = true,
+  imports: JSImports
+): string => {
+  if (d.length === 0) {
+    return list ? "[]" : "{}";
+  }
+
+  let code = list ? "[\n" : "{\n";
+  for (const [i, [key, value]] of d.entries()) {
+    code += indent.repeat(indentLevel + 1);
+    if (list) {
+      code += "[" + repr(key, imports) + ", " + repr(value, imports) + "]";
+    } else {
+      code += repr(key, imports) + ": " + repr(value, imports);
+    }
+    code += i < d.length - 1 ? ",\n" : "\n";
+  }
+  code += indent.repeat(indentLevel) + (list ? "]" : "}");
+  return code;
+};
+export const reprAsStringToStringDict = (
+  d: [Word, Word][],
+  indentLevel = 0,
+  imports: JSImports,
+  indent = "    "
+): string => {
+  return reprPairs(d, indentLevel, indent, false, imports);
+};
+
+export const reprAsStringTuples = (
+  d: [Word, Word][],
+  indentLevel = 0,
+  imports: JSImports,
+  indent = "    "
+): string => {
+  return reprPairs(d, indentLevel, indent, true, imports);
+};
+
+export const reprStringToStringList = (
+  d: [Word, Word | Word[]][],
+  indentLevel = 0,
+  imports: JSImports,
+  indent = "    ",
+  list = true
+): string => {
+  if (d.length === 0) {
+    return list ? "[]" : "{}";
+  }
+
+  let code = "{\n";
+  for (const [i, [key, value]] of d.entries()) {
+    let valueStr;
+    if (Array.isArray(value)) {
+      valueStr = "[" + value.map((v) => repr(v, imports)).join(", ") + "]";
+    } else {
+      valueStr = repr(value, imports);
+    }
+
+    code += indent.repeat(indentLevel + 1);
+    code += repr(key, imports) + ": " + valueStr;
+    code += i < d.length - 1 ? ",\n" : "\n";
+  }
+  code += indent.repeat(indentLevel) + "}";
+  return code;
 };
 
 // Backtick quotes are not supported
@@ -86,7 +156,7 @@ export const esc = (s: string, quote: "'" | '"' = "'"): string =>
     return "\\x" + hex.padStart(2, "0");
   });
 
-export const repr = (s: string, quote?: "'" | '"'): string => {
+export function reprStr(s: string, quote?: "'" | '"'): string {
   if (quote === undefined) {
     quote = "'";
     if (s.includes("'") && !s.includes('"')) {
@@ -94,6 +164,128 @@ export const repr = (s: string, quote?: "'" | '"'): string => {
     }
   }
   return quote + esc(s, quote) + quote;
+}
+
+export type JSImports = [string, string][];
+export function addImport(imports: JSImports, name: string, from: string) {
+  // TODO: this is linear
+  for (const [n, f] of imports) {
+    if (n === name && f === from) return;
+  }
+  imports.push([name, from]);
+}
+export function reprImports(imports: JSImports): string {
+  const ret: string[] = [];
+  for (const [name, from] of imports.sort(bySecondElem)) {
+    ret.push(`import { ${name} } from ${reprStr(from)};`);
+  }
+  return ret.join("\n");
+}
+export function reprImportsRequire(imports: JSImports): string {
+  const ret: string[] = [];
+
+  if (imports.length === 0) {
+    return "";
+  }
+
+  for (const [name, from] of imports.sort(bySecondElem)) {
+    if (name.startsWith("* as ")) {
+      ret.push(
+        `const ${name.slice("* as ".length)} = require(${reprStr(from)});`
+      );
+    } else if (name.includes(".")) {
+      ret.push(`const ${name} = require(${reprStr(from)}).${name};`);
+    } else {
+      ret.push(`const ${name} = require(${reprStr(from)});`);
+    }
+  }
+  return ret.join("\n") + "\n";
+}
+export function repr(w: Word, imports: JSImports): string {
+  // Node
+  const ret: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      ret.push(reprStr(t));
+    } else if (t.type === "variable") {
+      ret.push("process.env[" + reprStr(t.value) + "]");
+    } else {
+      ret.push("execSync(" + reprStr(t.value) + ").stdout");
+      addImport(imports, "execSync", "node:child_process");
+    }
+  }
+  return ret.join(" + ");
+}
+
+export function reprBrowser(w: Word, warnings: [string, string][]): string {
+  const ret: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      ret.push(reprStr(t));
+    } else {
+      ret.push(reprStr(t.text));
+      if (t.type === "variable") {
+        warnings.push([
+          "browser-has-no-env",
+          "Can't access environment variable in browser JS: " +
+            JSON.stringify(t.value),
+        ]);
+      } else {
+        warnings.push([
+          "browser-has-no-shell",
+          "Can't run subcommands in browser JS: " + JSON.stringify(t.value),
+        ]);
+      }
+    }
+  }
+  return ret.join(" + ");
+}
+
+export function reprFetch(
+  w: Word,
+  isNode: boolean,
+  imports: JSImports
+): string {
+  if (!isNode) {
+    // TODO: warn
+    return reprStr(w.toString());
+  }
+  return repr(w, imports);
+}
+
+export const asParseFloat = (w: Word, imports: JSImports): string => {
+  if (w.isString()) {
+    const originalValue = w.toString();
+    // TODO: reimplement curl's float parsing instead of parseFloat()
+    const asFloat = parseFloat(originalValue);
+    if (!isNaN(asFloat)) {
+      return originalValue;
+    }
+  }
+  return "parseFloat(" + repr(w, imports) + ")";
+};
+export const asParseFloatTimes1000 = (w: Word, imports: JSImports): string => {
+  if (w.isString()) {
+    const originalValue = w.toString();
+    // TODO: reimplement curl's float parsing instead of parseFloat()
+    // TODO: check overflow
+    const asFloat = parseFloat(originalValue) * 1000;
+    if (!isNaN(asFloat)) {
+      return asFloat.toString();
+    }
+  }
+  return "parseFloat(" + repr(w, imports) + ") * 1000";
+};
+export const asParseInt = (w: Word, imports: JSImports): string => {
+  if (w.isString()) {
+    const originalValue = w.toString();
+    // TODO: reimplement curl's float parsing instead of parseInt()
+    const asInt = parseInt(originalValue);
+    if (!isNaN(asInt)) {
+      return originalValue;
+    }
+  }
+  return "parseInt(" + repr(w, imports) + ")";
 };
 
 export const bySecondElem = (
@@ -101,21 +293,26 @@ export const bySecondElem = (
   b: [string, string]
 ): number => a[1].localeCompare(b[1]);
 
-const getDataString = (request: Request): [string, string | null] => {
+const getDataString = (
+  request: Request,
+  isNode: boolean,
+  imports: JSImports
+): [string, string | null] => {
   if (!request.data) {
     return ["", null];
   }
-  const originalStringRepr = repr(request.data);
+  const originalStringRepr = reprFetch(request.data, isNode, imports);
 
   const contentType = util.getContentType(request);
-  if (contentType === "application/json") {
+  if (contentType === "application/json" && request.data.isString()) {
     try {
-      const parsed = JSON.parse(request.data);
+      const dataStr = request.data.toString();
+      const parsed = JSON.parse(dataStr);
       // Only bother for arrays and {}
       if (typeof parsed !== "object" || parsed === null) {
         return [originalStringRepr, null];
       }
-      const roundtrips = JSON.stringify(parsed) === request.data;
+      const roundtrips = JSON.stringify(parsed) === dataStr;
       const jsonAsJavaScript = reprObj(parsed, 1);
 
       const dataString = "JSON.stringify(" + jsonAsJavaScript + ")";
@@ -132,19 +329,21 @@ const getDataString = (request: Request): [string, string | null] => {
         // application/x-www-form-urlencoded;charset=utf-8
         // TODO: handle repeated content-type header
         if (
-          util.getHeader(request, "content-type") ===
-          "application/x-www-form-urlencoded"
+          util.eq(
+            util.getHeader(request, "content-type"),
+            "application/x-www-form-urlencoded"
+          )
         ) {
           util.deleteHeader(request, "content-type");
         }
 
         const queryObj =
-          queryDict &&
-          Object.values(queryDict).every((v) => typeof v === "string")
-            ? queryDict
-            : queryList;
+          queryDict && queryDict.every((q) => !Array.isArray(q[1]))
+            ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
+            : reprAsStringTuples(queryList, 1, imports);
         // TODO: check roundtrip, add a comment
-        return ["new URLSearchParams(" + reprObj(queryObj, 1) + ")", null];
+        // TODO: this isn't a dict anymore
+        return ["new URLSearchParams(" + queryObj + ")", null];
       }
       return [originalStringRepr, null];
     } catch {
@@ -158,7 +357,7 @@ const requestToJavaScriptOrNode = (
   request: Request,
   warnings: Warnings,
   fetchImports: Set<string>,
-  imports: Set<[string, string]>,
+  imports: JSImports,
   isNode: boolean
 ): string => {
   if (request.dataReadsFile) {
@@ -175,7 +374,7 @@ const requestToJavaScriptOrNode = (
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
@@ -183,28 +382,33 @@ const requestToJavaScriptOrNode = (
 
   if (request.multipartUploads) {
     if (isNode) {
+      // TODO: remove once Node 16 is EOL'd on 2023-09-11
       fetchImports.add("FormData");
     }
     code += "const form = new FormData();\n";
     for (const m of request.multipartUploads) {
       // TODO: use .set() if all names are unique?
-      code += "form.append(" + repr(m.name) + ", ";
+      code += "form.append(" + reprFetch(m.name, isNode, imports) + ", ";
       if ("contentFile" in m) {
         if (isNode) {
-          if (m.contentFile === "-") {
-            imports.add(["fs", "fs"]);
+          if (util.eq(m.contentFile, "-")) {
+            addImport(imports, "fs", "fs");
             code += "fs.readFileSync(0).toString()";
             if (m.filename) {
-              code += ", " + repr(m.filename);
+              code += ", " + reprFetch(m.filename, isNode, imports);
             }
           } else {
             fetchImports.add("fileFromSync");
             // TODO: do this in a way that doesn't set filename="" if we don't have filename
-            code += "fileFromSync(" + repr(m.contentFile) + ")";
+            code +=
+              "fileFromSync(" + reprFetch(m.contentFile, isNode, imports) + ")";
           }
         } else {
           // TODO: does the second argument get sent as filename="" ?
-          code += "File(['<data goes here>'], " + repr(m.contentFile) + ")";
+          code +=
+            "File(['<data goes here>'], " +
+            reprFetch(m.contentFile, isNode, imports) +
+            ")";
           // TODO: (massive todo) we could read the file if we're running in the command line
           warnings.push([
             "--form",
@@ -212,7 +416,7 @@ const requestToJavaScriptOrNode = (
           ]);
         }
       } else {
-        code += repr(m.content);
+        code += reprFetch(m.content, isNode, imports);
       }
       code += ");\n";
     }
@@ -220,23 +424,27 @@ const requestToJavaScriptOrNode = (
   }
 
   // Can delete content-type header
-  const [dataString, commentedOutDataString] = getDataString(request);
+  const [dataString, commentedOutDataString] = getDataString(
+    request,
+    isNode,
+    imports
+  );
 
   if (request.urls[0].auth && request.authType === "digest") {
     // TODO: if 'Authorization:' header is specified, don't set this
     const [user, password] = request.urls[0].auth;
-    imports.add(["* as DigestFetch", "digest-fetch"]);
+    addImport(imports, "* as DigestFetch", "digest-fetch");
     code +=
       "const client = new DigestFetch(" +
-      repr(user) +
+      reprFetch(user, isNode, imports) +
       ", " +
-      repr(password) +
+      reprFetch(password, isNode, imports) +
       ");\n";
     code += "client.";
   }
 
   for (const urlObj of request.urls) {
-    code += "fetch(" + repr(urlObj.url);
+    code += "fetch(" + reprFetch(urlObj.url, isNode, imports);
     if (urlObj.queryReadsFile) {
       warnings.push([
         "unsafe-query",
@@ -250,7 +458,7 @@ const requestToJavaScriptOrNode = (
     const method = urlObj.method.toLowerCase();
 
     if (
-      method !== "get" ||
+      !util.eq(method, "get") ||
       (request.headers && request.headers.length) ||
       // TODO: should authType be per-url too?
       (urlObj.auth && request.authType === "basic") ||
@@ -260,11 +468,14 @@ const requestToJavaScriptOrNode = (
     ) {
       code += ", {\n";
 
-      if (method !== "get") {
+      if (!util.eq(method, "get")) {
         // TODO: If you pass a weird method to fetch() it won't uppercase it
         // const methods = []
         // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
-        code += "    method: " + repr(request.urls[0].method) + ",\n";
+        code +=
+          "    method: " +
+          reprFetch(request.urls[0].method, isNode, imports) +
+          ",\n";
       }
 
       if (
@@ -275,17 +486,16 @@ const requestToJavaScriptOrNode = (
         for (const [headerName, headerValue] of request.headers || []) {
           code +=
             "        " +
-            repr(headerName) +
+            reprFetch(headerName, isNode, imports) +
             ": " +
-            repr(headerValue || "") +
+            reprFetch(headerValue || new Word(), isNode, imports) +
             ",\n";
         }
         if (urlObj.auth && request.authType === "basic") {
           // TODO: if -H 'Authorization:' is passed, don't set this
-          const [user, password] = urlObj.auth;
           code +=
             "        'Authorization': 'Basic ' + btoa(" +
-            repr(user + ":" + password) +
+            reprFetch(util.joinWords(urlObj.auth, ":"), isNode, imports) +
             "),\n";
         }
 
@@ -299,11 +509,14 @@ const requestToJavaScriptOrNode = (
       if (urlObj.uploadFile) {
         if (isNode) {
           fetchImports.add("fileFromSync");
-          code += "    body: fileFromSync(" + repr(urlObj.uploadFile) + "),\n";
+          code +=
+            "    body: fileFromSync(" +
+            reprFetch(urlObj.uploadFile, isNode, imports) +
+            "),\n";
         } else {
           code +=
             "    body: File(['<data goes here>'], " +
-            repr(urlObj.uploadFile) +
+            reprFetch(urlObj.uploadFile, isNode, imports) +
             "),\n";
           warnings.push([
             "--form",
@@ -323,40 +536,43 @@ const requestToJavaScriptOrNode = (
         // TODO: do this parsing in utils.ts
         const proxy = request.proxy.includes("://")
           ? request.proxy
-          : "http://" + request.proxy;
+          : request.proxy.prepend("http://");
         // TODO: could be more accurate
-        let [protocol] = proxy.split(/:\/\/(.*)/s, 2);
+        let [protocol] = proxy.split("://", 2);
         protocol = protocol.toLowerCase();
 
-        if (!protocol) {
-          protocol = "http";
+        if (!protocol.toBool()) {
+          protocol = new Word("http");
         }
-        if (protocol === "socks") {
-          protocol = "socks4";
+        if (util.eq(protocol, "socks")) {
+          protocol = new Word("socks4");
           proxy.replace(/^socks/, "socks4");
         }
 
-        switch (protocol) {
-          case "socks4":
-          case "socks5":
-          case "socks5h":
-          case "socks4a":
-            imports.add(["{ SocksProxyAgent }", "socks-proxy-agent"]);
-            code += "    agent: new SocksProxyAgent(" + repr(proxy) + "),\n";
-            break;
-          case "http":
-          case "https":
-            imports.add(["HttpsProxyAgent", "https-proxy-agent"]);
-            code += "    agent: new HttpsProxyAgent(" + repr(proxy) + "),\n";
-            break;
-          default:
-            warnings.push([
-              "--proxy",
-              "failed to parse --proxy/-x or unknown protocol: " + protocol,
-            ]);
-            break;
-          // default:
-          //   throw new CCError('Unsupported proxy scheme for ' + repr(request.proxy))
+        if (
+          util.eq(protocol, "socks4") ||
+          util.eq(protocol, "socks5") ||
+          util.eq(protocol, "socks5h") ||
+          util.eq(protocol, "socks4a")
+        ) {
+          addImport(imports, "{ SocksProxyAgent }", "socks-proxy-agent");
+          code +=
+            "    agent: new SocksProxyAgent(" +
+            reprFetch(proxy, isNode, imports) +
+            "),\n";
+        } else if (util.eq(protocol, "http") || util.eq(protocol, "https")) {
+          addImport(imports, "HttpsProxyAgent", "https-proxy-agent");
+          code +=
+            "    agent: new HttpsProxyAgent(" +
+            reprFetch(proxy, isNode, imports) +
+            "),\n";
+        } else {
+          warnings.push([
+            "--proxy",
+            "failed to parse --proxy/-x or unknown protocol: " + protocol,
+          ]);
+          // or this?
+          //   throw new CCError('Unsupported proxy scheme for ' + reprFetch(request.proxy))
         }
       }
 
@@ -379,7 +595,7 @@ export const _toJavaScriptOrNode = (
   isNode: boolean
 ): string => {
   const fetchImports = new Set<string>();
-  const imports = new Set<[string, string]>();
+  const imports: JSImports = [];
 
   const code = requests
     .map((r) =>
@@ -395,9 +611,9 @@ export const _toJavaScriptOrNode = (
     }
     importCode += " from 'node-fetch';\n";
   }
-  if (imports.size) {
+  if (imports.length) {
     for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
-      importCode += "import " + varName + " from " + repr(imp) + ";\n";
+      importCode += "import " + varName + " from " + reprStr(imp) + ";\n";
     }
   }
 

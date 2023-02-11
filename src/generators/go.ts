@@ -1,7 +1,8 @@
 import * as util from "../util.js";
+import { Word } from "../util.js";
 import type { Request, Warnings } from "../util.js";
 
-import { reprStr as pyrepr } from "./python.js";
+import { reprStr as pyreprStr } from "./python.js";
 
 const supportedArgs = new Set([
   ...util.COMMON_SUPPORTED_ARGS,
@@ -14,18 +15,71 @@ const supportedArgs = new Set([
   "form-string",
 ]);
 
+const IF_ERR = "\tif err != nil {\n" + "\t\tlog.Fatal(err)\n" + "\t}\n";
+
 // https://go.dev/ref/spec#String_literals
-const reprMaybeBacktick = (s: string): string => {
-  return s.includes('"') ? reprBacktick(s) : repr(s);
+const reprMaybeBacktick = (
+  s: Word,
+  vars: Vars,
+  imports: Set<string>
+): string => {
+  return s.isString() && s.includes('"')
+    ? reprBacktick(s, vars, imports)
+    : repr(s, vars, imports);
 };
-const reprBacktick = (s: string): string => {
-  return !s.includes("`") && !s.includes("\r") ? "`" + s + "`" : repr(s);
+const reprBacktick = (s: Word, vars: Vars, imports: Set<string>): string => {
+  return s.isString() && !s.includes("`") && !s.includes("\r")
+    ? "`" + s.toString() + "`"
+    : repr(s, vars, imports);
 };
-const repr = (s: string): string => {
-  return pyrepr(s, '"');
+function reprStr(s: string): string {
+  return pyreprStr(s, '"');
+}
+type Vars = { [key: string]: string };
+const repr = (w: Word, vars: Vars, imports: Set<string>): string => {
+  const args: string[] = [];
+  for (const t of w.tokens) {
+    if (typeof t === "string") {
+      args.push(reprStr(t));
+    } else if (t.type === "variable") {
+      args.push("os.Getenv(" + reprStr(t.value) + ")");
+      imports.add("os");
+    } else {
+      // TODO: Command takes a list of arguments .Command("ls", "-l", "-a")
+      // TODO: if there's only one command, it would be nice to name the variable "cmd"
+      const execCall = "exec.Command(" + reprStr(t.value) + ").Output()";
+      let i = 1;
+      let varName = "cmd" + i;
+      // We need to check because we often try to represent the same
+      // token twice and discard one of the attempts.
+      // This is linear time but hopefully there's not that many subcommands.
+      while (varName in vars && vars[varName] !== execCall) {
+        i++;
+        varName = "cmd" + i;
+        if (i > Number.MAX_SAFE_INTEGER) {
+          throw new util.CCError("lol");
+        }
+      }
+      vars[varName] = execCall;
+      args.push(varName);
+      imports.add("os/exec");
+    }
+  }
+  return args.join(" + ");
 };
 
-const errNil = "\tif err != nil {\n" + "\t\tlog.Fatal(err)\n" + "\t}\n";
+const timeoutAtoi = (w: Word, vars: Vars, imports: Set<string>): string => {
+  if (w.isString()) {
+    const asStr = w.toString();
+    // TODO: check using curl's syntax and convert to Go's float syntax
+    if (/^\d+\.?\d*$/.test(asStr)) {
+      return asStr;
+    }
+  }
+  vars["timeout"] = "strconv.Atoi(" + repr(w, vars, imports) + ")";
+  imports.add("strconv");
+  return "timeout";
+};
 
 export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   if (requests.length > 1) {
@@ -43,7 +97,9 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
       "found " +
         request.urls.length +
         " URLs, only the first one will be used: " +
-        request.urls.map((u) => JSON.stringify(u.originalUrl)).join(", "),
+        request.urls
+          .map((u) => JSON.stringify(u.originalUrl.toString()))
+          .join(", "),
     ]);
   }
   if (request.dataReadsFile) {
@@ -70,49 +126,20 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
     warnings.push([
       "cookie-files",
       "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c)).join(", "),
+        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
     ]);
   }
 
-  let goCode = "package main\n\n";
+  const imports = new Set<string>(["fmt", "io", "log", "net/http"]);
+  const vars: Vars = {};
 
-  const hasMultipartFiles =
-    request.multipartUploads &&
-    request.multipartUploads.some((m) => "contentFile" in m);
-
-  goCode += "import (\n";
-  if (request.multipartUploads) {
-    goCode += '\t"bytes"\n';
-  }
-  if (request.insecure) {
-    goCode += '\t"crypto/tls"\n';
-  }
-  goCode += '\t"fmt"\n';
-  goCode += '\t"io"\n';
-  goCode += '\t"log"\n';
-  if (request.multipartUploads) {
-    goCode += '\t"mime/multipart"\n';
-  }
-  goCode += '\t"net/http"\n';
-  if (hasMultipartFiles) {
-    goCode += '\t"os"\n';
-  }
-  if (hasMultipartFiles) {
-    goCode += '\t"path/filepath"\n';
-  }
-  if (request.data) {
-    goCode += '\t"strings"\n';
-  }
-  if (request.timeout) {
-    goCode += '\t"time"\n';
-  }
-  goCode += ")\n\n";
-
-  goCode += "func main() {\n";
-
+  let goCode = "";
   if (request.multipartUploads) {
     goCode += "\tform := new(bytes.Buffer)\n";
     goCode += "\twriter := multipart.NewWriter(form)\n";
+    imports.add("bytes");
+    imports.add("mime/multipart");
+
     let firstFile = true;
     let firstField = true;
     for (const m of request.multipartUploads) {
@@ -121,24 +148,40 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
         firstFile = false;
         // TODO: Go sends name=<filename> but curl always sends name="data"
         goCode += `\tfw, err ${op} writer.CreateFormFile(${repr(
-          m.contentFile
-        )}, filepath.Base(${repr(m.filename ?? m.contentFile)}))\n`;
-        goCode += errNil;
+          m.contentFile,
+          vars,
+          imports
+        )}, filepath.Base(${repr(
+          m.filename ?? m.contentFile,
+          vars,
+          imports
+        )}))\n`;
+        goCode += IF_ERR;
+        imports.add("path/filepath");
 
-        goCode += `\tfd, err ${op} os.Open(${repr(m.contentFile)})\n`;
-        goCode += errNil;
+        goCode += `\tfd, err ${op} os.Open(${repr(
+          m.contentFile,
+          vars,
+          imports
+        )})\n`;
+        goCode += IF_ERR;
+        imports.add("os");
         goCode += "\tdefer fd.Close()\n";
         goCode += "\t_, err = io.Copy(fw, fd)\n";
-        goCode += errNil;
+        goCode += IF_ERR;
       } else {
         const op = firstField ? ":=" : "=";
         firstField = false;
         goCode += `\tformField, err ${op} writer.CreateFormField(${repr(
-          m.name
+          m.name,
+          vars,
+          imports
         )})\n`;
-        goCode += errNil;
+        goCode += IF_ERR;
         goCode += `\t_, err = formField.Write([]byte(${reprMaybeBacktick(
-          m.content
+          m.content,
+          vars,
+          imports
         )}))\n`;
       }
       goCode += "\n";
@@ -153,6 +196,7 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
     goCode += "\ttr := &http.Transport{\n";
     if (request.insecure) {
       goCode += "\t\tTLSClientConfig: &tls.Config{InsecureSkipVerify: true},\n";
+      imports.add("crypto/tls");
     }
     if (request.compressed === false) {
       goCode += "\t\tDisableCompression: true,\n";
@@ -166,10 +210,12 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
     if (request.insecure || request.compressed === false) {
       goCode += "\t\tTransport: tr,\n";
     }
-    if (request.timeout) {
-      goCode += "\t\tTimeout: " + request.timeout + " * time.Second,\n";
-    }
+    goCode +=
+      "\t\tTimeout: " +
+      timeoutAtoi(request.timeout, vars, imports) +
+      " * time.Second,\n";
     goCode += "\t";
+    imports.add("time");
   } else if (request.insecure || request.compressed === false) {
     goCode += "Transport: tr";
   }
@@ -177,25 +223,28 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
 
   if (request.data) {
     goCode +=
-      "\tvar data = strings.NewReader(" + reprBacktick(request.data) + ")\n";
+      "\tvar data = strings.NewReader(" +
+      reprBacktick(request.data, vars, imports) +
+      ")\n";
+    imports.add("strings");
   }
 
   goCode +=
     "\treq, err := http.NewRequest(" +
-    repr(request.urls[0].method) +
+    repr(request.urls[0].method, vars, imports) +
     ", " +
-    repr(request.urls[0].url);
+    repr(request.urls[0].url, vars, imports);
   goCode +=
     ", " +
     (request.data ? "data" : request.multipartUploads ? "form" : "nil") +
     ")\n";
-  goCode += errNil;
+  goCode += IF_ERR;
 
   if (request.headers) {
     for (const [headerName, headerValue] of request.headers || []) {
       let start = "\t";
       if (
-        headerName.toLowerCase() === "accept-encoding" &&
+        headerName.toLowerCase().toString() === "accept-encoding" &&
         // By default Go will automatically decompress gzip,
         // unless you set DisableCompression to true on the Transport
         // or pass a custom Accept-Encoding header.
@@ -209,9 +258,9 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
       goCode +=
         start +
         "req.Header.Set(" +
-        repr(headerName) +
+        repr(headerName, vars, imports) +
         ", " +
-        reprMaybeBacktick(headerValue ?? "") +
+        reprMaybeBacktick(headerValue || new Word(), vars, imports) +
         ")\n";
     }
   }
@@ -223,18 +272,38 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   if (request.urls[0].auth && request.authType === "basic") {
     const [user, password] = request.urls[0].auth;
     goCode +=
-      "\treq.SetBasicAuth(" + repr(user) + ", " + repr(password) + ")\n";
+      "\treq.SetBasicAuth(" +
+      repr(user, vars, imports) +
+      ", " +
+      repr(password, vars, imports) +
+      ")\n";
   }
 
   goCode += "\tresp, err := client.Do(req)\n";
-  goCode += errNil;
+  goCode += IF_ERR;
   goCode += "\tdefer resp.Body.Close()\n";
   goCode += "\tbodyText, err := io.ReadAll(resp.Body)\n";
-  goCode += errNil;
+  goCode += IF_ERR;
   goCode += '\tfmt.Printf("%s\\n", bodyText)\n';
   goCode += "}";
 
-  return goCode + "\n";
+  let preamble = "package main\n\n";
+  preamble += "import (\n";
+  for (const imp of Array.from(imports).sort()) {
+    preamble += '\t"' + imp + '"\n';
+  }
+  preamble += ")\n\n";
+  preamble += "func main() {\n";
+  // TODO: sorts wrong when >9 commands
+  for (const [name, expr] of Array.from(Object.entries(vars)).sort()) {
+    preamble += "\t" + name + ", err := " + expr + "\n";
+    preamble += IF_ERR;
+  }
+  if (Object.values(vars).length) {
+    preamble += "\n";
+  }
+
+  return preamble + goCode + "\n";
 };
 export const toGoWarn = (
   curlCommand: string | string[],

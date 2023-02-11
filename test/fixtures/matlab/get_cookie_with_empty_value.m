@@ -5,10 +5,10 @@ cookies = {
     'otherCookie' '2'
 };
 uri = 'http://localhost:28139/cookies';
-options = weboptions('HeaderFields', {
-    'accept' 'application/json'
-    'Cookie' char(join(join(cookies, '='), '; '))
-});
+options = weboptions(...
+    'ContentType', 'json',...
+    'HeaderFields', {'Cookie' char(join(join(cookies, '='), '; '))}...
+);
 response = webread(uri, options);
 
 %% HTTP Interface
@@ -21,7 +21,7 @@ cookies = {
     'otherCookie' '2'
 };
 header = [
-    HeaderField('accept', 'application/json')
+    field.AcceptField(MediaType('application/json'))
     field.CookieField(cellfun(@(x) Cookie(x{:}), num2cell(cookies, 2)))
 ]';
 uri = URI('http://localhost:28139/cookies');
