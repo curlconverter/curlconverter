@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 HttpClient client = new HttpClient();
 
 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:28139/api/2.0/files/content");

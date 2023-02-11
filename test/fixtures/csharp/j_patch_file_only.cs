@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 HttpClient client = new HttpClient();
 
 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, "http://localhost:28139/patch");
