@@ -248,21 +248,9 @@ export class Word implements Iterable<Token> {
     return ret;
   }
 
-  // Merges two Words into one new one
+  // Merges two Words
   add(other: Word): Word {
-    const ret = this.copy();
-    if (
-      ret.tokens.length &&
-      typeof ret.tokens[ret.tokens.length - 1] === "string" &&
-      other.tokens.length &&
-      typeof other.tokens[0] === "string"
-    ) {
-      ret.tokens[ret.tokens.length - 1] += other.tokens[0];
-      ret.tokens.push(...other.tokens.slice(1));
-    } else {
-      ret.tokens.push(...other.tokens);
-    }
-    return ret;
+    return new Word([...this.tokens, ...other.tokens]);
   }
 
   // Returns the first match, searches each string independently

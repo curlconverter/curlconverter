@@ -1891,7 +1891,9 @@ const requestToPython = (
           connectTimeout = request.connectTimeout.toString();
         } else {
           connectTimeout =
-            "float(" + repr(request.connectTimeout, osVars, imports) + ")";
+            "float(" +
+            repr(request.connectTimeout, osVars, imports, false, true) +
+            ")";
         }
       }
       let timeout = null;
@@ -1899,7 +1901,10 @@ const requestToPython = (
         if (request.timeout.isString()) {
           timeout = request.timeout.toString();
         } else {
-          timeout = "float(" + repr(request.timeout, osVars, imports) + ")";
+          timeout =
+            "float(" +
+            repr(request.timeout, osVars, imports, false, true) +
+            ")";
         }
       }
 
