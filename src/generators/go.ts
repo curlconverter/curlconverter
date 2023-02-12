@@ -18,25 +18,21 @@ const supportedArgs = new Set([
 const IF_ERR = "\tif err != nil {\n" + "\t\tlog.Fatal(err)\n" + "\t}\n";
 
 // https://go.dev/ref/spec#String_literals
-const reprMaybeBacktick = (
-  s: Word,
-  vars: Vars,
-  imports: Set<string>
-): string => {
+function reprMaybeBacktick(s: Word, vars: Vars, imports: Set<string>): string {
   return s.isString() && s.includes('"')
     ? reprBacktick(s, vars, imports)
     : repr(s, vars, imports);
-};
-const reprBacktick = (s: Word, vars: Vars, imports: Set<string>): string => {
+}
+function reprBacktick(s: Word, vars: Vars, imports: Set<string>): string {
   return s.isString() && !s.includes("`") && !s.includes("\r")
     ? "`" + s.toString() + "`"
     : repr(s, vars, imports);
-};
+}
 function reprStr(s: string): string {
   return pyreprStr(s, '"');
 }
 type Vars = { [key: string]: string };
-const repr = (w: Word, vars: Vars, imports: Set<string>): string => {
+function repr(w: Word, vars: Vars, imports: Set<string>): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
@@ -66,9 +62,9 @@ const repr = (w: Word, vars: Vars, imports: Set<string>): string => {
     }
   }
   return args.join(" + ");
-};
+}
 
-const timeoutAtoi = (w: Word, vars: Vars, imports: Set<string>): string => {
+function timeoutAtoi(w: Word, vars: Vars, imports: Set<string>): string {
   if (w.isString()) {
     const asStr = w.toString();
     // TODO: check using curl's syntax and convert to Go's float syntax
@@ -79,9 +75,9 @@ const timeoutAtoi = (w: Word, vars: Vars, imports: Set<string>): string => {
   vars["timeout"] = "strconv.Atoi(" + repr(w, vars, imports) + ")";
   imports.add("strconv");
   return "timeout";
-};
+}
 
-export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
+export function _toGo(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -304,15 +300,15 @@ export const _toGo = (requests: Request[], warnings: Warnings = []): string => {
   }
 
   return preamble + goCode + "\n";
-};
-export const toGoWarn = (
+}
+export function toGoWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const go = _toGo(requests, warnings);
   return [go, warnings];
-};
-export const toGo = (curlCommand: string | string[]): string => {
+}
+export function toGo(curlCommand: string | string[]): string {
   return toGoWarn(curlCommand)[0];
-};
+}

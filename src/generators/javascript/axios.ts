@@ -27,10 +27,10 @@ const supportedArgs = new Set([
 ]);
 
 // TODO: @
-const _getDataString = (
+function _getDataString(
   request: Request,
   imports: JSImports
-): [string | null, string | null] => {
+): [string | null, string | null] {
   if (!request.data) {
     return [null, null];
   }
@@ -83,11 +83,11 @@ const _getDataString = (
     }
   }
   return [null, null];
-};
-const getDataString = (
+}
+function getDataString(
   request: Request,
   imports: JSImports
-): [string | null, string | null] => {
+): [string | null, string | null] {
   if (!request.data) {
     return [null, null];
   }
@@ -101,9 +101,9 @@ const getDataString = (
     dataString = repr(request.data, imports);
   }
   return [dataString, commentedOutDataString];
-};
+}
 
-const buildConfigObject = (
+function buildConfigObject(
   request: Request,
   method: Word,
   methodStr: string,
@@ -112,7 +112,7 @@ const buildConfigObject = (
   dataMethods: string[],
   hasSearchParams: boolean,
   imports: JSImports
-): string => {
+): string {
   let code = "{\n";
 
   if (!methods.includes(methodStr)) {
@@ -238,12 +238,12 @@ const buildConfigObject = (
   }
   code += "\n}";
   return code;
-};
+}
 
-export const _toNodeAxios = (
+export function _toNodeAxios(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -438,15 +438,15 @@ export const _toNodeAxios = (
   importCode += reprImportsRequire(imports);
 
   return importCode + "\n" + code;
-};
-export const toNodeAxiosWarn = (
+}
+export function toNodeAxiosWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeAxios = _toNodeAxios(requests, warnings);
   return [nodeAxios, warnings];
-};
-export const toNodeAxios = (curlCommand: string | string[]): string => {
+}
+export function toNodeAxios(curlCommand: string | string[]): string {
   return toNodeAxiosWarn(curlCommand)[0];
-};
+}

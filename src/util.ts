@@ -546,16 +546,17 @@ interface Request {
 }
 
 const BACKSLASHES = /\\./gs;
-const removeBackslash = (m: string) =>
-  m.charAt(1) === "\n" ? "" : m.charAt(1);
-const removeBackslashes = (str: string): string => {
+function removeBackslash(m: string) {
+  return m.charAt(1) === "\n" ? "" : m.charAt(1);
+}
+function removeBackslashes(str: string): string {
   return str.replace(BACKSLASHES, removeBackslash);
-};
+}
 // https://www.gnu.org/software/bash/manual/bash.html#Double-Quotes
 const DOUBLE_QUOTE_BACKSLASHES = /\\[\\$`"\n]/gs;
-const removeDoubleQuoteBackslashes = (str: string): string => {
+function removeDoubleQuoteBackslashes(str: string): string {
   return str.replace(DOUBLE_QUOTE_BACKSLASHES, removeBackslash);
-};
+}
 // ANSI-C quoted strings look $'like this'.
 // Not all shells have them but Bash does
 // https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
@@ -563,8 +564,8 @@ const removeDoubleQuoteBackslashes = (str: string): string => {
 // https://git.savannah.gnu.org/cgit/bash.git/tree/lib/sh/strtrans.c
 const ANSI_BACKSLASHES =
   /\\(\\|a|b|e|E|f|n|r|t|v|'|"|\?|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|c.)/gs;
-const removeAnsiCBackslashes = (str: string): string => {
-  const unescapeChar = (m: string) => {
+function removeAnsiCBackslashes(str: string): string {
+  function unescapeChar(m: string) {
     switch (m.charAt(1)) {
       case "\\":
         return "\\";
@@ -632,15 +633,12 @@ const removeAnsiCBackslashes = (str: string): string => {
           "unhandled character in ANSI-C escape code: " + JSON.stringify(m)
         );
     }
-  };
+  }
 
   return str.replace(ANSI_BACKSLASHES, unescapeChar);
-};
+}
 
-const underlineNode = (
-  node: Parser.SyntaxNode,
-  curlCommand?: string
-): string => {
+function underlineNode(node: Parser.SyntaxNode, curlCommand?: string): string {
   // TODO: If this needs to be desirialized, it would be more efficient
   // to pass the original command as a string.
   curlCommand = node.tree.rootNode.text;
@@ -655,12 +653,12 @@ const underlineNode = (
     "^".repeat(end - node.startPosition.column) +
     (onOneLine ? "" : "^") // TODO: something else?
   );
-};
+}
 
-const underlineNodeEnd = (
+function underlineNodeEnd(
   node: Parser.SyntaxNode,
   curlCommand?: string
-): string => {
+): string {
   curlCommand = node.tree.rootNode.text;
 
   // TODO: is this exactly how tree-sitter splits lines?
@@ -669,7 +667,7 @@ const underlineNodeEnd = (
   const start = onOneLine ? node.startPosition.column : 0;
   // TODO: cut off line if it's too long
   return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
-};
+}
 
 function toTokens(
   node: Parser.SyntaxNode,
@@ -831,10 +829,10 @@ interface TokenizeResult {
   stdin?: Word;
   stdinFile?: Word;
 }
-const tokenize = (
+function tokenize(
   curlCommand: string,
   warnings: Warnings = []
-): TokenizeResult => {
+): TokenizeResult {
   const ast = parser.parse(curlCommand);
   // https://github.com/tree-sitter/tree-sitter-bash/blob/master/grammar.js
   // The AST must be in a nice format, i.e.
@@ -1088,39 +1086,39 @@ const tokenize = (
     stdin,
     stdinFile,
   };
-};
+}
 
-const checkLongOpt = (
+function checkLongOpt(
   lookup: string,
   longArgName: string,
   supportedOpts: Set<string>,
   global: GlobalConfig
-) => {
+) {
   if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
     // TODO: better message. include generator name?
     warnf(global, [longArgName, "--" + lookup + " is not a supported option"]);
   }
-};
+}
 
-const checkShortOpt = (
+function checkShortOpt(
   lookup: string,
   longArgName: string,
   supportedOpts: Set<string>,
   global: GlobalConfig
-) => {
+) {
   if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
     // TODO: better message. include generator name?
     warnf(global, [longArgName, "-" + lookup + " is not a supported option"]);
   }
-};
+}
 
-const parseArgs = (
+function parseArgs(
   args: Word[],
   longOpts: LongOpts,
   shortOpts: ShortOpts,
   supportedOpts?: Set<string>,
   warnings: Warnings = []
-): GlobalConfig => {
+): GlobalConfig {
   let config: OperationConfig = { authtype: CURLAUTH_BASIC };
   const global: GlobalConfig = { configs: [config], warnings };
   for (let i = 0, stillflags = true; i < args.length; i++) {
@@ -1291,7 +1289,7 @@ const parseArgs = (
     }
   }
   return global;
-};
+}
 
 // Match Python's urllib.parse.quote() behavior
 // https://github.com/python/cpython/blob/3.11/Lib/urllib/parse.py#L826
@@ -1299,7 +1297,7 @@ const parseArgs = (
 // both curl and Python let you do it by encoding each UTF-8 byte.
 // TODO: ignore hex case?
 const UTF8encoder = new TextEncoder();
-export const _percentEncode = (s: string): string => {
+export function _percentEncode(s: string): string {
   return [...UTF8encoder.encode(s)]
     .map((b) => {
       if (
@@ -1320,7 +1318,7 @@ export const _percentEncode = (s: string): string => {
       return "%" + b.toString(16).toUpperCase().padStart(2, "0");
     })
     .join("");
-};
+}
 export function percentEncode(s: Word): Word {
   const newTokens = [];
   for (const token of s.tokens) {
@@ -2477,10 +2475,7 @@ function parseCurlCommand(
 }
 
 // Gets the first header, matching case-insensitively
-const getHeader = (
-  request: Request,
-  header: string
-): Word | null | undefined => {
+function getHeader(request: Request, header: string): Word | null | undefined {
   if (!request.headers) {
     return undefined;
   }
@@ -2491,9 +2486,9 @@ const getHeader = (
     }
   }
   return undefined;
-};
+}
 
-const getContentType = (request: Request): string | null | undefined => {
+function getContentType(request: Request): string | null | undefined {
   if (!request.headers) {
     return undefined;
   }
@@ -2502,9 +2497,9 @@ const getContentType = (request: Request): string | null | undefined => {
     return contentTypeHeader;
   }
   return contentTypeHeader.split(";")[0].trim().toString();
-};
+}
 
-const _hasHeader = (headers: Headers, header: Word | string): boolean => {
+function _hasHeader(headers: Headers, header: Word | string): boolean {
   const lookup = header.toLowerCase();
   for (const h of headers) {
     if (eq(h[0].toLowerCase(), lookup)) {
@@ -2512,21 +2507,21 @@ const _hasHeader = (headers: Headers, header: Word | string): boolean => {
     }
   }
   return false;
-};
+}
 
-const hasHeader = (request: Request, header: Word | string): boolean => {
+function hasHeader(request: Request, header: Word | string): boolean {
   if (!request.headers) {
     return false;
   }
   return _hasHeader(request.headers, header);
-};
+}
 
-const _setHeaderIfMissing = (
+function _setHeaderIfMissing(
   headers: Headers,
   header: Word | string,
   value: Word | string,
   lowercase: boolean | number = false
-): boolean => {
+): boolean {
   if (_hasHeader(headers, header)) {
     return false;
   }
@@ -2542,8 +2537,8 @@ const _setHeaderIfMissing = (
   }
   headers.push([header, value]);
   return true;
-};
-const setHeaderIfMissing = (request: Request, header: string, value: Word) => {
+}
+function setHeaderIfMissing(request: Request, header: string, value: Word) {
   if (!request.headers) {
     return;
   }
@@ -2553,25 +2548,25 @@ const setHeaderIfMissing = (request: Request, header: string, value: Word) => {
     value,
     request.lowercaseHeaders
   );
-};
+}
 
-const _deleteHeader = (headers: Headers, header: string) => {
+function _deleteHeader(headers: Headers, header: string) {
   const lookup = header.toLowerCase();
   for (let i = headers.length - 1; i >= 0; i--) {
     if (headers[i][0].toLowerCase().toString() === lookup) {
       headers.splice(i, 1);
     }
   }
-};
+}
 
-const deleteHeader = (request: Request, header: string) => {
+function deleteHeader(request: Request, header: string) {
   if (!request.headers) {
     return;
   }
   return _deleteHeader(request.headers, header);
-};
+}
 
-const countHeader = (request: Request, header: string) => {
+function countHeader(request: Request, header: string) {
   let count = 0;
   const lookup = header.toLowerCase();
   for (const h of request.headers || []) {
@@ -2580,9 +2575,9 @@ const countHeader = (request: Request, header: string) => {
     }
   }
   return count;
-};
+}
 
-const parseCookiesStrict = (cookieString: Word): Cookies | null => {
+function parseCookiesStrict(cookieString: Word): Cookies | null {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.replace(/^ /, "");
@@ -2596,9 +2591,9 @@ const parseCookiesStrict = (cookieString: Word): Cookies | null => {
     return null;
   }
   return cookies;
-};
+}
 
-const parseCookies = (cookieString: Word): Cookies | null => {
+function parseCookies(cookieString: Word): Cookies | null {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.trim();
@@ -2612,7 +2607,7 @@ const parseCookies = (cookieString: Word): Cookies | null => {
     return null;
   }
   return cookies;
-};
+}
 
 export {
   Word,

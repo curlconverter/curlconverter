@@ -13,7 +13,7 @@ const supportedArgs = new Set([
   "proxy-user",
 ]);
 
-const repr = (w: Word | string): string => {
+function repr(w: Word | string): string {
   if (typeof w !== "string" && !w.isString()) {
     // TODO: warn
   }
@@ -29,12 +29,9 @@ const repr = (w: Word | string): string => {
     return '"' + s.replace(/"/g, '""') + '"';
   }
   return "'" + s.replace(/'/g, "''") + "'";
-};
+}
 
-export const _toCFML = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+export function _toCFML(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -188,17 +185,17 @@ export const _toCFML = (
   cfmlCode += "writeDump(result);\n";
 
   return cfmlCode;
-};
+}
 
-export const toCFMLWarn = (
+export function toCFMLWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const cfml = _toCFML(requests, warnings);
   return [cfml, warnings];
-};
+}
 
-export const toCFML = (curlCommand: string | string[]): string => {
+export function toCFML(curlCommand: string | string[]): string {
   return toCFMLWarn(curlCommand)[0];
-};
+}

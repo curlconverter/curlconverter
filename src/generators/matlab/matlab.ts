@@ -12,10 +12,10 @@ const supportedArgs = new Set([
   "form-string",
 ]);
 
-export const _toMATLAB = (
+export function _toMATLAB(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -71,15 +71,15 @@ export const _toMATLAB = (
     .flat()
     .filter((line) => line !== null)
     .join("\n");
-};
-export const toMATLABWarn = (
+}
+export function toMATLABWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const matlab = _toMATLAB(requests, warnings);
   return [matlab, warnings];
-};
-export const toMATLAB = (curlCommand: string | string[]): string => {
+}
+export function toMATLAB(curlCommand: string | string[]): string {
   return toMATLABWarn(curlCommand)[0];
-};
+}

@@ -6,7 +6,7 @@ import type { Request } from "../../util.js";
 const regexEscape = /(?! )(\p{C}|\p{Z})/gu;
 // TODO: do we need to consider that some strings could be used
 // with sprintf() and have to have more stuff escaped?
-const strToParts = (s: string): string[] => {
+function strToParts(s: string): string[] {
   if (!s) {
     return ["''"];
   }
@@ -42,8 +42,8 @@ const strToParts = (s: string): string[] => {
       return "'" + x + "'";
     });
   return parts;
-};
-const joinParts = (parts: string[]): string => {
+}
+function joinParts(parts: string[]): string {
   if (parts.length > 1) {
     return "[" + parts.join(" ") + "]";
   }
@@ -51,11 +51,11 @@ const joinParts = (parts: string[]): string => {
     return "''"; // shouldn't happen
   }
   return parts[0];
-};
-const reprStr = (s: string): string => {
+}
+function reprStr(s: string): string {
   return joinParts(strToParts(s));
-};
-const repr = (w: Word | null) => {
+}
+function repr(w: Word | null) {
   // In context of url parameters, don't accept nulls and such.
   if (w === null || w.length === 0) {
     return "''";
@@ -75,13 +75,13 @@ const repr = (w: Word | null) => {
     }
   }
   return joinParts(parts);
-};
+}
 
-const setVariableValue = (
+function setVariableValue(
   outputVariable: string | null,
   value: string,
   termination?: string
-): string => {
+): string {
   let result = "";
 
   if (outputVariable) {
@@ -94,14 +94,14 @@ const setVariableValue = (
       ? ";"
       : termination;
   return result;
-};
+}
 
-const callFunction = (
+function callFunction(
   outputVariable: string | null,
   functionName: string,
   params: string | string[] | string[][],
   termination?: string
-) => {
+) {
   let functionCall = functionName + "(";
   if (Array.isArray(params)) {
     const singleLine = params
@@ -130,14 +130,14 @@ const callFunction = (
   }
   functionCall += ")";
   return setVariableValue(outputVariable, functionCall, termination);
-};
+}
 
-const addCellArray = (
+function addCellArray(
   mapping: ([Word, Word] | [string, Word | string])[],
   keysNotToQuote?: string[],
   indentLevel = 1,
   pairs?: boolean
-) => {
+) {
   if (mapping.length === 0) return ""; // shouldn't happen
 
   const indentUnit = " ".repeat(4);
@@ -183,12 +183,12 @@ const addCellArray = (
     response += "}";
   }
   return response;
-};
+}
 
-const structify = (
+function structify(
   obj: number[] | string[] | { [key: string]: string } | string | number | null,
   indentLevel?: number
-) => {
+) {
   let response = "";
   indentLevel = !indentLevel ? 1 : ++indentLevel;
   const indent = " ".repeat(4 * indentLevel);
@@ -243,25 +243,25 @@ const structify = (
   }
 
   return response;
-};
+}
 
-const containsBody = (request: Request): boolean => {
+function containsBody(request: Request): boolean {
   return Boolean(request.data || request.multipartUploads);
-};
+}
 
-const prepareQueryString = (request: Request): string | null => {
+function prepareQueryString(request: Request): string | null {
   if (!request.urls[0].queryList) {
     return null;
   }
   return setVariableValue("params", addCellArray(request.urls[0].queryList));
-};
+}
 
-const prepareCookies = (request: Request): string | null => {
+function prepareCookies(request: Request): string | null {
   if (!request.cookies) {
     return null;
   }
   return setVariableValue("cookies", addCellArray(request.cookies));
-};
+}
 
 const cookieString = "char(join(join(cookies, '='), '; '))";
 const paramsString = "char(join(join(params, '='), '&'))";

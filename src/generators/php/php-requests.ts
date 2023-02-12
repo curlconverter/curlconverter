@@ -9,10 +9,10 @@ const supportedArgs = new Set([
   // "form-string",
 ]);
 
-export const _toPhpRequests = (
+export function _toPhpRequests(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -135,15 +135,15 @@ export const _toPhpRequests = (
   phpCode += requestLine;
 
   return phpCode + "\n";
-};
-export const toPhpRequestsWarn = (
+}
+export function toPhpRequestsWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const php = _toPhpRequests(requests, warnings);
   return [php, warnings];
-};
-export const toPhpRequests = (curlCommand: string | string[]): string => {
+}
+export function toPhpRequests(curlCommand: string | string[]): string {
   return toPhpRequestsWarn(curlCommand)[0];
-};
+}

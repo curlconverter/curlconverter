@@ -42,10 +42,10 @@ type AnsibleURI = {
   validate_certs?: boolean;
 };
 
-export const _toAnsible = (
+export function _toAnsible(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -138,15 +138,15 @@ export const _toAnsible = (
     100,
     2
   );
-};
-export const toAnsibleWarn = (
+}
+export function toAnsibleWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const ansible = _toAnsible(requests, warnings);
   return [ansible, warnings];
-};
-export const toAnsible = (curlCommand: string | string[]): string => {
+}
+export function toAnsible(curlCommand: string | string[]): string {
   return toAnsibleWarn(curlCommand)[0];
-};
+}

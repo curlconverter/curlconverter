@@ -256,7 +256,7 @@ function getDataString(request: Request): string {
   return repr(request.data);
 }
 
-const requestToElixir = (request: Request, warnings: Warnings = []): string => {
+function requestToElixir(request: Request, warnings: Warnings = []): string {
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -369,24 +369,24 @@ const requestToElixir = (request: Request, warnings: Warnings = []): string => {
 
 response = HTTPoison.request(request)
 `;
-};
+}
 
-export const _toElixir = (
+export function _toElixir(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   return requests.map((r) => requestToElixir(r, warnings)).join("\n");
-};
+}
 
-export const toElixirWarn = (
+export function toElixirWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const elixir = _toElixir(requests, warnings);
   return [elixir, warnings];
-};
+}
 
-export const toElixir = (curlCommand: string | string[]): string => {
+export function toElixir(curlCommand: string | string[]): string {
   return toElixirWarn(curlCommand)[0];
-};
+}

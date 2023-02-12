@@ -147,7 +147,7 @@ function getFilesString(request: Request): string | undefined {
   return filesString;
 }
 
-export const _toR = (requests: Request[], warnings: Warnings = []): string => {
+export function _toR(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -316,15 +316,15 @@ export const _toR = (requests: Request[], warnings: Warnings = []): string => {
   rstatsCode += requestLine;
 
   return rstatsCode + "\n";
-};
-export const toRWarn = (
+}
+export function toRWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const r = _toR(requests, warnings);
   return [r, warnings];
-};
-export const toR = (curlCommand: string | string[]): string => {
+}
+export function toR(curlCommand: string | string[]): string {
   return toRWarn(curlCommand)[0];
-};
+}

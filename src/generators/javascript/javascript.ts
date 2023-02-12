@@ -17,7 +17,7 @@ const javaScriptSupportedArgs = new Set([
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
 
 // TODO: implement?
-export const reprObj = (value: object, indentLevel?: number): string => {
+export function reprObj(value: object, indentLevel?: number): string {
   const escaped = jsescObj(value, {
     quotes: "single",
     minimal: false,
@@ -29,15 +29,15 @@ export const reprObj = (value: object, indentLevel?: number): string => {
     return "'" + escaped + "'";
   }
   return escaped;
-};
+}
 
-export const reprPairs = (
+export function reprPairs(
   d: [Word, Word][],
   indentLevel = 0,
   indent = "    ",
   list = true,
   imports: JSImports
-): string => {
+): string {
   if (d.length === 0) {
     return list ? "[]" : "{}";
   }
@@ -54,32 +54,32 @@ export const reprPairs = (
   }
   code += indent.repeat(indentLevel) + (list ? "]" : "}");
   return code;
-};
-export const reprAsStringToStringDict = (
+}
+export function reprAsStringToStringDict(
   d: [Word, Word][],
   indentLevel = 0,
   imports: JSImports,
   indent = "    "
-): string => {
+): string {
   return reprPairs(d, indentLevel, indent, false, imports);
-};
+}
 
-export const reprAsStringTuples = (
+export function reprAsStringTuples(
   d: [Word, Word][],
   indentLevel = 0,
   imports: JSImports,
   indent = "    "
-): string => {
+): string {
   return reprPairs(d, indentLevel, indent, true, imports);
-};
+}
 
-export const reprStringToStringList = (
+export function reprStringToStringList(
   d: [Word, Word | Word[]][],
   indentLevel = 0,
   imports: JSImports,
   indent = "    ",
   list = true
-): string => {
+): string {
   if (d.length === 0) {
     return list ? "[]" : "{}";
   }
@@ -99,13 +99,13 @@ export const reprStringToStringList = (
   }
   code += indent.repeat(indentLevel) + "}";
   return code;
-};
+}
 
 // Backtick quotes are not supported
 const regexEscape = /'|"|\\|\p{C}|\p{Z}/gu;
 const regexDigit = /[0-9]/;
-export const esc = (s: string, quote: "'" | '"' = "'"): string =>
-  s.replace(regexEscape, (c: string, index: number, string: string) => {
+export function esc(s: string, quote: "'" | '"' = "'"): string {
+  return s.replace(regexEscape, (c: string, index: number, string: string) => {
     switch (c[0]) {
       // https://mathiasbynens.be/notes/javascript-escapes#single
       case " ":
@@ -155,6 +155,7 @@ export const esc = (s: string, quote: "'" | '"' = "'"): string =>
     }
     return "\\x" + hex.padStart(2, "0");
   });
+}
 
 export function reprStr(s: string, quote?: "'" | '"'): string {
   if (quote === undefined) {
@@ -253,7 +254,7 @@ export function reprFetch(
   return repr(w, imports);
 }
 
-export const asParseFloat = (w: Word, imports: JSImports): string => {
+export function asParseFloat(w: Word, imports: JSImports): string {
   if (w.isString()) {
     const originalValue = w.toString();
     // TODO: reimplement curl's float parsing instead of parseFloat()
@@ -263,8 +264,8 @@ export const asParseFloat = (w: Word, imports: JSImports): string => {
     }
   }
   return "parseFloat(" + repr(w, imports) + ")";
-};
-export const asParseFloatTimes1000 = (w: Word, imports: JSImports): string => {
+}
+export function asParseFloatTimes1000(w: Word, imports: JSImports): string {
   if (w.isString()) {
     const originalValue = w.toString();
     // TODO: reimplement curl's float parsing instead of parseFloat()
@@ -275,8 +276,8 @@ export const asParseFloatTimes1000 = (w: Word, imports: JSImports): string => {
     }
   }
   return "parseFloat(" + repr(w, imports) + ") * 1000";
-};
-export const asParseInt = (w: Word, imports: JSImports): string => {
+}
+export function asParseInt(w: Word, imports: JSImports): string {
   if (w.isString()) {
     const originalValue = w.toString();
     // TODO: reimplement curl's float parsing instead of parseInt()
@@ -286,18 +287,17 @@ export const asParseInt = (w: Word, imports: JSImports): string => {
     }
   }
   return "parseInt(" + repr(w, imports) + ")";
-};
+}
 
-export const bySecondElem = (
-  a: [string, string],
-  b: [string, string]
-): number => a[1].localeCompare(b[1]);
+export function bySecondElem(a: [string, string], b: [string, string]): number {
+  return a[1].localeCompare(b[1]);
+}
 
-const getDataString = (
+function getDataString(
   request: Request,
   isNode: boolean,
   imports: JSImports
-): [string, string | null] => {
+): [string, string | null] {
   if (!request.data) {
     return ["", null];
   }
@@ -351,15 +351,15 @@ const getDataString = (
     }
   }
   return [originalStringRepr, null];
-};
+}
 
-const requestToJavaScriptOrNode = (
+function requestToJavaScriptOrNode(
   request: Request,
   warnings: Warnings,
   fetchImports: Set<string>,
   imports: JSImports,
   isNode: boolean
-): string => {
+): string {
   if (request.dataReadsFile) {
     warnings.push([
       "unsafe-data",
@@ -587,13 +587,13 @@ const requestToJavaScriptOrNode = (
   // TODO: generate some code for the output, like .json() if 'Accept': 'application/json'
 
   return code;
-};
+}
 
-export const _toJavaScriptOrNode = (
+export function _toJavaScriptOrNode(
   requests: Request[],
   warnings: Warnings,
   isNode: boolean
-): string => {
+): string {
   const fetchImports = new Set<string>();
   const imports: JSImports = [];
 
@@ -621,48 +621,45 @@ export const _toJavaScriptOrNode = (
     return importCode + "\n" + code;
   }
   return code;
-};
+}
 
-export const _toJavaScript = (
+export function _toJavaScript(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   return _toJavaScriptOrNode(requests, warnings, false);
-};
-export const _toNode = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+}
+export function _toNode(requests: Request[], warnings: Warnings = []): string {
   return _toJavaScriptOrNode(requests, warnings, true);
-};
+}
 
-export const toJavaScriptWarn = (
+export function toJavaScriptWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(
     curlCommand,
     javaScriptSupportedArgs,
     warnings
   );
   return [_toJavaScript(requests, warnings), warnings];
-};
-export const toJavaScript = (curlCommand: string | string[]): string => {
+}
+export function toJavaScript(curlCommand: string | string[]): string {
   const [result] = toJavaScriptWarn(curlCommand);
   return result;
-};
+}
 
-export const toNodeWarn = (
+export function toNodeWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(
     curlCommand,
     nodeSupportedArgs,
     warnings
   );
   return [_toNode(requests, warnings), warnings];
-};
-export const toNode = (curlCommand: string | string[]): string => {
+}
+export function toNode(curlCommand: string | string[]): string {
   return toNodeWarn(curlCommand)[0];
-};
+}

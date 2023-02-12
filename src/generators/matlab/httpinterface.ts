@@ -11,7 +11,7 @@ import {
 import { Word } from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-const prepareHeaders = (request: Request): string | null => {
+function prepareHeaders(request: Request): string | null {
   if (!request.headers) {
     return null;
   }
@@ -62,9 +62,9 @@ const prepareHeaders = (request: Request): string | null => {
   header += "    " + headerStrs.join("\n    ") + "\n";
   header += "]'";
   return setVariableValue("header", header);
-};
+}
 
-const prepareURI = (request: Request) => {
+function prepareURI(request: Request) {
   const uriParams: string[] = [];
   if (request.urls[0].queryList) {
     uriParams.push(repr(request.urls[0].urlWithoutQueryList));
@@ -73,9 +73,9 @@ const prepareURI = (request: Request) => {
     uriParams.push(repr(request.urls[0].url));
   }
   return callFunction("uri", "URI", uriParams);
-};
+}
 
-const prepareAuth = (request: Request): string[] => {
+function prepareAuth(request: Request): string[] {
   const options: string[] = [];
   const optionsParams: string[] = [];
   if (request.urls[0].auth) {
@@ -96,9 +96,9 @@ const prepareAuth = (request: Request): string[] => {
   }
 
   return options;
-};
+}
 
-const prepareMultipartUploads = (request: Request): string | null => {
+function prepareMultipartUploads(request: Request): string | null {
   if (!request.multipartUploads) {
     return null;
   }
@@ -117,9 +117,9 @@ const prepareMultipartUploads = (request: Request): string | null => {
     params.push([repr(m.name), fileProvider as string]); // TODO: can be a string[]
   }
   return callFunction("body", "MultipartFormProvider", params);
-};
+}
 
-const isJsonString = (str: string): boolean => {
+function isJsonString(str: string): boolean {
   // Source: https://stackoverflow.com/a/3710226/5625738
   try {
     JSON.parse(str);
@@ -127,18 +127,18 @@ const isJsonString = (str: string): boolean => {
     return false;
   }
   return true;
-};
+}
 
 // prepareDataProvider(value, null, "", 1, true, !readsFile);
 // prepareDataProvider(request.data, "body", ";", 0, request.isDataBinary, request.isDataRaw);
-const prepareDataProvider = (
+function prepareDataProvider(
   value: Word,
   output: string | null,
   termination: string,
   indentLevel: number,
   isDataBinary = true,
   isDataRaw = false
-): string | string[] => {
+): string | string[] {
   if (!isDataRaw && value.charAt(0) === "@") {
     const filename = value.slice(1);
     if (!isDataBinary) {
@@ -175,9 +175,9 @@ const prepareDataProvider = (
     .split("&")
     .map((x) => x.split("=").map((x) => repr(x)));
   return callFunction(output, "FormProvider", formValue, termination);
-};
+}
 
-const prepareData = (request: Request) => {
+function prepareData(request: Request) {
   if (!request.data) {
     return null;
   }
@@ -218,9 +218,9 @@ const prepareData = (request: Request) => {
     response = setVariableValue("body", repr(request.data));
   }
   return response;
-};
+}
 
-const prepareRequestMessage = (request: Request): string => {
+function prepareRequestMessage(request: Request): string {
   const method = request.urls[0].method.toLowerCase();
   let reqMessage: string[] | string = [repr(method)];
   if (request.headers) {
@@ -256,12 +256,12 @@ const prepareRequestMessage = (request: Request): string => {
   ];
 
   return response.join("\n");
-};
+}
 
-export const toHTTPInterface = (
+export function toHTTPInterface(
   request: Request,
   warnings: Warnings
-): [(string | string[] | null)[], Warnings] => {
+): [(string | string[] | null)[], Warnings] {
   return [
     [
       "%% HTTP Interface",
@@ -281,4 +281,4 @@ export const toHTTPInterface = (
     ],
     warnings,
   ];
-};
+}

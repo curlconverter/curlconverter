@@ -38,10 +38,7 @@ function repr(value: Word, imports: Set<string>): string {
   return ret.join(" + ");
 }
 
-export const _toDart = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+export function _toDart(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -304,15 +301,15 @@ export const _toDart = (
   }
   importString += "import 'package:http/http.dart' as http;\n";
   return importString + "\n" + s + "\n";
-};
-export const toDartWarn = (
+}
+export function toDartWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const dart = _toDart(requests, warnings);
   return [dart, warnings];
-};
-export const toDart = (curlCommand: string | string[]): string => {
+}
+export function toDart(curlCommand: string | string[]): string {
   return toDartWarn(curlCommand)[0];
-};
+}

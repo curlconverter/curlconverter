@@ -91,10 +91,10 @@ export function repr(w: Word, imports: Set<string>): string {
   return args.join(" + ");
 }
 
-export const _toCSharp = (
+export function _toCSharp(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -416,15 +416,15 @@ export const _toCSharp = (
     s = "using " + [...imports].sort().join(";\nusing ") + ";\n\n" + s;
   }
   return s;
-};
-export const toCSharpWarn = (
+}
+export function toCSharpWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const cSharp = _toCSharp(requests, warnings);
   return [cSharp, warnings];
-};
-export const toCSharp = (curlCommand: string | string[]): string => {
+}
+export function toCSharp(curlCommand: string | string[]): string {
   return toCSharpWarn(curlCommand)[0];
-};
+}

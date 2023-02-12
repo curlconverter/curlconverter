@@ -12,13 +12,13 @@ const supportedArgs = new Set([
   "next",
 ]);
 
-const requestToNodeRequest = (
+function requestToNodeRequest(
   request: Request,
   requestIndex: number,
   definedVariables: Set<string>,
   imports: JSImports,
   warnings: Warnings = []
-): string => {
+): string {
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -139,24 +139,20 @@ const requestToNodeRequest = (
   nodeRequestCode += "request(options, callback);";
 
   return nodeRequestCode + "\n";
-};
+}
 
-const defVar = (
-  variables: Set<string>,
-  name: string,
-  value: string
-): string => {
+function defVar(variables: Set<string>, name: string, value: string): string {
   if (!variables.has(name)) {
     variables.add(name);
     name = "var " + name;
   }
   return `${name} = ${value}`;
-};
+}
 
-export const _toNodeRequest = (
+export function _toNodeRequest(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   const code = "var request = require('request');\n";
   const definedVariables = new Set(["request"]);
 
@@ -165,18 +161,18 @@ export const _toNodeRequest = (
     requestToNodeRequest(r, i, definedVariables, imports, warnings)
   );
   return code + reprImportsRequire(imports) + "\n" + requestCode.join("\n\n");
-};
+}
 
-export const toNodeRequestWarn = (
+export function toNodeRequestWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   warnings.unshift(["node-request", "the request package is deprecated"]);
 
   const nodeRequests = _toNodeRequest(requests, warnings);
   return [nodeRequests, warnings];
-};
-export const toNodeRequest = (curlCommand: string | string[]): string => {
+}
+export function toNodeRequest(curlCommand: string | string[]): string {
   return toNodeRequestWarn(curlCommand)[0];
-};
+}

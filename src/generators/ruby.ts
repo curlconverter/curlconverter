@@ -328,11 +328,11 @@ function getFilesString(request: Request): string {
   return filesString;
 }
 
-const requestToRuby = (
+function requestToRuby(
   request: Request,
   warnings: Warnings,
   imports: Set<string>
-): string => {
+): string {
   if (request.urls.length > 1) {
     warnings.push([
       "multiple-urls",
@@ -393,10 +393,10 @@ const requestToRuby = (
   };
 
   // https://gist.github.com/misfo/1072693 but simplified
-  const validSymbol = (s: Word): boolean => {
+  function validSymbol(s: Word): boolean {
     // TODO: can also start with @ $ and end with ! = ? are those special?
     return s.isString() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s.toString());
-  };
+  }
   if (
     request.urls[0].queryDict &&
     request.urls[0].queryDict.every((q) => validSymbol(q[0]))
@@ -546,12 +546,9 @@ const requestToRuby = (
   }
 
   return code + "\n";
-};
+}
 
-export const _toRuby = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+export function _toRuby(requests: Request[], warnings: Warnings = []): string {
   const imports = new Set<string>();
 
   const code = requests
@@ -563,17 +560,17 @@ export const _toRuby = (
     prelude += "require '" + imp + "'\n";
   }
   return prelude + "\n" + code;
-};
+}
 
-export const toRubyWarn = (
+export function toRubyWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const ruby = _toRuby(requests, warnings);
   return [ruby, warnings];
-};
+}
 
-export const toRuby = (curlCommand: string | string[]): string => {
+export function toRuby(curlCommand: string | string[]): string {
   return toRubyWarn(curlCommand)[0];
-};
+}

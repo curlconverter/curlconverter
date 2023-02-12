@@ -15,12 +15,15 @@ import { Word } from "../../util.js";
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 
-const isSupportedByWebServices = (request: Request): boolean =>
-  ["get", "post", "put", "delete", "patch"].includes(
-    request.urls[0].method.toLowerCase().toString()
-  ) &&
-  !request.multipartUploads &&
-  !request.insecure;
+function isSupportedByWebServices(request: Request): boolean {
+  return (
+    ["get", "post", "put", "delete", "patch"].includes(
+      request.urls[0].method.toLowerCase().toString()
+    ) &&
+    !request.multipartUploads &&
+    !request.insecure
+  );
+}
 
 interface Options {
   RequestMethod?: Word;
@@ -34,16 +37,16 @@ interface Options {
   HeaderFields?: string;
 }
 
-const setHeader = (
+function setHeader(
   headers: [Word, Word][],
   header: Word,
   value: Word,
   lowercase: boolean
-) => {
+) {
   headers.push([lowercase ? header.toLowerCase() : header, value]);
-};
+}
 
-const parseWebOptions = (request: Request): Options => {
+function parseWebOptions(request: Request): Options {
   const options: Options = {};
 
   // MATLAB uses GET in `webread` and POST in `webwrite` by default
@@ -150,9 +153,9 @@ const parseWebOptions = (request: Request): Options => {
   }
 
   return options;
-};
+}
 
-const prepareOptions = (request: Request, options: Options): string[] => {
+function prepareOptions(request: Request, options: Options): string[] {
   const lines: string[] = [];
   if (Object.keys(options).length === 0) {
     return lines;
@@ -166,9 +169,9 @@ const prepareOptions = (request: Request, options: Options): string[] => {
   lines.push(callFunction("options", "weboptions", pairValues));
 
   return lines;
-};
+}
 
-const prepareBasicURI = (request: Request): string[] => {
+function prepareBasicURI(request: Request): string[] {
   const response: string[] = [];
   if (request.urls[0].queryList) {
     response.push(
@@ -179,9 +182,9 @@ const prepareBasicURI = (request: Request): string[] => {
     response.push(setVariableValue("uri", repr(request.urls[0].url)));
   }
   return response;
-};
+}
 
-const prepareBasicData = (request: Request): string | string[] => {
+function prepareBasicData(request: Request): string | string[] {
   if (request.data && request.data.length === 0) {
     return setVariableValue("body", repr(new Word()));
   }
@@ -214,9 +217,9 @@ const prepareBasicData = (request: Request): string | string[] => {
     }
   }
   return response;
-};
+}
 
-const prepareWebCall = (request: Request, options: Options): string[] => {
+function prepareWebCall(request: Request, options: Options): string[] {
   const lines: string[] = [];
   const webFunction = containsBody(request) ? "webwrite" : "webread";
 
@@ -230,12 +233,12 @@ const prepareWebCall = (request: Request, options: Options): string[] => {
   lines.push(callFunction("response", webFunction, params));
 
   return lines;
-};
+}
 
-export const toWebServices = (
+export function toWebServices(
   request: Request,
   warnings: Warnings
-): [(string | string[] | null)[], Warnings] => {
+): [(string | string[] | null)[], Warnings] {
   let lines: (string | string[] | null)[] = [
     "%% Web Access using Data Import and Export API",
   ];
@@ -256,4 +259,4 @@ export const toWebServices = (
   ]);
 
   return [lines, warnings];
-};
+}

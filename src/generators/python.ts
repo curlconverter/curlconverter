@@ -1338,22 +1338,23 @@ function indent(s: string, level: number) {
     .map((l) => (l.trim() ? begin + l : l))
     .join("\n");
 }
-const commentOut = (s: string) =>
-  s
+function commentOut(s: string) {
+  return s
     .split("\n")
     .map((l) => (l.trim() ? "#" + l : l))
     .join("\n");
+}
 
-const uniqueWarn = (
+function uniqueWarn(
   seenWarnings: Set<string>,
   warnings: Warnings,
   warning: [string, string]
-) => {
+) {
   if (!seenWarnings.has(warning[0])) {
     seenWarnings.add(warning[0]);
     warnings.push(warning);
   }
-};
+}
 
 function joinArgs(args: string[]) {
   let s = "(";
@@ -1368,12 +1369,12 @@ function joinArgs(args: string[]) {
   return s + ")";
 }
 
-const requestToPython = (
+function requestToPython(
   request: Request,
   warnings: Warnings = [],
   imports: Set<string>,
   thirdPartyImports: Set<string>
-): string => {
+): string {
   const osVars: OSVars = {};
   const commentedOutHeaders: { [key: string]: string } = {
     // TODO: add a warning why this should be commented out?
@@ -1483,8 +1484,9 @@ const requestToPython = (
   // Otherwise, keep the query in the URL.
   let paramsStr;
   let shouldEncodeParams; // TODO: necessary?
-  const readsFile = (paramArray: DataParam[]) =>
-    paramArray.some((p) => !(p instanceof Word));
+  function readsFile(paramArray: DataParam[]) {
+    return paramArray.some((p) => !(p instanceof Word));
+  }
   const paramArray =
     request.urls.length === 1 ? request.urls[0].queryArray : request.queryArray;
   if (
@@ -2063,7 +2065,7 @@ const requestToPython = (
   }
 
   return variableCode + pythonCode;
-};
+}
 
 function printImports(imps: Set<string>): string {
   let s = "";
@@ -2080,10 +2082,10 @@ function printImports(imps: Set<string>): string {
   return s;
 }
 
-export const _toPython = (
+export function _toPython(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   const code = [];
   let joinTwoLines = false;
   const imports = new Set<string>();
@@ -2116,17 +2118,17 @@ export const _toPython = (
   importCode += "\n";
 
   return importCode + code.join(joinTwoLines ? "\n\n" : "\n");
-};
+}
 
-export const toPythonWarn = (
+export function toPythonWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const python = _toPython(requests, warnings);
   return [python, warnings];
-};
+}
 
-export const toPython = (curlCommand: string | string[]): string => {
+export function toPython(curlCommand: string | string[]): string {
   return toPythonWarn(curlCommand)[0];
-};
+}

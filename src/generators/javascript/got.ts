@@ -42,10 +42,10 @@ const supportedArgs = new Set([
   // TODO: methodRewriting: true to match curl?
 ]);
 
-const getBodyString = (
+function getBodyString(
   request: Request,
   imports: JSImports
-): [string | null, string | null] => {
+): [string | null, string | null] {
   // can have things like ; charset=utf-8 which we want to preserve
   const exactContentType = util.getHeader(request, "content-type");
   const contentType = util.getContentType(request);
@@ -107,9 +107,9 @@ const getBodyString = (
   } catch {}
 
   return [simpleString, null];
-};
+}
 
-const buildOptionsObject = (
+function buildOptionsObject(
   request: Request,
   method: Word,
   methodStr: string,
@@ -117,7 +117,7 @@ const buildOptionsObject = (
   nonDataMethods: string[],
   warnings: Warnings,
   imports: JSImports
-): string => {
+): string {
   let code = "{\n";
 
   if (!method.isString || !methods.includes(methodStr.toUpperCase())) {
@@ -255,12 +255,12 @@ const buildOptionsObject = (
   }
   code += "\n}";
   return code;
-};
+}
 
-export const _toNodeGot = (
+export function _toNodeGot(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -403,15 +403,15 @@ export const _toNodeGot = (
   }
 
   return importCode + "\n" + code;
-};
-export const toNodeGotWarn = (
+}
+export function toNodeGotWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeGot = _toNodeGot(requests, warnings);
   return [nodeGot, warnings];
-};
-export const toNodeGot = (curlCommand: string | string[]): string => {
+}
+export function toNodeGot(curlCommand: string | string[]): string {
   return toNodeGotWarn(curlCommand)[0];
-};
+}

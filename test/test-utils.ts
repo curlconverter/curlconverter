@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const fixturesDir = path.resolve(__dirname, "../../test/fixtures");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const stringifyWords = (o: any): any => {
+function stringifyWords(o: any): any {
   if (o instanceof Word) {
     return o.toString();
   }
@@ -26,13 +26,13 @@ const stringifyWords = (o: any): any => {
     );
   }
   return o;
-};
+}
 // Special case that returns the parsed argument object
-const toParser = (curl: string | string[]): string => {
+function toParser(curl: string | string[]): string {
   const parserOutput = utils.parseCurlCommand(curl);
   const code = JSON.stringify(stringifyWords(parserOutput), null, 2);
   return code + "\n";
-};
+}
 
 // TODO: move this (or something like this) to index.js?
 const converters = {

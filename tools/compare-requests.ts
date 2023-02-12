@@ -188,13 +188,16 @@ const testFile = async (
   }
 
   // TODO: allow ignoring headers for each converter
-  const sortLines = (a: string): string =>
-    a
-      .split("\n")
-      .filter(Boolean)
-      .filter((s) => !s.toLowerCase().startsWith("user-agent: "))
-      .sort(Intl.Collator().compare)
-      .join("\n") + "\n";
+  function sortLines(a: string): string {
+    return (
+      a
+        .split("\n")
+        .filter(Boolean)
+        .filter((s) => !s.toLowerCase().startsWith("user-agent: "))
+        .sort(Intl.Collator().compare)
+        .join("\n") + "\n"
+    );
+  }
 
   const requestName = path.parse(inputFile).name;
   console.log(requestName);
@@ -246,11 +249,12 @@ if (tests.length) {
     }
   }
 }
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 for (const test of tests) {
   const testName = path.parse(test.toString()).name;
   await testFile(testName, languages);
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
   await delay(1000);
 }
 

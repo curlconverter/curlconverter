@@ -13,45 +13,48 @@ const supportedArgs = new Set([
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.3
 const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
 const regexDigit = /[0-9]/; // it's 0-7 actually but that would generate confusing code
-export const reprStr = (s: string): string =>
-  '"' +
-  s.replace(regexEscape, (c: string, index: number, string: string) => {
-    switch (c) {
-      case " ":
-        return " ";
-      case "\\":
-        return "\\\\";
-      case "\b":
-        return "\\b";
-      case "\f":
-        return "\\f";
-      case "\n":
-        return "\\n";
-      case "\r":
-        return "\\r";
-      case "\t":
-        return "\\t";
-      case '"':
-        return '\\"';
-    }
+export function reprStr(s: string): string {
+  return (
+    '"' +
+    s.replace(regexEscape, (c: string, index: number, string: string) => {
+      switch (c) {
+        case " ":
+          return " ";
+        case "\\":
+          return "\\\\";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case '"':
+          return '\\"';
+      }
 
-    if (c.length === 2) {
-      const first = c.charCodeAt(0);
-      const second = c.charCodeAt(1);
-      return (
-        "\\u" +
-        first.toString(16).padStart(4, "0") +
-        "\\u" +
-        second.toString(16).padStart(4, "0")
-      );
-    }
+      if (c.length === 2) {
+        const first = c.charCodeAt(0);
+        const second = c.charCodeAt(1);
+        return (
+          "\\u" +
+          first.toString(16).padStart(4, "0") +
+          "\\u" +
+          second.toString(16).padStart(4, "0")
+        );
+      }
 
-    if (c === "\0" && !regexDigit.test(string.charAt(index + 1))) {
-      return "\\0";
-    }
-    return "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0");
-  }) +
-  '"';
+      if (c === "\0" && !regexDigit.test(string.charAt(index + 1))) {
+        return "\\0";
+      }
+      return "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0");
+    }) +
+    '"'
+  );
+}
 
 type Vars = { [key: string]: string };
 function repr(w: Word, imports: Set<string>): string {
@@ -71,10 +74,7 @@ function repr(w: Word, imports: Set<string>): string {
   return args.join(" + ");
 }
 
-export const _toJava = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+export function _toJava(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -247,16 +247,16 @@ export const _toJava = (
     "\tpublic static void main(String[] args) throws IOException {\n";
 
   return preambleCode + javaCode + "\n";
-};
-export const toJavaWarn = (
+}
+export function toJavaWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const java = _toJava(requests, warnings);
   return [java, warnings];
-};
+}
 
-export const toJava = (curlCommand: string | string[]): string => {
+export function toJava(curlCommand: string | string[]): string {
   return toJavaWarn(curlCommand)[0];
-};
+}

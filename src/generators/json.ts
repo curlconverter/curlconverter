@@ -132,10 +132,10 @@ function getFilesString(
   };
 }
 
-export const _toJsonString = (
+export function _toJsonString(
   requests: Request[],
   warnings: Warnings = []
-): string => {
+): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -275,15 +275,15 @@ export const _toJsonString = (
       4
     ) + "\n"
   );
-};
-export const toJsonStringWarn = (
+}
+export function toJsonStringWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const json = _toJsonString(requests, warnings);
   return [json, warnings];
-};
-export const toJsonString = (curlCommand: string | string[]): string => {
+}
+export function toJsonString(curlCommand: string | string[]): string {
   return toJsonStringWarn(curlCommand)[0];
-};
+}

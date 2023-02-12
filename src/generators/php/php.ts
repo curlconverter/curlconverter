@@ -28,7 +28,7 @@ const supportedArgs = new Set([
 // https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
 const regexSingleEscape = /'|\\/gu;
 const regexDoubleEscape = /"|\$|\\|\p{C}|\p{Z}/gu;
-export const reprStr = (s: string): string => {
+export function reprStr(s: string): string {
   let [quote, regex] = ["'", regexSingleEscape];
   if ((s.includes("'") && !s.includes('"')) || /[^\x20-\x7E]/.test(s)) {
     [quote, regex] = ['"', regexDoubleEscape];
@@ -71,9 +71,9 @@ export const reprStr = (s: string): string => {
     }) +
     quote
   );
-};
+}
 
-export const repr = (w: Word): string => {
+export function repr(w: Word): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
@@ -86,12 +86,9 @@ export const repr = (w: Word): string => {
     }
   }
   return args.join(" . ");
-};
+}
 
-export const _toPhp = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+export function _toPhp(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -256,16 +253,16 @@ export const _toPhp = (
 
   phpCode += "curl_close($ch);\n";
   return phpCode;
-};
+}
 
-export const toPhpWarn = (
+export function toPhpWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const php = _toPhp(requests, warnings);
   return [php, warnings];
-};
-export const toPhp = (curlCommand: string | string[]): string => {
+}
+export function toPhp(curlCommand: string | string[]): string {
   return toPhpWarn(curlCommand)[0];
-};
+}

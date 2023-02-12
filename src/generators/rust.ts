@@ -14,8 +14,9 @@ const supportedArgs = new Set([
 ]);
 
 const INDENTATION = " ".repeat(4);
-const indent = (line: string, level = 1): string =>
-  INDENTATION.repeat(level) + line;
+function indent(line: string, level = 1): string {
+  return INDENTATION.repeat(level) + line;
+}
 
 // https://doc.rust-lang.org/reference/tokens.html
 const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
@@ -70,10 +71,7 @@ export function repr(w: Word, imports: Set<string>): string {
   return "[" + ret.join(", ") + "].concat()";
 }
 
-export const _toRust = (
-  requests: Request[],
-  warnings: Warnings = []
-): string => {
+export function _toRust(requests: Request[], warnings: Warnings = []): string {
   if (requests.length > 1) {
     warnings.push([
       "next",
@@ -281,15 +279,15 @@ export const _toRust = (
   }
 
   return [...preambleLines, ...lines].join("\n") + "\n";
-};
-export const toRustWarn = (
+}
+export function toRustWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
-): [string, Warnings] => {
+): [string, Warnings] {
   const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
   const rust = _toRust(requests, warnings);
   return [rust, warnings];
-};
-export const toRust = (curlCommand: string | string[]): string => {
+}
+export function toRust(curlCommand: string | string[]): string {
   return toRustWarn(curlCommand)[0];
-};
+}
