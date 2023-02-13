@@ -1,10 +1,12 @@
 import * as util from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
 import type { Request, Warnings } from "../util.js";
 
 import yaml from "yamljs";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
   // "form",
@@ -143,7 +145,7 @@ export function toAnsibleWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const ansible = _toAnsible(requests, warnings);
   return [ansible, warnings];
 }

@@ -1,11 +1,12 @@
-import * as util from "../../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../../util.js";
+import { parseCurlCommand } from "../../parseCommand.js";
 import type { Request, Warnings } from "../../util.js";
 
 import { toWebServices } from "./webservices.js";
 import { toHTTPInterface } from "./httpinterface.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
   "form",
@@ -76,7 +77,7 @@ export function toMATLABWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const matlab = _toMATLAB(requests, warnings);
   return [matlab, warnings];
 }

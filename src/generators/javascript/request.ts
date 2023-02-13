@@ -1,12 +1,14 @@
 import * as util from "../../util.js";
-import { Word } from "../../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../../util.js";
+import { parseCurlCommand } from "../../parseCommand.js";
+import { Word, eq } from "../../word.js";
 import type { Request, Warnings } from "../../util.js";
 
 import { repr, reprImportsRequire } from "./javascript.js";
 import type { JSImports } from "./javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   // "form",
   // "form-string",
   "next",
@@ -90,7 +92,7 @@ function requestToNodeRequest(
 
   nodeRequestCode += defVar(definedVariables, "options", "{\n");
   nodeRequestCode += "    url: " + repr(request.urls[0].url, imports);
-  if (!util.eq(request.urls[0].method.toUpperCase(), "GET")) {
+  if (!eq(request.urls[0].method.toUpperCase(), "GET")) {
     nodeRequestCode +=
       ",\n    method: " + repr(request.urls[0].method.toUpperCase(), imports);
   }
@@ -167,7 +169,7 @@ export function toNodeRequestWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   warnings.unshift(["node-request", "the request package is deprecated"]);
 
   const nodeRequests = _toNodeRequest(requests, warnings);

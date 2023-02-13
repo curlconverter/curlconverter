@@ -1,11 +1,14 @@
 import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { CCError } from "../util.js";
+import { Word } from "../word.js";
 import type { Request, Warnings } from "../util.js";
 
 import { reprStr as pyreprStr } from "./python.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
   "compressed",
@@ -53,7 +56,7 @@ function repr(w: Word, vars: Vars, imports: Set<string>): string {
         i++;
         varName = "cmd" + i;
         if (i > Number.MAX_SAFE_INTEGER) {
-          throw new util.CCError("lol");
+          throw new CCError("lol");
         }
       }
       vars[varName] = execCall;
@@ -305,7 +308,7 @@ export function toGoWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const go = _toGo(requests, warnings);
   return [go, warnings];
 }

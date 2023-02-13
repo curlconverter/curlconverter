@@ -1,11 +1,13 @@
 import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { Word, eq } from "../word.js";
 import type { Request, QueryList, Warnings } from "../util.js";
 
 import { reprStr as pyrepr } from "./python.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "insecure",
@@ -255,9 +257,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
     requestLine += request.urls[0].method.toString() + "(";
   } else {
     requestLine += "VERB(" + repr(request.urls[0].method) + ", ";
-    if (
-      !util.eq(request.urls[0].method, request.urls[0].method.toUpperCase())
-    ) {
+    if (!eq(request.urls[0].method, request.urls[0].method.toUpperCase())) {
       warnings.push([
         "non-uppercase-method",
         "httr will uppercase the method: " +
@@ -321,7 +321,7 @@ export function toRWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const r = _toR(requests, warnings);
   return [r, warnings];
 }

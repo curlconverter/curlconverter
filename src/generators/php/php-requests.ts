@@ -1,10 +1,12 @@
 import * as util from "../../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../../util.js";
+import { parseCurlCommand } from "../../parseCommand.js";
 import type { Request, Warnings } from "../../util.js";
 
 import { repr } from "./php.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   // "form",
   // "form-string",
 ]);
@@ -140,7 +142,7 @@ export function toPhpRequestsWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const php = _toPhpRequests(requests, warnings);
   return [php, warnings];
 }

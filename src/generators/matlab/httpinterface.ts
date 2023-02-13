@@ -8,7 +8,7 @@ import {
   prepareQueryString,
   prepareCookies,
 } from "./common.js";
-import { Word } from "../../util.js";
+import { Word } from "../../word.js";
 import type { Request, Warnings } from "../../util.js";
 
 function prepareHeaders(request: Request): string | null {

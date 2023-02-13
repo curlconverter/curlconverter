@@ -1,5 +1,7 @@
 import * as util from "../../util.js";
-import { Word } from "../../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../../util.js";
+import { parseCurlCommand } from "../../parseCommand.js";
+import { Word, eq } from "../../word.js";
 import { reprObj, bySecondElem, addImport } from "./javascript.js";
 import type { JSImports } from "./javascript.js";
 import type { Request, Warnings } from "../../util.js";
@@ -13,7 +15,7 @@ import {
 } from "./javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
 
   "max-time",
   "connect-timeout",
@@ -51,7 +53,7 @@ function getBodyString(
   const contentType = util.getContentType(request);
 
   if (request.multipartUploads) {
-    if (util.eq(exactContentType, "multipart/form-data")) {
+    if (eq(exactContentType, "multipart/form-data")) {
       // TODO: comment it out instead?
       util.deleteHeader(request, "content-type");
     }
@@ -71,7 +73,7 @@ function getBodyString(
       const parsed = JSON.parse(dataStr);
       const roundtrips = JSON.stringify(parsed) === dataStr;
       const jsonAsJavaScript = "json: " + reprObj(parsed, 1);
-      if (roundtrips && util.eq(exactContentType, "application/json")) {
+      if (roundtrips && eq(exactContentType, "application/json")) {
         util.deleteHeader(request, "content-type");
       }
       return [jsonAsJavaScript, roundtrips ? null : simpleString];
@@ -79,7 +81,7 @@ function getBodyString(
     if (contentType === "application/x-www-form-urlencoded") {
       const [queryList, queryDict] = util.parseQueryString(request.data);
       if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
-        if (util.eq(exactContentType, "application/x-www-form-urlencoded")) {
+        if (eq(exactContentType, "application/x-www-form-urlencoded")) {
           util.deleteHeader(request, "content-type");
         }
         return [
@@ -319,7 +321,7 @@ export function _toNodeGot(
       code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
         addImport(imports, "* as fs", "fs");
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
           code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
@@ -408,7 +410,7 @@ export function toNodeGotWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeGot = _toNodeGot(requests, warnings);
   return [nodeGot, warnings];
 }

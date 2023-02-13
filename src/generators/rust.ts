@@ -1,9 +1,10 @@
-import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { Word, eq } from "../word.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "max-redirs",
@@ -174,7 +175,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
     lines.push(indent("let client = reqwest::blocking::Client::new();"));
   } else {
     lines.push(indent("let client = reqwest::blocking::Client::builder()"));
-    if (util.eq(request.maxRedirects, "-1")) {
+    if (eq(request.maxRedirects, "-1")) {
       lines.push(
         indent(
           ".redirect(reqwest::redirect::Policy::custom(|attempt| { attempt.follow() }))",
@@ -284,7 +285,7 @@ export function toRustWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const rust = _toRust(requests, warnings);
   return [rust, warnings];
 }

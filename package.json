@@ -77,6 +77,6 @@
   },
   "bin": "dist/src/cli.js",
   "browser": {
-    "./dist/src/bash-parser.js": "./dist/src/bash-parser-web.js"
+    "./dist/src/bashParser.js": "./dist/src/bashParserWeb.js"
   }
 }

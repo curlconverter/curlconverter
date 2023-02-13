@@ -1,5 +1,17 @@
-import * as util from "../util.js";
-import { Word, Request, Warnings, DataParam } from "../util.js";
+import * as headers from "../headers.js";
+import { Word, eq } from "../word.js";
+import {
+  CCError,
+  has,
+  COMMON_SUPPORTED_ARGS,
+  Request,
+  Warnings,
+  DataParam,
+  UTF8encoder,
+  wordDecodeURIComponent,
+  percentEncode,
+} from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
 
 import {
   parse as jsonParseLossless,
@@ -11,7 +23,7 @@ import {
 
 // TODO: partiallySupportedArgs
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
 
   "compressed",
   // "no-compressed",
@@ -378,6 +390,7 @@ const unsupportedArgs = [
 const regexSingleEscape = /'|\\|\p{C}|\p{Z}/gu;
 const regexDoubleEscape = /"|\\|\p{C}|\p{Z}/gu;
 
+// Also used for Go and R
 export function reprStr(s: string, quote?: '"' | "'"): string {
   if (quote === undefined) {
     quote = "'";
@@ -440,7 +453,7 @@ export function pybescComplex(s: string): string {
   // is a pretty complicated decision.
   // For starters, it would be more correct to use the same encoding as
   // the terminal when running from the command line.
-  const bytes = util.UTF8encoder.encode(s);
+  const bytes = UTF8encoder.encode(s);
 
   return (
     "b" +
@@ -538,7 +551,7 @@ export function repr(
         i++;
         pyVar = "command" + i;
         if (i > Number.MAX_SAFE_INTEGER) {
-          throw new util.CCError("lol");
+          throw new CCError("lol");
         }
       }
       osVars[pyVar] = subprocessCall;
@@ -658,7 +671,7 @@ function jsonDumps(obj: string | number | boolean | object | null): string {
     }
 
     if (!isSafeNumber(numAsStr)) {
-      throw new util.CCError("float unrepresentable in Python: " + numAsStr);
+      throw new CCError("float unrepresentable in Python: " + numAsStr);
     }
     // Can't be bigint because it's !isInteger and isSafeNumber
     return floatAsPython(obj.valueOf() as number);
@@ -670,7 +683,7 @@ function jsonDumps(obj: string | number | boolean | object | null): string {
     case "number":
       // If the number in the JSON file is very large, it'll turn into Infinity
       if (!isFinite(obj)) {
-        throw new util.CCError("found Infitiny in JSON");
+        throw new CCError("found Infitiny in JSON");
       }
       // TODO: If the number in the JSON file is too big for JavaScript, we will lose information
       // TODO: JavaScript and Python serialize floats differently.
@@ -694,7 +707,7 @@ function jsonDumps(obj: string | number | boolean | object | null): string {
         "}"
       );
     default:
-      throw new util.CCError(
+      throw new CCError(
         "unexpected object type that shouldn't appear in JSON: " + typeof obj
       );
   }
@@ -710,7 +723,7 @@ function objToPython(
     // Both JavaScript and Python use f64 so we check if the float
     // is representable in JavaScript.
     if (!isInteger(numAsStr) && !isSafeNumber(numAsStr)) {
-      throw new util.CCError("float unrepresentable in Python: " + numAsStr);
+      throw new CCError("float unrepresentable in Python: " + numAsStr);
     }
     // Displaying floats as they will be serialized in Python would help users
     // understand why they're getting the "JSON won't be serialized as it was originally"
@@ -762,7 +775,7 @@ function objToPython(
         return s;
       }
     default:
-      throw new util.CCError(
+      throw new CCError(
         "unexpected object type that shouldn't appear in JSON: " + typeof obj
       );
   }
@@ -773,7 +786,7 @@ function decodePercentEncoding(s: Word): Word | null {
   try {
     // https://url.spec.whatwg.org/#urlencoded-parsing recommends replacing + with space
     // before decoding.
-    decoded = util.wordDecodeURIComponent(s.replace(/\+/g, " "));
+    decoded = wordDecodeURIComponent(s.replace(/\+/g, " "));
   } catch (e) {
     if (e instanceof URIError) {
       // String contains invalid percent encoded characters
@@ -782,12 +795,9 @@ function decodePercentEncoding(s: Word): Word | null {
     throw e;
   }
   // If the query string doesn't round-trip, we cannot properly convert it.
-  const roundTripKey = util.percentEncode(decoded);
+  const roundTripKey = percentEncode(decoded);
   // If the original data used %20 instead of + (what requests will send), that's close enough
-  if (
-    !util.eq(roundTripKey, s) &&
-    !util.eq(roundTripKey.replace(/%20/g, "+"), s)
-  ) {
+  if (!eq(roundTripKey, s) && !eq(roundTripKey.replace(/%20/g, "+"), s)) {
     return null;
   }
   return decoded;
@@ -990,7 +1000,7 @@ function formatDataAsEntries(
     const name = d[1];
     const filename = d[2];
     // TODO: I bet Python doesn't treat file paths identically to curl
-    const readFile = util.eq(filename, "-")
+    const readFile = eq(filename, "-")
       ? "sys.stdin.read()"
       : "open(" + repr(filename, osVars, imports, false, true) + ").read()";
 
@@ -998,7 +1008,7 @@ function formatDataAsEntries(
       dataEntries.push([readFile, null]);
     } else {
       // Curl doesn't percent encode the name but Requests will
-      if (!util.eq(name, util.percentEncode(name))) {
+      if (!eq(name, percentEncode(name))) {
         return null;
       }
       dataEntries.push([repr(name, osVars, imports), readFile]);
@@ -1079,7 +1089,7 @@ function formatDataAsStr(
     }
 
     let readFile = "";
-    if (util.eq(filename, "-")) {
+    if (eq(filename, "-")) {
       readFile += binary ? "sys.stdin.buffer" : "sys.stdin";
       imports.add("sys");
     } else {
@@ -1203,7 +1213,7 @@ function getDataString(
   // This can happen when there's extra whitespace in the original data or
   // because the JSON contains numbers that are too big to be stored in
   // JavaScript or because there's objects with duplicate keys.
-  const contentType = util.getHeader(request, "content-type");
+  const contentType = headers.getHeader(request, "content-type");
   let dataAsJson: string | null = null;
   let jsonRoundtrips = false;
   if (
@@ -1230,12 +1240,12 @@ function getDataString(
   if (dataAsEntries !== null) {
     const [dataEntries, percentWarn] = dataAsEntries;
     if (
-      util.eq(
-        util.getHeader(request, "content-type"),
+      eq(
+        headers.getHeader(request, "content-type"),
         "application/x-www-form-urlencoded"
       )
     ) {
-      util.deleteHeader(request, "content-type");
+      headers.deleteHeader(request, "content-type");
     }
     if (percentWarn) {
       warnings.push([
@@ -1279,11 +1289,11 @@ function getFilesString(
         ? repr(m.filename, osVars, imports)
         : "None";
     if ("contentFile" in m) {
-      if (util.eq(m.contentFile, "-")) {
+      if (eq(m.contentFile, "-")) {
         // TODO: use piped stdin if we have it
         usesStdin = true;
         return [name, "(" + sentFilename + ", sys.stdin.buffer.read())"];
-      } else if (util.eq(m.contentFile, m.filename)) {
+      } else if (eq(m.contentFile, m.filename)) {
         return [
           name,
           "open(" +
@@ -1382,7 +1392,7 @@ function requestToPython(
     "content-length": "",
   };
   // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
-  if (util.eq(util.getHeader(request, "te"), "trailers")) {
+  if (eq(headers.getHeader(request, "te"), "trailers")) {
     commentedOutHeaders.te = "Requests doesn't support trailers";
   }
 
@@ -1448,7 +1458,7 @@ function requestToPython(
       ? request.proxy
       : request.proxy.prepend("http://");
     const protocol = proxy.split("://")[0].toLowerCase();
-    if (util.eq(protocol, "socks")) {
+    if (eq(protocol, "socks")) {
       // https://github.com/curl/curl/blob/curl-7_86_0/lib/url.c#L2418-L2419
       proxy = proxy.replace("socks", "socks4");
     }
@@ -1522,7 +1532,7 @@ function requestToPython(
     }
   }
 
-  const contentType = util.getHeader(request, "content-type");
+  const contentType = headers.getHeader(request, "content-type");
   let dataString;
   let jsonDataString;
   let filesString;
@@ -1530,8 +1540,8 @@ function requestToPython(
   if (request.urls[0].uploadFile && request.urls.length === 1) {
     // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
     if (
-      util.eq(request.urls[0].uploadFile, "-") ||
-      util.eq(request.urls[0].uploadFile, ".")
+      eq(request.urls[0].uploadFile, "-") ||
+      eq(request.urls[0].uploadFile, ".")
     ) {
       dataString = "data = sys.stdin.buffer.read()\n";
       imports.add("sys");
@@ -1558,7 +1568,7 @@ function requestToPython(
       jsonDataString &&
       !dataString &&
       contentType &&
-      util.eq(contentType.trim(), "application/json")
+      eq(contentType.trim(), "application/json")
     ) {
       commentedOutHeaders["content-type"] = "Already added when you pass json=";
     }
@@ -1575,7 +1585,7 @@ function requestToPython(
     if (
       filesString &&
       contentType &&
-      util.eq(contentType.trim(), "multipart/form-data") &&
+      eq(contentType.trim(), "multipart/form-data") &&
       !contentType.includes("boundary=")
     ) {
       // TODO: better wording
@@ -1595,7 +1605,7 @@ function requestToPython(
 
       let lineStart;
       const headerNameLower = headerName.toLowerCase().toString();
-      if (util.has(commentedOutHeaders, headerNameLower)) {
+      if (has(commentedOutHeaders, headerNameLower)) {
         if (commentedOutHeaders[headerNameLower]) {
           headerDict += "    # " + commentedOutHeaders[headerNameLower] + "\n";
         }
@@ -1613,7 +1623,7 @@ function requestToPython(
     headerDict += "}\n";
     if (
       request.headers.length > 1 &&
-      request.headers.every((h) => util.eq(h[0], h[0].toLowerCase())) &&
+      request.headers.every((h) => eq(h[0], h[0].toLowerCase())) &&
       !(request.http2 || request.http3)
     ) {
       warnings.push([
@@ -1805,7 +1815,7 @@ function requestToPython(
       args.push("verify=" + repr(certOrPath, osVars, imports));
     }
     // TODO: does this header check apply to all auth methods?
-    if (urlObj.auth && !util.hasHeader(request, "Authorization")) {
+    if (urlObj.auth && !headers.hasHeader(request, "Authorization")) {
       const [user, password] = urlObj.auth;
       let auth =
         "(" +
@@ -1834,9 +1844,9 @@ function requestToPython(
           thirdPartyImports.add("requests_gssapi.HTTPSPNEGOAuth");
           auth = "HTTPSPNEGOAuth(";
           if (request.delegation) {
-            if (util.eq(request.delegation, "always")) {
+            if (eq(request.delegation, "always")) {
               auth += "delegate=True";
-            } else if (util.eq(request.delegation, "none")) {
+            } else if (eq(request.delegation, "none")) {
               auth += "delegate=False";
             } else {
               uniqueWarn(seenWarnings, warnings, [
@@ -1964,10 +1974,7 @@ function requestToPython(
       if (urlObj.uploadFile) {
         let uploadFileLine = "";
         // TODO: https://docs.python-requests.org/en/latest/user/advanced/#streaming-uploads
-        if (
-          util.eq(urlObj.uploadFile, "-") ||
-          util.eq(urlObj.uploadFile, ".")
-        ) {
+        if (eq(urlObj.uploadFile, "-") || eq(urlObj.uploadFile, ".")) {
           uploadFileLine += "file_contents = sys.stdin.buffer.read()\n";
           imports.add("sys");
         } else {
@@ -2001,9 +2008,9 @@ function requestToPython(
       requestLine += indent(dataAlternative, indentLevel);
     }
 
-    if (urlObj.output && !util.eq(urlObj.output, "/dev/null")) {
+    if (urlObj.output && !eq(urlObj.output, "/dev/null")) {
       let outputLine = "";
-      if (util.eq(request.urls[0].output, "-")) {
+      if (eq(request.urls[0].output, "-")) {
         outputLine += "print(response.text)\n";
       } else {
         outputLine += isSession || request.urls.length > 1 ? "" : "\n";
@@ -2023,7 +2030,7 @@ function requestToPython(
       (urlParamsStr ||
         (dataString && jsonDataString) ||
         urlObj.uploadFile ||
-        (urlObj.output && !util.eq(urlObj.output, "/dev/null")))
+        (urlObj.output && !eq(urlObj.output, "/dev/null")))
     ) {
       extraEmptyLine = true;
     }
@@ -2034,7 +2041,7 @@ function requestToPython(
 
   if (request.cookieJar) {
     let cookieSaveLine = "cookies.save(";
-    if (!util.eq(request.cookieJar, cookieFile)) {
+    if (!eq(request.cookieJar, cookieFile)) {
       cookieSaveLine += repr(request.cookieJar, osVars, imports) + ", ";
     }
     cookieSaveLine += "ignore_discard=True, ignore_expires=True)\n"; // TODO: necessary?
@@ -2124,7 +2131,7 @@ export function toPythonWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const python = _toPython(requests, warnings);
   return [python, warnings];
 }

@@ -1,10 +1,12 @@
 // Author: ssi-anik (sirajul.islam.anik@gmail.com)
 
 import * as util from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
 import type { AuthType, Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
 
   "insecure",
   "no-insecure",
@@ -280,7 +282,7 @@ export function toJsonStringWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const json = _toJsonString(requests, warnings);
   return [json, warnings];
 }

@@ -1,11 +1,13 @@
 import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { Word, eq } from "../word.js";
 import type { Request, Warnings } from "../util.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "compressed",
   "form",
   "form-string",
@@ -204,7 +206,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
       const sentFilename = "filename" in m && m.filename;
       if ("contentFile" in m) {
         multipart += "    ..files.add(await http.MultipartFile.";
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             multipart += "fromPath(\n";
             multipart +=
@@ -306,7 +308,7 @@ export function toDartWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const dart = _toDart(requests, warnings);
   return [dart, warnings];
 }

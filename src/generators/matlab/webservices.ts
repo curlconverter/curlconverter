@@ -11,7 +11,7 @@ import {
   cookieString,
   paramsString,
 } from "./common.js";
-import { Word } from "../../util.js";
+import { Word } from "../../word.js";
 import * as util from "../../util.js";
 import type { Request, Warnings } from "../../util.js";
 

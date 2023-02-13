@@ -1,11 +1,13 @@
 import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { Word } from "../word.js";
 import type { Request, Warnings } from "../util.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "max-time",
@@ -191,7 +193,7 @@ export function toCFMLWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const cfml = _toCFML(requests, warnings);
   return [cfml, warnings];
 }

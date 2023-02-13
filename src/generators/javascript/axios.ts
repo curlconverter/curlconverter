@@ -1,5 +1,7 @@
 import * as util from "../../util.js";
-import { Word } from "../../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../../util.js";
+import { parseCurlCommand } from "../../parseCommand.js";
+import { Word, eq } from "../../word.js";
 import type { Request, Warnings } from "../../util.js";
 import {
   reprObj,
@@ -18,7 +20,7 @@ import {
 } from "./javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "max-time",
   "form",
   "form-string",
@@ -52,11 +54,8 @@ function _getDataString(
     const jsonAsJavaScript = reprObj(parsed, 1);
     if (
       roundtrips &&
-      util.eq(exactContentType, "application/json") &&
-      util.eq(
-        util.getHeader(request, "accept"),
-        "application/json, text/plain, */*"
-      )
+      eq(exactContentType, "application/json") &&
+      eq(util.getHeader(request, "accept"), "application/json, text/plain, */*")
     ) {
       util.deleteHeader(request, "content-type");
       util.deleteHeader(request, "accept");
@@ -68,7 +67,7 @@ function _getDataString(
     if (queryList) {
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8
-      if (util.eq(exactContentType, "application/x-www-form-urlencoded")) {
+      if (eq(exactContentType, "application/x-www-form-urlencoded")) {
         util.deleteHeader(request, "content-type");
       }
 
@@ -322,7 +321,7 @@ export function _toNodeAxios(
       code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
         addImport(imports, "fs", "fs");
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
           code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
@@ -443,7 +442,7 @@ export function toNodeAxiosWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeAxios = _toNodeAxios(requests, warnings);
   return [nodeAxios, warnings];
 }

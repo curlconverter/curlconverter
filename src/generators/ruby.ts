@@ -1,5 +1,8 @@
 import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { CCError } from "../util.js";
+import { Word, eq } from "../word.js";
 import type { Request, Warnings, QueryDict } from "../util.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
@@ -7,7 +10,7 @@ import type { Request, Warnings, QueryDict } from "../util.js";
 // https://github.com/augustl/net-http-cheat-sheet
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "http0.9",
@@ -39,7 +42,6 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
       quote = '"';
     }
   }
-  const endQuote = quote.length > 1 ? quote[1] : quote[0];
   const regexEscape =
     quote === "'"
       ? regexSingleEscape
@@ -47,8 +49,11 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
       ? regexDoubleEscape
       : regexCurlyEscape;
 
+  const startQuote = quote[0];
+  const endQuote = quote === "{}" ? quote[1] : quote[0];
+
   return (
-    quote +
+    startQuote +
     s.replace(regexEscape, (c: string, index: number, string: string) => {
       switch (c[0]) {
         case " ":
@@ -168,7 +173,7 @@ function objToRuby(
         }
         break;
       default:
-        throw new util.CCError(
+        throw new CCError(
           "unexpected object type that shouldn't appear in JSON: " + typeof obj
         );
     }
@@ -198,7 +203,7 @@ function getDataString(request: Request): [string, boolean] {
 
   if (!request.isDataRaw && request.data.startsWith("@")) {
     let filePath = request.data.slice(1);
-    if (util.eq(filePath, "-")) {
+    if (eq(filePath, "-")) {
       if (request.stdinFile) {
         filePath = request.stdinFile;
       } else if (request.stdin) {
@@ -233,7 +238,7 @@ function getDataString(request: Request): [string, boolean] {
   const contentTypeHeader = util.getHeader(request, "content-type");
   const isJson =
     contentTypeHeader &&
-    util.eq(contentTypeHeader.split(";")[0].trim(), "application/json");
+    eq(contentTypeHeader.split(";")[0].trim(), "application/json");
   if (isJson && request.data.isString()) {
     try {
       const dataAsStr = request.data.toString();
@@ -276,7 +281,7 @@ function getFilesString(request: Request): string {
     const name = repr(m.name); // TODO: what if name is empty string?
     const sentFilename = "filename" in m && m.filename && repr(m.filename);
     if ("contentFile" in m) {
-      if (util.eq(m.contentFile, "-")) {
+      if (eq(m.contentFile, "-")) {
         if (request.stdinFile) {
           return [
             name,
@@ -450,8 +455,8 @@ function requestToRuby(
   let reqBody;
   if (request.urls[0].uploadFile) {
     if (
-      util.eq(request.urls[0].uploadFile, "-") ||
-      util.eq(request.urls[0].uploadFile, ".")
+      eq(request.urls[0].uploadFile, "-") ||
+      eq(request.urls[0].uploadFile, ".")
     ) {
       reqBody = "req.body = STDIN.read\n";
     } else {
@@ -537,8 +542,8 @@ function requestToRuby(
   code += "  http.request(req)\n";
   code += "end";
 
-  if (request.urls[0].output && !util.eq(request.urls[0].output, "/dev/null")) {
-    if (util.eq(request.urls[0].output, "-")) {
+  if (request.urls[0].output && !eq(request.urls[0].output, "/dev/null")) {
+    if (eq(request.urls[0].output, "-")) {
       code += "\nputs res.body";
     } else {
       code += "\nFile.write(" + repr(request.urls[0].output) + ", res.body)";
@@ -566,7 +571,7 @@ export function toRubyWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const ruby = _toRuby(requests, warnings);
   return [ruby, warnings];
 }

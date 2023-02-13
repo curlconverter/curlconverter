@@ -1,9 +1,11 @@
 import * as util from "../util.js";
-import { Word } from "../util.js";
+import { COMMON_SUPPORTED_ARGS } from "../util.js";
+import { parseCurlCommand } from "../parseCommand.js";
+import { Word, eq } from "../word.js";
 import type { Request, Warnings } from "../util.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "compressed",
   "form",
   "form-string",
@@ -307,7 +309,7 @@ export function _toCSharp(
       const sentFilename = "filename" in m && m.filename;
       s += "content.Add(new ";
       if ("contentFile" in m) {
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             s +=
               "ByteArrayContent(File.ReadAllBytes(" +
@@ -421,7 +423,7 @@ export function toCSharpWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const cSharp = _toCSharp(requests, warnings);
   return [cSharp, warnings];
 }
