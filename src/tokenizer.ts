@@ -255,11 +255,11 @@ function toWord(
   return new Word(toTokens(node, curlCommand, warnings));
 }
 
-export function tokenize(
+function findCommandNode(
+  ast: Parser.Tree,
   curlCommand: string,
-  warnings: Warnings = []
-): [Word[], Word?, Word?] {
-  const ast = parser.parse(curlCommand);
+  warnings: Warnings
+): [Parser.SyntaxNode, Word?, Word?] {
   // https://github.com/tree-sitter/tree-sitter-bash/blob/master/grammar.js
   // The AST must be in a nice format, i.e.
   // (program
@@ -439,6 +439,19 @@ export function tokenize(
       'expected a "command" or "redirected_statement" AST node, only found "comment" nodes'
     );
   }
+  return [command, stdin, stdinFile];
+}
+
+export function tokenize(
+  curlCommand: string,
+  warnings: Warnings = []
+): [Word[], Word?, Word?] {
+  const ast = parser.parse(curlCommand);
+  const [command, stdin, stdinFile] = findCommandNode(
+    ast,
+    curlCommand,
+    warnings
+  );
   for (const n of ast.rootNode.children) {
     if (n.type === "ERROR") {
       warnings.push([

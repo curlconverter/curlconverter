@@ -15,17 +15,7 @@ import {
 } from "./headers.js";
 import type { Headers, Cookies } from "./headers.js";
 
-import {
-  CURLAUTH_BASIC,
-  CURLAUTH_DIGEST,
-  CURLAUTH_NEGOTIATE,
-  CURLAUTH_NTLM,
-  CURLAUTH_NTLM_WB,
-  CURLAUTH_BEARER,
-  CURLAUTH_AWS_SIGV4,
-  CURLAUTH_ANY,
-  type AuthType,
-} from "./curl/auth.js";
+import { pickAuth, type AuthType } from "./curl/auth.js";
 
 import { parseurl, type Curl_URL } from "./curl/url.js";
 
@@ -947,38 +937,6 @@ function buildRequest(
   }
 
   return request;
-}
-
-// This is this function
-// https://github.com/curl/curl/blob/curl-7_86_0/lib/http.c#L455
-// which is not the correct function, since it works on the response.
-//
-// Curl also filters out auth schemes it doesn't support,
-// https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L970
-// but we support all of them, so we don't need to do that.
-function pickAuth(mask: number): AuthType {
-  if (mask === CURLAUTH_ANY) {
-    return "basic";
-  }
-
-  const auths: [number, AuthType][] = [
-    [CURLAUTH_NEGOTIATE, "negotiate"],
-    [CURLAUTH_BEARER, "bearer"],
-    [CURLAUTH_DIGEST, "digest"],
-    [CURLAUTH_NTLM, "ntlm"],
-    [CURLAUTH_NTLM_WB, "ntlm-wb"],
-    [CURLAUTH_BASIC, "basic"],
-    // This check happens outside this function because we obviously
-    // don't need to to specify --no-basic to use aws-sigv4
-    // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
-    [CURLAUTH_AWS_SIGV4, "aws-sigv4"],
-  ];
-  for (const [auth, authName] of auths) {
-    if (mask & auth) {
-      return authName;
-    }
-  }
-  return "none";
 }
 
 export function buildRequests(

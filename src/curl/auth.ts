@@ -17,3 +17,35 @@ export type AuthType =
   | "bearer"
   | "aws-sigv4"
   | "none";
+
+// This is this function
+// https://github.com/curl/curl/blob/curl-7_86_0/lib/http.c#L455
+// which is not the correct function, since it works on the response.
+//
+// Curl also filters out auth schemes it doesn't support,
+// https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L970
+// but we "support" all of them, so we don't need to do that.
+export function pickAuth(mask: number): AuthType {
+  if (mask === CURLAUTH_ANY) {
+    return "basic";
+  }
+
+  const auths: [number, AuthType][] = [
+    [CURLAUTH_NEGOTIATE, "negotiate"],
+    [CURLAUTH_BEARER, "bearer"],
+    [CURLAUTH_DIGEST, "digest"],
+    [CURLAUTH_NTLM, "ntlm"],
+    [CURLAUTH_NTLM_WB, "ntlm-wb"],
+    [CURLAUTH_BASIC, "basic"],
+    // This check happens outside this function because we obviously
+    // don't need to to specify --no-basic to use aws-sigv4
+    // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
+    [CURLAUTH_AWS_SIGV4, "aws-sigv4"],
+  ];
+  for (const [auth, authName] of auths) {
+    if (mask & auth) {
+      return authName;
+    }
+  }
+  return "none";
+}
