@@ -738,27 +738,25 @@ export function warnf(global: GlobalConfig, warning: [string, string]) {
   global.warnings.push(warning);
 }
 
-function checkLongOpt(
+function checkSupported(
+  global: GlobalConfig,
   lookup: string,
-  longArgName: string,
-  supportedOpts: Set<string>,
-  global: GlobalConfig
+  longArg: LongShort,
+  supportedOpts?: Set<string>
 ) {
-  if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
+  if (
+    supportedOpts &&
+    !supportedOpts.has(longArg.name) &&
+    !ignoredArgs.has(longArg.name)
+  ) {
     // TODO: better message. include generator name?
-    warnf(global, [longArgName, "--" + lookup + " is not a supported option"]);
-  }
-}
-
-function checkShortOpt(
-  lookup: string,
-  longArgName: string,
-  supportedOpts: Set<string>,
-  global: GlobalConfig
-) {
-  if (!supportedOpts.has(longArgName) && !ignoredArgs.has(longArgName)) {
-    // TODO: better message. include generator name?
-    warnf(global, [longArgName, "-" + lookup + " is not a supported option"]);
+    warnf(global, [
+      longArg.name,
+      "--" +
+        lookup +
+        " is not a supported option" +
+        (longArg.removed ? ", it was removed in curl " + longArg.removed : ""),
+    ]);
   }
 }
 
@@ -977,9 +975,8 @@ export function parseArgs(
             toBoolean(argStr.slice(2))
           ); // TODO: all shortened args work correctly?
         }
-        if (supportedOpts) {
-          checkLongOpt(lookup, longArg.name, supportedOpts, global);
-        }
+
+        checkSupported(global, lookup, longArg, supportedOpts);
       } else {
         // Short option. These can look like
         // -X POST    -> {request: 'POST'}
@@ -1064,8 +1061,8 @@ export function parseArgs(
               toBoolean(shortFor)
             );
           }
-          if (supportedOpts && lookup) {
-            checkShortOpt(lookup, longArg.name, supportedOpts, global);
+          if (lookup) {
+            checkSupported(global, lookup, longArg, supportedOpts);
           }
         }
       }
