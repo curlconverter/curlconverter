@@ -6,14 +6,7 @@ export type { Request } from "./request.js";
 export type { DataParam, QueryList, QueryDict } from "./query.js";
 export { AuthType } from "./curl/auth.js";
 export { COMMON_SUPPORTED_ARGS } from "./curl/opts.js";
-export {
-  getHeader,
-  getContentType,
-  hasHeader,
-  _setHeaderIfMissing,
-  setHeaderIfMissing,
-  deleteHeader,
-} from "./headers.js";
+export { Headers } from "./headers.js";
 export { parseCurlCommand } from "./parseCommand.js";
 export {
   parseQueryString,

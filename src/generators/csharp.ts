@@ -174,7 +174,7 @@ export function _toCSharp(
   const simple =
     util.has(methods, method) &&
     !(
-      request.headers ||
+      request.headers.length ||
       (request.urls[0].auth && request.authType === "basic") ||
       request.multipartUploads ||
       request.data ||
@@ -242,10 +242,10 @@ export function _toCSharp(
     expires: "Expires",
     "last-modified": "LastModified",
   };
-  const reqHeaders = (request.headers || []).filter(
+  const reqHeaders = request.headers.headers.filter(
     (h) => !Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
   );
-  const reqContentHeaders = (request.headers || []).filter((h) =>
+  const reqContentHeaders = request.headers.headers.filter((h) =>
     Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
   );
 
@@ -351,7 +351,7 @@ export function _toCSharp(
       }
     }
     s += "request.Content = content;\n";
-  } else if (util.hasHeader(request, "content-type")) {
+  } else if (request.headers.has("content-type")) {
     // This needs to be at the end.
     // If the request has no content, you can't set the content-type
     s += 'request.Content = new StringContent("");\n';

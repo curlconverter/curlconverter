@@ -1,6 +1,6 @@
-import { Word, eq, firstShellToken, mergeWords, joinWords } from "./word.js";
+import { Word, eq, mergeWords, joinWords } from "./word.js";
 
-import { CCError, has, isInt, underlineNode } from "./util.js";
+import { CCError, has, isInt } from "./util.js";
 import { warnf } from "./curl/opts.js";
 import type {
   GlobalConfig,
@@ -8,12 +8,8 @@ import type {
   SrcDataParam,
 } from "./curl/opts.js";
 
-import {
-  parseCookies,
-  parseCookiesStrict,
-  _setHeaderIfMissing,
-} from "./headers.js";
-import type { Headers, Cookies } from "./headers.js";
+import { Headers, parseCookies, parseCookiesStrict } from "./headers.js";
+import type { Cookies } from "./headers.js";
 
 import { pickAuth, type AuthType } from "./curl/auth.js";
 
@@ -84,8 +80,7 @@ export interface Request {
   delegation?: Word;
 
   // A null header means the command explicitly disabled sending this header
-  headers?: Headers;
-  lowercaseHeaders: boolean;
+  headers: Headers;
 
   // .cookies is a parsed version of the Cookie header, if it can be parsed.
   // Generators that use .cookies need to delete the header from .headers (usually).
@@ -406,176 +401,17 @@ function buildRequest(
     throw new CCError("no URL specified!");
   }
 
-  let headers: Headers = [];
-  if (config.header) {
-    for (const header of config.header) {
-      if (header.startsWith("@")) {
-        warnf(global, [
-          "header-file",
-          "passing a file for --header/-H is not supported: " +
-            JSON.stringify(header.toString()),
-        ]);
-        continue;
-      }
-
-      if (header.includes(":")) {
-        const [name, value] = header.split(":", 2);
-        const nameToken = firstShellToken(name);
-        if (nameToken) {
-          warnf(global, [
-            "header-expression",
-            "ignoring " +
-              nameToken.type +
-              " in header name\n" +
-              underlineNode(nameToken.syntaxNode),
-          ]);
-        }
-        const hasValue = value && value.trim().toBool();
-        const headerValue = hasValue ? value.removeFirstChar(" ") : null;
-        headers.push([name, headerValue]);
-      } else if (header.includes(";")) {
-        const [name] = header.split(";", 2);
-        headers.push([name, new Word()]);
-      } else {
-        // TODO: warn that this header arg is ignored
-      }
-    }
-  }
-  const lowercase =
-    headers.length > 0 && headers.every((h) => eq(h[0], h[0].toLowerCase()));
-
-  // Handle repeated headers
-  // For Cookie and Accept, merge the values using ';' and ',' respectively
-  // For other headers, warn about the repeated header
-  const uniqueHeaders: { [key: string]: [Word, Word | null][] } = {};
-  for (const [name, value] of headers) {
-    // TODO: something better, at least warn that variable is ignored
-    const lowerName = name.toLowerCase().toString();
-    if (!uniqueHeaders[lowerName]) {
-      uniqueHeaders[lowerName] = [];
-    }
-    uniqueHeaders[lowerName].push([name, value]);
-  }
-  headers = [];
-  for (const [lowerName, repeatedHeaders] of Object.entries(uniqueHeaders)) {
-    if (repeatedHeaders.length === 1) {
-      headers.push(repeatedHeaders[0]);
-      continue;
-    }
-    // If they're all null, just use the first one
-    if (repeatedHeaders.every((h) => h[1] === null)) {
-      const lastRepeat = repeatedHeaders[repeatedHeaders.length - 1];
-      // Warn users if some are capitalized differently
-      if (new Set(repeatedHeaders.map((h) => h[0])).size > 1) {
-        warnf(global, [
-          "repeated-header",
-          `"${lastRepeat[0]}" header unset ${repeatedHeaders.length} times`,
-        ]);
-      }
-      headers.push(lastRepeat);
-      continue;
-    }
-    // Otherwise there's at least one non-null value, so we can ignore the nulls
-    // TODO: if the values of the repeated headers are the same, just use the first one
-    //     'content-type': 'application/json; application/json',
-    // doesn't really make sense
-    const nonEmptyHeaders = repeatedHeaders.filter((h) => h[1] !== null);
-    if (nonEmptyHeaders.length === 1) {
-      headers.push(nonEmptyHeaders[0]);
-      continue;
-    }
-    // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Standard_request_fields
-    // and then searched for "#" in the RFCs that define each header
-    const commaSeparatedHeaders = new Set(
-      [
-        "A-IM",
-        "Accept",
-        "Accept-Charset",
-        // "Accept-Datetime",
-        "Accept-Encoding",
-        "Accept-Language",
-        // "Access-Control-Request-Method",
-        "Access-Control-Request-Headers",
-        // TODO: auth-scheme [ 1*SP ( token68 / #auth-param ) ]
-        // "Authorization",
-        "Cache-Control",
-        "Connection",
-        "Content-Encoding",
-        // "Content-Length",
-        // "Content-MD5",
-        // "Content-Type", // semicolon
-        // "Cookie", // semicolon
-        // "Date",
-        "Expect",
-        "Forwarded",
-        // "From",
-        // "Host",
-        // "HTTP2-Settings",
-        "If-Match",
-        // "If-Modified-Since",
-        "If-None-Match",
-        // "If-Range",
-        // "If-Unmodified-Since",
-        // "Max-Forwards",
-        // "Origin",
-        // "Pragma",
-        // "Prefer", // semicolon
-        // "Proxy-Authorization",
-        "Range",
-        // "Referer",
-        "TE",
-        "Trailer",
-        "Transfer-Encoding",
-        // "User-Agent",
-        "Upgrade",
-        "Via",
-        "Warning",
-      ].map((h) => h.toLowerCase())
-    );
-    const semicolonSeparatedHeaders = new Set(
-      ["Content-Type", "Cookie", "Prefer"].map((h) => h.toLowerCase())
-    );
-    let mergeChar = "";
-    if (commaSeparatedHeaders.has(lowerName)) {
-      mergeChar = ", ";
-    } else if (semicolonSeparatedHeaders.has(lowerName)) {
-      mergeChar = "; ";
-    }
-    if (mergeChar) {
-      const merged = joinWords(
-        nonEmptyHeaders.map((h) => h[1]) as Word[],
-        mergeChar
-      );
-      warnf(global, [
-        "repeated-header",
-        `merged ${nonEmptyHeaders.length} "${
-          nonEmptyHeaders[nonEmptyHeaders.length - 1][0]
-        }" headers together with "${mergeChar.trim()}"`,
-      ]);
-      headers.push([nonEmptyHeaders[0][0], merged]);
-      continue;
-    }
-
-    warnf(global, [
-      "repeated-header",
-      `found ${nonEmptyHeaders.length} "${
-        nonEmptyHeaders[nonEmptyHeaders.length - 1][0]
-      }" headers, only the last one will be sent`,
-    ]);
-    headers = headers.concat(nonEmptyHeaders);
-  }
+  const headers = new Headers(config.header);
 
   let cookies;
   const cookieFiles: Word[] = [];
-  const cookieHeaders = headers.filter(
-    (h) => h[0].toLowerCase().toString() === "cookie"
-  );
-  if (cookieHeaders.length === 1 && cookieHeaders[0][1] !== null) {
-    const parsedCookies = parseCookiesStrict(cookieHeaders[0][1]);
+  const cookieHeader = headers.get("cookie");
+  if (cookieHeader) {
+    const parsedCookies = parseCookiesStrict(cookieHeader);
     if (parsedCookies) {
       cookies = parsedCookies;
     }
-  } else if (cookieHeaders.length === 0 && config.cookie) {
+  } else if (cookieHeader === undefined && config.cookie) {
     // If there is a Cookie header, --cookies is ignored
     const cookieStrings: Word[] = [];
     for (const c of config.cookie) {
@@ -588,7 +424,7 @@ function buildRequest(
     }
     if (cookieStrings.length) {
       const cookieString = joinWords(config.cookie, "; ");
-      _setHeaderIfMissing(headers, "Cookie", cookieString, lowercase);
+      headers.setIfMissing("Cookie", cookieString);
       const parsedCookies = parseCookies(cookieString);
       if (parsedCookies) {
         cookies = parsedCookies;
@@ -597,13 +433,13 @@ function buildRequest(
   }
 
   if (config["user-agent"]) {
-    _setHeaderIfMissing(headers, "User-Agent", config["user-agent"], lowercase);
+    headers.setIfMissing("User-Agent", config["user-agent"]);
   }
   if (config.referer) {
     // referer can be ";auto" or followed by ";auto", we ignore that.
     const referer = config.referer.replace(/;auto$/, "");
     if (referer.length) {
-      _setHeaderIfMissing(headers, "Referer", referer, lowercase);
+      headers.setIfMissing("Referer", referer);
     }
   }
   if (config.range) {
@@ -611,7 +447,7 @@ function buildRequest(
     if (!range.includes("-")) {
       range = range.append("-");
     }
-    _setHeaderIfMissing(headers, "Range", range, lowercase);
+    headers.setIfMissing("Range", range);
   }
   if (config["time-cond"]) {
     let timecond = config["time-cond"];
@@ -630,7 +466,7 @@ function buildRequest(
         break;
     }
     // TODO: parse date
-    _setHeaderIfMissing(headers, header, timecond, lowercase);
+    headers.setIfMissing(header, timecond);
   }
 
   let data;
@@ -768,7 +604,7 @@ function buildRequest(
   const request: Request = {
     urls,
     authType: pickAuth(config.authtype),
-    lowercaseHeaders: lowercase,
+    headers,
   };
   // TODO: warn about unused stdin?
   if (stdin) {
@@ -795,20 +631,10 @@ function buildRequest(
   }
 
   if (config.json) {
-    _setHeaderIfMissing(headers, "Content-Type", "application/json", lowercase);
-    _setHeaderIfMissing(
-      headers,
-      "Accept",
-      new Word("application/json"),
-      lowercase
-    );
+    headers.setIfMissing("Content-Type", "application/json");
+    headers.setIfMissing("Accept", "application/json");
   } else if (config.data) {
-    _setHeaderIfMissing(
-      headers,
-      "Content-Type",
-      "application/x-www-form-urlencoded",
-      lowercase
-    );
+    headers.setIfMissing("Content-Type", "application/x-www-form-urlencoded");
   } else if (config.form) {
     // TODO: set content-type?
     request.multipartUploads = parseForm(config.form);
@@ -820,26 +646,15 @@ function buildRequest(
     request.awsSigV4 = config["aws-sigv4"];
   }
   if (request.authType === "bearer" && config["oauth2-bearer"]) {
-    _setHeaderIfMissing(
-      headers,
-      "Authorization",
-      config["oauth2-bearer"].prepend("Bearer "),
-      lowercase
-    );
+    const bearer = config["oauth2-bearer"].prepend("Bearer ");
+    headers.setIfMissing("Authorization", bearer);
   }
   if (config.delegation) {
     request.delegation = config.delegation;
   }
 
-  if (headers.length > 0) {
-    for (let i = headers.length - 1; i >= 0; i--) {
-      if (headers[i][1] === null) {
-        // TODO: ideally we should generate code that explicitly unsets the header too
-        headers.splice(i, 1);
-      }
-    }
-    request.headers = headers;
-  }
+  // TODO: ideally we should generate code that explicitly unsets the header too
+  headers.clearNulls();
 
   if (config.data && config.data.length) {
     request.data = dataStr;

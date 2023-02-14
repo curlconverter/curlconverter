@@ -125,12 +125,12 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
   const lines = [];
   lines.push("", "fn main() -> Result<(), Box<dyn std::error::Error>> {");
 
-  if (request.headers) {
+  if (request.headers.length) {
     lines.push(indent("let mut headers = header::HeaderMap::new();"));
     const headerEnum: { [key: string]: string } = {
       cookie: "header::COOKIE",
     };
-    for (const [headerName, headerValue] of request.headers || []) {
+    for (const [headerName, headerValue] of request.headers) {
       const enumValue = headerEnum[headerName.toLowerCase().toString()];
       const name = enumValue || `"${headerName}"`;
       if (headerValue !== null) {
@@ -228,7 +228,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
     );
   }
 
-  if (request.headers) {
+  if (request.headers.length) {
     lines.push(indent(".headers(headers)", 2));
   }
 
@@ -263,7 +263,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
   {
     // Generate imports.
     const imports = [
-      { want: "header", condition: !!request.headers },
+      { want: "header", condition: !!request.headers.length },
       { want: "blocking::multipart", condition: !!request.multipartUploads },
     ]
       .filter((i) => i.condition)

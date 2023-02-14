@@ -57,16 +57,15 @@ export function _toPhpRequests(
   }
 
   let headerString: string;
-  if (request.headers) {
+  if (request.headers.length) {
     headerString = "$headers = array(\n";
     let i = 0;
-    const headerCount = request.headers ? request.headers.length : 0;
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
         continue; // TODO: this could miss not adding a trailing comma
       }
       headerString += "    " + repr(headerName) + " => " + repr(headerValue);
-      if (i < headerCount - 1) {
+      if (i < request.headers.length - 1) {
         headerString += ",\n";
       }
       i++;

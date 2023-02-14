@@ -145,7 +145,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     ");\n\n";
 
   let gzip = false;
-  if (request.headers) {
+  if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
         continue;

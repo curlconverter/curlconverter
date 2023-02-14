@@ -39,9 +39,9 @@ function _getDataString(
 
   const originalStringRepr = repr(request.data, imports);
 
-  const contentType = util.getContentType(request);
+  const contentType = request.headers.getContentType();
   // can have things like ; charset=utf-8 which we want to preserve
-  const exactContentType = util.getHeader(request, "content-type");
+  const exactContentType = request.headers.get("content-type");
   if (contentType === "application/json" && request.data.isString()) {
     const dataStr = request.data.toString();
     const parsed = JSON.parse(dataStr);
@@ -55,10 +55,10 @@ function _getDataString(
     if (
       roundtrips &&
       eq(exactContentType, "application/json") &&
-      eq(util.getHeader(request, "accept"), "application/json, text/plain, */*")
+      eq(request.headers.get("accept"), "application/json, text/plain, */*")
     ) {
-      util.deleteHeader(request, "content-type");
-      util.deleteHeader(request, "accept");
+      request.headers.delete("content-type");
+      request.headers.delete("accept");
     }
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
@@ -68,7 +68,7 @@ function _getDataString(
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8
       if (eq(exactContentType, "application/x-www-form-urlencoded")) {
-        util.deleteHeader(request, "content-type");
+        request.headers.delete("content-type");
       }
 
       const queryObj =
@@ -130,12 +130,12 @@ function buildConfigObject(
 
   const [dataString, commentedOutDataString] = getDataString(request, imports); // can delete headers
 
-  if ((request.headers && request.headers.length) || request.multipartUploads) {
+  if (request.headers.length || request.multipartUploads) {
     code += "    headers: {\n";
     if (request.multipartUploads) {
       code += "        ...form.getHeaders(),\n";
     }
-    for (const [key, value] of request.headers || []) {
+    for (const [key, value] of request.headers) {
       code +=
         "        " +
         repr(key, imports) +
@@ -358,7 +358,7 @@ export function _toNodeAxios(
     !methods.includes(methodStr) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
-    request.headers ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     (request.data && !dataMethods.includes(methodStr)) ||
@@ -401,7 +401,7 @@ export function _toNodeAxios(
     !methods.includes(methodStr) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
-    (request.headers && request.headers.length) ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     (request.data && !dataMethods.includes(methodStr)) ||

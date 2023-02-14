@@ -1,4 +1,3 @@
-import * as util from "../util.js";
 import { COMMON_SUPPORTED_ARGS } from "../util.js";
 import { parseCurlCommand } from "../parseCommand.js";
 import { Word } from "../word.js";
@@ -97,10 +96,10 @@ export function _toCFML(requests: Request[], warnings: Warnings = []): string {
         repr(headerValue) +
         ");\n";
     }
-    util.deleteHeader(request, "Cookie");
+    request.headers.delete("Cookie");
   }
 
-  if (request.headers && request.headers.length) {
+  if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       cfmlCode +=
         'httpService.addParam(type="header", name=' +

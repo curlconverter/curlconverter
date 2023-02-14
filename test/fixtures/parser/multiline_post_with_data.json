@@ -19,17 +19,19 @@
       }
     ],
     "authType": "basic",
-    "lowercaseHeaders": false,
-    "headers": [
-      [
-        "Origin",
-        "http://fiddle.jshell.net"
-      ],
-      [
-        "Content-Type",
-        "application/x-www-form-urlencoded"
+    "headers": {
+      "lowercase": false,
+      "headers": [
+        [
+          "Origin",
+          "http://fiddle.jshell.net"
+        ],
+        [
+          "Content-Type",
+          "application/x-www-form-urlencoded"
+        ]
       ]
-    ],
+    },
     "data": "msg1=value1&msg2=value2",
     "dataArray": [
       "msg1=value1&msg2=value2"

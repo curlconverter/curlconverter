@@ -235,7 +235,7 @@ function getDataString(request: Request): [string, boolean] {
     }
   }
 
-  const contentTypeHeader = util.getHeader(request, "content-type");
+  const contentTypeHeader = request.headers.get("content-type");
   const isJson =
     contentTypeHeader &&
     eq(contentTypeHeader.split(";")[0].trim(), "application/json");
@@ -419,7 +419,7 @@ function requestToRuby(
   }
 
   const simple = !(
-    request.headers ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     request.data ||
@@ -471,18 +471,18 @@ function requestToRuby(
     }
   } else if (request.multipartUploads) {
     reqBody = getFilesString(request);
-    util.deleteHeader(request, "content-type");
+    request.headers.delete("content-type");
   }
 
-  const contentType = util.getHeader(request, "content-type");
+  const contentType = request.headers.get("content-type");
   if (contentType !== null && contentType !== undefined) {
     // If the content type has stuff after the content type, like
     // application/x-www-form-urlencoded; charset=UTF-8
     // then we generate misleading code here because the charset won't be sent.
     code += "req.content_type = " + repr(contentType) + "\n";
-    util.deleteHeader(request, "content-type");
+    request.headers.delete("content-type");
   }
-  if (request.headers && request.headers.length) {
+  if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       if (
         ["accept-encoding", "content-length"].includes(

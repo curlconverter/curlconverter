@@ -1,4 +1,3 @@
-import * as util from "../util.js";
 import { COMMON_SUPPORTED_ARGS } from "../util.js";
 import { parseCurlCommand } from "../parseCommand.js";
 import type { Request, Warnings } from "../util.js";
@@ -18,7 +17,7 @@ function getDataString(request: Request): [string, boolean] | undefined {
     return;
   }
 
-  if (util.getContentType(request) === "application/json") {
+  if (request.headers.getContentType() === "application/json") {
     // TODO: warn if contains variables
     const dataStr = request.data.toString();
     try {
@@ -109,7 +108,7 @@ export function _toAnsible(
       r.body = request.data.toString();
     }
   }
-  if (request.headers && request.headers.filter((h) => h[0]).length) {
+  if (request.headers.length) {
     r.headers = {};
     for (const h of request.headers) {
       const [k, v] = h;

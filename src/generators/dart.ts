@@ -114,13 +114,13 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     request.multipartUploads ||
     !methods.includes(request.urls[0].method.toString());
   const hasHeaders =
-    request.headers ||
+    request.headers.length ||
     request.compressed ||
     request.isDataBinary ||
     request.urls[0].method.toLowerCase().toString() === "put";
   if (hasHeaders && !rawRequestObj) {
     s += "  var headers = {\n";
-    for (const [hname, hval] of request.headers || []) {
+    for (const [hname, hval] of request.headers) {
       s +=
         "    " +
         repr(hname, imports) +
@@ -254,7 +254,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
 
     if (hasHeaders || request.urls[0].auth) {
       s += "  var req = new " + multipart;
-      for (const [hname, hval] of request.headers || []) {
+      for (const [hname, hval] of request.headers) {
         s +=
           "  req.headers[" +
           repr(hname, imports) +

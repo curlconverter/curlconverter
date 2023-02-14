@@ -49,13 +49,13 @@ function getBodyString(
   imports: JSImports
 ): [string | null, string | null] {
   // can have things like ; charset=utf-8 which we want to preserve
-  const exactContentType = util.getHeader(request, "content-type");
-  const contentType = util.getContentType(request);
+  const exactContentType = request.headers.get("content-type");
+  const contentType = request.headers.getContentType();
 
   if (request.multipartUploads) {
     if (eq(exactContentType, "multipart/form-data")) {
       // TODO: comment it out instead?
-      util.deleteHeader(request, "content-type");
+      request.headers.delete("content-type");
     }
     return ["body: form", null];
   }
@@ -74,7 +74,7 @@ function getBodyString(
       const roundtrips = JSON.stringify(parsed) === dataStr;
       const jsonAsJavaScript = "json: " + reprObj(parsed, 1);
       if (roundtrips && eq(exactContentType, "application/json")) {
-        util.deleteHeader(request, "content-type");
+        request.headers.delete("content-type");
       }
       return [jsonAsJavaScript, roundtrips ? null : simpleString];
     }
@@ -82,7 +82,7 @@ function getBodyString(
       const [queryList, queryDict] = util.parseQueryString(request.data);
       if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
         if (eq(exactContentType, "application/x-www-form-urlencoded")) {
-          util.deleteHeader(request, "content-type");
+          request.headers.delete("content-type");
         }
         return [
           "form: " +
@@ -152,8 +152,8 @@ function buildOptionsObject(
 
   const [bodyString, commentedOutBodyString] = getBodyString(request, imports); // can delete headers
 
-  if (request.headers && request.headers.length) {
-    const headers = request.headers.filter((h) => h[1] !== null) as [
+  if (request.headers.length) {
+    const headers = request.headers.headers.filter((h) => h[1] !== null) as [
       Word,
       Word
     ][];
@@ -372,7 +372,7 @@ export function _toNodeGot(
     !methods.includes(methodStr.toUpperCase()) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
-    request.headers ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     request.data ||

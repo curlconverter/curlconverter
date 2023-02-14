@@ -133,9 +133,9 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
   }
 
   let cookieString;
-  if (util.hasHeader(request, "cookie")) {
-    cookieString = util.getHeader(request, "cookie");
-    util.deleteHeader(request, "cookie");
+  if (request.headers.has("cookie")) {
+    cookieString = request.headers.get("cookie");
+    request.headers.delete("cookie");
   }
   if (request.cookieFiles) {
     warnings.push([
@@ -155,19 +155,13 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
     repr(request.urls[0].method) +
     ");\n";
 
-  if ((request.headers && request.headers.length) || request.compressed) {
+  if (request.compressed) {
+    request.headers.setIfMissing("Accept-Encoding", "gzip");
+  }
+  if (request.headers.length) {
     let headersArrayCode = "[\n";
 
-    const headers = request.headers || [];
-    if (request.compressed) {
-      util._setHeaderIfMissing(
-        headers,
-        "Accept-Encoding",
-        new Word("gzip"),
-        request.lowercaseHeaders
-      );
-    }
-    for (const [headerName, headerValue] of headers || []) {
+    for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
         continue;
       }

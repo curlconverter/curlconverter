@@ -1,4 +1,3 @@
-import * as util from "../../util.js";
 import { COMMON_SUPPORTED_ARGS } from "../../util.js";
 import { parseCurlCommand } from "../../parseCommand.js";
 import { Word, eq } from "../../word.js";
@@ -61,22 +60,17 @@ function requestToNodeRequest(
   }
 
   let nodeRequestCode = "";
-  if (request.headers) {
+  if (request.headers.length) {
     nodeRequestCode += defVar(definedVariables, "headers", "{\n");
-    const headerCount = request.headers ? request.headers.length : 0;
     let i = 0;
-    for (const [headerName, headerValue] of request.headers || []) {
+    for (const [headerName, headerValue] of request.headers) {
       nodeRequestCode +=
         "    " +
         repr(headerName, imports) +
         ": " +
         repr(headerValue || new Word(), imports) +
         "";
-      if (i < headerCount - 1) {
-        nodeRequestCode += ",\n";
-      } else {
-        nodeRequestCode += "\n";
-      }
+      nodeRequestCode += i < request.headers.length - 1 ? ",\n" : "\n";
       i++;
     }
     nodeRequestCode += "};\n\n";
@@ -97,11 +91,11 @@ function requestToNodeRequest(
       ",\n    method: " + repr(request.urls[0].method.toUpperCase(), imports);
   }
 
-  if (request.headers) {
+  if (request.headers.length) {
     nodeRequestCode += ",\n";
     nodeRequestCode += "    headers: headers";
 
-    const h = util.getHeader(request, "accept-encoding");
+    const h = request.headers.get("accept-encoding");
     if (h) {
       const acceptedEncodings = h
         .split(",")

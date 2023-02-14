@@ -86,6 +86,7 @@ function getCookies(request: Request): string {
     return "";
   }
 
+  // TODO: this duplicates work, just get it from request.headers
   const cookies = util.joinWords(
     request.cookies.map((c) => util.joinWords(c, "=")),
     "; "
@@ -159,20 +160,15 @@ function getQueryDict(request: Request): string {
 }
 
 function getHeadersDict(request: Request): string {
-  if (!request.headers || !request.headers.length) {
-    return "[]";
-  }
-  const headers = request.headers.filter((h) => h[1] !== null) as [
-    Word,
-    Word
-  ][];
-  if (!headers.length) {
+  if (!request.headers.length) {
     return "[]";
   }
   let dict = "[\n";
   const dictLines: string[] = [];
-  for (const [headerName, headerValue] of headers) {
-    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue)}}`);
+  for (const [headerName, headerValue] of request.headers) {
+    dictLines.push(
+      `    {${repr(headerName)}, ${repr(headerValue ?? new Word())}}`
+    );
   }
   dict += dictLines.join(",\n");
   dict += "\n  ]";
@@ -292,7 +288,7 @@ function requestToElixir(request: Request, warnings: Warnings = []): string {
   }
 
   if (request.cookies) {
-    util.deleteHeader(request, "cookie");
+    request.headers.delete("cookie");
   }
   if (request.cookieFiles) {
     warnings.push([

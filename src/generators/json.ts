@@ -66,7 +66,7 @@ function getDataString(request: Request): {
     return {};
   }
 
-  const contentType = util.getContentType(request);
+  const contentType = request.headers.getContentType();
   if (contentType === "application/json") {
     try {
       const json = JSON.parse(request.data.toString());
@@ -212,8 +212,8 @@ export function _toJsonString(
     ]);
   }
 
-  if (request.headers) {
-    const headers = request.headers
+  if (request.headers.length) {
+    const headers = request.headers.headers
       .filter((h) => h[1] !== null)
       // TODO: warn if contains variables
       .map((h) => [h[0].toString(), h[1]!.toString()]);

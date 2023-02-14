@@ -1,4 +1,3 @@
-import * as headers from "../headers.js";
 import { Word, eq } from "../word.js";
 import {
   CCError,
@@ -1213,7 +1212,7 @@ function getDataString(
   // This can happen when there's extra whitespace in the original data or
   // because the JSON contains numbers that are too big to be stored in
   // JavaScript or because there's objects with duplicate keys.
-  const contentType = headers.getHeader(request, "content-type");
+  const contentType = request.headers.get("content-type");
   let dataAsJson: string | null = null;
   let jsonRoundtrips = false;
   if (
@@ -1241,11 +1240,11 @@ function getDataString(
     const [dataEntries, percentWarn] = dataAsEntries;
     if (
       eq(
-        headers.getHeader(request, "content-type"),
+        request.headers.get("content-type"),
         "application/x-www-form-urlencoded"
       )
     ) {
-      headers.deleteHeader(request, "content-type");
+      request.headers.delete("content-type");
     }
     if (percentWarn) {
       warnings.push([
@@ -1392,7 +1391,7 @@ function requestToPython(
     "content-length": "",
   };
   // https://github.com/icing/blog/blob/main/curl_on_a_weekend.md
-  if (eq(headers.getHeader(request, "te"), "trailers")) {
+  if (eq(request.headers.get("te"), "trailers")) {
     commentedOutHeaders.te = "Requests doesn't support trailers";
   }
 
@@ -1532,7 +1531,7 @@ function requestToPython(
     }
   }
 
-  const contentType = headers.getHeader(request, "content-type");
+  const contentType = request.headers.get("content-type");
   let dataString;
   let jsonDataString;
   let filesString;
@@ -1595,7 +1594,7 @@ function requestToPython(
   }
 
   let headerDict;
-  if (request.headers && request.headers.length) {
+  if (request.headers.length) {
     // TODO: what if there are repeat headers
     headerDict = "headers = {\n";
     for (const [headerName, headerValue] of request.headers) {
@@ -1621,16 +1620,6 @@ function requestToPython(
         ",\n";
     }
     headerDict += "}\n";
-    if (
-      request.headers.length > 1 &&
-      request.headers.every((h) => eq(h[0], h[0].toLowerCase())) &&
-      !(request.http2 || request.http3)
-    ) {
-      warnings.push([
-        "--header",
-        "all the --header/-H names are lowercase, which means this may have been an HTTP/2 or HTTP/3 request. Requests only sends HTTP/1.1",
-      ]);
-    }
   }
 
   let pythonCode = "";
@@ -1815,7 +1804,7 @@ function requestToPython(
       args.push("verify=" + repr(certOrPath, osVars, imports));
     }
     // TODO: does this header check apply to all auth methods?
-    if (urlObj.auth && !headers.hasHeader(request, "Authorization")) {
+    if (urlObj.auth && !request.headers.has("Authorization")) {
       const [user, password] = urlObj.auth;
       let auth =
         "(" +
@@ -2048,16 +2037,20 @@ function requestToPython(
     pythonCode += indent(cookieSaveLine, 1);
   }
 
-  if (request.http2) {
-    warnings.push([
-      "http2",
-      "this was an HTTP/2 request but requests only supports HTTP/1.1",
-    ]);
-  }
   if (request.http3) {
     warnings.push([
       "http3",
       "this was an HTTP/3 request but requests only supports HTTP/1.1",
+    ]);
+  } else if (request.http2) {
+    warnings.push([
+      "http2",
+      "this was an HTTP/2 request but requests only supports HTTP/1.1",
+    ]);
+  } else if (request.headers.lowercase && request.headers.length > 1) {
+    warnings.push([
+      "--header",
+      "all the --header/-H names are lowercase, which means this may have been an HTTP/2 or HTTP/3 request. Requests only sends HTTP/1.1",
     ]);
   }
 

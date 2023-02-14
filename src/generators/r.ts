@@ -101,7 +101,7 @@ function getCookieDict(request: Request): string | null {
   cookieDict += lines.join(",\n");
   cookieDict += "\n)\n";
 
-  util.deleteHeader(request, "Cookie");
+  request.headers.delete("Cookie");
   return cookieDict;
 }
 
@@ -201,7 +201,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   }
 
   let headerDict;
-  if (request.headers && request.headers.length) {
+  if (request.headers.length) {
     const hels: string[] = [];
     headerDict = "headers = c(\n";
     for (const [headerName, headerValue] of request.headers) {
@@ -268,7 +268,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   requestLine += "url = " + repr(url);
 
   let requestLineBody = "";
-  if (request.headers) {
+  if (headerDict) {
     requestLineBody += ", httr::add_headers(.headers=headers)";
   }
   if (request.urls[0].queryList) {

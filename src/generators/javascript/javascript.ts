@@ -305,7 +305,7 @@ function getDataString(
   }
   const originalStringRepr = reprFetch(request.data, isNode, imports);
 
-  const contentType = util.getContentType(request);
+  const contentType = request.headers.getContentType();
   if (contentType === "application/json" && request.data.isString()) {
     try {
       const dataStr = request.data.toString();
@@ -332,11 +332,11 @@ function getDataString(
         // TODO: handle repeated content-type header
         if (
           eq(
-            util.getHeader(request, "content-type"),
+            request.headers.get("content-type"),
             "application/x-www-form-urlencoded"
           )
         ) {
-          util.deleteHeader(request, "content-type");
+          request.headers.delete("content-type");
         }
 
         const queryObj =
@@ -461,7 +461,7 @@ function requestToJavaScriptOrNode(
 
     if (
       !eq(method, "get") ||
-      (request.headers && request.headers.length) ||
+      request.headers.length ||
       // TODO: should authType be per-url too?
       (urlObj.auth && request.authType === "basic") ||
       request.data ||
@@ -481,11 +481,11 @@ function requestToJavaScriptOrNode(
       }
 
       if (
-        (request.headers && request.headers.length) ||
+        request.headers.length ||
         (urlObj.auth && request.authType === "basic")
       ) {
         code += "    headers: {\n";
-        for (const [headerName, headerValue] of request.headers || []) {
+        for (const [headerName, headerValue] of request.headers) {
           code +=
             "        " +
             reprFetch(headerName, isNode, imports) +

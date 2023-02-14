@@ -1,4 +1,3 @@
-import * as util from "../util.js";
 import { COMMON_SUPPORTED_ARGS } from "../util.js";
 import { parseCurlCommand } from "../parseCommand.js";
 import { CCError } from "../util.js";
@@ -188,7 +187,7 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
     goCode += "\twriter.Close()\n";
     goCode += "\n";
 
-    util.deleteHeader(request, "content-type");
+    request.headers.delete("content-type");
   }
 
   if (request.insecure || request.compressed === false) {
@@ -239,8 +238,8 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
     ")\n";
   goCode += IF_ERR;
 
-  if (request.headers) {
-    for (const [headerName, headerValue] of request.headers || []) {
+  if (request.headers.length) {
+    for (const [headerName, headerValue] of request.headers) {
       let start = "\t";
       if (
         headerName.toLowerCase().toString() === "accept-encoding" &&
