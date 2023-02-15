@@ -1,6 +1,5 @@
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
-import type { Request, Warnings } from "../../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
 
 import { toWebServices } from "./webservices.js";
 import { toHTTPInterface } from "./httpinterface.js";

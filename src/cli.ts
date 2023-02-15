@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { CCError, has } from "./util.js";
-import type { Warnings } from "./parseCommand.js";
+import type { Warnings } from "./warnings.js";
 import { Word } from "./word.js";
 import { parseArgs, curlLongOpts, curlShortOpts } from "./curl/opts.js";
 import type { LongOpts, ShortOpts } from "./curl/opts.js";
@@ -36,7 +36,7 @@ import { _toPhp, toPhpWarn } from "./generators/php/php.js";
 import {
   _toPhpRequests,
   toPhpRequestsWarn,
-} from "./generators/php/php-requests.js";
+} from "./generators/php/requests.js";
 import { _toPython, toPythonWarn } from "./generators/python.js";
 import { _toR, toRWarn } from "./generators/r.js";
 import { _toRuby, toRubyWarn } from "./generators/ruby.js";

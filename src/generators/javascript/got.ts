@@ -1,17 +1,18 @@
-import * as util from "../../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
 import { Word, eq } from "../../word.js";
-import { reprObj, bySecondElem, addImport } from "./javascript.js";
-import type { JSImports } from "./javascript.js";
-import type { Request, Warnings } from "../../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
+import { parseQueryString } from "../../query.js";
 
 import {
   reprStr,
   repr,
   reprAsStringToStringDict,
+  reprObj,
   asParseFloatTimes1000,
   asParseInt,
+  type JSImports,
+  addImport,
+  bySecondElem,
 } from "./javascript.js";
 
 const supportedArgs = new Set([
@@ -79,7 +80,7 @@ function getBodyString(
       return [jsonAsJavaScript, roundtrips ? null : simpleString];
     }
     if (contentType === "application/x-www-form-urlencoded") {
-      const [queryList, queryDict] = util.parseQueryString(request.data);
+      const [queryList, queryDict] = parseQueryString(request.data);
       if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
         if (eq(exactContentType, "application/x-www-form-urlencoded")) {
           request.headers.delete("content-type");

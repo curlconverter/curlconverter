@@ -1,8 +1,7 @@
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
-import { Word, eq } from "../word.js";
-import type { Request, Warnings } from "../util.js";
+import { has, isInt } from "../util.js";
+import { Word, eq, joinWords } from "../word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -167,12 +166,12 @@ export function _toCSharp(
   const method = request.urls[0].method.toString();
   let methodStr =
     "new HttpMethod(" + repr(request.urls[0].method, imports) + ")";
-  if (util.has(moreMethods, method)) {
+  if (has(moreMethods, method)) {
     methodStr = "HttpMethod." + moreMethods[method];
   }
 
   const simple =
-    util.has(methods, method) &&
+    has(methods, method) &&
     !(
       request.headers.length ||
       (request.urls[0].auth && request.authType === "basic") ||
@@ -272,7 +271,7 @@ export function _toCSharp(
       // TODO: add request.rawAuth?
       s +=
         'request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(' +
-        repr(util.joinWords(request.urls[0].auth, ":"), imports) +
+        repr(joinWords(request.urls[0].auth, ":"), imports) +
         ")));\n";
     }
     s += "\n";
@@ -377,7 +376,7 @@ export function _toCSharp(
             ");\n";
         }
       } else if (headerNameLower === "content-length") {
-        if (headerValue.isString() && !util.isInt(headerValue.toString())) {
+        if (headerValue.isString() && !isInt(headerValue.toString())) {
           warnings.push([
             "content-length-not-int",
             "Content-Length header value is not a number: " +
@@ -388,7 +387,7 @@ export function _toCSharp(
           "// request.Content.Headers.ContentLength = " +
           headerValue.split("\n")[0].toString() + // TODO: might have variable
           ";\n";
-      } else if (util.has(contentHeaders, headerNameLower)) {
+      } else if (has(contentHeaders, headerNameLower)) {
         // placate type checker
         // TODO: none of these are actually strings.
         s +=

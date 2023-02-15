@@ -5,8 +5,11 @@ import * as curl from "./curl/opts.js";
 import { curlLongOpts, curlShortOpts } from "./curl/opts.js";
 import { buildRequests } from "./request.js";
 import type { Request } from "./request.js";
+import type { Warnings } from "./warnings.js";
 
-export type Warnings = [string, string][];
+export { COMMON_SUPPORTED_ARGS } from "./curl/opts.js";
+
+export type { Request, Warnings };
 
 export function clip(s: string, maxLength = 30): string {
   if (s.length > maxLength) {

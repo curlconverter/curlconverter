@@ -1,8 +1,7 @@
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
 import { CCError } from "../util.js";
 import { Word } from "../word.js";
-import type { Request, Warnings } from "../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
 
 import { reprStr as pyreprStr } from "./python.js";
 

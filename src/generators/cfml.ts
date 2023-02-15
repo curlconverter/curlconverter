@@ -1,7 +1,6 @@
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
 import { Word } from "../word.js";
-import type { Request, Warnings } from "../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 

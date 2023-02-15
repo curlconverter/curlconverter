@@ -1,5 +1,6 @@
-import { CCError, Word } from "../../util.js";
-import type { Request } from "../../util.js";
+import { CCError } from "../../util.js";
+import { Word } from "../../word.js";
+import type { Request } from "../../parseCommand.js";
 
 // Use negative lookahead because " " is a Z but we don't want to escape it
 // Wrap \p{C}|\p{Z} in brakets so that splitting keeps the characters to escape

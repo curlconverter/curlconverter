@@ -1,8 +1,8 @@
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
 import { Word, eq } from "../word.js";
-import type { Request, QueryList, Warnings } from "../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
+import { wordDecodeURIComponent, parseQueryString } from "../query.js";
+import type { QueryList } from "../query.js";
 
 import { reprStr as pyrepr } from "./python.js";
 
@@ -92,7 +92,7 @@ function getCookieDict(request: Request): string | null {
   for (const [key, value] of request.cookies) {
     try {
       // httr percent-encodes cookie values
-      const decoded = util.wordDecodeURIComponent(value.replace(/\+/g, " "));
+      const decoded = wordDecodeURIComponent(value.replace(/\+/g, " "));
       lines.push("  " + reprBacktick(key) + " = " + repr(decoded));
     } catch {
       return null;
@@ -223,7 +223,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
       const filePath = request.data.slice(1);
       dataString = "data = upload_file(" + repr(filePath) + ")";
     } else {
-      const [parsedQueryString] = util.parseQueryString(request.data);
+      const [parsedQueryString] = parseQueryString(request.data);
       // repeat to satisfy type checker
       dataIsList = parsedQueryString && parsedQueryString.length;
       if (dataIsList) {

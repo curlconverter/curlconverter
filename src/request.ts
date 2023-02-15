@@ -1,7 +1,7 @@
 import { Word, eq, mergeWords, joinWords } from "./word.js";
 
 import { CCError, has, isInt } from "./util.js";
-import { warnf } from "./curl/opts.js";
+import { warnf } from "./warnings.js";
 import type {
   GlobalConfig,
   OperationConfig,
@@ -12,6 +12,7 @@ import { Headers, parseCookies, parseCookiesStrict } from "./headers.js";
 import type { Cookies } from "./headers.js";
 
 import { pickAuth, type AuthType } from "./curl/auth.js";
+export { AuthType } from "./curl/auth.js";
 
 import { parseurl, type Curl_URL } from "./curl/url.js";
 
@@ -654,6 +655,7 @@ function buildRequest(
   }
 
   // TODO: ideally we should generate code that explicitly unsets the header too
+  // no HTTP libraries allow that.
   headers.clearNulls();
 
   if (config.data && config.data.length) {

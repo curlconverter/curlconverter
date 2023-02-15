@@ -1,12 +1,12 @@
 import { Word, Token, firstShellToken } from "./word.js";
 
-import { CCError, underlineNode, underlineNodeEnd } from "./util.js";
+import { CCError } from "./util.js";
 import { clip } from "./parseCommand.js";
 
 import parser from "./bashParser.js";
 import type { Parser } from "./bashParser.js";
 
-import type { Warnings } from "./parseCommand.js";
+import { underlineNode, underlineNodeEnd, type Warnings } from "./warnings.js";
 
 const BACKSLASHES = /\\./gs;
 function removeBackslash(m: string) {
@@ -255,7 +255,7 @@ function toWord(
   return new Word(toTokens(node, curlCommand, warnings));
 }
 
-function findCommandNode(
+function findFirstCommandNode(
   ast: Parser.Tree,
   curlCommand: string,
   warnings: Warnings
@@ -447,7 +447,8 @@ export function tokenize(
   warnings: Warnings = []
 ): [Word[], Word?, Word?] {
   const ast = parser.parse(curlCommand);
-  const [command, stdin, stdinFile] = findCommandNode(
+
+  const [command, stdin, stdinFile] = findFirstCommandNode(
     ast,
     curlCommand,
     warnings
@@ -461,11 +462,11 @@ export function tokenize(
       ]);
     }
   }
-
   if (command.childCount < 1) {
     // TODO: better error message.
     throw new CCError('empty "command" node');
   }
+
   // TODO: add childrenForFieldName to tree-sitter node/web bindings
   let commandNameLoc = 0;
   // skip over variable_assignment and file_redirect, until we get to the command_name
@@ -483,7 +484,7 @@ export function tokenize(
       // it must be the command name
       if (n.type !== "command_name") {
         throw new CCError(
-          'found "command"  AST node without a "command_name", found ' +
+          'expected "command_name", "variable_assignment" or "file_redirect" AST node, found ' +
             n.type +
             " instead\n" +
             underlineNode(n, curlCommand)
@@ -492,36 +493,35 @@ export function tokenize(
       break;
     }
   }
-  const [cmdName, ...args] = command.namedChildren.slice(commandNameLoc);
+  const [name, ...args] = command.namedChildren.slice(commandNameLoc);
 
   // None of these things should happen, but just in case
-  if (cmdName === undefined) {
+  if (name === undefined) {
     throw new CCError(
       'found "command" AST node with no "command_name" child\n' +
         underlineNode(command, curlCommand)
     );
   }
-  if (cmdName.childCount < 1 || !cmdName.firstChild) {
+  if (name.childCount < 1 || !name.firstChild) {
     throw new CCError(
-      'found empty "command_name" AST node\n' +
-        underlineNode(cmdName, curlCommand)
+      'found empty "command_name" AST node\n' + underlineNode(name, curlCommand)
     );
-  } else if (cmdName.childCount > 1) {
+  } else if (name.childCount > 1) {
     warnings.push([
       "extra-command_name-children",
       'expected "command_name" node to only have one child but it has ' +
-        cmdName.childCount,
+        name.childCount,
     ]);
   }
 
-  const cmdNameNode = toWord(cmdName.firstChild, curlCommand, warnings);
-  const cmdNameNodeStr = cmdNameNode.toString();
-  const cmdNameShellToken = firstShellToken(cmdNameNode);
+  const nameWord = toWord(name.firstChild, curlCommand, warnings);
+  const nameWordStr = nameWord.toString();
+  const cmdNameShellToken = firstShellToken(nameWord);
   if (cmdNameShellToken) {
     // The most common reason for the command name to contain an expression
     // is probably users accidentally copying a $ from the shell prompt
     // without a space after it
-    if (cmdNameNodeStr !== "$curl") {
+    if (nameWordStr !== "$curl") {
       // TODO: or just assume it evaluates to "curl"?
       throw new CCError(
         "expected command name to be a simple value but found a " +
@@ -530,8 +530,8 @@ export function tokenize(
           underlineNode(cmdNameShellToken.syntaxNode, curlCommand)
       );
     }
-  } else if (cmdNameNodeStr.trim() !== "curl") {
-    const c = cmdNameNodeStr.trim();
+  } else if (nameWordStr.trim() !== "curl") {
+    const c = nameWordStr.trim();
     if (!c) {
       throw new CCError("found command without a command_name");
     }
@@ -542,7 +542,7 @@ export function tokenize(
   }
 
   return [
-    [cmdNameNode, ...args.map((a) => toWord(a, curlCommand, warnings))],
+    [nameWord, ...args.map((a) => toWord(a, curlCommand, warnings))],
     stdin,
     stdinFile,
   ];

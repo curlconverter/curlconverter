@@ -1,9 +1,7 @@
-// Author: ssi-anik (sirajul.islam.anik@gmail.com)
-
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
-import type { AuthType, Request, Warnings } from "../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
+import type { AuthType } from "../request.js";
+import { parseQueryString } from "../query.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -34,6 +32,7 @@ const supportedArgs = new Set([
   "no-ntlm-wb",
 ]);
 
+// TODO: export this or Request
 type JSONOutput = {
   url: string;
   raw_url: string;
@@ -74,7 +73,7 @@ function getDataString(request: Request): {
     } catch (e) {}
   }
 
-  const [parsedQuery, parsedQueryDict] = util.parseQueryString(request.data);
+  const [parsedQuery, parsedQueryDict] = parseQueryString(request.data);
   if (!parsedQuery || !parsedQuery.length) {
     // TODO: this is not a good API
     return {

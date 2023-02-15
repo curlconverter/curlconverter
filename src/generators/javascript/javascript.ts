@@ -1,8 +1,7 @@
-import * as util from "../../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
-import { Word, eq } from "../../word.js";
-import type { Request, Warnings } from "../../util.js";
+import { Word, eq, joinWords } from "../../word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
+import { parseQueryString } from "../../query.js";
 
 import jsescObj from "jsesc";
 
@@ -325,7 +324,7 @@ function getDataString(
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const [queryList, queryDict] = util.parseQueryString(request.data);
+      const [queryList, queryDict] = parseQueryString(request.data);
       if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8
@@ -497,7 +496,7 @@ function requestToJavaScriptOrNode(
           // TODO: if -H 'Authorization:' is passed, don't set this
           code +=
             "        'Authorization': 'Basic ' + btoa(" +
-            reprFetch(util.joinWords(urlObj.auth, ":"), isNode, imports) +
+            reprFetch(joinWords(urlObj.auth, ":"), isNode, imports) +
             "),\n";
         }
 

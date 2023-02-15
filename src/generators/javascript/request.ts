@@ -1,10 +1,8 @@
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
 import { Word, eq } from "../../word.js";
-import type { Request, Warnings } from "../../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
 
-import { repr, reprImportsRequire } from "./javascript.js";
-import type { JSImports } from "./javascript.js";
+import { repr, type JSImports, reprImportsRequire } from "./javascript.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

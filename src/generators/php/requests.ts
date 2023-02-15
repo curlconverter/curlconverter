@@ -1,7 +1,6 @@
-import * as util from "../../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
-import type { Request, Warnings } from "../../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
+import { parseQueryString } from "../../query.js";
 
 import { repr } from "./php.js";
 
@@ -95,7 +94,7 @@ export function _toPhpRequests(
 
   let dataString;
   if (request.data) {
-    const [parsedQueryString] = util.parseQueryString(request.data);
+    const [parsedQueryString] = parseQueryString(request.data);
     dataString = "$data = array(\n";
     if (!parsedQueryString || !parsedQueryString.length) {
       dataString = "$data = " + repr(request.data) + ";";

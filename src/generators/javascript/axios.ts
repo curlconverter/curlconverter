@@ -1,15 +1,8 @@
-import * as util from "../../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
+import { isInt } from "../../util.js";
 import { Word, eq } from "../../word.js";
-import type { Request, Warnings } from "../../util.js";
-import {
-  reprObj,
-  asParseFloatTimes1000,
-  addImport,
-  reprImportsRequire,
-} from "./javascript.js";
-import type { JSImports } from "./javascript.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
+import { parseQueryString } from "../../query.js";
 
 import {
   reprStr,
@@ -17,6 +10,11 @@ import {
   reprAsStringToStringDict,
   reprStringToStringList,
   reprAsStringTuples,
+  reprObj,
+  asParseFloatTimes1000,
+  type JSImports,
+  addImport,
+  reprImportsRequire,
 } from "./javascript.js";
 
 const supportedArgs = new Set([
@@ -63,7 +61,7 @@ function _getDataString(
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = util.parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(request.data);
     if (queryList) {
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8
@@ -208,7 +206,7 @@ function buildConfigObject(
     code += "    proxy: {\n";
     code += "        protocol: " + repr(protocol, imports) + ",\n";
     code += "        host: " + repr(host, imports) + ",\n";
-    if (util.isInt(port)) {
+    if (isInt(port)) {
       code += "        port: " + port + ",\n";
     } else {
       code += "        port: " + reprStr(port) + ",\n";

@@ -1,6 +1,6 @@
+import { CCError, has } from "../util.js";
 import { Word, eq, firstShellToken } from "../word.js";
-import type { Warnings } from "../parseCommand.js";
-import { CCError, has, underlineNode } from "../util.js";
+import { warnf, underlineNode, type Warnings } from "../warnings.js";
 import {
   CURLAUTH_BASIC,
   CURLAUTH_DIGEST,
@@ -11,8 +11,8 @@ import {
   CURLAUTH_AWS_SIGV4,
   CURLAUTH_ANY,
 } from "./auth.js";
-
 import type { DataType } from "../query.js";
+
 export type FormType = "string" | "form";
 
 export interface LongShort {
@@ -732,10 +732,6 @@ export interface GlobalConfig {
   // These are specific to the curlconverter cli
   language?: string;
   stdin?: boolean;
-}
-
-export function warnf(global: GlobalConfig, warning: [string, string]) {
-  global.warnings.push(warning);
 }
 
 function checkSupported(

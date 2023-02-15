@@ -1,8 +1,6 @@
-import * as util from "../../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../../util.js";
-import { parseCurlCommand } from "../../parseCommand.js";
-import { Word } from "../../word.js";
-import type { Request, Warnings } from "../../util.js";
+import { Word, joinWords } from "../../word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
+import type { Request, Warnings } from "../../parseCommand.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -166,7 +164,7 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
         continue;
       }
       headersArrayCode +=
-        "    " + repr(util.joinWords([headerName, headerValue], ": ")) + ",\n";
+        "    " + repr(joinWords([headerName, headerValue], ": ")) + ",\n";
     }
 
     headersArrayCode += "]";
@@ -185,7 +183,7 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
     phpCode += "curl_setopt($ch, CURLOPT_HTTPAUTH, " + authType + ");\n";
     phpCode +=
       "curl_setopt($ch, CURLOPT_USERPWD, " +
-      repr(util.joinWords(request.urls[0].auth, ":")) +
+      repr(joinWords(request.urls[0].auth, ":")) +
       ");\n";
   }
 

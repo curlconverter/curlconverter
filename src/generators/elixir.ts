@@ -1,8 +1,7 @@
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
-import { Word } from "../word.js";
-import type { Request, Warnings } from "../util.js";
+import { Word, joinWords } from "../word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
+import { parseQueryString } from "../query.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -87,8 +86,8 @@ function getCookies(request: Request): string {
   }
 
   // TODO: this duplicates work, just get it from request.headers
-  const cookies = util.joinWords(
-    request.cookies.map((c) => util.joinWords(c, "=")),
+  const cookies = joinWords(
+    request.cookies.map((c) => joinWords(c, "=")),
     "; "
   );
   return `cookie: [${repr(cookies)}]`;
@@ -233,7 +232,7 @@ function getDataString(request: Request): string {
     }
   }
 
-  const [parsedQuery] = util.parseQueryString(request.data);
+  const [parsedQuery] = parseQueryString(request.data);
   if (parsedQuery && parsedQuery.length) {
     const data = parsedQuery.map((p) => {
       const [key, value] = p;

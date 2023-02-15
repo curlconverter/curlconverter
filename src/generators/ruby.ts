@@ -1,9 +1,8 @@
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
-import { CCError } from "../util.js";
+import { CCError, has } from "../util.js";
 import { Word, eq } from "../word.js";
-import type { Request, Warnings, QueryDict } from "../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
+import { parseQueryString, type QueryDict } from "../query.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
@@ -259,7 +258,7 @@ function getDataString(request: Request): [string, boolean] {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, queryAsDict] = util.parseQueryString(request.data);
+  const [_, queryAsDict] = parseQueryString(request.data);
   if (!request.isDataBinary && queryAsDict) {
     // If the original request contained %20, Ruby will encode them as "+"
     return ["req.set_form_data(" + queryToRubyDict(queryAsDict) + ")\n", false];
@@ -429,7 +428,7 @@ function requestToRuby(
     request.urls[0].output
   );
   const method = request.urls[0].method;
-  if (method.isString() && util.has(methods, method.toString())) {
+  if (method.isString() && has(methods, method.toString())) {
     if (method.toString() === "GET" && simple) {
       code += "res = Net::HTTP.get_response(uri)\n";
       return code;

@@ -1,3 +1,6 @@
+import { Word, joinWords } from "../../word.js";
+import type { Request, Warnings } from "../../parseCommand.js";
+
 import {
   reprStr,
   repr,
@@ -11,9 +14,6 @@ import {
   cookieString,
   paramsString,
 } from "./common.js";
-import { Word } from "../../word.js";
-import * as util from "../../util.js";
-import type { Request, Warnings } from "../../util.js";
 
 function isSupportedByWebServices(request: Request): boolean {
   return (
@@ -65,7 +65,7 @@ function parseWebOptions(request: Request): Options {
       options.Password = password;
     } else {
       const authHeader = `['Basic ' matlab.net.base64encode(${repr(
-        util.joinWords(request.urls[0].auth, ":")
+        joinWords(request.urls[0].auth, ":")
       )})]`;
       setHeader(
         headers,

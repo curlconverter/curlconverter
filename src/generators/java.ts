@@ -1,8 +1,6 @@
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
-import { Word } from "../word.js";
-import type { Request, Warnings } from "../util.js";
+import { Word, joinWords } from "../word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -169,7 +167,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
   if (request.urls[0].auth) {
     javaCode +=
       "\t\tbyte[] message = (" +
-      repr(util.joinWords(request.urls[0].auth, ":"), imports) +
+      repr(joinWords(request.urls[0].auth, ":"), imports) +
       ').getBytes("UTF-8");\n';
     javaCode +=
       "\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n";

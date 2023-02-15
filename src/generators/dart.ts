@@ -1,8 +1,7 @@
-import * as util from "../util.js";
-import { COMMON_SUPPORTED_ARGS } from "../util.js";
-import { parseCurlCommand } from "../parseCommand.js";
 import { Word, eq } from "../word.js";
-import type { Request, Warnings } from "../util.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
+import type { Request, Warnings } from "../parseCommand.js";
+import { parseQueryString } from "../query.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 
@@ -159,7 +158,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
 
   const hasData = request.data;
   if (request.data) {
-    const [parsedQuery] = util.parseQueryString(request.data);
+    const [parsedQuery] = parseQueryString(request.data);
     if (parsedQuery && parsedQuery.length) {
       s += "  var data = {\n";
       for (const param of parsedQuery) {
