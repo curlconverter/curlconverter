@@ -1,8 +1,8 @@
-import { Word, eq } from "../word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
-import type { Request, Warnings } from "../parseCommand.js";
-import { wordDecodeURIComponent, parseQueryString } from "../query.js";
-import type { QueryList } from "../query.js";
+import { Word, eq } from "../shell/Word.js";
+import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { wordDecodeURIComponent, parseQueryString } from "../Query.js";
+import type { QueryList } from "../Query.js";
 
 import { reprStr as pyrepr } from "./python.js";
 
@@ -150,55 +150,9 @@ function getFilesString(request: Request): string | undefined {
 }
 
 export function _toR(requests: Request[], warnings: Warnings = []): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   const cookieDict = getCookieDict(request);
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
 
   let headerDict;
   if (request.headers.length) {

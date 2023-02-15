@@ -1,5 +1,5 @@
-import { Word, eq, firstShellToken, joinWords } from "./word.js";
-import { underlineNode, type Warnings } from "./warnings.js";
+import { Word, eq, firstShellToken, joinWords } from "./shell/Word.js";
+import { underlineNode, type Warnings } from "./Warnings.js";
 
 // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Standard_request_fields
 // and then searched for "#" in the RFCs that define each header

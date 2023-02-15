@@ -32,4 +32,4 @@ export { toJavaScriptWarn as toBrowserWarn } from "./generators/javascript/javas
 export { toNodeWarn as toNodeFetchWarn } from "./generators/javascript/javascript.js";
 
 export { CCError } from "./util.js";
-export type { Warnings } from "./warnings.js";
+export type { Warnings } from "./Warnings.js";

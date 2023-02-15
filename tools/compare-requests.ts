@@ -11,7 +11,7 @@ import { diffLines } from "diff";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { parseCurlCommand, type Warnings } from "../src/parseCommand.js";
+import { parseCurlCommand, type Warnings } from "../src/parse.js";
 import { fixturesDir, converters } from "../test/test-utils.js";
 
 const awaitableExec = promisify(exec);

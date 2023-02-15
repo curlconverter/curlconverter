@@ -1,8 +1,9 @@
 import { CCError, has } from "../util.js";
-import { Word, eq } from "../word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
-import type { Request, Warnings } from "../parseCommand.js";
-import { parseQueryString, type QueryDict } from "../query.js";
+import { warnIfPartsIgnored } from "../Warnings.js";
+import { Word, eq } from "../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { parseQueryString, type QueryDict } from "../Query.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
@@ -120,7 +121,7 @@ function repr(w: Word): string {
 }
 
 function objToRuby(
-  obj: Word | string | number | boolean | object | null,
+  obj: Word | Word[] | string | number | boolean | object | null,
   indent = 0
 ): string {
   let s = "";
@@ -187,7 +188,6 @@ function queryToRubyDict(q: QueryDict, indent = 0) {
 
   let s = "{\n";
   for (const [i, [k, v]] of q.entries()) {
-    // repr() because JSON keys must be strings.
     s += " ".repeat(indent + 2) + repr(k) + " => " + objToRuby(v, indent + 2);
     s += i === q.length - 1 ? "\n" : ",\n";
   }
@@ -337,44 +337,7 @@ function requestToRuby(
   warnings: Warnings,
   imports: Set<string>
 ): string {
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
+  warnIfPartsIgnored(request, warnings);
 
   let code = "";
 

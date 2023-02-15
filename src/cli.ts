@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 import { CCError, has } from "./util.js";
-import type { Warnings } from "./warnings.js";
-import { Word } from "./word.js";
+import type { Warnings } from "./Warnings.js";
+import { Word } from "./shell/Word.js";
 import { parseArgs, curlLongOpts, curlShortOpts } from "./curl/opts.js";
 import type { LongOpts, ShortOpts } from "./curl/opts.js";
 
-import { buildRequests } from "./request.js";
-import type { Request } from "./request.js";
+import { buildRequests } from "./Request.js";
+import type { Request } from "./Request.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
 import { _toCFML, toCFMLWarn } from "./generators/cfml.js";

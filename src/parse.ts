@@ -1,13 +1,14 @@
 import { CCError } from "./util.js";
-import { Word } from "./word.js";
-import { tokenize } from "./tokenizer.js";
+import { Word } from "./shell/Word.js";
+import { tokenize } from "./shell/tokenizer.js";
 import * as curl from "./curl/opts.js";
 import { curlLongOpts, curlShortOpts } from "./curl/opts.js";
-import { buildRequests } from "./request.js";
-import type { Request } from "./request.js";
-import type { Warnings } from "./warnings.js";
+import { buildRequests } from "./Request.js";
+import type { Request } from "./Request.js";
+import type { Warnings } from "./Warnings.js";
 
 export { COMMON_SUPPORTED_ARGS } from "./curl/opts.js";
+export { getFirst } from "./Request.js";
 
 export type { Request, Warnings };
 

@@ -1,7 +1,8 @@
-import { Word, eq, joinWords } from "../../word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parseCommand.js";
-import type { Request, Warnings } from "../../parseCommand.js";
-import { parseQueryString } from "../../query.js";
+import { warnIfPartsIgnored } from "../../Warnings.js";
+import { Word, eq, joinWords } from "../../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString } from "../../Query.js";
 
 import jsescObj from "jsesc";
 
@@ -361,23 +362,11 @@ function requestToJavaScriptOrNode(
   imports: JSImports,
   isNode: boolean
 ): string {
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
+  warnIfPartsIgnored(request, warnings, {
+    multipleUrls: true,
+    // Not actually supported, just warned per-URL
+    queryReadsFile: true,
+  });
 
   let code = "";
 

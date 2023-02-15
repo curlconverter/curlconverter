@@ -1,8 +1,8 @@
 import { CCError, has, UTF8encoder } from "../util.js";
-import { Word, eq } from "../word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
-import type { Request, Warnings } from "../parseCommand.js";
-import { DataParam, wordDecodeURIComponent, percentEncode } from "../query.js";
+import { Word, eq } from "../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { DataParam, wordDecodeURIComponent, percentEncode } from "../Query.js";
 
 import {
   parse as jsonParseLossless,

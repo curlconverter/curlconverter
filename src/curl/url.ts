@@ -1,5 +1,5 @@
-import { Word, eq } from "../word.js";
-import { warnf } from "../warnings.js";
+import { Word, eq } from "../shell/Word.js";
+import { warnf } from "../Warnings.js";
 import type { GlobalConfig, OperationConfig } from "./opts.js";
 
 // https://github.com/curl/curl/blob/curl-7_87_0/lib/urlapi.c#L60

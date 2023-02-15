@@ -1,7 +1,8 @@
-import { Word, joinWords } from "../word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parseCommand.js";
-import type { Request, Warnings } from "../parseCommand.js";
-import { parseQueryString } from "../query.js";
+import { warnIfPartsIgnored } from "../Warnings.js";
+import { Word, joinWords } from "../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { parseQueryString } from "../Query.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -254,47 +255,9 @@ function getDataString(request: Request): string {
 }
 
 function requestToElixir(request: Request, warnings: Warnings = []): string {
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
-
+  warnIfPartsIgnored(request, warnings);
   if (request.cookies) {
     request.headers.delete("cookie");
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
   }
 
   // delete!(url, headers \\ [], options \\ [])

@@ -1,12 +1,12 @@
-import { Word, Token, firstShellToken } from "./word.js";
+import { Word, Token, firstShellToken } from "./Word.js";
 
-import { CCError } from "./util.js";
-import { clip } from "./parseCommand.js";
+import { CCError } from "../util.js";
+import { clip } from "../parse.js";
 
-import parser from "./bashParser.js";
-import type { Parser } from "./bashParser.js";
+import parser from "./Parser.js";
+import type { Parser } from "./Parser.js";
 
-import { underlineNode, underlineNodeEnd, type Warnings } from "./warnings.js";
+import { underlineNode, underlineNodeEnd, type Warnings } from "../Warnings.js";
 
 const BACKSLASHES = /\\./gs;
 function removeBackslash(m: string) {
@@ -255,6 +255,8 @@ function toWord(
   return new Word(toTokens(node, curlCommand, warnings));
 }
 
+// TODO: check entire AST for ERROR/MISSING nodes
+// TODO: get all command nodes
 function findFirstCommandNode(
   ast: Parser.Tree,
   curlCommand: string,
@@ -279,11 +281,22 @@ function findFirstCommandNode(
   //   (redirected_statement
   //     body: (command, same as above)
   //     redirect))
-  // TODO: support prefixed variables, e.g. "MY_VAR=hello curl example.com"
+
   // TODO: get only named children?
+  for (const n of [ast.rootNode, ...ast.rootNode.children]) {
+    if (n.type === "ERROR") {
+      warnings.push([
+        "bash",
+        `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
+          underlineNode(n, curlCommand),
+      ]);
+      break;
+    }
+  }
   if (ast.rootNode.type !== "program") {
     // TODO: better error message.
     throw new CCError(
+      // TODO: expand "AST" acronym the first time it appears in an error message
       'expected a "program" top-level AST node, got ' +
         ast.rootNode.type +
         " instead"
@@ -439,6 +452,7 @@ function findFirstCommandNode(
       'expected a "command" or "redirected_statement" AST node, only found "comment" nodes'
     );
   }
+
   return [command, stdin, stdinFile];
 }
 
@@ -453,15 +467,6 @@ export function tokenize(
     curlCommand,
     warnings
   );
-  for (const n of ast.rootNode.children) {
-    if (n.type === "ERROR") {
-      warnings.push([
-        "bash",
-        `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
-          underlineNode(n, curlCommand),
-      ]);
-    }
-  }
   if (command.childCount < 1) {
     // TODO: better error message.
     throw new CCError('empty "command" node');
@@ -469,7 +474,8 @@ export function tokenize(
 
   // TODO: add childrenForFieldName to tree-sitter node/web bindings
   let commandNameLoc = 0;
-  // skip over variable_assignment and file_redirect, until we get to the command_name
+  // TODO: parse variable_assignment nodes and replace variables in the command
+  // TODO: support file_redirect
   for (const n of command.namedChildren) {
     if (n.type === "variable_assignment" || n.type === "file_redirect") {
       warnings.push([

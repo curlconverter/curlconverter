@@ -1,5 +1,5 @@
-import { Word, joinWords } from "../../word.js";
-import type { Request, Warnings } from "../../parseCommand.js";
+import { Word, joinWords } from "../../shell/Word.js";
+import type { Request, Warnings } from "../../parse.js";
 
 import {
   reprStr,

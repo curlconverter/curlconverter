@@ -1,28 +1,29 @@
-import { Word, eq, mergeWords, joinWords } from "./word.js";
+import { Word, eq, mergeWords, joinWords } from "./shell/Word.js";
 
 import { CCError, has, isInt } from "./util.js";
-import { warnf } from "./warnings.js";
+import { warnf, warnIfPartsIgnored } from "./Warnings.js";
+import type { Warnings, Support } from "./Warnings.js";
 import type {
   GlobalConfig,
   OperationConfig,
   SrcDataParam,
 } from "./curl/opts.js";
 
-import { Headers, parseCookies, parseCookiesStrict } from "./headers.js";
-import type { Cookies } from "./headers.js";
+import { Headers, parseCookies, parseCookiesStrict } from "./Headers.js";
+import type { Cookies } from "./Headers.js";
 
 import { pickAuth, type AuthType } from "./curl/auth.js";
 export { AuthType } from "./curl/auth.js";
 
 import { parseurl, type Curl_URL } from "./curl/url.js";
 
-import { parseQueryString, percentEncodePlus } from "./query.js";
+import { parseQueryString, percentEncodePlus } from "./Query.js";
 import type {
   DataParam,
   FileParamType,
   QueryList,
   QueryDict,
-} from "./query.js";
+} from "./Query.js";
 
 import { parseForm } from "./curl/form.js";
 import type { FormParam } from "./curl/form.js";
@@ -121,7 +122,7 @@ export interface Request {
   stdinFile?: Word;
 }
 
-export function buildURL(
+function buildURL(
   global: GlobalConfig,
   config: OperationConfig,
   url: Word,
@@ -768,4 +769,22 @@ export function buildRequests(
   return global.configs.map((config) =>
     buildRequest(global, config, stdin, stdinFile)
   );
+}
+
+export function getFirst(
+  requests: Request[],
+  warnings: Warnings,
+  support?: Support
+): Request {
+  if (requests.length > 1) {
+    warnings.push([
+      "next",
+      "got " +
+        requests.length +
+        " configs because of --next, using the first one",
+    ]);
+  }
+  const request = requests[0];
+  warnIfPartsIgnored(request, warnings, support);
+  return request;
 }

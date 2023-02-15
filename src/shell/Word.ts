@@ -3,8 +3,8 @@
 // They're implemented like this:
 // ["foobar", {type: "variable", value: "baz", text: "$baz"}, "qux"]
 
-import type { Parser } from "./bashParser.js";
-import { CCError } from "./util.js";
+import type { Parser } from "./Parser.js";
+import { CCError } from "../util.js";
 
 export interface ShellToken {
   type: "variable" | "command";

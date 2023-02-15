@@ -1,4 +1,4 @@
-import { Word, eq } from "./word.js";
+import { Word, eq } from "./shell/Word.js";
 import { UTF8encoder } from "./util.js";
 
 export type FileParamType = "string" | "binary" | "urlencode" | "json";
@@ -13,12 +13,14 @@ export type DataParam = Word | FileDataParam;
 export type QueryList = Array<[Word, Word]>;
 export type QueryDict = Array<[Word, Word | Array<Word>]>;
 
+export type Query = [QueryList | null, QueryDict | null];
+
 // Match Python's urllib.parse.quote() behavior
 // https://github.com/python/cpython/blob/3.11/Lib/urllib/parse.py#L826
 // You're not supposed to percent encode non-ASCII characters, but
 // both curl and Python let you do it by encoding each UTF-8 byte.
 // TODO: ignore hex case?
-export function _percentEncode(s: string): string {
+function _percentEncode(s: string): string {
   return [...UTF8encoder.encode(s)]
     .map((b) => {
       if (
@@ -71,11 +73,9 @@ export function wordDecodeURIComponent(s: Word): Word {
   return new Word(newTokens);
 }
 
-export function parseQueryString(
-  // if url is 'example.com?' => s is ''
-  // if url is 'example.com'  => s is null
-  s: Word | null
-): [QueryList | null, QueryDict | null] {
+// if url is 'example.com?' the s is ''
+// if url is 'example.com'  the s is null
+export function parseQueryString(s: Word | null): Query {
   if (!s || s.isEmpty()) {
     return [null, null];
   }

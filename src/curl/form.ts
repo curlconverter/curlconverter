@@ -1,5 +1,5 @@
 import { CCError } from "../util.js";
-import { Word } from "../word.js";
+import { Word } from "../shell/Word.js";
 import { SrcFormParam } from "../curl/opts.js";
 
 // contentFile is the file to read the content from

@@ -1,6 +1,6 @@
 import { CCError, has } from "../util.js";
-import { Word, eq, firstShellToken } from "../word.js";
-import { warnf, underlineNode, type Warnings } from "../warnings.js";
+import { Word, eq, firstShellToken } from "../shell/Word.js";
+import { warnf, underlineNode, type Warnings } from "../Warnings.js";
 import {
   CURLAUTH_BASIC,
   CURLAUTH_DIGEST,
@@ -11,7 +11,7 @@ import {
   CURLAUTH_AWS_SIGV4,
   CURLAUTH_ANY,
 } from "./auth.js";
-import type { DataType } from "../query.js";
+import type { DataType } from "../Query.js";
 
 export type FormType = "string" | "form";
 
@@ -830,12 +830,13 @@ function pushArgValue(
   return pushProp(config, argName, value);
 }
 
+// Might create a new config
 function setArgValue(
   global: GlobalConfig,
   config: OperationConfig,
   argName: string,
   toggle: boolean
-) {
+): OperationConfig {
   switch (argName) {
     case "digest":
       pushProp(config, "authArgs", [argName, toggle]); // error reporting
@@ -924,6 +925,7 @@ export function parseArgs(
 ): GlobalConfig {
   let config: OperationConfig = { authtype: CURLAUTH_BASIC };
   const global: GlobalConfig = { configs: [config], warnings };
+
   for (let i = 1, stillflags = true; i < args.length; i++) {
     const arg: Word = args[i];
     if (stillflags && arg.startsWith("-")) {
