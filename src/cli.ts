@@ -1,16 +1,13 @@
 #!/usr/bin/env node
 
-import { curlLongOpts, curlShortOpts } from "./curlopts.js";
-import type { LongOpts, ShortOpts } from "./curlopts.js";
-import {
-  parseArgs,
-  buildRequests,
-  CCError,
-  has,
-  Warnings,
-  Word,
-} from "./util.js";
-import type { Request } from "./util.js";
+import { CCError, has } from "./util.js";
+import type { Warnings } from "./Warnings.js";
+import { Word } from "./shell/Word.js";
+import { parseArgs, curlLongOpts, curlShortOpts } from "./curl/opts.js";
+import type { LongOpts, ShortOpts } from "./curl/opts.js";
+
+import { buildRequests } from "./Request.js";
+import type { Request } from "./Request.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
 import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
@@ -34,12 +31,12 @@ import { _toNodeGot, toNodeGotWarn } from "./generators/javascript/got.js";
 import {
   _toNodeRequest,
   toNodeRequestWarn,
-} from "./generators/javascript/node-request.js";
+} from "./generators/javascript/request.js";
 import { _toPhp, toPhpWarn } from "./generators/php/php.js";
 import {
   _toPhpRequests,
   toPhpRequestsWarn,
-} from "./generators/php/php-requests.js";
+} from "./generators/php/requests.js";
 import { _toPython, toPythonWarn } from "./generators/python.js";
 import { _toR, toRWarn } from "./generators/r.js";
 import { _toRuby, toRubyWarn } from "./generators/ruby.js";
@@ -166,11 +163,14 @@ function exitWithError(error: unknown, verbose = false): never {
   process.exit(2); // curl exits with 2 so we do too
 }
 
-const argv = process.argv.slice(2).map((arg) => new Word(arg));
+// argv is ['node', 'cli.js', ...]
+// parseArgs() ignores the first argument but we need to remove "node"
+const argv = process.argv.slice(1).map((arg) => new Word(arg));
 let global;
 let warnings: Warnings = [];
 try {
-  // TODO: this means we don't get "unsupported argument" warnings
+  // TODO: we don't get "unsupported argument" warnings because we don't
+  // know which language we're converting to yet.
   global = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
 } catch (e) {
   exitWithError(e);
@@ -185,9 +185,8 @@ if (global.version) {
 }
 const verbose = !!global.verbose;
 const config = global.configs[0];
-
-const language = global.language || defaultLanguage;
 const commandFromStdin = global.stdin;
+const language = global.language || defaultLanguage;
 if (!has(translate, language)) {
   exitWithError(
     new CCError(
@@ -263,15 +262,10 @@ if (commandFromStdin) {
   warnings = printWarnings(warnings, verbose);
   // Warning for users using the pre-4.0 CLI
   if (requests[0].urls[0].originalUrl.startsWith("curl ")) {
-    console.error(
-      "warning: Passing a whole curl command as a single argument?"
-    );
-    console.error(
-      "warning: Pass options to curlconverter as if it was curl instead:"
-    );
-    console.error(
-      "warning: curlconverter 'curl example.com' -> curlconverter example.com"
-    );
+    console.error(`\
+warning: Passing a whole curl command as a single argument?
+warning: Pass options to curlconverter as if it was curl instead:
+warning: curlconverter 'curl example.com' -> curlconverter example.com`);
   }
   try {
     code = generator(requests, warnings);

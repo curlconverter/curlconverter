@@ -1,10 +1,10 @@
-// Author: ssi-anik (sirajul.islam.anik@gmail.com)
-
-import * as util from "../util.js";
-import type { AuthType, Request, Warnings } from "../util.js";
+import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import type { AuthType } from "../Request.js";
+import { parseQueryString } from "../Query.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
 
   "insecure",
   "no-insecure",
@@ -32,6 +32,7 @@ const supportedArgs = new Set([
   "no-ntlm-wb",
 ]);
 
+// TODO: export this or Request
 type JSONOutput = {
   url: string;
   raw_url: string;
@@ -64,7 +65,7 @@ function getDataString(request: Request): {
     return {};
   }
 
-  const contentType = util.getContentType(request);
+  const contentType = request.headers.getContentType();
   if (contentType === "application/json") {
     try {
       const json = JSON.parse(request.data.toString());
@@ -72,7 +73,7 @@ function getDataString(request: Request): {
     } catch (e) {}
   }
 
-  const [parsedQuery, parsedQueryDict] = util.parseQueryString(request.data);
+  const [parsedQuery, parsedQueryDict] = parseQueryString(request.data);
   if (!parsedQuery || !parsedQuery.length) {
     // TODO: this is not a good API
     return {
@@ -136,46 +137,7 @@ export function _toJsonString(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   const requestJson: JSONOutput = {
     url: (request.urls[0].queryDict
@@ -202,16 +164,9 @@ export function _toJsonString(
     // headers, but users of the JSON output would expect to have all the
     // headers in .headers.
   }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
 
-  if (request.headers) {
-    const headers = request.headers
+  if (request.headers.length) {
+    const headers = request.headers.headers
       .filter((h) => h[1] !== null)
       // TODO: warn if contains variables
       .map((h) => [h[0].toString(), h[1]!.toString()]);
@@ -280,7 +235,7 @@ export function toJsonStringWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const json = _toJsonString(requests, warnings);
   return [json, warnings];
 }

@@ -1,19 +1,26 @@
-import * as util from "../../util.js";
-import { Word } from "../../util.js";
-import { reprObj, bySecondElem, addImport } from "./javascript.js";
-import type { JSImports } from "./javascript.js";
-import type { Request, Warnings } from "../../util.js";
+import { Word, eq } from "../../shell/Word.js";
+import {
+  parseCurlCommand,
+  getFirst,
+  COMMON_SUPPORTED_ARGS,
+} from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString } from "../../Query.js";
 
 import {
   reprStr,
   repr,
   reprAsStringToStringDict,
+  reprObj,
   asParseFloatTimes1000,
   asParseInt,
+  type JSImports,
+  addImport,
+  bySecondElem,
 } from "./javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
 
   "max-time",
   "connect-timeout",
@@ -47,13 +54,13 @@ function getBodyString(
   imports: JSImports
 ): [string | null, string | null] {
   // can have things like ; charset=utf-8 which we want to preserve
-  const exactContentType = util.getHeader(request, "content-type");
-  const contentType = util.getContentType(request);
+  const exactContentType = request.headers.get("content-type");
+  const contentType = request.headers.getContentType();
 
   if (request.multipartUploads) {
-    if (util.eq(exactContentType, "multipart/form-data")) {
+    if (eq(exactContentType, "multipart/form-data")) {
       // TODO: comment it out instead?
-      util.deleteHeader(request, "content-type");
+      request.headers.delete("content-type");
     }
     return ["body: form", null];
   }
@@ -71,16 +78,16 @@ function getBodyString(
       const parsed = JSON.parse(dataStr);
       const roundtrips = JSON.stringify(parsed) === dataStr;
       const jsonAsJavaScript = "json: " + reprObj(parsed, 1);
-      if (roundtrips && util.eq(exactContentType, "application/json")) {
-        util.deleteHeader(request, "content-type");
+      if (roundtrips && eq(exactContentType, "application/json")) {
+        request.headers.delete("content-type");
       }
       return [jsonAsJavaScript, roundtrips ? null : simpleString];
     }
     if (contentType === "application/x-www-form-urlencoded") {
-      const [queryList, queryDict] = util.parseQueryString(request.data);
+      const [queryList, queryDict] = parseQueryString(request.data);
       if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
-        if (util.eq(exactContentType, "application/x-www-form-urlencoded")) {
-          util.deleteHeader(request, "content-type");
+        if (eq(exactContentType, "application/x-www-form-urlencoded")) {
+          request.headers.delete("content-type");
         }
         return [
           "form: " +
@@ -150,8 +157,8 @@ function buildOptionsObject(
 
   const [bodyString, commentedOutBodyString] = getBodyString(request, imports); // can delete headers
 
-  if (request.headers && request.headers.length) {
-    const headers = request.headers.filter((h) => h[1] !== null) as [
+  if (request.headers.length) {
+    const headers = request.headers.headers.filter((h) => h[1] !== null) as [
       Word,
       Word
     ][];
@@ -261,53 +268,7 @@ export function _toNodeGot(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   const imports: JSImports = [];
 
@@ -319,7 +280,7 @@ export function _toNodeGot(
       code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
         addImport(imports, "* as fs", "fs");
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
           code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
@@ -370,7 +331,7 @@ export function _toNodeGot(
     !methods.includes(methodStr.toUpperCase()) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
-    request.headers ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     request.data ||
@@ -408,7 +369,7 @@ export function toNodeGotWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeGot = _toNodeGot(requests, warnings);
   return [nodeGot, warnings];
 }

@@ -59,7 +59,7 @@ STR_TYPES = ["string", "filename"]
 ALIAS_TYPES = BOOL_TYPES + STR_TYPES
 RAW_ALIAS_TYPES = ALIAS_TYPES + ["true", "false"]
 
-OUTPUT_FILE = Path(__file__).parent.parent / "src" / "curlopts.ts"
+OUTPUT_FILE = Path(__file__).parent.parent / "src" / "curl" / "opts.ts"
 
 JS_LONG_PARAMS_START = "BEGIN GENERATED LONG OPTIONS"
 JS_LONG_PARAMS_END = "END GENERATED LONG OPTIONS"

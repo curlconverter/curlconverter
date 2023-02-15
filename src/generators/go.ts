@@ -1,11 +1,12 @@
-import * as util from "../util.js";
-import { Word } from "../util.js";
-import type { Request, Warnings } from "../util.js";
+import { CCError } from "../util.js";
+import { Word } from "../shell/Word.js";
+import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
 
 import { reprStr as pyreprStr } from "./python.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",
   "compressed",
@@ -53,7 +54,7 @@ function repr(w: Word, vars: Vars, imports: Set<string>): string {
         i++;
         varName = "cmd" + i;
         if (i > Number.MAX_SAFE_INTEGER) {
-          throw new util.CCError("lol");
+          throw new CCError("lol");
         }
       }
       vars[varName] = execCall;
@@ -78,53 +79,7 @@ function timeoutAtoi(w: Word, vars: Vars, imports: Set<string>): string {
 }
 
 export function _toGo(requests: Request[], warnings: Warnings = []): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   const imports = new Set<string>(["fmt", "io", "log", "net/http"]);
   const vars: Vars = {};
@@ -185,7 +140,7 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
     goCode += "\twriter.Close()\n";
     goCode += "\n";
 
-    util.deleteHeader(request, "content-type");
+    request.headers.delete("content-type");
   }
 
   if (request.insecure || request.compressed === false) {
@@ -236,8 +191,8 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
     ")\n";
   goCode += IF_ERR;
 
-  if (request.headers) {
-    for (const [headerName, headerValue] of request.headers || []) {
+  if (request.headers.length) {
+    for (const [headerName, headerValue] of request.headers) {
       let start = "\t";
       if (
         headerName.toLowerCase().toString() === "accept-encoding" &&
@@ -305,7 +260,7 @@ export function toGoWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const go = _toGo(requests, warnings);
   return [go, warnings];
 }

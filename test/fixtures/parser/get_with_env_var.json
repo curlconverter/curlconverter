@@ -37,16 +37,18 @@
       }
     ],
     "authType": "basic",
-    "lowercaseHeaders": false,
-    "headers": [
-      [
-        "Content-Type",
-        "application/json"
-      ],
-      [
-        "Authorization",
-        "Bearer $DO_API_TOKEN"
+    "headers": {
+      "lowercase": false,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Authorization",
+          "Bearer $DO_API_TOKEN"
+        ]
       ]
-    ]
+    }
   }
 ]

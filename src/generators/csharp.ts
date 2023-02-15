@@ -1,9 +1,10 @@
-import * as util from "../util.js";
-import { Word } from "../util.js";
-import type { Request, Warnings } from "../util.js";
+import { has, isInt } from "../util.js";
+import { Word, eq, joinWords } from "../shell/Word.js";
+import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "compressed",
   "form",
   "form-string",
@@ -95,53 +96,7 @@ export function _toCSharp(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   const imports = new Set<string>(["System.Net.Http"]);
 
@@ -165,14 +120,14 @@ export function _toCSharp(
   const method = request.urls[0].method.toString();
   let methodStr =
     "new HttpMethod(" + repr(request.urls[0].method, imports) + ")";
-  if (util.has(moreMethods, method)) {
+  if (has(moreMethods, method)) {
     methodStr = "HttpMethod." + moreMethods[method];
   }
 
   const simple =
-    util.has(methods, method) &&
+    has(methods, method) &&
     !(
-      request.headers ||
+      request.headers.length ||
       (request.urls[0].auth && request.authType === "basic") ||
       request.multipartUploads ||
       request.data ||
@@ -240,10 +195,10 @@ export function _toCSharp(
     expires: "Expires",
     "last-modified": "LastModified",
   };
-  const reqHeaders = (request.headers || []).filter(
+  const reqHeaders = request.headers.headers.filter(
     (h) => !Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
   );
-  const reqContentHeaders = (request.headers || []).filter((h) =>
+  const reqContentHeaders = request.headers.headers.filter((h) =>
     Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
   );
 
@@ -270,7 +225,7 @@ export function _toCSharp(
       // TODO: add request.rawAuth?
       s +=
         'request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(' +
-        repr(util.joinWords(request.urls[0].auth, ":"), imports) +
+        repr(joinWords(request.urls[0].auth, ":"), imports) +
         ")));\n";
     }
     s += "\n";
@@ -307,7 +262,7 @@ export function _toCSharp(
       const sentFilename = "filename" in m && m.filename;
       s += "content.Add(new ";
       if ("contentFile" in m) {
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             s +=
               "ByteArrayContent(File.ReadAllBytes(" +
@@ -349,7 +304,7 @@ export function _toCSharp(
       }
     }
     s += "request.Content = content;\n";
-  } else if (util.hasHeader(request, "content-type")) {
+  } else if (request.headers.has("content-type")) {
     // This needs to be at the end.
     // If the request has no content, you can't set the content-type
     s += 'request.Content = new StringContent("");\n';
@@ -375,7 +330,7 @@ export function _toCSharp(
             ");\n";
         }
       } else if (headerNameLower === "content-length") {
-        if (headerValue.isString() && !util.isInt(headerValue.toString())) {
+        if (headerValue.isString() && !isInt(headerValue.toString())) {
           warnings.push([
             "content-length-not-int",
             "Content-Length header value is not a number: " +
@@ -386,7 +341,7 @@ export function _toCSharp(
           "// request.Content.Headers.ContentLength = " +
           headerValue.split("\n")[0].toString() + // TODO: might have variable
           ";\n";
-      } else if (util.has(contentHeaders, headerNameLower)) {
+      } else if (has(contentHeaders, headerNameLower)) {
         // placate type checker
         // TODO: none of these are actually strings.
         s +=
@@ -421,7 +376,7 @@ export function toCSharpWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const cSharp = _toCSharp(requests, warnings);
   return [cSharp, warnings];
 }

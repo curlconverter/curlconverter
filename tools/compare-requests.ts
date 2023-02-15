@@ -11,7 +11,7 @@ import { diffLines } from "diff";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import * as utils from "../src/util.js";
+import { parseCurlCommand, type Warnings } from "../src/parse.js";
 import { fixturesDir, converters } from "../test/test-utils.js";
 
 const awaitableExec = promisify(exec);
@@ -148,9 +148,10 @@ const testFile = async (
     throw new Error("input file doesn't exist: " + inputFile);
   }
   const curlCommand = fs.readFileSync(inputFile, "utf8");
-  const requestedUrl = utils
-    .parseCurlCommand(curlCommand)[0]
-    .urls[0].url.replace("http://", "");
+  const requestedUrl = parseCurlCommand(curlCommand)[0].urls[0].url.replace(
+    "http://",
+    ""
+  );
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
     console.error("bad requested URL for " + testFilename);
     console.error("  " + requestedUrl);

@@ -1,3 +1,20 @@
+import { CCError, has } from "../util.js";
+import { Word, eq, firstShellToken } from "../shell/Word.js";
+import { warnf, underlineNode, type Warnings } from "../Warnings.js";
+import {
+  CURLAUTH_BASIC,
+  CURLAUTH_DIGEST,
+  CURLAUTH_NEGOTIATE,
+  CURLAUTH_NTLM,
+  CURLAUTH_NTLM_WB,
+  CURLAUTH_BEARER,
+  CURLAUTH_AWS_SIGV4,
+  CURLAUTH_ANY,
+} from "./auth.js";
+import type { DataType } from "../Query.js";
+
+export type FormType = "string" | "form";
+
 export interface LongShort {
   type: "string" | "bool";
   name: string;
@@ -380,6 +397,7 @@ export const curlLongOpts: LongOpts = {
   "next": { type: "bool", name: "next" },
   // END GENERATED LONG OPTIONS
 
+
   // These are options that curl used to have.
   // Those that don't conflict with the current options are supported by curlconverter.
   // TODO: curl's --long-options can be shortened.
@@ -460,6 +478,60 @@ for (const shortenedOpt of Object.keys(shortened)) {
     curlLongOpts[shortenedOpt] = shortened[shortenedOpt];
   }
 }
+
+// Arguments which are supported by all generators, because they're
+// already handled in util.ts or because they're easy to implement
+export const COMMON_SUPPORTED_ARGS: string[] = [
+  "url",
+  "proto-default",
+  // Method
+  "request",
+  "get",
+  "head",
+  "no-head",
+  // Headers
+  "header", // TODO: can be a file
+  "user-agent",
+  "referer",
+  "range",
+  "time-cond",
+  "cookie", // TODO: can be a file
+  "oauth2-bearer",
+  // Basic Auth
+  "user",
+  "basic",
+  "no-basic",
+  // Data
+  "data",
+  "data-raw",
+  "data-ascii",
+  "data-binary",
+  "data-urlencode",
+  "json",
+  "url-query",
+
+  // Trivial support for globoff means controlling whether or not
+  // backslash-escaped [] {} will have the backslash removed.
+  "globoff",
+];
+
+// Unsupported args that users wouldn't expect to be warned about
+export const ignoredArgs = new Set([
+  "help",
+  "no-help",
+  "silent",
+  "no-silent",
+  "verbose",
+  "no-verbose",
+  "version",
+  "no-version",
+  "progress-bar",
+  "no-progress-bar",
+  "progress-meter",
+  "no-progress-meter",
+  "show-error",
+  "no-show-error",
+]);
 
 export function toBoolean(opt: string): boolean {
   if (opt.startsWith("no-disable-")) {
@@ -553,3 +625,472 @@ export const changedShortOpts: ShortOpts = {
   "*": "used to be another way to specify the url until curl 7.49.0",
   "~": "used to be short for --xattr until curl 7.49.0",
 } as const;
+
+export type SrcFormParam = { value: Word; type: FormType };
+export type SrcDataParam = [DataType, Word];
+
+// The keys should be named the same as the curl options that
+// set them because they appear in error messages.
+export interface OperationConfig {
+  request?: Word; // the HTTP method
+
+  // Not the same name as the curl options that set it
+  authtype: number;
+  authArgs?: [string, boolean][];
+
+  json?: boolean;
+
+  // canBeList
+  url?: Word[];
+  "upload-file"?: Word[];
+  output?: Word[];
+  header?: Word[];
+  "proxy-header"?: Word[];
+  form?: SrcFormParam[];
+  data?: SrcDataParam[];
+  "url-query"?: SrcDataParam[];
+  "mail-rcpt"?: Word[];
+  resolve?: Word[];
+  "connect-to"?: Word[];
+  cookie?: Word[];
+  quote?: Word[];
+  "telnet-option"?: Word[];
+
+  http2?: boolean;
+  http3?: boolean;
+
+  insecure?: boolean;
+  compressed?: boolean;
+
+  head?: boolean;
+  get?: boolean;
+
+  cacert?: Word;
+  capath?: Word;
+  cert?: Word;
+  key?: Word;
+
+  "proto-default"?: Word;
+  globoff?: boolean;
+
+  "max-redirs"?: Word;
+  location?: boolean;
+  "location-trusted"?: boolean;
+
+  proxy?: Word;
+  "proxy-user"?: Word;
+
+  range?: Word;
+  referer?: Word;
+  "time-cond"?: Word;
+  "user-agent"?: Word;
+
+  user?: Word;
+  "aws-sigv4"?: Word;
+  delegation?: Word;
+  "oauth2-bearer"?: Word;
+
+  "max-time"?: Word;
+  "connect-timeout"?: Word;
+
+  "cookie-jar"?: Word;
+
+  // TODO: list every argument
+  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+// These options can be specified more than once, they
+// are always returned as a list.
+// Normally, if you specify some option more than once,
+// curl will just take the last one.
+const canBeList = new Set<keyof OperationConfig>([
+  "url",
+  "upload-file",
+  "output",
+  "header",
+  "proxy-header",
+  "form",
+  "data",
+  "url-query",
+  "mail-rcpt",
+  "resolve",
+  "connect-to",
+  "cookie",
+  "quote",
+  "telnet-option",
+
+  "authArgs", // used for error messages
+]);
+
+export interface GlobalConfig {
+  verbose?: boolean;
+  help?: boolean;
+  version?: boolean;
+
+  configs: OperationConfig[];
+  warnings: Warnings;
+
+  // These are specific to the curlconverter cli
+  language?: string;
+  stdin?: boolean;
+}
+
+function checkSupported(
+  global: GlobalConfig,
+  lookup: string,
+  longArg: LongShort,
+  supportedOpts?: Set<string>
+) {
+  if (
+    supportedOpts &&
+    !supportedOpts.has(longArg.name) &&
+    !ignoredArgs.has(longArg.name)
+  ) {
+    // TODO: better message. include generator name?
+    warnf(global, [
+      longArg.name,
+      "--" +
+        lookup +
+        " is not a supported option" +
+        (longArg.removed ? ", it was removed in curl " + longArg.removed : ""),
+    ]);
+  }
+}
+
+export function pushProp<Type>(
+  obj: { [key: string]: Type[] },
+  prop: string,
+  value: Type
+) {
+  if (!Object.prototype.hasOwnProperty.call(obj, prop)) {
+    obj[prop] = [];
+  }
+  obj[prop].push(value);
+  return obj;
+}
+
+function pushArgValue(
+  global: GlobalConfig,
+  config: OperationConfig,
+  argName: string,
+  value: Word
+) {
+  // Note: cli.ts assumes that the property names on OperationConfig
+  // are the same as the passed in argument in an error message, so
+  // if you do something like
+  // echo curl example.com | curlconverter - --data-raw foo
+  // The error message will say
+  // "if you pass --stdin or -, you can't also pass --data"
+  // instead of "--data-raw".
+  switch (argName) {
+    case "data":
+    case "data-ascii":
+      return pushProp(config, "data", ["data", value]);
+    case "data-binary":
+      return pushProp(config, "data", [
+        // Unless it's a file, --data-binary works the same as --data
+        value.startsWith("@") ? "binary" : "data",
+        value,
+      ]);
+    case "data-raw":
+      return pushProp(config, "data", [
+        // Unless it's a file, --data-raw works the same as --data
+        value.startsWith("@") ? "raw" : "data",
+        value,
+      ]);
+    case "data-urlencode":
+      return pushProp(config, "data", ["urlencode", value]);
+    case "json":
+      config.json = true;
+      return pushProp(config, "data", ["json", value]);
+    case "url-query":
+      if (value.startsWith("+")) {
+        return pushProp(config, "url-query", ["raw", value.slice(1)]);
+      }
+      return pushProp(config, "url-query", ["urlencode", value]);
+
+    case "form":
+      return pushProp(config, "form", { value, type: "form" });
+    case "form-string":
+      return pushProp(config, "form", { value, type: "string" });
+
+    case "aws-sigv4":
+      pushProp(config, "authArgs", [argName, true]); // error reporting
+      config.authtype |= CURLAUTH_AWS_SIGV4;
+      break;
+    case "oauth2-bearer":
+      pushProp(config, "authArgs", [argName, true]); // error reporting
+      config.authtype |= CURLAUTH_BEARER;
+      break;
+
+    case "language": // --language is a curlconverter specific option
+      global[argName] = value.toString();
+      return;
+  }
+
+  return pushProp(config, argName, value);
+}
+
+// Might create a new config
+function setArgValue(
+  global: GlobalConfig,
+  config: OperationConfig,
+  argName: string,
+  toggle: boolean
+): OperationConfig {
+  switch (argName) {
+    case "digest":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
+      if (toggle) {
+        config.authtype |= CURLAUTH_DIGEST;
+      } else {
+        config.authtype &= ~CURLAUTH_DIGEST;
+      }
+      break;
+    case "negotiate":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
+      if (toggle) {
+        config.authtype |= CURLAUTH_NEGOTIATE;
+      } else {
+        config.authtype &= ~CURLAUTH_NEGOTIATE;
+      }
+      break;
+    case "ntlm":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
+      if (toggle) {
+        config.authtype |= CURLAUTH_NTLM;
+      } else {
+        config.authtype &= ~CURLAUTH_NTLM;
+      }
+      break;
+    case "ntlm-wb":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
+      if (toggle) {
+        config.authtype |= CURLAUTH_NTLM_WB;
+      } else {
+        config.authtype &= ~CURLAUTH_NTLM_WB;
+      }
+      break;
+    case "basic":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
+      if (toggle) {
+        config.authtype |= CURLAUTH_BASIC;
+      } else {
+        config.authtype &= ~CURLAUTH_BASIC;
+      }
+      break;
+    case "anyauth":
+      pushProp(config, "authArgs", [argName, toggle]); // error reporting
+      if (toggle) {
+        config.authtype = CURLAUTH_ANY;
+      }
+      break;
+    case "location":
+      config["location"] = toggle;
+      break;
+    case "location-trusted":
+      config["location"] = toggle;
+      config["location-trusted"] = toggle;
+      break;
+    case "verbose":
+    case "version":
+    case "help":
+    case "stdin": // --stdin or - is a curlconverter specific option
+      global[argName] = toggle;
+      break;
+    case "next":
+      // curl ignores --next if the last url node doesn't have a url
+      if (
+        toggle &&
+        config.url &&
+        config.url.length > 0 &&
+        config.url.length >= (config["upload-file"] || []).length &&
+        config.url.length >= (config.output || []).length
+      ) {
+        config = { authtype: CURLAUTH_BASIC };
+        global.configs.push(config);
+      }
+      break;
+    default:
+      config[argName] = toggle;
+  }
+  return config;
+}
+
+export function parseArgs(
+  args: Word[],
+  longOpts: LongOpts = curlLongOpts,
+  shortOpts: ShortOpts = curlShortOpts,
+  supportedOpts?: Set<string>,
+  warnings: Warnings = []
+): GlobalConfig {
+  let config: OperationConfig = { authtype: CURLAUTH_BASIC };
+  const global: GlobalConfig = { configs: [config], warnings };
+
+  for (let i = 1, stillflags = true; i < args.length; i++) {
+    const arg: Word = args[i];
+    if (stillflags && arg.startsWith("-")) {
+      if (eq(arg, "--")) {
+        /* This indicates the end of the flags and thus enables the
+           following (URL) argument to start with -. */
+        stillflags = false;
+      } else if (arg.startsWith("--")) {
+        const shellToken = firstShellToken(arg);
+        if (shellToken) {
+          // TODO: if there's any text after the "--" or after the variable
+          // we could narrow it down.
+          throw new CCError(
+            "this " +
+              shellToken.type +
+              " could " +
+              (shellToken.type === "command" ? "return" : "be") +
+              " anything\n" +
+              underlineNode(shellToken.syntaxNode)
+          );
+        }
+        const argStr = arg.toString();
+
+        const lookup = argStr.slice(2);
+        const longArg = longOpts[lookup];
+        if (longArg === null) {
+          throw new CCError("option " + argStr + ": is ambiguous");
+        }
+        if (typeof longArg === "undefined") {
+          // TODO: extract a list of deleted arguments to check here
+          throw new CCError("option " + argStr + ": is unknown");
+        }
+
+        if (longArg.type === "string") {
+          i++;
+          if (i >= args.length) {
+            throw new CCError("option " + argStr + ": requires parameter");
+          }
+          pushArgValue(global, config, longArg.name, args[i]);
+        } else {
+          config = setArgValue(
+            global,
+            config,
+            longArg.name,
+            toBoolean(argStr.slice(2))
+          ); // TODO: all shortened args work correctly?
+        }
+
+        checkSupported(global, lookup, longArg, supportedOpts);
+      } else {
+        // Short option. These can look like
+        // -X POST    -> {request: 'POST'}
+        // or
+        // -XPOST     -> {request: 'POST'}
+        // or multiple options
+        // -ABCX POST -> {A: true, B: true, C: true, request: 'POST'}
+        // or multiple options and a value for the last one
+        // -ABCXPOST  -> {A: true, B: true, C: true, request: 'POST'}
+
+        // "-" passed to curl as an argument raises an error,
+        // curlconverter's command line uses it to read from stdin
+        if (arg.length === 1) {
+          if (Object.prototype.hasOwnProperty.call(shortOpts, "")) {
+            const shortFor: string = shortOpts[""];
+            const longArg = longOpts[shortFor];
+            if (longArg === null) {
+              throw new CCError("option -: is unknown");
+            }
+            config = setArgValue(
+              global,
+              config,
+              longArg.name,
+              toBoolean(shortFor)
+            );
+          } else {
+            throw new CCError("option -: is unknown");
+          }
+        }
+
+        for (let j = 1; j < arg.length; j++) {
+          const jthChar = arg.get(j);
+          if (typeof jthChar !== "string") {
+            // A bash variable in the middle of a short option
+            throw new CCError(
+              "this " +
+                jthChar.type +
+                " could " +
+                (jthChar.type === "command" ? "return" : "be") +
+                " anything\n" +
+                underlineNode(jthChar.syntaxNode)
+            );
+          }
+          if (!has(shortOpts, jthChar)) {
+            if (has(changedShortOpts, jthChar)) {
+              throw new CCError(
+                "option " + arg + ": " + changedShortOpts[jthChar]
+              );
+            }
+            // TODO: there are a few deleted short options we could report
+            throw new CCError("option " + arg + ": is unknown");
+          }
+          const lookup = jthChar;
+          const shortFor = shortOpts[lookup];
+          const longArg = longOpts[shortFor];
+          if (longArg === null) {
+            // This could happen if curlShortOpts points to a renamed option or has a typo
+            throw new CCError("ambiguous short option -" + jthChar);
+          }
+          if (longArg.type === "string") {
+            let val;
+            if (j + 1 < arg.length) {
+              // treat -XPOST as -X POST
+              val = arg.slice(j + 1);
+              j = arg.length;
+            } else if (i + 1 < args.length) {
+              i++;
+              val = args[i];
+            } else {
+              throw new CCError(
+                "option " + arg.toString() + ": requires parameter"
+              );
+            }
+            pushArgValue(global, config, longArg.name, val);
+          } else {
+            // Use shortFor because -N is short for --no-buffer
+            // and we want to end up with {buffer: false}
+            config = setArgValue(
+              global,
+              config,
+              longArg.name,
+              toBoolean(shortFor)
+            );
+          }
+          if (lookup) {
+            checkSupported(global, lookup, longArg, supportedOpts);
+          }
+        }
+      }
+    } else {
+      if (
+        typeof arg !== "string" &&
+        arg.tokens.length &&
+        typeof arg.tokens[0] !== "string"
+      ) {
+        const isOrBeginsWith = arg.tokens.length === 1 ? "is" : "begins with";
+        warnings.push([
+          "ambiguous argument",
+          "argument " +
+            isOrBeginsWith +
+            " a " +
+            arg.tokens[0].type +
+            ", assuming it's a URL\n" +
+            underlineNode(arg.tokens[0].syntaxNode),
+        ]);
+      }
+      pushArgValue(global, config, "url", arg);
+    }
+  }
+
+  for (const cfg of global.configs) {
+    for (const [arg, values] of Object.entries(cfg)) {
+      if (Array.isArray(values) && !canBeList.has(arg)) {
+        cfg[arg] = values[values.length - 1];
+      }
+    }
+  }
+  return global;
+}

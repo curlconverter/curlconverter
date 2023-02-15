@@ -1,11 +1,13 @@
-import * as util from "../../util.js";
-import { Word } from "../../util.js";
-import type { Request, Warnings } from "../../util.js";
+import { warnIfPartsIgnored } from "../../Warnings.js";
+import { Word, eq, joinWords } from "../../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString } from "../../Query.js";
 
 import jsescObj from "jsesc";
 
 const javaScriptSupportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "upload-file",
   "form",
   "form-string",
@@ -303,7 +305,7 @@ function getDataString(
   }
   const originalStringRepr = reprFetch(request.data, isNode, imports);
 
-  const contentType = util.getContentType(request);
+  const contentType = request.headers.getContentType();
   if (contentType === "application/json" && request.data.isString()) {
     try {
       const dataStr = request.data.toString();
@@ -323,18 +325,18 @@ function getDataString(
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const [queryList, queryDict] = util.parseQueryString(request.data);
+      const [queryList, queryDict] = parseQueryString(request.data);
       if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8
         // TODO: handle repeated content-type header
         if (
-          util.eq(
-            util.getHeader(request, "content-type"),
+          eq(
+            request.headers.get("content-type"),
             "application/x-www-form-urlencoded"
           )
         ) {
-          util.deleteHeader(request, "content-type");
+          request.headers.delete("content-type");
         }
 
         const queryObj =
@@ -360,23 +362,11 @@ function requestToJavaScriptOrNode(
   imports: JSImports,
   isNode: boolean
 ): string {
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
+  warnIfPartsIgnored(request, warnings, {
+    multipleUrls: true,
+    // Not actually supported, just warned per-URL
+    queryReadsFile: true,
+  });
 
   let code = "";
 
@@ -391,7 +381,7 @@ function requestToJavaScriptOrNode(
       code += "form.append(" + reprFetch(m.name, isNode, imports) + ", ";
       if ("contentFile" in m) {
         if (isNode) {
-          if (util.eq(m.contentFile, "-")) {
+          if (eq(m.contentFile, "-")) {
             addImport(imports, "fs", "fs");
             code += "fs.readFileSync(0).toString()";
             if (m.filename) {
@@ -458,8 +448,8 @@ function requestToJavaScriptOrNode(
     const method = urlObj.method.toLowerCase();
 
     if (
-      !util.eq(method, "get") ||
-      (request.headers && request.headers.length) ||
+      !eq(method, "get") ||
+      request.headers.length ||
       // TODO: should authType be per-url too?
       (urlObj.auth && request.authType === "basic") ||
       request.data ||
@@ -468,7 +458,7 @@ function requestToJavaScriptOrNode(
     ) {
       code += ", {\n";
 
-      if (!util.eq(method, "get")) {
+      if (!eq(method, "get")) {
         // TODO: If you pass a weird method to fetch() it won't uppercase it
         // const methods = []
         // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
@@ -479,11 +469,11 @@ function requestToJavaScriptOrNode(
       }
 
       if (
-        (request.headers && request.headers.length) ||
+        request.headers.length ||
         (urlObj.auth && request.authType === "basic")
       ) {
         code += "    headers: {\n";
-        for (const [headerName, headerValue] of request.headers || []) {
+        for (const [headerName, headerValue] of request.headers) {
           code +=
             "        " +
             reprFetch(headerName, isNode, imports) +
@@ -495,7 +485,7 @@ function requestToJavaScriptOrNode(
           // TODO: if -H 'Authorization:' is passed, don't set this
           code +=
             "        'Authorization': 'Basic ' + btoa(" +
-            reprFetch(util.joinWords(urlObj.auth, ":"), isNode, imports) +
+            reprFetch(joinWords(urlObj.auth, ":"), isNode, imports) +
             "),\n";
         }
 
@@ -544,23 +534,23 @@ function requestToJavaScriptOrNode(
         if (!protocol.toBool()) {
           protocol = new Word("http");
         }
-        if (util.eq(protocol, "socks")) {
+        if (eq(protocol, "socks")) {
           protocol = new Word("socks4");
           proxy.replace(/^socks/, "socks4");
         }
 
         if (
-          util.eq(protocol, "socks4") ||
-          util.eq(protocol, "socks5") ||
-          util.eq(protocol, "socks5h") ||
-          util.eq(protocol, "socks4a")
+          eq(protocol, "socks4") ||
+          eq(protocol, "socks5") ||
+          eq(protocol, "socks5h") ||
+          eq(protocol, "socks4a")
         ) {
           addImport(imports, "{ SocksProxyAgent }", "socks-proxy-agent");
           code +=
             "    agent: new SocksProxyAgent(" +
             reprFetch(proxy, isNode, imports) +
             "),\n";
-        } else if (util.eq(protocol, "http") || util.eq(protocol, "https")) {
+        } else if (eq(protocol, "http") || eq(protocol, "https")) {
           addImport(imports, "HttpsProxyAgent", "https-proxy-agent");
           code +=
             "    agent: new HttpsProxyAgent(" +
@@ -637,7 +627,7 @@ export function toJavaScriptWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(
+  const requests = parseCurlCommand(
     curlCommand,
     javaScriptSupportedArgs,
     warnings
@@ -653,11 +643,7 @@ export function toNodeWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(
-    curlCommand,
-    nodeSupportedArgs,
-    warnings
-  );
+  const requests = parseCurlCommand(curlCommand, nodeSupportedArgs, warnings);
   return [_toNode(requests, warnings), warnings];
 }
 export function toNode(curlCommand: string | string[]): string {

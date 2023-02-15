@@ -1,3 +1,5 @@
+// This file replaces Parser.ts when curlconverter is running in the browser.
+
 import Parser from "web-tree-sitter";
 
 // NOTE: Top-level await is not available in Safari until Safari 15

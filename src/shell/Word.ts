@@ -1,7 +1,10 @@
 // Words act like strings. They're lists of characters, except some
 // characters can be shell variables or expressions.
-import type { Parser } from "./bash-parser.js";
-import { CCError } from "./util.js";
+// They're implemented like this:
+// ["foobar", {type: "variable", value: "baz", text: "$baz"}, "qux"]
+
+import type { Parser } from "./Parser.js";
+import { CCError } from "../util.js";
 
 export interface ShellToken {
   type: "variable" | "command";

@@ -1,13 +1,12 @@
-import * as util from "../../util.js";
-import { Word } from "../../util.js";
-import type { Request, Warnings } from "../../util.js";
+import { isInt } from "../../util.js";
+import { Word, eq } from "../../shell/Word.js";
 import {
-  reprObj,
-  asParseFloatTimes1000,
-  addImport,
-  reprImportsRequire,
-} from "./javascript.js";
-import type { JSImports } from "./javascript.js";
+  parseCurlCommand,
+  getFirst,
+  COMMON_SUPPORTED_ARGS,
+} from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString } from "../../Query.js";
 
 import {
   reprStr,
@@ -15,10 +14,15 @@ import {
   reprAsStringToStringDict,
   reprStringToStringList,
   reprAsStringTuples,
+  reprObj,
+  asParseFloatTimes1000,
+  type JSImports,
+  addImport,
+  reprImportsRequire,
 } from "./javascript.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "max-time",
   "form",
   "form-string",
@@ -37,9 +41,9 @@ function _getDataString(
 
   const originalStringRepr = repr(request.data, imports);
 
-  const contentType = util.getContentType(request);
+  const contentType = request.headers.getContentType();
   // can have things like ; charset=utf-8 which we want to preserve
-  const exactContentType = util.getHeader(request, "content-type");
+  const exactContentType = request.headers.get("content-type");
   if (contentType === "application/json" && request.data.isString()) {
     const dataStr = request.data.toString();
     const parsed = JSON.parse(dataStr);
@@ -52,24 +56,21 @@ function _getDataString(
     const jsonAsJavaScript = reprObj(parsed, 1);
     if (
       roundtrips &&
-      util.eq(exactContentType, "application/json") &&
-      util.eq(
-        util.getHeader(request, "accept"),
-        "application/json, text/plain, */*"
-      )
+      eq(exactContentType, "application/json") &&
+      eq(request.headers.get("accept"), "application/json, text/plain, */*")
     ) {
-      util.deleteHeader(request, "content-type");
-      util.deleteHeader(request, "accept");
+      request.headers.delete("content-type");
+      request.headers.delete("accept");
     }
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = util.parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(request.data);
     if (queryList) {
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8
-      if (util.eq(exactContentType, "application/x-www-form-urlencoded")) {
-        util.deleteHeader(request, "content-type");
+      if (eq(exactContentType, "application/x-www-form-urlencoded")) {
+        request.headers.delete("content-type");
       }
 
       const queryObj =
@@ -131,12 +132,12 @@ function buildConfigObject(
 
   const [dataString, commentedOutDataString] = getDataString(request, imports); // can delete headers
 
-  if ((request.headers && request.headers.length) || request.multipartUploads) {
+  if (request.headers.length || request.multipartUploads) {
     code += "    headers: {\n";
     if (request.multipartUploads) {
       code += "        ...form.getHeaders(),\n";
     }
-    for (const [key, value] of request.headers || []) {
+    for (const [key, value] of request.headers) {
       code +=
         "        " +
         repr(key, imports) +
@@ -209,7 +210,7 @@ function buildConfigObject(
     code += "    proxy: {\n";
     code += "        protocol: " + repr(protocol, imports) + ",\n";
     code += "        host: " + repr(host, imports) + ",\n";
-    if (util.isInt(port)) {
+    if (isInt(port)) {
       code += "        port: " + port + ",\n";
     } else {
       code += "        port: " + reprStr(port) + ",\n";
@@ -244,53 +245,7 @@ export function _toNodeAxios(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   let importCode = "const axios = require('axios');\n";
   const imports: JSImports = [];
@@ -322,7 +277,7 @@ export function _toNodeAxios(
       code += "form.append(" + repr(m.name, imports) + ", ";
       if ("contentFile" in m) {
         addImport(imports, "fs", "fs");
-        if (util.eq(m.contentFile, "-")) {
+        if (eq(m.contentFile, "-")) {
           code += "fs.readFileSync(0).toString()";
         } else {
           code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
@@ -359,7 +314,7 @@ export function _toNodeAxios(
     !methods.includes(methodStr) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
-    request.headers ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     (request.data && !dataMethods.includes(methodStr)) ||
@@ -402,7 +357,7 @@ export function _toNodeAxios(
     !methods.includes(methodStr) ||
     request.urls[0].queryList ||
     request.urls[0].queryDict ||
-    (request.headers && request.headers.length) ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     (request.data && !dataMethods.includes(methodStr)) ||
@@ -443,7 +398,7 @@ export function toNodeAxiosWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const nodeAxios = _toNodeAxios(requests, warnings);
   return [nodeAxios, warnings];
 }

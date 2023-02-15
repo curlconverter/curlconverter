@@ -19,6 +19,9 @@
       }
     ],
     "authType": "basic",
-    "lowercaseHeaders": false
+    "headers": {
+      "lowercase": false,
+      "headers": []
+    }
   }
 ]

@@ -1,3 +1,6 @@
+import { Word, joinWords } from "../../shell/Word.js";
+import type { Request, Warnings } from "../../parse.js";
+
 import {
   reprStr,
   repr,
@@ -11,9 +14,6 @@ import {
   cookieString,
   paramsString,
 } from "./common.js";
-import { Word } from "../../util.js";
-import * as util from "../../util.js";
-import type { Request, Warnings } from "../../util.js";
 
 function isSupportedByWebServices(request: Request): boolean {
   return (
@@ -64,19 +64,20 @@ function parseWebOptions(request: Request): Options {
       options.Username = username;
       options.Password = password;
     } else {
-      util._setHeaderIfMissing(
+      const authHeader = `['Basic ' matlab.net.base64encode(${repr(
+        joinWords(request.urls[0].auth, ":")
+      )})]`;
+      setHeader(
         headers,
-        "Authorization",
-        `['Basic ' matlab.net.base64encode(${repr(
-          util.joinWords(request.urls[0].auth, ":")
-        )})]`,
-        request.lowercaseHeaders
+        new Word("Authorization"),
+        new Word(authHeader),
+        request.headers.lowercase
       );
       preformattedHeaders.push("authorization");
     }
   }
 
-  if (request.headers) {
+  if (request.headers.length) {
     for (const [header, value] of request.headers) {
       if (value === null) {
         continue;
@@ -91,15 +92,15 @@ function parseWebOptions(request: Request): Options {
           break;
         case "cookie":
           if (request.cookies) {
-            util._setHeaderIfMissing(
+            setHeader(
               headers,
-              "Cookie",
-              cookieString,
-              request.lowercaseHeaders
+              new Word("Cookie"),
+              new Word(cookieString),
+              request.headers.lowercase
             );
             preformattedHeaders.push("cookie");
           } else {
-            setHeader(headers, header, value, request.lowercaseHeaders);
+            setHeader(headers, header, value, request.headers.lowercase);
           }
           break;
         case "accept":
@@ -130,12 +131,12 @@ function parseWebOptions(request: Request): Options {
               } else if (value.startsWith("audio/")) {
                 options.ContentType = "audio";
               } else {
-                setHeader(headers, header, value, request.lowercaseHeaders);
+                setHeader(headers, header, value, request.headers.lowercase);
               }
           }
           break;
         default:
-          setHeader(headers, header, value, request.lowercaseHeaders);
+          setHeader(headers, header, value, request.headers.lowercase);
       }
     }
   }

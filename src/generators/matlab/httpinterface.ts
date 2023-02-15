@@ -1,3 +1,6 @@
+import { Word } from "../../shell/Word.js";
+import type { Request, Warnings } from "../../parse.js";
+
 import {
   reprStr,
   repr,
@@ -8,11 +11,9 @@ import {
   prepareQueryString,
   prepareCookies,
 } from "./common.js";
-import { Word } from "../../util.js";
-import type { Request, Warnings } from "../../util.js";
 
 function prepareHeaders(request: Request): string | null {
-  if (!request.headers) {
+  if (!request.headers.length) {
     return null;
   }
 
@@ -223,7 +224,7 @@ function prepareData(request: Request) {
 function prepareRequestMessage(request: Request): string {
   const method = request.urls[0].method.toLowerCase();
   let reqMessage: string[] | string = [repr(method)];
-  if (request.headers) {
+  if (request.headers.length) {
     reqMessage.push("header");
   }
   if (containsBody(request)) {
@@ -234,7 +235,7 @@ function prepareRequestMessage(request: Request): string {
   }
 
   if (
-    !request.headers &&
+    !request.headers.length &&
     !containsBody(request) &&
     method.toString() === "get"
   ) {

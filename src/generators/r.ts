@@ -1,11 +1,13 @@
-import * as util from "../util.js";
-import { Word } from "../util.js";
-import type { Request, QueryList, Warnings } from "../util.js";
+import { Word, eq } from "../shell/Word.js";
+import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { wordDecodeURIComponent, parseQueryString } from "../Query.js";
+import type { QueryList } from "../Query.js";
 
 import { reprStr as pyrepr } from "./python.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "insecure",
@@ -90,7 +92,7 @@ function getCookieDict(request: Request): string | null {
   for (const [key, value] of request.cookies) {
     try {
       // httr percent-encodes cookie values
-      const decoded = util.wordDecodeURIComponent(value.replace(/\+/g, " "));
+      const decoded = wordDecodeURIComponent(value.replace(/\+/g, " "));
       lines.push("  " + reprBacktick(key) + " = " + repr(decoded));
     } catch {
       return null;
@@ -99,7 +101,7 @@ function getCookieDict(request: Request): string | null {
   cookieDict += lines.join(",\n");
   cookieDict += "\n)\n";
 
-  util.deleteHeader(request, "Cookie");
+  request.headers.delete("Cookie");
   return cookieDict;
 }
 
@@ -148,58 +150,12 @@ function getFilesString(request: Request): string | undefined {
 }
 
 export function _toR(requests: Request[], warnings: Warnings = []): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   const cookieDict = getCookieDict(request);
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
 
   let headerDict;
-  if (request.headers && request.headers.length) {
+  if (request.headers.length) {
     const hels: string[] = [];
     headerDict = "headers = c(\n";
     for (const [headerName, headerValue] of request.headers) {
@@ -221,7 +177,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
       const filePath = request.data.slice(1);
       dataString = "data = upload_file(" + repr(filePath) + ")";
     } else {
-      const [parsedQueryString] = util.parseQueryString(request.data);
+      const [parsedQueryString] = parseQueryString(request.data);
       // repeat to satisfy type checker
       dataIsList = parsedQueryString && parsedQueryString.length;
       if (dataIsList) {
@@ -255,9 +211,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
     requestLine += request.urls[0].method.toString() + "(";
   } else {
     requestLine += "VERB(" + repr(request.urls[0].method) + ", ";
-    if (
-      !util.eq(request.urls[0].method, request.urls[0].method.toUpperCase())
-    ) {
+    if (!eq(request.urls[0].method, request.urls[0].method.toUpperCase())) {
       warnings.push([
         "non-uppercase-method",
         "httr will uppercase the method: " +
@@ -268,7 +222,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   requestLine += "url = " + repr(url);
 
   let requestLineBody = "";
-  if (request.headers) {
+  if (headerDict) {
     requestLineBody += ", httr::add_headers(.headers=headers)";
   }
   if (request.urls[0].queryList) {
@@ -321,7 +275,7 @@ export function toRWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const r = _toR(requests, warnings);
   return [r, warnings];
 }

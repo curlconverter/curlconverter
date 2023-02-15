@@ -1,9 +1,13 @@
-import * as util from "../../util.js";
-import { Word } from "../../util.js";
-import type { Request, Warnings } from "../../util.js";
+import { Word, joinWords } from "../../shell/Word.js";
+import {
+  parseCurlCommand,
+  getFirst,
+  COMMON_SUPPORTED_ARGS,
+} from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "max-time",
   "insecure",
   "no-insecure",
@@ -89,58 +93,12 @@ export function repr(w: Word): string {
 }
 
 export function _toPhp(requests: Request[], warnings: Warnings = []): string {
-  if (requests.length > 1) {
-    warnings.push([
-      "next",
-      "got " +
-        requests.length +
-        " configs because of --next, using the first one",
-    ]);
-  }
-  const request = requests[0];
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
+  const request = getFirst(requests, warnings);
 
   let cookieString;
-  if (util.hasHeader(request, "cookie")) {
-    cookieString = util.getHeader(request, "cookie");
-    util.deleteHeader(request, "cookie");
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
+  if (request.headers.has("cookie")) {
+    cookieString = request.headers.get("cookie");
+    request.headers.delete("cookie");
   }
 
   let phpCode = "<?php\n";
@@ -153,24 +111,18 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
     repr(request.urls[0].method) +
     ");\n";
 
-  if ((request.headers && request.headers.length) || request.compressed) {
+  if (request.compressed) {
+    request.headers.setIfMissing("Accept-Encoding", "gzip");
+  }
+  if (request.headers.length) {
     let headersArrayCode = "[\n";
 
-    const headers = request.headers || [];
-    if (request.compressed) {
-      util._setHeaderIfMissing(
-        headers,
-        "Accept-Encoding",
-        new Word("gzip"),
-        request.lowercaseHeaders
-      );
-    }
-    for (const [headerName, headerValue] of headers || []) {
+    for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
         continue;
       }
       headersArrayCode +=
-        "    " + repr(util.joinWords([headerName, headerValue], ": ")) + ",\n";
+        "    " + repr(joinWords([headerName, headerValue], ": ")) + ",\n";
     }
 
     headersArrayCode += "]";
@@ -189,7 +141,7 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
     phpCode += "curl_setopt($ch, CURLOPT_HTTPAUTH, " + authType + ");\n";
     phpCode +=
       "curl_setopt($ch, CURLOPT_USERPWD, " +
-      repr(util.joinWords(request.urls[0].auth, ":")) +
+      repr(joinWords(request.urls[0].auth, ":")) +
       ");\n";
   }
 
@@ -259,7 +211,7 @@ export function toPhpWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const php = _toPhp(requests, warnings);
   return [php, warnings];
 }

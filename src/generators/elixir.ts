@@ -1,9 +1,11 @@
-import * as util from "../util.js";
-import { Word } from "../util.js";
-import type { Request, Warnings } from "../util.js";
+import { warnIfPartsIgnored } from "../Warnings.js";
+import { Word, joinWords } from "../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { parseQueryString } from "../Query.js";
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "insecure",
@@ -84,8 +86,9 @@ function getCookies(request: Request): string {
     return "";
   }
 
-  const cookies = util.joinWords(
-    request.cookies.map((c) => util.joinWords(c, "=")),
+  // TODO: this duplicates work, just get it from request.headers
+  const cookies = joinWords(
+    request.cookies.map((c) => joinWords(c, "=")),
     "; "
   );
   return `cookie: [${repr(cookies)}]`;
@@ -157,20 +160,15 @@ function getQueryDict(request: Request): string {
 }
 
 function getHeadersDict(request: Request): string {
-  if (!request.headers || !request.headers.length) {
-    return "[]";
-  }
-  const headers = request.headers.filter((h) => h[1] !== null) as [
-    Word,
-    Word
-  ][];
-  if (!headers.length) {
+  if (!request.headers.length) {
     return "[]";
   }
   let dict = "[\n";
   const dictLines: string[] = [];
-  for (const [headerName, headerValue] of headers) {
-    dictLines.push(`    {${repr(headerName)}, ${repr(headerValue)}}`);
+  for (const [headerName, headerValue] of request.headers) {
+    dictLines.push(
+      `    {${repr(headerName)}, ${repr(headerValue ?? new Word())}}`
+    );
   }
   dict += dictLines.join(",\n");
   dict += "\n  ]";
@@ -235,7 +233,7 @@ function getDataString(request: Request): string {
     }
   }
 
-  const [parsedQuery] = util.parseQueryString(request.data);
+  const [parsedQuery] = parseQueryString(request.data);
   if (parsedQuery && parsedQuery.length) {
     const data = parsedQuery.map((p) => {
       const [key, value] = p;
@@ -257,47 +255,9 @@ function getDataString(request: Request): string {
 }
 
 function requestToElixir(request: Request, warnings: Warnings = []): string {
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
-
+  warnIfPartsIgnored(request, warnings);
   if (request.cookies) {
-    util.deleteHeader(request, "cookie");
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
+    request.headers.delete("cookie");
   }
 
   // delete!(url, headers \\ [], options \\ [])
@@ -382,7 +342,7 @@ export function toElixirWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const elixir = _toElixir(requests, warnings);
   return [elixir, warnings];
 }

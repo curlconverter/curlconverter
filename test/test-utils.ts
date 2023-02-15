@@ -1,6 +1,6 @@
 import * as curlconverter from "../src/index.js";
-import * as utils from "../src/util.js";
-import { Word } from "../src/util.js";
+import { Word } from "../src/shell/Word.js";
+import { parseCurlCommand } from "../src/parse.js";
 
 import fs from "fs";
 import path from "path";
@@ -29,7 +29,7 @@ function stringifyWords(o: any): any {
 }
 // Special case that returns the parsed argument object
 function toParser(curl: string | string[]): string {
-  const parserOutput = utils.parseCurlCommand(curl);
+  const parserOutput = parseCurlCommand(curl);
   const code = JSON.stringify(stringifyWords(parserOutput), null, 2);
   return code + "\n";
 }

@@ -17,12 +17,9 @@ export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 export {
   toNodeRequest,
   toNodeRequestWarn,
-} from "./generators/javascript/node-request.js";
+} from "./generators/javascript/request.js";
 export { toPhp, toPhpWarn } from "./generators/php/php.js";
-export {
-  toPhpRequests,
-  toPhpRequestsWarn,
-} from "./generators/php/php-requests.js";
+export { toPhpRequests, toPhpRequestsWarn } from "./generators/php/requests.js";
 export { toPython, toPythonWarn } from "./generators/python.js";
 export { toR, toRWarn } from "./generators/r.js";
 export { toRuby, toRubyWarn } from "./generators/ruby.js";
@@ -34,5 +31,5 @@ export { toNode as toNodeFetch } from "./generators/javascript/javascript.js";
 export { toJavaScriptWarn as toBrowserWarn } from "./generators/javascript/javascript.js";
 export { toNodeWarn as toNodeFetchWarn } from "./generators/javascript/javascript.js";
 
-export { CCError, Word } from "./util.js";
-export type { ShellToken, Token } from "./util.js";
+export { CCError } from "./util.js";
+export type { Warnings } from "./Warnings.js";

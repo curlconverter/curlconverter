@@ -1,13 +1,16 @@
-import * as util from "../util.js";
-import { Word } from "../util.js";
-import type { Request, Warnings, QueryDict } from "../util.js";
+import { CCError, has } from "../util.js";
+import { warnIfPartsIgnored } from "../Warnings.js";
+import { Word, eq } from "../shell/Word.js";
+import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import type { Request, Warnings } from "../parse.js";
+import { parseQueryString, type QueryDict } from "../Query.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
 // https://github.com/augustl/net-http-cheat-sheet
 
 const supportedArgs = new Set([
-  ...util.COMMON_SUPPORTED_ARGS,
+  ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
   "http0.9",
@@ -39,7 +42,6 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
       quote = '"';
     }
   }
-  const endQuote = quote.length > 1 ? quote[1] : quote[0];
   const regexEscape =
     quote === "'"
       ? regexSingleEscape
@@ -47,8 +49,11 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
       ? regexDoubleEscape
       : regexCurlyEscape;
 
+  const startQuote = quote[0];
+  const endQuote = quote === "{}" ? quote[1] : quote[0];
+
   return (
-    quote +
+    startQuote +
     s.replace(regexEscape, (c: string, index: number, string: string) => {
       switch (c[0]) {
         case " ":
@@ -116,7 +121,7 @@ function repr(w: Word): string {
 }
 
 function objToRuby(
-  obj: Word | string | number | boolean | object | null,
+  obj: Word | Word[] | string | number | boolean | object | null,
   indent = 0
 ): string {
   let s = "";
@@ -168,7 +173,7 @@ function objToRuby(
         }
         break;
       default:
-        throw new util.CCError(
+        throw new CCError(
           "unexpected object type that shouldn't appear in JSON: " + typeof obj
         );
     }
@@ -183,7 +188,6 @@ function queryToRubyDict(q: QueryDict, indent = 0) {
 
   let s = "{\n";
   for (const [i, [k, v]] of q.entries()) {
-    // repr() because JSON keys must be strings.
     s += " ".repeat(indent + 2) + repr(k) + " => " + objToRuby(v, indent + 2);
     s += i === q.length - 1 ? "\n" : ",\n";
   }
@@ -198,7 +202,7 @@ function getDataString(request: Request): [string, boolean] {
 
   if (!request.isDataRaw && request.data.startsWith("@")) {
     let filePath = request.data.slice(1);
-    if (util.eq(filePath, "-")) {
+    if (eq(filePath, "-")) {
       if (request.stdinFile) {
         filePath = request.stdinFile;
       } else if (request.stdin) {
@@ -230,10 +234,10 @@ function getDataString(request: Request): [string, boolean] {
     }
   }
 
-  const contentTypeHeader = util.getHeader(request, "content-type");
+  const contentTypeHeader = request.headers.get("content-type");
   const isJson =
     contentTypeHeader &&
-    util.eq(contentTypeHeader.split(";")[0].trim(), "application/json");
+    eq(contentTypeHeader.split(";")[0].trim(), "application/json");
   if (isJson && request.data.isString()) {
     try {
       const dataAsStr = request.data.toString();
@@ -254,7 +258,7 @@ function getDataString(request: Request): [string, boolean] {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, queryAsDict] = util.parseQueryString(request.data);
+  const [_, queryAsDict] = parseQueryString(request.data);
   if (!request.isDataBinary && queryAsDict) {
     // If the original request contained %20, Ruby will encode them as "+"
     return ["req.set_form_data(" + queryToRubyDict(queryAsDict) + ")\n", false];
@@ -276,7 +280,7 @@ function getFilesString(request: Request): string {
     const name = repr(m.name); // TODO: what if name is empty string?
     const sentFilename = "filename" in m && m.filename && repr(m.filename);
     if ("contentFile" in m) {
-      if (util.eq(m.contentFile, "-")) {
+      if (eq(m.contentFile, "-")) {
         if (request.stdinFile) {
           return [
             name,
@@ -333,44 +337,7 @@ function requestToRuby(
   warnings: Warnings,
   imports: Set<string>
 ): string {
-  if (request.urls.length > 1) {
-    warnings.push([
-      "multiple-urls",
-      "found " +
-        request.urls.length +
-        " URLs, only the first one will be used: " +
-        request.urls
-          .map((u) => JSON.stringify(u.originalUrl.toString()))
-          .join(", "),
-    ]);
-  }
-  if (request.dataReadsFile) {
-    warnings.push([
-      "unsafe-data",
-      // TODO: better wording
-      "the data is not correct, " +
-        JSON.stringify("@" + request.dataReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.dataReadsFile),
-    ]);
-  }
-  if (request.urls[0].queryReadsFile) {
-    warnings.push([
-      "unsafe-query",
-      // TODO: better wording
-      "the URL query string is not correct, " +
-        JSON.stringify("@" + request.urls[0].queryReadsFile) +
-        " means it should read the file " +
-        JSON.stringify(request.urls[0].queryReadsFile),
-    ]);
-  }
-  if (request.cookieFiles) {
-    warnings.push([
-      "cookie-files",
-      "passing a file for --cookie/-b is not supported: " +
-        request.cookieFiles.map((c) => JSON.stringify(c.toString())).join(", "),
-    ]);
-  }
+  warnIfPartsIgnored(request, warnings);
 
   let code = "";
 
@@ -414,7 +381,7 @@ function requestToRuby(
   }
 
   const simple = !(
-    request.headers ||
+    request.headers.length ||
     request.urls[0].auth ||
     request.multipartUploads ||
     request.data ||
@@ -424,7 +391,7 @@ function requestToRuby(
     request.urls[0].output
   );
   const method = request.urls[0].method;
-  if (method.isString() && util.has(methods, method.toString())) {
+  if (method.isString() && has(methods, method.toString())) {
     if (method.toString() === "GET" && simple) {
       code += "res = Net::HTTP.get_response(uri)\n";
       return code;
@@ -450,8 +417,8 @@ function requestToRuby(
   let reqBody;
   if (request.urls[0].uploadFile) {
     if (
-      util.eq(request.urls[0].uploadFile, "-") ||
-      util.eq(request.urls[0].uploadFile, ".")
+      eq(request.urls[0].uploadFile, "-") ||
+      eq(request.urls[0].uploadFile, ".")
     ) {
       reqBody = "req.body = STDIN.read\n";
     } else {
@@ -466,18 +433,18 @@ function requestToRuby(
     }
   } else if (request.multipartUploads) {
     reqBody = getFilesString(request);
-    util.deleteHeader(request, "content-type");
+    request.headers.delete("content-type");
   }
 
-  const contentType = util.getHeader(request, "content-type");
+  const contentType = request.headers.get("content-type");
   if (contentType !== null && contentType !== undefined) {
     // If the content type has stuff after the content type, like
     // application/x-www-form-urlencoded; charset=UTF-8
     // then we generate misleading code here because the charset won't be sent.
     code += "req.content_type = " + repr(contentType) + "\n";
-    util.deleteHeader(request, "content-type");
+    request.headers.delete("content-type");
   }
-  if (request.headers && request.headers.length) {
+  if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       if (
         ["accept-encoding", "content-length"].includes(
@@ -537,8 +504,8 @@ function requestToRuby(
   code += "  http.request(req)\n";
   code += "end";
 
-  if (request.urls[0].output && !util.eq(request.urls[0].output, "/dev/null")) {
-    if (util.eq(request.urls[0].output, "-")) {
+  if (request.urls[0].output && !eq(request.urls[0].output, "/dev/null")) {
+    if (eq(request.urls[0].output, "-")) {
       code += "\nputs res.body";
     } else {
       code += "\nFile.write(" + repr(request.urls[0].output) + ", res.body)";
@@ -566,7 +533,7 @@ export function toRubyWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = util.parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
   const ruby = _toRuby(requests, warnings);
   return [ruby, warnings];
 }
