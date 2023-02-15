@@ -34,9 +34,11 @@ const supportedArgs = new Set([
   "no-ntlm-wb",
 
   "http1.1",
-  "http2", // not supported, just better warning message
+  // These are not supported, just better warning message
+  "http2",
   "http2-prior-knowledge",
-  "http3", // not supported, just better warning message
+  "http3",
+  "http3-only",
 
   "cookie-jar",
 

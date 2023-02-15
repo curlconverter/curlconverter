@@ -206,6 +206,7 @@ export const curlLongOpts: LongOpts = {
   "http2": { type: "bool", name: "http2" },
   "http2-prior-knowledge": { type: "bool", name: "http2-prior-knowledge" },
   "http3": { type: "bool", name: "http3" },
+  "http3-only": { type: "bool", name: "http3-only" },
   "http0.9": { type: "bool", name: "http0.9" },
   "no-http0.9": { type: "bool", name: "http0.9", expand: false },
   "tlsv1": { type: "bool", name: "tlsv1" },
@@ -658,6 +659,7 @@ export interface OperationConfig {
 
   http2?: boolean;
   http3?: boolean;
+  "http3-only"?: boolean;
 
   insecure?: boolean;
   compressed?: boolean;

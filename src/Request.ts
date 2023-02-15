@@ -750,8 +750,8 @@ function buildRequest(
   if (http2) {
     request.http2 = http2;
   }
-  if (config.http3) {
-    request.http3 = config.http3;
+  if (config.http3 || config["http3-only"]) {
+    request.http3 = true;
   }
 
   return request;
