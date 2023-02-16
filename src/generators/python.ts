@@ -534,7 +534,7 @@ export function repr(
       subprocessCall += ").stdout";
 
       // TODO: generate a descriptive command name with ChatGPT
-      // TODO: if there's only one command, it would be nice to name the variable "command"
+      // TODO: if there's only one command, name the variable "command" instead of "command1"
       let i = 1;
       let pyVar = "command" + i;
       // We need to check because we often try to represent the same

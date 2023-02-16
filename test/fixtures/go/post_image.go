@@ -14,7 +14,7 @@ import (
 func main() {
 	form := new(bytes.Buffer)
 	writer := multipart.NewWriter(form)
-	fw, err := writer.CreateFormFile("image.jpg", filepath.Base("image.jpg"))
+	fw, err := writer.CreateFormFile("image", filepath.Base("image.jpg"))
 	if err != nil {
 		log.Fatal(err)
 	}

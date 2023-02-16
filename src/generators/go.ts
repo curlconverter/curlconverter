@@ -99,7 +99,7 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
         firstFile = false;
         // TODO: Go sends name=<filename> but curl always sends name="data"
         goCode += `\tfw, err ${op} writer.CreateFormFile(${repr(
-          m.contentFile,
+          m.name,
           vars,
           imports
         )}, filepath.Base(${repr(

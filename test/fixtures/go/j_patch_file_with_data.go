@@ -14,7 +14,7 @@ import (
 func main() {
 	form := new(bytes.Buffer)
 	writer := multipart.NewWriter(form)
-	fw, err := writer.CreateFormFile("./test/fixtures/curl_commands/delete.sh", filepath.Base("./test/fixtures/curl_commands/delete.sh"))
+	fw, err := writer.CreateFormFile("file1", filepath.Base("./test/fixtures/curl_commands/delete.sh"))
 	if err != nil {
 		log.Fatal(err)
 	}

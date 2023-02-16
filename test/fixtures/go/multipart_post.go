@@ -20,7 +20,7 @@ func main() {
 	}
 	_, err = formField.Write([]byte(`{"name":"tigers.jpeg", "parent":{"id":"11446498"}}`))
 
-	fw, err := writer.CreateFormFile("myfile.jpg", filepath.Base("myfile.jpg"))
+	fw, err := writer.CreateFormFile("file", filepath.Base("myfile.jpg"))
 	if err != nil {
 		log.Fatal(err)
 	}

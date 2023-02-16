@@ -19,8 +19,16 @@ const awaitableExec = promisify(exec);
 const DEFAULT_PORT = 28139; // chosen randomly
 const EXPECTED_URL = "localhost:" + DEFAULT_PORT;
 
+const MINIMAL_HTTP_RESPONSE = `\
+HTTP/1.1 200 OK
+Content-Length: 12
+Content-Type: text/plain; charset=utf-8
+
+Hello World!`.replace(/\n/g, "\r\n");
+
 const setup = {
-  // ansible: '',
+  // ansible: "",
+  // cfml: "",
   csharp:
     "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
   dart: "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
@@ -30,11 +38,15 @@ const setup = {
   // (on not macOS (Linux and maybe Windows))
   // elixir:
   //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-  go: "mkdir -p /tmp/curlconverter-go",
-  // java: '',
-  // json: '',
-  // matlab: '',
+  go: "",
+  java: "mkdir /tmp/curlconverter-java",
+  // javascript: "",
+  // json: "",
+  // matlab: "",
   node: "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
+  // "node-axios": "",
+  // "node-got": "",
+  // "node-request": "",
   php: "",
   python: "",
   r: "",
@@ -43,17 +55,22 @@ const setup = {
 } as const;
 
 const executables = {
-  // ansible: '',
+  // ansible: "",
+  // cfml: "",
   csharp:
     "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
   dart: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
   elixir:
     "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
   go: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
-  // java: '',
-  // json: '',
-  // matlab: '',
+  java: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
+  // javascript: "",
+  // json: "",
+  // matlab: "",
   node: "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
+  // "node-axios": "",
+  // "node-got": "",
+  // "node-request": "",
   php: "php <file>",
   python: "python3 <file>",
   r: "r < <file> --no-save",
@@ -110,8 +127,8 @@ const testFile = async (
     socket.on("data", (data) => {
       // TODO: this is not a Buffer, it's a string...
       rawRequests.push((data as unknown as string).replace(/\r\n/g, "\n"));
-      // TODO: what is this?
-      if (!socket.write("Data ::" + data)) {
+
+      if (!socket.write(MINIMAL_HTTP_RESPONSE)) {
         socket.pause();
       }
     });
@@ -177,9 +194,9 @@ const testFile = async (
       try {
         await awaitableExec(command);
       } catch (e) {
-        // Uncomment for debugging. An error always happens because
-        // our server doesn't respond to requests.
-        // console.error(e)
+        // Uncomment for debugging. An error can happen because
+        // our server responds with a generic response.
+        console.error(e);
       }
     } else {
       console.error(

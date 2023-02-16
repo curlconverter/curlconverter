@@ -17,8 +17,7 @@ export type Query = [QueryList | null, QueryDict | null];
 
 // Match Python's urllib.parse.quote() behavior
 // https://github.com/python/cpython/blob/3.11/Lib/urllib/parse.py#L826
-// You're not supposed to percent encode non-ASCII characters, but
-// both curl and Python let you do it by encoding each UTF-8 byte.
+// curl and Python let you send non-ASCII characters by encoding each UTF-8 byte.
 // TODO: ignore hex case?
 function _percentEncode(s: string): string {
   return [...UTF8encoder.encode(s)]
@@ -46,18 +45,22 @@ function _percentEncode(s: string): string {
 export function percentEncode(s: Word): Word {
   const newTokens = [];
   for (const token of s.tokens) {
-    newTokens.push(typeof token === "string" ? _percentEncode(token) : token);
+    if (typeof token === "string") {
+      newTokens.push(_percentEncode(token));
+    } else {
+      newTokens.push(token);
+    }
   }
   return new Word(newTokens);
 }
 export function percentEncodePlus(s: Word): Word {
   const newTokens = [];
   for (const token of s.tokens) {
-    newTokens.push(
-      typeof token === "string"
-        ? _percentEncode(token).replace(/%20/g, "+")
-        : token
-    );
+    if (typeof token === "string") {
+      newTokens.push(_percentEncode(token).replace(/%20/g, "+"));
+    } else {
+      newTokens.push(token);
+    }
   }
   return new Word(newTokens);
 }
@@ -66,9 +69,11 @@ export function percentEncodePlus(s: Word): Word {
 export function wordDecodeURIComponent(s: Word): Word {
   const newTokens = [];
   for (const token of s.tokens) {
-    newTokens.push(
-      typeof token === "string" ? decodeURIComponent(token) : token
-    );
+    if (typeof token === "string") {
+      newTokens.push(decodeURIComponent(token));
+    } else {
+      newTokens.push(token);
+    }
   }
   return new Word(newTokens);
 }
