@@ -66,11 +66,12 @@ export function warnIfPartsIgnored(
           .join(", "),
     ]);
   }
-  if (request.dataReadsFile && !support?.multipleUrls) {
+  if (request.dataReadsFile && !support?.dataReadsFile) {
     warnings.push([
       "unsafe-data",
       // TODO: better wording. Could be "body:" too
       "the generated data content is wrong, " +
+        // TODO: might not come from "@"
         JSON.stringify("@" + request.dataReadsFile) +
         " means read the file " +
         JSON.stringify(request.dataReadsFile),

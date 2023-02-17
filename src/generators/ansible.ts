@@ -1,7 +1,7 @@
-import { eq } from "../shell/Word.js";
+import { Word, eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
-import { QueryList, QueryDict } from "../Query.js";
+import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
 
 import yaml from "yamljs";
 
@@ -29,7 +29,7 @@ const supportedArgs = new Set([
   "aws-sigv4",
   "negotiate",
   "no-negotiate",
-  "delegation", // GSS/kerberos
+  // "delegation", // GSS/kerberos
   // Not suported, just more specific warning
   "ntlm",
   "no-ntlm",
@@ -80,7 +80,7 @@ type AnsibleURI = {
   url_password?: string;
   force_basic_auth?: boolean;
   use_gssapi?: boolean;
-  use_netrc?: boolean; // default: true
+  use_netrc?: boolean; // true
 
   timeout?: number; // 30
 
@@ -99,22 +99,21 @@ type AnsibleURI = {
   client_key?: string;
   validate_certs?: boolean;
 
-  unix_socket?: string; // TODO
+  unix_socket?: string;
 };
 
-function getDataString(request: Request): [Body, BodyFormat] | undefined {
+function getDataString(
+  request: Request
+): [Body, BodyFormat] | [string, "src"] | undefined {
   if (!request.data || !request.data.isString()) {
     return;
   }
-
   const data = request.data.toString();
 
   const contentType = request.headers.getContentType();
   // TODO: delete Content-Type header when it's what Ansible will send anyway
   // const exactContentType = request.headers.get("Content-Type");
-
   if (contentType === "application/json") {
-    // TODO: warn if contains variables
     try {
       const dataAsJson = JSON.parse(data);
       // TODO: if doesn't roundtrip, add commented out raw string
@@ -123,11 +122,33 @@ function getDataString(request: Request): [Body, BodyFormat] | undefined {
       return [dataAsJson, "json"];
     } catch {}
   } else if (contentType === "application/x-www-form-urlencoded") {
-    if (request.urls[0].queryDict) {
-      return [request.urls[0].queryDict, "form-urlencoded"];
+    if (request.dataArray && request.dataArray.length === 1) {
+      if (
+        !(request.dataArray[0] instanceof Word) &&
+        request.dataArray[0][1] === null
+      ) {
+        return [request.dataArray[0][2].toString(), "src"];
+      }
     }
-    if (request.urls[0].queryList) {
-      return [request.urls[0].queryList, "form-urlencoded"];
+    const [queryList, queryDict] = parseQueryString(request.data);
+    if (queryDict) {
+      return [
+        Object.fromEntries(
+          queryDict.map((q) => [
+            q[0].toString(),
+            Array.isArray(q[1])
+              ? q[1].map((qv) => qv.toString())
+              : q[1].toString(),
+          ])
+        ),
+        "form-urlencoded",
+      ];
+    }
+    if (queryList) {
+      return [
+        queryList.map((q) => [q[0].toString(), q[1].toString()]),
+        "form-urlencoded",
+      ];
     }
   }
   return;
@@ -137,7 +158,21 @@ export function _toAnsible(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  const request = getFirst(requests, warnings);
+  // Only supported if there's one file and nothing else
+  const request = getFirst(requests, warnings, { dataReadsFile: true });
+  if (
+    request.dataReadsFile &&
+    request.dataArray &&
+    request.dataArray.length > 1
+  ) {
+    warnings.push([
+      "unsafe-data",
+      "the generated data content is wrong, " +
+        JSON.stringify("@" + request.dataReadsFile) +
+        " means read the file " +
+        JSON.stringify(request.dataReadsFile),
+    ]);
+  }
 
   const r: AnsibleURI = {
     url: request.urls[0].url.toString(),
@@ -147,9 +182,13 @@ export function _toAnsible(
     const d = getDataString(request);
     if (d) {
       const [body, format] = d;
-      r.body = body;
-      if (format !== "raw") {
-        r.body_format = format;
+      if (format === "src") {
+        r.src = body;
+      } else {
+        r.body = body;
+        if (format !== "raw") {
+          r.body_format = format;
+        }
       }
     } else {
       r.body = request.data.toString();

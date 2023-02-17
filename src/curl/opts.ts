@@ -11,7 +11,7 @@ import {
   CURLAUTH_AWS_SIGV4,
   CURLAUTH_ANY,
 } from "./auth.js";
-import type { DataType } from "../Query.js";
+import type { DataType } from "../Request.js";
 
 export type FormType = "string" | "form";
 
@@ -661,6 +661,10 @@ export interface OperationConfig {
   http3?: boolean;
   "http3-only"?: boolean;
 
+  netrc?: boolean;
+  "netrc-optional"?: boolean;
+  "netrc-file"?: Word;
+
   insecure?: boolean;
   compressed?: boolean;
 
@@ -828,6 +832,7 @@ function pushArgValue(
     case "abstract-unix-socket":
       // Ignore distinction
       // TODO: this makes the error message wrong
+      // TODO: what's the difference?
       pushProp(config, "unix-socket", value);
       break;
 

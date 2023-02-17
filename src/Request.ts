@@ -18,15 +18,20 @@ export { AuthType } from "./curl/auth.js";
 import { parseurl, type Curl_URL } from "./curl/url.js";
 
 import { parseQueryString, percentEncodePlus } from "./Query.js";
-import type {
-  DataParam,
-  FileParamType,
-  QueryList,
-  QueryDict,
-} from "./Query.js";
+import type { QueryList, QueryDict } from "./Query.js";
 
 import { parseForm } from "./curl/form.js";
 import type { FormParam } from "./curl/form.js";
+
+export type FileParamType = "string" | "binary" | "urlencode" | "json";
+export type DataType = FileParamType | "raw";
+
+// [file type, name (thing left of "=", null if no "="), filename (to read for the value)]
+export type FileDataParam = [FileParamType, Word | null, Word];
+// "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
+// when we have its contents (because it comes from a pipe) are converted
+// to plain strings
+export type DataParam = Word | FileDataParam;
 
 // struct getout
 // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_sdecls.h#L96
@@ -762,10 +767,8 @@ function buildRequest(
     request.http3 = true;
   }
 
-  // TODO: what's the difference?
-  const unixSocket = config["unix-socket"] || config["abstract-unix-socket"];
-  if (unixSocket) {
-    request.unixSocket = unixSocket;
+  if (config["unix-socket"]) {
+    request.unixSocket = config["unix-socket"];
   }
 
   if (config["netrc-optional"]) {
