@@ -824,6 +824,13 @@ function pushArgValue(
       config.authtype |= CURLAUTH_BEARER;
       break;
 
+    case "unix-socket":
+    case "abstract-unix-socket":
+      // Ignore distinction
+      // TODO: this makes the error message wrong
+      pushProp(config, "unix-socket", value);
+      break;
+
     case "language": // --language is a curlconverter specific option
       global[argName] = value.toString();
       return;

@@ -1,46 +1,137 @@
+import { eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
+import { QueryList, QueryDict } from "../Query.js";
 
 import yaml from "yamljs";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
+  "compressed",
+  "no-compressed", // only explicitly disabling compression has an effect
+
+  "netrc",
+  "netrc-optional",
+  "no-netrc", // only explicitly disabling netrc has an effect
+  "no-netrc-optional",
+
+  "cacert",
+  "cert",
+  "key",
+  "ciphers",
   "insecure",
   "no-insecure",
-  // "form",
-  // "form-string",
+
+  "anyauth",
+  "no-anyauth",
+  "digest",
+  "no-digest",
+  "aws-sigv4",
+  "negotiate",
+  "no-negotiate",
+  "delegation", // GSS/kerberos
+  // Not suported, just more specific warning
+  "ntlm",
+  "no-ntlm",
+  "ntlm-wb",
+  "no-ntlm-wb",
+
+  "unix-socket",
+  "abstract-unix-socket",
+
+  "max-time",
+
+  "location",
+  "no-location",
+  "location-trusted",
+  "no-location-trusted",
+
+  "upload-file",
+  "output",
+
+  "form",
+  "form-string",
 ]);
 
-function getDataString(request: Request): [string, boolean] | undefined {
-  if (!request.data) {
+// https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html
+type BodyFormat =
+  | "form-urlencoded"
+  | "json"
+  | "raw" // default
+  | "form-multipart";
+type AnsibleForm = {
+  [key: string]: {
+    content?: string;
+    filename?: string;
+    mime_type?: string;
+  };
+};
+type Body = QueryList | QueryDict | object | string | AnsibleForm;
+type AnsibleURI = {
+  url: string;
+  method?: string;
+  headers?: { [key: string]: string };
+  body?: Body;
+  body_format?: BodyFormat;
+  src?: string; // shouldn't have body if has src
+  dest?: string;
+
+  url_username?: string;
+  url_password?: string;
+  force_basic_auth?: boolean;
+  use_gssapi?: boolean;
+  use_netrc?: boolean; // default: true
+
+  timeout?: number; // 30
+
+  decompress?: boolean;
+  follow_redirects?:
+    | "all"
+    | "no"
+    | "none"
+    | "safe" // default
+    | "urllib2"
+    | "yes";
+
+  ca_path?: string;
+  ciphers?: string;
+  client_cert?: string;
+  client_key?: string;
+  validate_certs?: boolean;
+
+  unix_socket?: string; // TODO
+};
+
+function getDataString(request: Request): [Body, BodyFormat] | undefined {
+  if (!request.data || !request.data.isString()) {
     return;
   }
 
-  if (request.headers.getContentType() === "application/json") {
-    // TODO: warn if contains variables
-    const dataStr = request.data.toString();
-    try {
-      const dataAsJson = JSON.parse(dataStr);
-      // TODO: we actually want to know how it's serialized by
-      // Ansible, but this is hopefully good enough.
-      const roundtrips = JSON.stringify(dataAsJson) === dataStr;
-      return [dataAsJson, roundtrips];
-    } catch {}
-  }
+  const data = request.data.toString();
 
+  const contentType = request.headers.getContentType();
+  // TODO: delete Content-Type header when it's what Ansible will send anyway
+  // const exactContentType = request.headers.get("Content-Type");
+
+  if (contentType === "application/json") {
+    // TODO: warn if contains variables
+    try {
+      const dataAsJson = JSON.parse(data);
+      // TODO: if doesn't roundtrip, add commented out raw string
+      // TODO: we actually want to know how it's serialized by Ansible
+      // const roundtrips = JSON.stringify(dataAsJson) === dataStr;
+      return [dataAsJson, "json"];
+    } catch {}
+  } else if (contentType === "application/x-www-form-urlencoded") {
+    if (request.urls[0].queryDict) {
+      return [request.urls[0].queryDict, "form-urlencoded"];
+    }
+    if (request.urls[0].queryList) {
+      return [request.urls[0].queryList, "form-urlencoded"];
+    }
+  }
   return;
 }
-
-type AnsibleURI = {
-  url: string;
-  method: string;
-  body?: string;
-  body_format?: string;
-  headers?: { [key: string]: string };
-  url_username?: string;
-  url_password?: string;
-  validate_certs?: boolean;
-};
 
 export function _toAnsible(
   requests: Request[],
@@ -50,17 +141,50 @@ export function _toAnsible(
 
   const r: AnsibleURI = {
     url: request.urls[0].url.toString(),
-    method: request.urls[0].method.toString(), // TODO: toUpper()?
+    method: request.urls[0].method.toString(),
   };
   if (request.data) {
-    const asJson = getDataString(request);
-    if (asJson) {
-      r.body = asJson[0];
-      r.body_format = "json";
+    const d = getDataString(request);
+    if (d) {
+      const [body, format] = d;
+      r.body = body;
+      if (format !== "raw") {
+        r.body_format = format;
+      }
     } else {
       r.body = request.data.toString();
     }
+  } else if (request.multipartUploads) {
+    const form: AnsibleForm = {};
+    for (const m of request.multipartUploads) {
+      // TODO: can't have duplicate keys
+      const name = m.name.toString();
+      form[name] = {};
+      if ("content" in m) {
+        form[name].content = m.content.toString();
+      } else {
+        // TODO: get basename
+        form[name].filename = m.contentFile.toString();
+        if (m.filename && !eq(m.filename, m.contentFile)) {
+          warnings.push([
+            "multipart-fake-filename",
+            // TODO: check if this is true, the only source is it's not in the example
+            // https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html#examples
+            "Ansible doesn't allow reading from a file and changing the sent filename: " +
+              JSON.stringify(m.contentFile.toString()),
+          ]);
+        }
+      }
+    }
+    r.body = form;
+    r.body_format = "form-multipart";
+  } else if (request.urls[0].uploadFile) {
+    r.src = request.urls[0].uploadFile.toString();
   }
+  if (request.urls[0].output) {
+    r.dest = request.urls[0].output.toString();
+  }
+
   if (request.headers.length) {
     r.headers = {};
     for (const h of request.headers) {
@@ -71,16 +195,73 @@ export function _toAnsible(
     }
   }
   if (request.urls[0].auth) {
-    if (request.urls[0].auth[0].toBool()) {
-      r.url_username = request.urls[0].auth[0].toString();
+    const [username, password] = request.urls[0].auth;
+    if (username.toBool()) {
+      r.url_username = username.toString();
     }
-    if (request.urls[0].auth[1].toBool()) {
-      r.url_password = request.urls[0].auth[1].toString();
+    if (password.toBool()) {
+      r.url_password = password.toString();
     }
+  }
+  // No idea if this stuff is correct
+  switch (request.authType) {
+    case "basic":
+      // TODO: if --basic explicitly passed, set this?
+      // r.force_basic_auth = true;
+      break;
+    case "negotiate":
+      r.use_gssapi = true;
+      break;
+    case "ntlm":
+    case "ntlm-wb":
+      // https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html#parameter-use_gssapi
+      warnings.push(["ntlm", "Ansible doesn't support NTLM authentication."]);
+      break;
+  }
+
+  if (request.cacert) {
+    r.ca_path = request.cacert.toString();
+  }
+  if (request.cert) {
+    if (Array.isArray(request.cert)) {
+      r.client_cert = request.cert[0].toString();
+      r.client_key = request.cert[1].toString();
+    } else {
+      r.client_cert = request.cert.toString();
+    }
+  }
+  if (request.ciphers) {
+    r.ciphers = request.ciphers.toString();
   }
   if (request.insecure) {
     r.validate_certs = false;
   }
+  if (request.netrc === "ignored") {
+    r.use_netrc = false;
+  }
+
+  if (request.compressed === false) {
+    r.decompress = false;
+  }
+  // curl defaults to not following redirects, Ansible defaults to following
+  // safe redirects. Don't change that default unless it's explicitly set.
+  if (request.followRedirects === false) {
+    r.follow_redirects = "none";
+  } else if (request.followRedirects === true) {
+    // curl will follow redirects to a different host but not send credentials
+    // Ansible will only follow redirects for GET or HEAD to the same host
+    r.follow_redirects = request.followRedirectsTrusted ? "all" : "safe";
+  }
+
+  if (request.timeout) {
+    // TODO: warn if not int
+    r.timeout = parseInt(request.timeout.toString());
+  }
+
+  if (request.unixSocket) {
+    r.unix_socket = request.unixSocket.toString();
+  }
+
   return yaml.stringify(
     [
       {

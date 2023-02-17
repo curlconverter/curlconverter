@@ -91,7 +91,6 @@ export interface Request {
   cookieJar?: Word;
 
   compressed?: boolean;
-  insecure?: boolean;
 
   multipartUploads?: FormParam[];
 
@@ -104,6 +103,8 @@ export interface Request {
   cert?: Word | [Word, Word];
   cacert?: Word;
   capath?: Word;
+  ciphers?: Word;
+  insecure?: boolean;
 
   proxy?: Word;
   proxyAuth?: Word;
@@ -120,6 +121,9 @@ export interface Request {
 
   stdin?: Word;
   stdinFile?: Word;
+
+  unixSocket?: Word;
+  netrc?: "optional" | "required" | "ignored"; // undefined means implicitly "ignored"
 }
 
 function buildURL(
@@ -692,6 +696,10 @@ function buildRequest(
   if (config.capath) {
     request.capath = config.capath;
   }
+  if (config.ciphers) {
+    request.ciphers = config.ciphers;
+  }
+
   if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = config.proxy;
@@ -752,6 +760,21 @@ function buildRequest(
   }
   if (config.http3 || config["http3-only"]) {
     request.http3 = true;
+  }
+
+  // TODO: what's the difference?
+  const unixSocket = config["unix-socket"] || config["abstract-unix-socket"];
+  if (unixSocket) {
+    request.unixSocket = unixSocket;
+  }
+
+  if (config["netrc-optional"]) {
+    request.netrc = "optional";
+  } else if (config.netrc || config["netrc-file"]) {
+    request.netrc = "required";
+  } else if (config.netrc === false) {
+    // TODO || config["netrc-optional"] === false ?
+    request.netrc = "ignored";
   }
 
   return request;
