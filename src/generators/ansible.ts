@@ -82,7 +82,8 @@ type AnsibleURI = {
   use_gssapi?: boolean;
   use_netrc?: boolean; // true
 
-  timeout?: number; // 30
+  // String won't work, it's in case we can't parse it as a number
+  timeout?: number | string; // 30
 
   decompress?: boolean;
   follow_redirects?:
@@ -293,8 +294,23 @@ export function _toAnsible(
   }
 
   if (request.timeout) {
-    // TODO: warn if not int
-    r.timeout = parseInt(request.timeout.toString());
+    const timeoutStr = request.timeout.toString();
+    const timeoutInt = parseInt(timeoutStr); // TODO: warn if wasn't int
+
+    if (isNaN(timeoutInt)) {
+      r.timeout = timeoutStr;
+      warnings.push([
+        "ansible-timeout-not-int",
+        "couldn't parse timeout as an integer: " + JSON.stringify(timeoutStr),
+      ]);
+    } else {
+      r.timeout = timeoutInt;
+    }
+
+    warnings.push([
+      "ansible-timeout",
+      "Ansible's timeout is socket-level but curl's is for the entire request.",
+    ]);
   }
 
   if (request.unixSocket) {
