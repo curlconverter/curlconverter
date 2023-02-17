@@ -23,7 +23,7 @@ import type { QueryList, QueryDict } from "./Query.js";
 import { parseForm } from "./curl/form.js";
 import type { FormParam } from "./curl/form.js";
 
-export type FileParamType = "string" | "binary" | "urlencode" | "json";
+export type FileParamType = "data" | "binary" | "urlencode" | "json";
 export type DataType = FileParamType | "raw";
 
 // [file type, name (thing left of "=", null if no "="), filename (to read for the value)]
