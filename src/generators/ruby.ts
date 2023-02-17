@@ -201,7 +201,6 @@ function getDataString(request: Request): [string, boolean] {
   }
 
   if (
-    request.dataReadsFile &&
     request.dataArray &&
     request.dataArray.length === 1 &&
     Array.isArray(request.dataArray[0]) &&

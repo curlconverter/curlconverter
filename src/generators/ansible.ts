@@ -104,7 +104,8 @@ type AnsibleURI = {
 };
 
 function getDataString(
-  request: Request
+  request: Request,
+  warnings: Warnings
 ): [Body, BodyFormat] | [string, "src"] | undefined {
   if (!request.data || !request.data.isString()) {
     return;
@@ -123,13 +124,23 @@ function getDataString(
       return [dataAsJson, "json"];
     } catch {}
   } else if (contentType === "application/x-www-form-urlencoded") {
-    if (request.dataArray && request.dataArray.length === 1) {
-      if (
-        !(request.dataArray[0] instanceof Word) &&
-        request.dataArray[0][1] === null
-      ) {
-        return [request.dataArray[0][2].toString(), "src"];
+    if (
+      request.dataArray &&
+      request.dataArray.length === 1 &&
+      Array.isArray(request.dataArray[0]) &&
+      request.dataArray[0][1] === null
+    ) {
+      const filetype = request.dataArray[0][0];
+      const filename = request.dataArray[0][2].toString();
+      // TODO: and newlines have to be stripped for others
+      if (filetype === "urlencode") {
+        // TODO: or the other ones don't need to be?
+        warnings.push([
+          "urlencoded-file",
+          "the file needs to be urlencoded: " + JSON.stringify(filename),
+        ]);
       }
+      return [filename, "src"];
     }
     const [queryList, queryDict] = parseQueryString(request.data);
     if (queryDict) {
@@ -164,7 +175,8 @@ export function _toAnsible(
   if (
     request.dataReadsFile &&
     request.dataArray &&
-    request.dataArray.length > 1
+    (request.dataArray.length > 1 ||
+      (Array.isArray(request.dataArray[0]) && request.dataArray[0][1] !== null))
   ) {
     warnings.push([
       "unsafe-data",
@@ -180,7 +192,7 @@ export function _toAnsible(
     method: request.urls[0].method.toString(),
   };
   if (request.data) {
-    const d = getDataString(request);
+    const d = getDataString(request, warnings);
     if (d) {
       const [body, format] = d;
       if (format === "src") {
