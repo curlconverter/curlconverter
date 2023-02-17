@@ -200,37 +200,46 @@ function getDataString(request: Request): [string, boolean] {
     return ["", false];
   }
 
-  if (!request.isDataRaw && request.data.startsWith("@")) {
-    let filePath = request.data.slice(1);
-    if (eq(filePath, "-")) {
-      if (request.stdinFile) {
-        filePath = request.stdinFile;
-      } else if (request.stdin) {
-        request.data = request.stdin;
+  if (
+    request.dataArray &&
+    request.dataArray.length === 1 &&
+    Array.isArray(request.dataArray[0]) &&
+    request.dataArray[0][1] === null
+  ) {
+    const filetype = request.dataArray[0][0];
+    const filename = request.dataArray[0][2];
+
+    if (eq(filename, "-")) {
+      if (filetype === "binary") {
+        // TODO: read stdin in binary
+        // https://ruby-doc.org/core-2.3.0/IO.html#method-i-binmode
+        // TODO: .delete("\\r\\n") ?
+        return ['req.body = STDIN.read.delete("\\n")\n', false];
       } else {
-        if (request.isDataBinary) {
-          // TODO: read in binary
-          // TODO: .delete("\\r\\n") ?
-          return ['req.body = STDIN.read.delete("\\n")\n', false];
-        } else {
-          return ['req.body = STDIN.read.delete("\\n")\n', false];
-        }
+        return ['req.body = STDIN.read.delete("\\n")\n', false];
       }
     }
-    if (!request.stdin) {
-      if (request.isDataBinary) {
-        // TODO: What's the difference between binread() and read()?
-        // TODO: .delete("\\r\\n") ?
+
+    switch (filetype) {
+      case "binary":
         return [
-          "req.body = File.binread(" + repr(filePath) + ').delete("\\n")\n',
+          // TODO: What's the difference between binread() and read()?
+          // TODO: .delete("\\r\\n") ?
+          "req.body = File.binread(" + repr(filename) + ').delete("\\n")\n',
           false,
         ];
-      } else {
+      case "data":
+      case "json":
         return [
-          "req.body = File.read(" + repr(filePath) + ').delete("\\n")\n',
+          "req.body = File.read(" + repr(filename) + ').delete("\\n")\n',
           false,
         ];
-      }
+      case "urlencode":
+        // TODO: urlencode
+        return [
+          "req.body = File.read(" + repr(filename) + ').delete("\\n")\n',
+          false,
+        ];
     }
   }
 
@@ -337,7 +346,23 @@ function requestToRuby(
   warnings: Warnings,
   imports: Set<string>
 ): string {
-  warnIfPartsIgnored(request, warnings);
+  warnIfPartsIgnored(request, warnings, { dataReadsFile: true });
+  if (
+    request.dataReadsFile &&
+    request.dataArray &&
+    request.dataArray.length &&
+    (request.dataArray.length > 1 ||
+      (Array.isArray(request.dataArray[0]) && request.dataArray[0][1] !== null))
+  ) {
+    warnings.push([
+      "unsafe-data",
+      "the generated data content is wrong, " +
+        // TODO: might not come from "@"
+        JSON.stringify("@" + request.dataReadsFile) +
+        " means read the file " +
+        JSON.stringify(request.dataReadsFile),
+    ]);
+  }
 
   let code = "";
 

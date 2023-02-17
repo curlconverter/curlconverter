@@ -3,7 +3,10 @@
   uri:
     url: 'http://localhost:28139/echo/html/'
     method: POST
-    body: 'msg1=wow&msg2=such'
+    body:
+      msg1: wow
+      msg2: such
+    body_format: form-urlencoded
     headers:
       Origin: 'http://fiddle.jshell.net'
       Accept-Encoding: 'gzip, deflate'

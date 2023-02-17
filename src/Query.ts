@@ -1,15 +1,6 @@
 import { Word, eq } from "./shell/Word.js";
 import { UTF8encoder } from "./util.js";
 
-export type FileParamType = "string" | "binary" | "urlencode" | "json";
-export type DataType = FileParamType | "raw";
-
-export type FileDataParam = [FileParamType, Word | null, Word];
-// "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
-// when we have its contents (because it comes from a pipe) are converted
-// to plain strings
-export type DataParam = Word | FileDataParam;
-
 export type QueryList = Array<[Word, Word]>;
 export type QueryDict = Array<[Word, Word | Array<Word>]>;
 

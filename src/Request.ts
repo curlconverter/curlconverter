@@ -18,15 +18,20 @@ export { AuthType } from "./curl/auth.js";
 import { parseurl, type Curl_URL } from "./curl/url.js";
 
 import { parseQueryString, percentEncodePlus } from "./Query.js";
-import type {
-  DataParam,
-  FileParamType,
-  QueryList,
-  QueryDict,
-} from "./Query.js";
+import type { QueryList, QueryDict } from "./Query.js";
 
 import { parseForm } from "./curl/form.js";
 import type { FormParam } from "./curl/form.js";
+
+export type FileParamType = "data" | "binary" | "urlencode" | "json";
+export type DataType = FileParamType | "raw";
+
+// [file type, name (thing left of "=", null if no "="), filename (to read for the value)]
+export type FileDataParam = [FileParamType, Word | null, Word];
+// "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
+// when we have its contents (because it comes from a pipe) are converted
+// to plain strings
+export type DataParam = Word | FileDataParam;
 
 // struct getout
 // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_sdecls.h#L96
@@ -91,7 +96,6 @@ export interface Request {
   cookieJar?: Word;
 
   compressed?: boolean;
-  insecure?: boolean;
 
   multipartUploads?: FormParam[];
 
@@ -104,6 +108,8 @@ export interface Request {
   cert?: Word | [Word, Word];
   cacert?: Word;
   capath?: Word;
+  ciphers?: Word;
+  insecure?: boolean;
 
   proxy?: Word;
   proxyAuth?: Word;
@@ -120,6 +126,9 @@ export interface Request {
 
   stdin?: Word;
   stdinFile?: Word;
+
+  unixSocket?: Word;
+  netrc?: "optional" | "required" | "ignored"; // undefined means implicitly "ignored"
 }
 
 function buildURL(
@@ -692,6 +701,10 @@ function buildRequest(
   if (config.capath) {
     request.capath = config.capath;
   }
+  if (config.ciphers) {
+    request.ciphers = config.ciphers;
+  }
+
   if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = config.proxy;
@@ -752,6 +765,19 @@ function buildRequest(
   }
   if (config.http3 || config["http3-only"]) {
     request.http3 = true;
+  }
+
+  if (config["unix-socket"]) {
+    request.unixSocket = config["unix-socket"];
+  }
+
+  if (config["netrc-optional"]) {
+    request.netrc = "optional";
+  } else if (config.netrc || config["netrc-file"]) {
+    request.netrc = "required";
+  } else if (config.netrc === false) {
+    // TODO || config["netrc-optional"] === false ?
+    request.netrc = "ignored";
   }
 
   return request;
