@@ -2,7 +2,7 @@
 
 > I'd rather write programs to write programs than write programs.
 >
-> — Dick Sites, Digital Equipment Corporation, 1985
+> — Dick Sites, May 1974
 
 First, make sure you're running **Node 14** or greater.
 
