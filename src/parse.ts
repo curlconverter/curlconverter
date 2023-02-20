@@ -4,13 +4,13 @@ import { tokenize } from "./shell/tokenizer.js";
 import * as curl from "./curl/opts.js";
 import { curlLongOpts, curlShortOpts } from "./curl/opts.js";
 import { buildRequests } from "./Request.js";
-import type { Request } from "./Request.js";
+import type { Request, RequestUrl } from "./Request.js";
 import type { Warnings } from "./Warnings.js";
 
 export { COMMON_SUPPORTED_ARGS } from "./curl/opts.js";
 export { getFirst } from "./Request.js";
 
-export type { Request, Warnings };
+export type { Request, RequestUrl, Warnings };
 
 export function clip(s: string, maxLength = 30): string {
   if (s.length > maxLength) {
