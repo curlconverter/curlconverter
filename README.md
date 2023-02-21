@@ -1,6 +1,6 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python, JavaScript, Java, C#, PHP, Go, Dart, R, Ruby, Rust, MATLAB, Elixir, CFML, Ansible, HAR or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python, JavaScript, Java, C#, PHP, Go, Dart, R, Ruby, Rust, MATLAB, Elixir, CFML, Ansible or JSON.
 
 Try it on [curlconverter.com](https://curlconverter.com) or from the command line as a drop-in replacement for `curl`:
 
