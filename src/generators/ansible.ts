@@ -1,4 +1,4 @@
-import { Word, eq } from "../shell/Word.js";
+import { eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";

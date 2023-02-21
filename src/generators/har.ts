@@ -139,10 +139,7 @@ export function _requestAndUrlToHar(
     if (request.authType === "basic") {
       // Generate Authorization header by hand
       const authHeader =
-        "Basic " +
-        Buffer.from(`${user.toString()}:${password.toString()}`).toString(
-          "base64"
-        );
+        "Basic " + btoa(`${user.toString()}:${password.toString()}`);
       requestHar.headers.push({ name: "Authorization", value: authHeader });
     }
   }
