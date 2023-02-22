@@ -2,6 +2,7 @@ import { warnIfPartsIgnored } from "../Warnings.js";
 import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, RequestUrl, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
+import type { Request as HARRequest, PostData as PostData } from "har-format";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -20,63 +21,7 @@ const supportedArgs = new Set([
   "http3-only",
 ]);
 
-type HARCookie = {
-  name: string;
-  value: string;
-  path?: string;
-  domain?: string;
-  expires?: string;
-  httpOnly?: boolean;
-  secure?: boolean;
-  comment?: string;
-};
-
-type HARHeader = {
-  name: string;
-  value: string;
-  comment?: string;
-};
-type HARQuery = {
-  name: string;
-  value: string;
-  comment?: string;
-};
-
-type HARParams = {
-  name: string;
-  value?: string;
-  fileName?: string;
-  contentType?: string;
-  comment?: string;
-};
-type HARPostData = {
-  mimeType: string;
-  comment?: string;
-} & ({ params: HARParams[] } | { text: string });
-
-type HARRequest = {
-  method: string;
-  url: string;
-  httpVersion: string;
-  cookies: HARCookie[];
-  headers: HARHeader[];
-  queryString: HARQuery[];
-  postData?: HARPostData;
-  headersSize: -1;
-  bodySize: -1;
-  comment?: string;
-};
-
-export type HAROutput = {
-  log: {
-    version: "1.2";
-    entries: {
-      request: HARRequest;
-    }[];
-  };
-};
-
-function getDataString(request: Request): HARPostData | null {
+function getDataString(request: Request): PostData | null {
   if (!request.data) {
     return null;
   }
