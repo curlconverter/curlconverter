@@ -71,7 +71,7 @@ export function _requestAndUrlToHar(
       name: c[0].toString(),
       value: c[1].toString(),
     }));
-    // TODO: delete Cookies header?
+    request.headers.delete("Cookie");
   }
 
   if (request.headers.length) {
