@@ -10,6 +10,7 @@ export { toCSharp, toCSharpWarn } from "./generators/csharp.js";
 export { toDart, toDartWarn } from "./generators/dart.js";
 export { toElixir, toElixirWarn } from "./generators/elixir.js";
 export { toGo, toGoWarn } from "./generators/go.js";
+export { toHarString, toHarStringWarn } from "./generators/har.js";
 export { toJava, toJavaWarn } from "./generators/java.js";
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";

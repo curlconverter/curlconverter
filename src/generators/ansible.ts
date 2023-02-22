@@ -1,4 +1,4 @@
-import { Word, eq } from "../shell/Word.js";
+import { eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
@@ -180,7 +180,7 @@ export function _toAnsible(
   ) {
     warnings.push([
       "unsafe-data",
-      "the generated data content is wrong, " +
+      "the generated body is wrong, " +
         JSON.stringify("@" + request.dataReadsFile) +
         " means read the file " +
         JSON.stringify(request.dataReadsFile),

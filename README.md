@@ -18,19 +18,18 @@ response = requests.post('http://example.com', data=data)
 Features:
 
 - Knows about all of curl's 300 or so arguments, including deleted ones, but most are ignored
-- Supports multiple short arguments passed as one, for example `-OvXPOST` instead of `-O -v -X POST`
-- Converts JSON to native objects
+- Implements a lot of curl's argument parsing logic
+  - Multiple short arguments passed together, for example `-OvXPOST` instead of `-O -v -X POST`
+  - `--data @filename` generates code that reads that file
+  - `--data @-` generates code that reads from stdin (or piped file/input)
 - Understands most Bash syntax
   - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) (which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150))
   - Piped file or input (such as [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents))
-  - Generated code reads environment variables and runs subcommands at runtime
+  - Generated code reads environment variables and runs subcommands
   - Ignores comments
   - Reports syntax errors
+- Converts JSON data to native objects
 - Warns about issues with the conversion
-
-Python-only features (mostly):
-- `--data @filename` generates code that reads from that file
-- `--data @-` generates code that reads from stdin (or piped file/input)
 
 Limitations:
 

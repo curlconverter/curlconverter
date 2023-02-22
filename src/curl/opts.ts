@@ -754,8 +754,7 @@ function checkSupported(
     // TODO: better message. include generator name?
     warnf(global, [
       longArg.name,
-      "--" +
-        lookup +
+      lookup +
         " is not a supported option" +
         (longArg.removed ? ", it was removed in curl " + longArg.removed : ""),
     ]);
@@ -988,7 +987,7 @@ export function parseArgs(
           ); // TODO: all shortened args work correctly?
         }
 
-        checkSupported(global, lookup, longArg, supportedOpts);
+        checkSupported(global, "--" + lookup, longArg, supportedOpts);
       } else {
         // Short option. These can look like
         // -X POST    -> {request: 'POST'}
@@ -1074,7 +1073,7 @@ export function parseArgs(
             );
           }
           if (lookup) {
-            checkSupported(global, lookup, longArg, supportedOpts);
+            checkSupported(global, "-" + lookup, longArg, supportedOpts);
           }
         }
       }

@@ -149,10 +149,9 @@ function prepareDataProvider(
       ];
     }
     // >> imformats % for seeing MATLAB supported image formats
-    const isImageProvider = new Set(["jpeg", "jpg", "png", "tif", "gif"]).has(
-      filename.split(".")[1].toString()
-    );
-    const provider = isImageProvider ? "ImageProvider" : "FileProvider";
+    const extension = (filename.split(".")[1] ?? "").toLowerCase().toString();
+    const isImage = ["jpeg", "jpg", "png", "tif", "gif"].includes(extension);
+    const provider = isImage ? "ImageProvider" : "FileProvider";
     return callFunction(output, provider, repr(filename), termination);
   }
 
