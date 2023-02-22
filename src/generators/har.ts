@@ -99,7 +99,10 @@ export function _requestAndUrlToHar(
 
   // TODO: not Object.assign, doesn't work with type system
   if (request.data) {
-    Object.assign(requestHar, getDataString(request));
+    const harData = getDataString(request);
+    if (harData) {
+      requestHar.postData = harData;
+    }
   }
 
   return requestHar;
