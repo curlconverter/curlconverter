@@ -12,7 +12,12 @@ const supportedArgs = new Set([
   "form",
   "form-string",
 
+  "compressed",
+
   "location",
+  "no-location",
+  "location-trusted",
+  "no-location-trusted",
 
   "max-time",
   "connect-timeout",
@@ -46,6 +51,7 @@ type JSONOutput = {
   files?: { [key: string]: string };
   // raw_files: string[],
   insecure?: boolean;
+  compressed?: boolean;
 
   auth?: { user: string; password: string };
   auth_type?: AuthType;
@@ -191,6 +197,9 @@ export function _toJsonString(
     Object.assign(requestJson, getFilesString(request));
   }
 
+  if (request.compressed) {
+    requestJson.compressed = true;
+  }
   if (request.insecure) {
     requestJson.insecure = false;
   }

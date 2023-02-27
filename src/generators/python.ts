@@ -506,14 +506,14 @@ export function repr(
   binary = false,
   errorOk = false // so we do open(None) and error instead of open('') if we don't have the env var
 ): string {
+  const reprFn = binary ? reprStrBinary : reprStr;
   const reprs = [];
   for (const t of word.tokens) {
     if (typeof t === "string") {
-      reprs.push(reprStr(t));
+      reprs.push(reprFn(t));
     } else if (t.type === "variable") {
       // TODO: getenvb() is not available on Windows
       const fn = binary ? "os.getenvb" : "os.getenv";
-      const reprFn = binary ? reprStrBinary : reprStr;
       let getEnvCall = fn + "(" + reprFn(t.value);
       if (!errorOk || word.tokens.length > 1) {
         getEnvCall += ", " + reprFn("");

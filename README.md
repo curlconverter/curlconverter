@@ -19,13 +19,13 @@ Features:
 
 - Knows about all 250 of curl's arguments, as well as the deleted ones, but most are ignored
 - Implements a lot of curl's argument parsing logic
-  - `-OvXPOST` instead of `-O -v -X POST`
+  - Supports shortening `-O -v -X POST` to `-OvXPOST`
   - `--data @filename` generates code that reads that file
   - `--data @-` generates code that reads from stdin (or the piped file/input)
 - Understands most Bash syntax
   - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) (which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150))
   - Piped file or input (such as [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents))
-  - Generated code reads environment variables and runs subcommands
+  - Generates code that gets environment variables and runs subcommands
   - Ignores comments
   - Reports syntax errors
 - Converts JSON data to native objects
@@ -95,6 +95,8 @@ Choose the output language by passing `--language <language>`. The options are
 - `r`
 - `ruby`
 - `rust`
+
+`--verbose` enables printing of conversion warnings and error tracebacks.
 
 ### Usage as a library
 
