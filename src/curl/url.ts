@@ -22,6 +22,80 @@ export interface Curl_URL {
   // portnum: number /* the numerical version */;
 }
 
+// https://github.com/curl/curl/blob/curl-7_88_1/src/tool_urlglob.c#L327
+const MAX_IP6LEN = 128;
+function isIpv6(glob: string): boolean {
+  if (glob.length > MAX_IP6LEN) {
+    return false;
+  }
+  // TODO: curl tries to parse the glob as a hostname.
+  return !glob.includes("-");
+}
+
+function warnAboutGlobs(global: GlobalConfig, url: string) {
+  // Find any glob expressions in the URL and underline them
+  let prev = "";
+  for (let i = 0; i < url.length; i++) {
+    const cur = url[i];
+    if (cur === "[" && prev !== "\\") {
+      let j = i + 1;
+      while (j < url.length && url[j] !== "]") {
+        j++;
+      }
+      if (j < url.length && url[j] === "]") {
+        const glob = url.slice(i, j + 1);
+        // could be ipv6 address
+        if (!isIpv6(glob)) {
+          warnf(global, [
+            "glob-in-url",
+            `globs in the URL are not supported:\n` +
+              `${url}\n` +
+              " ".repeat(i) +
+              "^".repeat(glob.length),
+          ]);
+        }
+        prev = "";
+      } else {
+        // No closing bracket
+        warnf(global, [
+          "unbalanced-glob",
+          "bracket doesn't have a closing bracket:\n" +
+            `${url}\n` +
+            `${" ".repeat(i)}^`,
+        ]);
+        return; // malformed URL, stop looking for globs
+      }
+    } else if (cur === "{" && prev !== "\\") {
+      let j = i + 1;
+      while (j < url.length && url[j] !== "}") {
+        j++;
+      }
+      if (j < url.length && url[j] === "}") {
+        const glob = url.slice(i, j + 1);
+        warnf(global, [
+          "glob-in-url",
+          `globs in the URL are not supported:\n` +
+            `${url}\n` +
+            " ".repeat(i) +
+            "^".repeat(glob.length),
+        ]);
+        prev = "";
+      } else {
+        // No closing bracket
+        warnf(global, [
+          "unbalanced-glob",
+          "bracket doesn't have a closing bracket:\n" +
+            `${url}\n` +
+            `${" ".repeat(i)}^`,
+        ]);
+        return; // malformed URL, stop looking for globs
+      }
+    }
+
+    prev = cur;
+  }
+}
+
 export function parseurl(
   global: GlobalConfig,
   config: OperationConfig,
@@ -44,6 +118,9 @@ export function parseurl(
   // Remove url glob escapes
   // https://github.com/curl/curl/blob/curl-7_87_0/src/tool_urlglob.c#L395-L398
   if (!config.globoff) {
+    if (url.isString()) {
+      warnAboutGlobs(global, url.toString());
+    }
     url = url.replace(/\\([[\]{}])/g, "$1");
   }
 

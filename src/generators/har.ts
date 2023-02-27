@@ -97,7 +97,6 @@ export function _requestAndUrlToHar(
     }));
   }
 
-  // TODO: not Object.assign, doesn't work with type system
   if (request.data) {
     const harData = getDataString(request);
     if (harData) {
