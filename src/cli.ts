@@ -11,6 +11,7 @@ import type { Request } from "./Request.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
 import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
+import { _toClojure, toClojureWarn } from "./generators/clojure.js";
 import { _toCSharp, toCSharpWarn } from "./generators/csharp.js";
 import { _toDart, toDartWarn } from "./generators/dart.js";
 import { _toElixir, toElixirWarn } from "./generators/elixir.js";
@@ -61,6 +62,7 @@ const translate: {
 } = {
   ansible: [_toAnsible, toAnsibleWarn],
   cfml: [_toCFML, toCFMLWarn],
+  clojure: [_toClojure, toClojureWarn],
   csharp: [_toCSharp, toCSharpWarn],
   "c#": [_toCSharp, toCSharpWarn], // undocumented alias
   browser: [_toJavaScript, toJavaScriptWarn], // for backwards compatibility, undocumented
@@ -100,6 +102,7 @@ const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...
 language: the language to convert the curl command to. The choices are
   ansible
   cfml
+  clojure
   csharp
   dart
   elixir
