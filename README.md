@@ -20,8 +20,7 @@ Features:
 - Knows about all 250 of curl's arguments, as well as the deleted ones, but most are ignored
 - Implements a lot of curl's argument parsing logic
   - Supports shortening `-O -v -X POST` to `-OvXPOST`
-  - `--data @filename` generates code that reads that file
-  - `--data @-` generates code that reads from stdin or the piped file/input
+  - `--data @filename` generates code that reads that file and `@-` reads stdin
 - Understands Bash syntax
   - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting), which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150)
   - Stdin redirects and [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents)
@@ -35,11 +34,11 @@ Limitations:
 
 - Only HTTP is supported
 - Code generators for other languages are less thorough than the Python generator
-- curl doesn't follow redirects or decompress gzip-compressed responses by default, but the generated code will do whatever the default is for that runtime, to keep it simpler. For example Python's Requests library [follows redirects by default](https://requests.readthedocs.io/en/latest/user/quickstart/#redirection-and-history), so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the generated code will not handle redirects the same way as the curl command
+- curl doesn't follow redirects or decompress gzip-compressed responses by default, but the generated code will do whatever the default is for that runtime, to keep it shorter. For example Python's Requests library [follows redirects by default](https://requests.readthedocs.io/en/latest/user/quickstart/#redirection-and-history), so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the generated code will not handle redirects the same way as the curl command
 - Shell variables can arbitrarily change how the command would be parsed at runtime. For example, in a command like `curl example.com?foo=bar&baz=$VAR`, if `$VAR` contains `=` or `&` characters or percent encoded characters, that could make the generated code wrong. curlconverter assumes that environment variables don't contain characters that would affect parsing
-- Piped commands are not supported
 - Only simple subcommands such as `curl $(echo example.com)` work, more complicated subcommands (such as nested commands or subcommands that redirect the output) won't generate valid code
 - The Bash parser isn't the real Bash's parser
+- Piped commands are not supported
 - and much more
 
 ## Install
@@ -56,7 +55,7 @@ Install the JavaScript library for use in your own projects with
 npm install curlconverter
 ```
 
-curlconverter requires Node 14+.
+curlconverter requires Node 12+.
 
 ## Usage
 
