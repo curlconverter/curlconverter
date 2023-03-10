@@ -1,5 +1,5 @@
-import { has, isInt } from "../util.js";
-import { Word, eq, joinWords } from "../shell/Word.js";
+import { CCError } from "../util.js";
+import { Word, eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import type { QueryList, QueryDict } from "../Query.js";
@@ -22,9 +22,26 @@ const supportedArgs = new Set([
   // "no-http0.9",
   "insecure",
   "no-insecure",
-  // "compressed",
-  // "no-compressed",
-  // "no-digest",
+  "compressed",
+  "no-compressed",
+
+  "max-time",
+  "connect-timeout",
+
+  // "anyauth",
+  // "no-anyauth",
+  "digest",
+  "no-digest",
+  // "aws-sigv4",
+  // "negotiate",
+  // "no-negotiate",
+  // "delegation", // GSS/kerberos
+  // "service-name", // GSS/kerberos, not supported
+  "ntlm",
+  "no-ntlm",
+  "ntlm-wb",
+  "no-ntlm-wb",
+
   // "upload-file",
   // "output",
   // "proxy",
@@ -48,6 +65,7 @@ export function repr(w: Word, importLines: Set<string>): string {
     }
   }
   if (args.length > 1) {
+    // TODO: format on multiple lines if it's long enough?
     return "(str " + args.join(" ") + ")";
   }
   return args[0];
@@ -55,10 +73,8 @@ export function repr(w: Word, importLines: Set<string>): string {
 
 // https://clojure.org/reference/reader#_symbols
 // https://clojure.org/reference/reader#_literals
-function safeAsKeyword(s: Word): boolean {
-  return (
-    s.isString() && /^[a-zA-Z_][a-zA-Z0-9*+!\-_'?<>=]*$/.test(s.toString())
-  );
+function safeAsKeyword(s: string): boolean {
+  return /^[a-zA-Z_][a-zA-Z0-9*+!\-_'?<>=]*$/.test(s);
 }
 
 function reprQueryDict(query: QueryDict, importLines: Set<string>): string {
@@ -67,13 +83,13 @@ function reprQueryDict(query: QueryDict, importLines: Set<string>): string {
     query
       .map(
         (q) =>
-          repr(q[0], importLines) +
+          repr(q[0], importLines) + // TODO: as keyword
           " " +
           (Array.isArray(q[1])
             ? "[" + q[1].map((qq) => repr(qq, importLines)) + "]"
             : repr(q[1], importLines))
       )
-      .join(" ") +
+      .join("\n ") +
     "}"
   );
 }
@@ -93,16 +109,68 @@ function reprQueryList(query: QueryList, importLines: Set<string>): string {
 }
 
 function reprHeaders(headers: Headers, importLines: Set<string>): string {
-  return (
-    "{" +
-    headers.headers
-      .map((h) => repr(h[0], importLines) + " " + repr(h[1], importLines))
-      .join(" ") +
-    "}"
-  );
+  const lines = headers.headers
+    // Can't be null
+    .map(
+      // TODO: convert to keywords and lowercase known headers
+      // TODO: :content-type is a top-level key and changes how the body is interpreted
+      (h) => repr(h[0], importLines) + " " + repr(h[1] as Word, importLines)
+    );
+  const joiner = lines.length < 3 ? ", " : ",\n ";
+  return "{" + lines.join(joiner) + "}";
 }
 
-function reprJson(data: object, indent = 0): string {}
+function indent(s: string, indent: number): string {
+  const withSpaces = "\n" + " ".repeat(indent);
+  return s.replace(/\n/g, withSpaces);
+}
+
+function reprJson(
+  obj: string | number | boolean | object | null,
+  level = 0,
+  importLines?: Set<string>
+): string {
+  if (importLines && obj instanceof Word) {
+    return repr(obj, importLines);
+  }
+  switch (typeof obj) {
+    case "string":
+      return reprStr(obj);
+    case "number":
+      return obj.toString(); // TODO
+    case "boolean":
+      return obj ? "true" : "false";
+    case "object":
+      if (obj === null) {
+        return "nil";
+      }
+      if (Array.isArray(obj)) {
+        const objReprs = obj.map((o) => reprJson(o));
+        const totalLength = objReprs.reduce((a, b) => a + b.length, 0);
+        if (totalLength < 100) {
+          return "[" + objReprs.join(" ") + "]";
+        }
+        return "[" + indent(objReprs.join("\n"), level + 1) + "]";
+      } else {
+        const objReprs = Object.entries(obj).map(([k, v]) => {
+          if (!safeAsKeyword(k)) {
+            throw new CCError(
+              "can't use JSON key as Clojure keyword: " + JSON.stringify(k)
+            );
+          }
+          // TODO: indent logic is wrong?
+          return ":" + k + " " + reprJson(v, level + 1 + k.length + 1);
+        });
+        const totalLength = objReprs.reduce((a, b) => a + b.length, 0);
+        if (totalLength < 100 && objReprs.every((o) => !o.includes("\n"))) {
+          return "{" + objReprs.join(" ") + "}";
+        }
+        return "{" + indent(objReprs.join("\n"), level + 1) + "}";
+      }
+    default:
+      throw new CCError("unexpect type in JSON: " + typeof obj);
+  }
+}
 
 function reprDataString(
   request: Request,
@@ -136,20 +204,27 @@ function reprDataString(
 
   if (contentType === "application/x-www-form-urlencoded") {
     const [queryList, queryDict] = parseQueryString(data);
+    if (queryDict) {
+      try {
+        const formParams = reprQueryDict(queryDict, importLines);
+        // TODO: what exactly is sent?
+        if (eq(exactContentType, "application/x-www-form-urlencoded")) {
+          request.headers.delete("content-type");
+        }
+        // TODO: check roundtrip, add a comment
+        return [formParams, null];
+      } catch {}
+    }
     if (queryList) {
-      // TODO: what exactly is sent?
-      if (eq(exactContentType, "application/x-www-form-urlencoded")) {
-        request.headers.delete("content-type");
-      }
-
-      const queryObj =
-        queryDict && queryDict.every((q) => !Array.isArray(q[1]))
-          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
-          : reprAsStringTuples(queryList, 1, imports);
-      // TODO: check roundtrip, add a comment
-      return ["new URLSearchParams(" + queryObj + ")", null];
-    } else {
-      return [repr(data, importLines), null];
+      try {
+        const formParams = reprQueryList(queryList, importLines);
+        // TODO: what exactly is sent?
+        if (eq(exactContentType, "application/x-www-form-urlencoded")) {
+          request.headers.delete("content-type");
+        }
+        // TODO: check roundtrip, add a comment
+        return [formParams, null];
+      } catch {}
     }
   }
 
@@ -187,13 +262,32 @@ function reprData(
   // TODO: this needlessly nests str if there are variables/subcommands
   return ["(str " + parts.join(" ") + ")", null];
 }
-function reprMultipart(form: FormParam[], importLines: Set<string>): string {}
+function reprMultipart(form: FormParam[], importLines: Set<string>): string {
+  const parts = [];
+  for (const f of form) {
+    let part = "{:name " + repr(f.name, importLines);
+    if ("content" in f) {
+      part += " :content " + repr(f.content, importLines);
+    } else {
+      part +=
+        " :content (clojure.java.io/file " +
+        repr(f.contentFile, importLines) +
+        ")";
+      if (f.filename && !eq(f.filename, f.contentFile)) {
+        // TODO: is this a real argument?
+        part += " :filename " + repr(f.filename, importLines);
+      }
+    }
+    parts.push(part + "}");
+  }
+  return "[" + parts.join("\n ") + "]";
+}
 
 export function _toClojure(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  const request = getFirst(requests, warnings);
+  const request = getFirst(requests, warnings, { dataReadsFile: true });
 
   const importLines = new Set<string>([
     "(require '[clj-http.client :as client])",
@@ -243,6 +337,25 @@ export function _toClojure(
     params["headers"] = reprHeaders(request.headers, importLines);
   }
 
+  if (request.urls[0].auth) {
+    const [user, pass] = request.urls[0].auth;
+    const authParam = {
+      basic: "basic-auth",
+      digest: "digest-auth",
+      ntlm: "ntlm-auth",
+      "ntlm-wb": "ntlm-auth",
+
+      // TODO: error
+      negotiate: "basic-auth",
+      bearer: "basic-auth",
+      "aws-sigv4": "basic-auth",
+      none: "basic-auth",
+    }[request.authType];
+
+    params[authParam] =
+      "[" + repr(user, importLines) + " " + repr(pass, importLines) + "]";
+  }
+
   if (request.dataArray && request.data) {
     const [body, altBody] = reprData(request, request.dataArray, importLines);
     params["body"] = body;
@@ -251,6 +364,10 @@ export function _toClojure(
     }
   } else if (request.multipartUploads) {
     params["multipart"] = reprMultipart(request.multipartUploads, importLines);
+  }
+
+  if (request.compressed === false) {
+    params[":decompress-body"] = "false";
   }
 
   if (request.insecure) {
@@ -279,21 +396,26 @@ export function _toClojure(
     params["connection-timeout"] = request.connectTimeout.toString();
   }
 
-  const firstLine = "(" + fn + " " + repr(url, importLines);
+  let code = "(" + fn + " " + repr(url, importLines);
 
-  let paramsStr = "";
+  const paramLines = [];
   for (const [param, value] of Object.entries(params)) {
-    paramsStr += ":" + param + " " + value + "\n";
+    const key = ":" + param + " ";
+    paramLines.push(key + indent(value, key.length));
   }
-  if (paramsStr) {
-    paramsStr = wrap(paramsStr, "{}");
-    paramsStr =
-      "\n" + " ".repeat(firstLine.length) + "{" + paramsStr.trim() + "}";
+  if (paramLines.length) {
+    let paramStart = code.length + 1;
+    if (code.length > 70) {
+      paramStart = 1 + fn.length + 1;
+      code += "\n" + " ".repeat(paramStart);
+    } else {
+      code += " ";
+    }
+    // +1 for the outer "{"
+    code += indent("{" + paramLines.join("\n") + "}", paramStart + 1);
   }
 
-  return (
-    [...importLines].sort().join("\n") + "\n" + firstLine + paramsStr + ")"
-  );
+  return [...importLines].sort().join("\n") + "\n\n" + code + ")";
 }
 
 export function toClojureWarn(
