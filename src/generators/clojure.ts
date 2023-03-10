@@ -16,10 +16,12 @@ const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
+
   // "http0.9",
   // "http1.0",
   // "http1.1",
   // "no-http0.9",
+
   "insecure",
   "no-insecure",
   "compressed",
@@ -27,6 +29,12 @@ const supportedArgs = new Set([
 
   "max-time",
   "connect-timeout",
+
+  "max-redirs",
+  "location",
+  "no-location",
+  "location-trusted",
+  "no-location-trusted",
 
   // "anyauth",
   // "no-anyauth",
@@ -116,8 +124,7 @@ function reprHeaders(headers: Headers, importLines: Set<string>): string {
       // TODO: :content-type is a top-level key and changes how the body is interpreted
       (h) => repr(h[0], importLines) + " " + repr(h[1] as Word, importLines)
     );
-  const joiner = lines.length < 3 ? ", " : ",\n ";
-  return "{" + lines.join(joiner) + "}";
+  return "{" + lines.join(",\n ") + "}";
 }
 
 function indent(s: string, indent: number): string {
@@ -266,7 +273,14 @@ function addData(
         // TODO: add this to the previous Word
         parts.push(repr(name, importLines));
       }
-      parts.push("(clojure.java.io/file " + repr(filename, importLines) + ")");
+      if (eq(filename, "-")) {
+        // TODO: does this work?
+        parts.push("(slurp *in*)");
+      } else {
+        parts.push(
+          "(clojure.java.io/file " + repr(filename, importLines) + ")"
+        );
+      }
     }
   }
   if (parts.length === 1) {
@@ -332,6 +346,7 @@ export function _toClojure(
   } else {
     // TODO: do all the other params still work?
     fn = "client/request";
+    params["url"] = ""; // placeholder so that it comes first
     params["method"] = repr(method, importLines);
   }
 
@@ -408,17 +423,35 @@ export function _toClojure(
     params["max-redirects"] = request.maxRedirects.toString();
   }
 
+  const times1000 = (n: Word, importLines: Set<string>) => {
+    if (n.isString()) {
+      // TODO: this throws away text after the number
+      const asFloat = parseFloat(n.toString());
+      if (!isNaN(asFloat)) {
+        return (asFloat * 1000).toString();
+      }
+    }
+    return "(* (Float/parseFloat " + repr(n, importLines) + ") 1000)";
+  };
   if (request.timeout) {
-    // TODO: *1000
-    // TODO: warn that this is wrong
-    params["socket-timeout"] = request.timeout.toString();
-    params["connection-timeout"] = request.timeout.toString();
+    const timeout = times1000(request.timeout, importLines);
+    params["socket-timeout"] = timeout;
+    params["connection-timeout"] = timeout;
   }
   if (request.connectTimeout) {
-    params["connection-timeout"] = request.connectTimeout.toString();
+    params["connection-timeout"] = times1000(
+      request.connectTimeout,
+      importLines
+    );
   }
 
-  let code = "(" + fn + " " + repr(url, importLines);
+  let code = "(" + fn;
+
+  if (fn === "client/request") {
+    params["url"] = repr(url, importLines);
+  } else {
+    code += " " + repr(url, importLines);
+  }
 
   const paramLines = [];
   let param, value;
@@ -447,7 +480,7 @@ export function _toClojure(
     code += indent("{" + paramLines.join("\n") + "}", paramStart + 1);
   }
 
-  return [...importLines].sort().join("\n") + "\n\n" + code + ")";
+  return [...importLines].sort().join("\n") + "\n\n" + code + ")\n";
 }
 
 export function toClojureWarn(
