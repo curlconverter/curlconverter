@@ -29,6 +29,7 @@ Hello World!`.replace(/\n/g, "\r\n");
 const setup = {
   // ansible: "",
   // cfml: "",
+  clojure: "mkdir -p /tmp/curlconverter-clojure",
   csharp:
     "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
   dart: "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
@@ -39,7 +40,7 @@ const setup = {
   // elixir:
   //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
   go: "",
-  java: "mkdir /tmp/curlconverter-java",
+  java: "mkdir -p /tmp/curlconverter-java",
   // javascript: "",
   // json: "",
   // matlab: "",
@@ -57,6 +58,8 @@ const setup = {
 const executables = {
   // ansible: "",
   // cfml: "",
+  clojure:
+    'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
   csharp:
     "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
   dart: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
