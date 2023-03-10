@@ -57,7 +57,7 @@ export function repr(w: Word, importLines: Set<string>): string {
       // (str) to return empty string if var missing
       // TODO: is there a better way?
       args.push("(str (System/getenv " + reprStr(t.value) + "))");
-      // Seems to be unnecessary
+      // TODO: Seems to be unnecessary
       // importLines.add("(import 'java.lang.System)");
     } else {
       importLines.add("(use '[clojure.java.shell :only [sh]])");
@@ -86,7 +86,7 @@ function reprQueryDict(query: QueryDict, importLines: Set<string>): string {
           repr(q[0], importLines) + // TODO: as keyword
           " " +
           (Array.isArray(q[1])
-            ? "[" + q[1].map((qq) => repr(qq, importLines)) + "]"
+            ? "[" + q[1].map((qq) => repr(qq, importLines)).join(" ") + "]"
             : repr(q[1], importLines))
       )
       .join("\n ") +
@@ -103,7 +103,7 @@ function reprQueryList(query: QueryList, importLines: Set<string>): string {
         (q) =>
           "[" + repr(q[0], importLines) + " " + repr(q[1], importLines) + "]"
       )
-      .join(" ") +
+      .join("\n ") +
     "]"
   );
 }
@@ -126,7 +126,7 @@ function indent(s: string, indent: number): string {
 }
 
 function reprJson(
-  obj: string | number | boolean | object | null,
+  obj: Word | Word[] | string | number | boolean | object | null,
   level = 0,
   importLines?: Set<string>
 ): string {
@@ -172,11 +172,12 @@ function reprJson(
   }
 }
 
-function reprDataString(
+function addDataString(
+  params: Params,
   request: Request,
   data: Word,
   importLines: Set<string>
-): [string, null | string] {
+) {
   const contentType = request.headers.getContentType();
   const exactContentType = request.headers.get("content-type");
   if (contentType === "application/json") {
@@ -185,21 +186,31 @@ function reprDataString(
     // TODO: probably not true
     // Only arrays and {} can be encoded as JSON
     if (typeof parsed !== "object" || parsed === null) {
-      return [repr(data, importLines), null];
+      params["body"] = repr(data, importLines);
+      return;
     }
     const roundtrips = JSON.stringify(parsed) === dataStr;
     const jsonAsClojure = reprJson(parsed);
+    const originalAsStr = repr(data, importLines);
+    params["form-params"] = jsonAsClojure;
+    importLines.add("(require '[cheshire.core :as json])");
+    if (!roundtrips) {
+      params["commented-body"] = originalAsStr;
+    }
     if (
-      roundtrips &&
       // TODO: check if it's set and to this?
-      eq(exactContentType, "application/json") &&
+      eq(exactContentType, "application/json")
       // TODO: check if it's set and to this?
-      eq(request.headers.get("accept"), "application/json, text/plain, */*")
     ) {
       request.headers.delete("content-type");
-      request.headers.delete("accept");
     }
-    return [jsonAsClojure, roundtrips ? null : repr(data, importLines)];
+    // Put this line after the commented body so that the options' closing }) isn't commented out
+    params["content-type"] = ":json";
+    if (eq(request.headers.get("accept"), "application/json")) {
+      request.headers.delete("accept");
+      params["accept"] = ":json";
+    }
+    return;
   }
 
   if (contentType === "application/x-www-form-urlencoded") {
@@ -212,7 +223,8 @@ function reprDataString(
           request.headers.delete("content-type");
         }
         // TODO: check roundtrip, add a comment
-        return [formParams, null];
+        params["form-params"] = formParams;
+        return;
       } catch {}
     }
     if (queryList) {
@@ -223,22 +235,24 @@ function reprDataString(
           request.headers.delete("content-type");
         }
         // TODO: check roundtrip, add a comment
-        return [formParams, null];
+        params["form-params"] = formParams;
+        return;
       } catch {}
     }
   }
 
-  return [repr(data, importLines), null];
+  params["body"] = repr(data, importLines);
 }
 
-function reprData(
+function addData(
+  params: Params,
   request: Request,
   data: DataParam[],
   importLines: Set<string>
-): [string, null | string] {
+) {
   if (data.length === 1 && data[0] instanceof Word && data[0].isString()) {
     try {
-      return reprDataString(request, data[0], importLines);
+      return addDataString(params, request, data[0], importLines);
     } catch {}
   }
 
@@ -256,12 +270,14 @@ function reprData(
     }
   }
   if (parts.length === 1) {
-    return [parts[0], null];
+    params["body"] = parts[0];
+  } else {
+    // TODO: this probably doesn't work with files
+    // TODO: this needlessly nests str if there are variables/subcommands
+    params["body"] = "(str " + parts.join(" ") + ")";
   }
-  // TODO: this probably doesn't work with files
-  // TODO: this needlessly nests str if there are variables/subcommands
-  return ["(str " + parts.join(" ") + ")", null];
 }
+
 function reprMultipart(form: FormParam[], importLines: Set<string>): string {
   const parts = [];
   for (const f of form) {
@@ -283,12 +299,14 @@ function reprMultipart(form: FormParam[], importLines: Set<string>): string {
   return "[" + parts.join("\n ") + "]";
 }
 
+type Params = { [key: string]: string };
 export function _toClojure(
   requests: Request[],
   warnings: Warnings = []
 ): string {
   const request = getFirst(requests, warnings, { dataReadsFile: true });
 
+  // TODO: merge require statements
   const importLines = new Set<string>([
     "(require '[clj-http.client :as client])",
   ]);
@@ -307,7 +325,7 @@ export function _toClojure(
 
   const method = request.urls[0].method;
   const methodStr = method.toString();
-  const params: { [key: string]: string } = {};
+  const params: Params = {};
   let fn;
   if (method.isString() && methods.has(methodStr)) {
     fn = "client/" + methodStr.toLowerCase();
@@ -332,16 +350,16 @@ export function _toClojure(
     );
   }
 
-  if (request.headers.length) {
-    // TODO: clojure http supports duplicate headers, they don't need to be merged
-    params["headers"] = reprHeaders(request.headers, importLines);
-  }
+  // addData() can delete headers, but to put them before the body we add a placeholder here
+  params["headers"] = "";
 
   if (request.urls[0].auth) {
     const [user, pass] = request.urls[0].auth;
     const authParam = {
       basic: "basic-auth",
       digest: "digest-auth",
+      // TODO: should be ["user" "pass" "host" "domain"]
+      // TODO: warn
       ntlm: "ntlm-auth",
       "ntlm-wb": "ntlm-auth",
 
@@ -357,13 +375,17 @@ export function _toClojure(
   }
 
   if (request.dataArray && request.data) {
-    const [body, altBody] = reprData(request, request.dataArray, importLines);
-    params["body"] = body;
-    if (altBody) {
-      // TODO: add as a comment
-    }
+    // Can delete headers
+    addData(params, request, request.dataArray, importLines);
   } else if (request.multipartUploads) {
     params["multipart"] = reprMultipart(request.multipartUploads, importLines);
+  }
+
+  if (request.headers.length) {
+    // TODO: clojure http supports duplicate headers, they don't need to be merged
+    params["headers"] = reprHeaders(request.headers, importLines);
+  } else {
+    delete params["headers"];
   }
 
   if (request.compressed === false) {
@@ -399,9 +421,19 @@ export function _toClojure(
   let code = "(" + fn + " " + repr(url, importLines);
 
   const paramLines = [];
-  for (const [param, value] of Object.entries(params)) {
+  let param, value;
+  for ([param, value] of Object.entries(params)) {
+    let commentOut = false;
+    if (param === "commented-body") {
+      commentOut = true;
+      param = "body";
+    }
     const key = ":" + param + " ";
-    paramLines.push(key + indent(value, key.length));
+    let paramStr = key + indent(value, key.length);
+    if (commentOut) {
+      paramStr = paramStr.replace(/^/gm, ";; ");
+    }
+    paramLines.push(paramStr);
   }
   if (paramLines.length) {
     let paramStart = code.length + 1;
