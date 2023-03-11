@@ -445,6 +445,7 @@ function requestToJavaScriptOrNode(
 ): string {
   warnIfPartsIgnored(request, warnings, {
     multipleUrls: true,
+    dataReadsFile: true,
     // Not actually supported, just warned per-URL
     queryReadsFile: true,
   });
