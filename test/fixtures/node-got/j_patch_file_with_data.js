@@ -7,5 +7,5 @@ form.append('form1', 'form+data+1');
 form.append('form2', 'form_data_2');
 
 const response = await got.patch('http://localhost:28139/patch', {
-    body: form
+  body: form
 });

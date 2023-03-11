@@ -10,13 +10,13 @@ form.append('updateInLayouts', '1');
 form.append('deleteOldRevisions', '1');
 
 const response = await axios.post(
-    'http://localhost:28139/api/library',
-    form,
-    {
-        headers: {
-            ...form.getHeaders(),
-            'accept': 'application/json',
-            'Content-Type': 'multipart/form-data'
-        }
+  'http://localhost:28139/api/library',
+  form,
+  {
+    headers: {
+      ...form.getHeaders(),
+      'accept': 'application/json',
+      'Content-Type': 'multipart/form-data'
     }
+  }
 );

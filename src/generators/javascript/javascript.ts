@@ -24,7 +24,7 @@ export function reprObj(value: object, indentLevel?: number): string {
     quotes: "single",
     minimal: false,
     compact: false,
-    indent: "    ",
+    indent: "  ",
     indentLevel: indentLevel ? indentLevel : 0,
   });
   if (typeof value === "string") {
@@ -36,7 +36,7 @@ export function reprObj(value: object, indentLevel?: number): string {
 export function reprPairs(
   d: [Word, Word][],
   indentLevel = 0,
-  indent = "    ",
+  indent = "  ",
   list = true,
   imports: JSImports
 ): string {
@@ -61,7 +61,7 @@ export function reprAsStringToStringDict(
   d: [Word, Word][],
   indentLevel = 0,
   imports: JSImports,
-  indent = "    "
+  indent = "  "
 ): string {
   return reprPairs(d, indentLevel, indent, false, imports);
 }
@@ -70,7 +70,7 @@ export function reprAsStringTuples(
   d: [Word, Word][],
   indentLevel = 0,
   imports: JSImports,
-  indent = "    "
+  indent = "  "
 ): string {
   return reprPairs(d, indentLevel, indent, true, imports);
 }
@@ -79,7 +79,7 @@ export function reprStringToStringList(
   d: [Word, Word | Word[]][],
   indentLevel = 0,
   imports: JSImports,
-  indent = "    ",
+  indent = "  ",
   list = true
 ): string {
   if (d.length === 0) {
@@ -204,6 +204,7 @@ export function reprImportsRequire(imports: JSImports): string {
   }
   return ret.join("\n") + "\n";
 }
+
 export function repr(w: Word, imports: JSImports): string {
   // Node
   const ret: string[] = [];
@@ -297,18 +298,16 @@ export function bySecondElem(a: [string, string], b: [string, string]): number {
 
 function getDataString(
   request: Request,
+  data: Word,
   isNode: boolean,
   imports: JSImports
 ): [string, string | null] {
-  if (!request.data) {
-    return ["", null];
-  }
-  const originalStringRepr = reprFetch(request.data, isNode, imports);
+  const originalStringRepr = reprFetch(data, isNode, imports);
 
   const contentType = request.headers.getContentType();
-  if (contentType === "application/json" && request.data.isString()) {
+  if (contentType === "application/json") {
     try {
-      const dataStr = request.data.toString();
+      const dataStr = data.toString();
       const parsed = JSON.parse(dataStr);
       // Only bother for arrays and {}
       if (typeof parsed !== "object" || parsed === null) {
@@ -325,7 +324,7 @@ function getDataString(
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const [queryList, queryDict] = parseQueryString(request.data);
+      const [queryList, queryDict] = parseQueryString(data);
       if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8
@@ -353,6 +352,88 @@ function getDataString(
     }
   }
   return [originalStringRepr, null];
+}
+
+function getData(
+  request: Request,
+  isNode: boolean,
+  imports: JSImports
+): [string, string | null] {
+  if (!request.dataArray) {
+    return ["", null];
+  }
+
+  if (
+    request.dataArray.length === 1 &&
+    request.dataArray[0] instanceof Word &&
+    request.dataArray[0].isString()
+  ) {
+    try {
+      return getDataString(request, request.dataArray[0], isNode, imports);
+    } catch {}
+  }
+
+  const parts = [];
+  const hasBinary = request.dataArray.some(
+    (d) => Array.isArray(d) && d[0] === "binary"
+  );
+  const encoding = hasBinary ? "" : ", 'utf-8'";
+  for (const d of request.dataArray) {
+    if (d instanceof Word) {
+      parts.push(repr(d, imports));
+    } else {
+      const [filetype, name, filename] = d;
+      if (filetype === "urlencode" && name) {
+        // TODO: add this to the previous Word
+        parts.push(reprFetch(name, isNode, imports));
+      }
+      // TODO: use the filetype
+      if (eq(filename, "-")) {
+        if (isNode) {
+          addImport(imports, "fs", "fs");
+          parts.push("fs.readFileSync(0" + encoding + ")");
+        } else {
+          // TODO: something else
+          // TODO: warn that file needs content
+          parts.push("new File([/* contents */], '<stdin>')");
+        }
+      } else {
+        if (isNode) {
+          addImport(imports, "fs", "fs");
+          parts.push(
+            "fs.readFileSync(" +
+              reprFetch(filename, isNode, imports) +
+              encoding +
+              ")"
+          );
+        } else {
+          // TODO: warn that file needs content
+          parts.push(
+            "new File([/* contents */], " +
+              reprFetch(filename, isNode, imports) +
+              ")"
+          );
+        }
+      }
+    }
+  }
+
+  if (parts.length === 0) {
+    return ["''", null];
+  }
+
+  if (parts.length === 1) {
+    return [parts[0], null];
+  }
+
+  let [start, joiner, end] = ["new ArrayBuffer(", ", ", ")"];
+  const totalLength = parts.reduce((a, b) => a + b.length, 0);
+  if (totalLength > 80) {
+    start += "\n    ";
+    joiner = ",\n    ";
+    end = "\n  )";
+  }
+  return [start + parts.join(joiner) + end, null];
 }
 
 function requestToJavaScriptOrNode(
@@ -414,7 +495,7 @@ function requestToJavaScriptOrNode(
   }
 
   // Can delete content-type header
-  const [dataString, commentedOutDataString] = getDataString(
+  const [dataString, commentedOutDataString] = getData(
     request,
     isNode,
     imports
@@ -463,7 +544,7 @@ function requestToJavaScriptOrNode(
         // const methods = []
         // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
         code +=
-          "    method: " +
+          "  method: " +
           reprFetch(request.urls[0].method, isNode, imports) +
           ",\n";
       }
@@ -472,10 +553,10 @@ function requestToJavaScriptOrNode(
         request.headers.length ||
         (urlObj.auth && request.authType === "basic")
       ) {
-        code += "    headers: {\n";
+        code += "  headers: {\n";
         for (const [headerName, headerValue] of request.headers) {
           code +=
-            "        " +
+            "    " +
             reprFetch(headerName, isNode, imports) +
             ": " +
             reprFetch(headerValue || new Word(), isNode, imports) +
@@ -484,7 +565,7 @@ function requestToJavaScriptOrNode(
         if (urlObj.auth && request.authType === "basic") {
           // TODO: if -H 'Authorization:' is passed, don't set this
           code +=
-            "        'Authorization': 'Basic ' + btoa(" +
+            "    'Authorization': 'Basic ' + btoa(" +
             reprFetch(joinWords(urlObj.auth, ":"), isNode, imports) +
             "),\n";
         }
@@ -493,19 +574,19 @@ function requestToJavaScriptOrNode(
           code = code.slice(0, -2);
           code += "\n";
         }
-        code += "    },\n";
+        code += "  },\n";
       }
 
       if (urlObj.uploadFile) {
         if (isNode) {
           fetchImports.add("fileFromSync");
           code +=
-            "    body: fileFromSync(" +
+            "  body: fileFromSync(" +
             reprFetch(urlObj.uploadFile, isNode, imports) +
             "),\n";
         } else {
           code +=
-            "    body: File(['<data goes here>'], " +
+            "  body: File(['<data goes here>'], " +
             reprFetch(urlObj.uploadFile, isNode, imports) +
             "),\n";
           warnings.push([
@@ -515,11 +596,11 @@ function requestToJavaScriptOrNode(
         }
       } else if (request.data) {
         if (commentedOutDataString) {
-          code += "    // body: " + commentedOutDataString + ",\n";
+          code += "  // body: " + commentedOutDataString + ",\n";
         }
-        code += "    body: " + dataString + ",\n";
+        code += "  body: " + dataString + ",\n";
       } else if (request.multipartUploads) {
-        code += "    body: form,\n";
+        code += "  body: form,\n";
       }
 
       if (isNode && request.proxy) {
@@ -547,13 +628,13 @@ function requestToJavaScriptOrNode(
         ) {
           addImport(imports, "{ SocksProxyAgent }", "socks-proxy-agent");
           code +=
-            "    agent: new SocksProxyAgent(" +
+            "  agent: new SocksProxyAgent(" +
             reprFetch(proxy, isNode, imports) +
             "),\n";
         } else if (eq(protocol, "http") || eq(protocol, "https")) {
           addImport(imports, "HttpsProxyAgent", "https-proxy-agent");
           code +=
-            "    agent: new HttpsProxyAgent(" +
+            "  agent: new HttpsProxyAgent(" +
             reprFetch(proxy, isNode, imports) +
             "),\n";
         } else {

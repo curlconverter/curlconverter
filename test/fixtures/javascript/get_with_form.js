@@ -5,9 +5,9 @@ form.append('subject', 'Hello');
 form.append('text', 'Testing the converter!');
 
 fetch('http://localhost:28139/v3', {
-    method: 'POST',
-    headers: {
-        'Authorization': 'Basic ' + btoa('test:')
-    },
-    body: form
+  method: 'POST',
+  headers: {
+    'Authorization': 'Basic ' + btoa('test:')
+  },
+  body: form
 });

@@ -9,8 +9,8 @@ form.append('updateInLayouts', '1');
 form.append('deleteOldRevisions', '1');
 
 const response = await got.post('http://localhost:28139/api/library', {
-    headers: {
-        'accept': 'application/json'
-    },
-    body: form
+  headers: {
+    'accept': 'application/json'
+  },
+  body: form
 });
