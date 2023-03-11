@@ -1,6 +1,6 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python, JavaScript, Java, C#, PHP, Go, Dart, R, Ruby, Rust, MATLAB, Elixir, Clojure, CFML, Ansible or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python, JavaScript, Java, C#, PHP, Go, Dart, R, Ruby, Rust, MATLAB, Elixir, Clojure, CFML, Ansible, HAR, or JSON.
 
 Try it on [curlconverter.com](https://curlconverter.com) or from the command line as a drop-in replacement for `curl`:
 
@@ -83,15 +83,17 @@ Choose the output language by passing `--language <language>`. The options are
 
 - `ansible`
 - `cfml`
+- `clojure`
 - `csharp`
 - `dart`
 - `elixir`
 - `go`
+- `har`
 - `java`
 - `javascript`, `node`, `node-axios`, `node-got`, `node-request`
 - `json`
 - `matlab`
-- `php`, `php-request`
+- `php`, `php-requests`
 - `python` (the default)
 - `r`
 - `ruby`
