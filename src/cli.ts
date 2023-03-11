@@ -11,11 +11,12 @@ import type { Request } from "./Request.js";
 
 import { _toAnsible, toAnsibleWarn } from "./generators/ansible.js";
 import { _toCFML, toCFMLWarn } from "./generators/cfml.js";
+import { _toClojure, toClojureWarn } from "./generators/clojure.js";
 import { _toCSharp, toCSharpWarn } from "./generators/csharp.js";
 import { _toDart, toDartWarn } from "./generators/dart.js";
 import { _toElixir, toElixirWarn } from "./generators/elixir.js";
 import { _toGo, toGoWarn } from "./generators/go.js";
-// import { _toHarString, toHarStringWarn } from "./generators/har.js";
+import { _toHarString, toHarStringWarn } from "./generators/har.js";
 import { _toJava, toJavaWarn } from "./generators/java.js";
 import {
   _toJavaScript,
@@ -61,6 +62,7 @@ const translate: {
 } = {
   ansible: [_toAnsible, toAnsibleWarn],
   cfml: [_toCFML, toCFMLWarn],
+  clojure: [_toClojure, toClojureWarn],
   csharp: [_toCSharp, toCSharpWarn],
   "c#": [_toCSharp, toCSharpWarn], // undocumented alias
   browser: [_toJavaScript, toJavaScriptWarn], // for backwards compatibility, undocumented
@@ -68,7 +70,7 @@ const translate: {
   elixir: [_toElixir, toElixirWarn],
   go: [_toGo, toGoWarn],
   golang: [_toGo, toGoWarn], // undocumented alias
-  // har: [_toHarString, toHarStringWarn],
+  har: [_toHarString, toHarStringWarn],
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
@@ -100,10 +102,12 @@ const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...
 language: the language to convert the curl command to. The choices are
   ansible
   cfml
+  clojure
   csharp
   dart
   elixir
   go
+  har
   java
   javascript
   json

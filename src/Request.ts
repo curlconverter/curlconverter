@@ -114,6 +114,7 @@ export interface Request {
   proxy?: Word;
   proxyAuth?: Word;
 
+  // seconds, can have decimal
   timeout?: Word;
   connectTimeout?: Word;
 

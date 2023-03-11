@@ -46,6 +46,11 @@ const converters = {
     extension: ".cfm",
     converter: curlconverter.toCFML,
   },
+  clojure: {
+    name: "Clojure",
+    extension: ".clj",
+    converter: curlconverter.toClojure,
+  },
   csharp: {
     name: "C#",
     extension: ".cs",

@@ -4,7 +4,38 @@
 >
 > — Dick Sites, May 1974
 
-First, make sure you're running **Node 14** or greater.
+### Setup
+
+First, make sure you're running **Node.js 16** or **18**. curlconverter currently [doesn't work](https://github.com/tree-sitter/tree-sitter/issues/1945) on Node 19.
+
+Ubuntu 22.10 lets you install Node.js 18 and npm like this:
+
+```sh
+sudo apt update
+sudo apt install nodejs npm
+```
+
+on other Ubuntu versions folow [these instructions](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04#option-2-installing-node-js-with-apt-using-a-nodesource-ppa).
+
+Then install [Docker Engine](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
+
+On macOS you will need to install Node.js with [Homebrew](https://brew.sh/)
+
+```sh
+brew install node@18
+```
+
+and add these lines to your ~/.bashrc file
+
+```sh
+export PATH="/opt/homebrew/opt/node@18/bin:$PATH"
+export LDFLAGS="-L/opt/homebrew/opt/node@18/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/node@18/include"
+```
+
+then install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/) for macOS and start it.
+
+### Adding a new generator
 
 If you add a new generator, you'll need to
 

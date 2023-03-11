@@ -124,61 +124,55 @@ function objToRuby(
   obj: Word | Word[] | string | number | boolean | object | null,
   indent = 0
 ): string {
-  let s = "";
   if (obj instanceof Word) {
-    s += repr(obj);
-  } else {
-    switch (typeof obj) {
-      case "string":
-        s += reprStr(obj);
-        break;
-      case "number":
-        s += obj;
-        break;
-      case "boolean":
-        s += obj ? "true" : "false";
-        break;
-      case "object":
-        if (obj === null) {
-          s += "nil";
-        } else if (Array.isArray(obj)) {
-          if (obj.length === 0) {
-            s += "[]";
-          } else {
-            s += "[\n";
-            for (const [i, item] of obj.entries()) {
-              s += " ".repeat(indent + 2) + objToRuby(item, indent + 2);
-              s += i === obj.length - 1 ? "\n" : ",\n";
-            }
-            s += " ".repeat(indent) + "]";
-          }
-        } else {
-          const len = Object.keys(obj).length;
-          if (len === 0) {
-            s += "{}";
-          } else {
-            s += "{\n";
-            const objEntries = Object.entries(obj);
-            for (const [i, [k, v]] of objEntries.entries()) {
-              // reprStr() because JSON keys must be strings.
-              s +=
-                " ".repeat(indent + 2) +
-                reprStr(k) +
-                " => " +
-                objToRuby(v, indent + 2);
-              s += i === objEntries.length - 1 ? "\n" : ",\n";
-            }
-            s += " ".repeat(indent) + "}";
-          }
-        }
-        break;
-      default:
-        throw new CCError(
-          "unexpected object type that shouldn't appear in JSON: " + typeof obj
-        );
-    }
+    return repr(obj);
   }
-  return s;
+  switch (typeof obj) {
+    case "string":
+      return reprStr(obj);
+    case "number":
+      return obj.toString();
+    case "boolean":
+      return obj ? "true" : "false";
+    case "object":
+      if (obj === null) {
+        return "nil";
+      }
+      if (Array.isArray(obj)) {
+        if (obj.length === 0) {
+          return "[]";
+        } else {
+          let s = "[\n";
+          for (const [i, item] of obj.entries()) {
+            s += " ".repeat(indent + 2) + objToRuby(item, indent + 2);
+            s += i === obj.length - 1 ? "\n" : ",\n";
+          }
+          s += " ".repeat(indent) + "]";
+          return s;
+        }
+      } else {
+        if (Object.keys(obj).length === 0) {
+          return "{}";
+        }
+        let s = "{\n";
+        const objEntries = Object.entries(obj);
+        for (const [i, [k, v]] of objEntries.entries()) {
+          // reprStr() because JSON keys must be strings.
+          s +=
+            " ".repeat(indent + 2) +
+            reprStr(k) +
+            " => " +
+            objToRuby(v, indent + 2);
+          s += i === objEntries.length - 1 ? "\n" : ",\n";
+        }
+        s += " ".repeat(indent) + "}";
+        return s;
+      }
+    default:
+      throw new CCError(
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+      );
+  }
 }
 
 function queryToRubyDict(q: QueryDict, indent = 0) {
