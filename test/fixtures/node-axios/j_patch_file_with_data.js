@@ -8,11 +8,11 @@ form.append('form1', 'form+data+1');
 form.append('form2', 'form_data_2');
 
 const response = await axios.patch(
-    'http://localhost:28139/patch',
-    form,
-    {
-        headers: {
-            ...form.getHeaders()
-        }
+  'http://localhost:28139/patch',
+  form,
+  {
+    headers: {
+      ...form.getHeaders()
     }
+  }
 );

@@ -4,6 +4,6 @@ form.append('form1', 'form+data+1');
 form.append('form2', 'form_data_2');
 
 fetch('http://localhost:28139/patch', {
-    method: 'PATCH',
-    body: form
+  method: 'PATCH',
+  body: form
 });

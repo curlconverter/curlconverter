@@ -118,14 +118,14 @@ function buildConfigObject(
 
   if (!methods.includes(methodStr)) {
     // Axios uppercases methods
-    code += "    method: " + repr(method, imports) + ",\n";
+    code += "  method: " + repr(method, imports) + ",\n";
   }
   if (hasSearchParams) {
-    // code += "    params,\n";
-    code += "    params: params,\n";
+    // code += "  params,\n";
+    code += "  params: params,\n";
   } else if (request.urls[0].queryDict) {
     code +=
-      "    params: " +
+      "  params: " +
       reprStringToStringList(request.urls[0].queryDict, 1, imports) +
       ",\n";
   }
@@ -133,13 +133,13 @@ function buildConfigObject(
   const [dataString, commentedOutDataString] = getDataString(request, imports); // can delete headers
 
   if (request.headers.length || request.multipartUploads) {
-    code += "    headers: {\n";
+    code += "  headers: {\n";
     if (request.multipartUploads) {
-      code += "        ...form.getHeaders(),\n";
+      code += "    ...form.getHeaders(),\n";
     }
     for (const [key, value] of request.headers) {
       code +=
-        "        " +
+        "    " +
         repr(key, imports) +
         ": " +
         repr(value ?? new Word(), imports) +
@@ -149,46 +149,44 @@ function buildConfigObject(
       code = code.slice(0, -2);
       code += "\n";
     }
-    code += "    },\n";
+    code += "  },\n";
   }
 
   if (request.urls[0].auth) {
     const [username, password] = request.urls[0].auth;
-    code += "    auth: {\n";
-    code += "        username: " + repr(username, imports);
+    code += "  auth: {\n";
+    code += "    username: " + repr(username, imports);
     if (password.toBool()) {
       code += ",\n";
-      code += "        password: " + repr(password, imports) + "\n";
+      code += "    password: " + repr(password, imports) + "\n";
     } else {
       code += "\n";
     }
-    code += "    },\n";
+    code += "  },\n";
   }
 
   if (!dataMethods.includes(methodStr)) {
     if (request.data) {
       if (commentedOutDataString) {
-        code += "    // data: " + commentedOutDataString + ",\n";
+        code += "  // data: " + commentedOutDataString + ",\n";
       }
-      code += "    data: " + dataString + ",\n";
+      code += "  data: " + dataString + ",\n";
     } else if (request.multipartUploads) {
-      code += "    data: form,\n";
+      code += "  data: form,\n";
     }
   }
 
   if (request.timeout) {
     if (parseFloat(request.timeout.toString()) !== 0) {
       code +=
-        "    timeout: " +
-        asParseFloatTimes1000(request.timeout, imports) +
-        ",\n";
+        "  timeout: " + asParseFloatTimes1000(request.timeout, imports) + ",\n";
     }
   }
 
   if (request.proxy && request.proxy.toString() === "") {
     // TODO: this probably won't be set if it's empty
     // TODO: could have --socks5 proxy
-    code += "    proxy: false,\n";
+    code += "  proxy: false,\n";
   } else if (request.proxy) {
     // TODO: do this parsing in utils.ts
     const proxy = request.proxy.includes("://")
@@ -207,31 +205,31 @@ function buildConfigObject(
       port = proxyPart[1];
     }
 
-    code += "    proxy: {\n";
-    code += "        protocol: " + repr(protocol, imports) + ",\n";
-    code += "        host: " + repr(host, imports) + ",\n";
+    code += "  proxy: {\n";
+    code += "    protocol: " + repr(protocol, imports) + ",\n";
+    code += "    host: " + repr(host, imports) + ",\n";
     if (isInt(port)) {
-      code += "        port: " + port + ",\n";
+      code += "    port: " + port + ",\n";
     } else {
-      code += "        port: " + reprStr(port) + ",\n";
+      code += "    port: " + reprStr(port) + ",\n";
     }
     if (request.proxyAuth) {
       const [proxyUser, proxyPassword] = request.proxyAuth.split(":", 2);
-      code += "        auth: {\n";
-      code += "            user: " + repr(proxyUser, imports);
+      code += "    auth: {\n";
+      code += "      user: " + repr(proxyUser, imports);
       if (proxyPassword !== undefined) {
         code += ",\n";
-        code += "            password: " + repr(proxyPassword, imports) + "\n";
+        code += "      password: " + repr(proxyPassword, imports) + "\n";
       } else {
         code += "\n";
       }
-      code += "        },\n";
+      code += "    },\n";
     }
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
       code += "\n";
     }
-    code += "    },\n";
+    code += "  },\n";
   }
 
   if (code.endsWith(",\n")) {
@@ -328,7 +326,7 @@ export function _toNodeAxios(
   let dataString, commentedOutDataString;
   if (needsData) {
     code += "\n";
-    code += "    " + repr(url, imports) + ",\n";
+    code += "  " + repr(url, imports) + ",\n";
     if (request.data) {
       try {
         [dataString, commentedOutDataString] = getDataString(request, imports);
@@ -339,14 +337,14 @@ export function _toNodeAxios(
         dataString = repr(request.data, imports);
       }
       if (commentedOutDataString) {
-        code += "    // " + commentedOutDataString + ",\n";
+        code += "  // " + commentedOutDataString + ",\n";
       }
-      code += "    " + dataString;
+      code += "  " + dataString;
     } else if (request.multipartUploads) {
-      code += "    form";
+      code += "  form";
     } else if (needsConfig) {
       // TODO: this works but maybe undefined would be more correct?
-      code += "    ''";
+      code += "  ''";
     }
   } else {
     code += repr(url, imports);
@@ -378,7 +376,7 @@ export function _toNodeAxios(
     if (needsData) {
       code += ",\n";
       for (const line of config.split("\n")) {
-        code += "    " + line + "\n";
+        code += "  " + line + "\n";
       }
     } else {
       code += ", ";

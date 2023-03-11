@@ -98,16 +98,13 @@ function getBodyString(
       if (queryList) {
         let paramsCode = "body: new URLSearchParams([\n";
         for (const [key, val] of queryList) {
-          paramsCode += `        [${repr(key, imports)}, ${repr(
-            val,
-            imports
-          )}],\n`;
+          paramsCode += `    [${repr(key, imports)}, ${repr(val, imports)}],\n`;
         }
         if (paramsCode.endsWith(",\n")) {
           paramsCode = paramsCode.slice(0, -2);
           paramsCode += "\n";
         }
-        paramsCode += "    ]).toString()";
+        paramsCode += "  ]).toString()";
         return [paramsCode, null];
       }
     }
@@ -128,7 +125,7 @@ function buildOptionsObject(
   let code = "{\n";
 
   if (!method.isString || !methods.includes(methodStr.toUpperCase())) {
-    code += "    method: " + repr(method, imports) + ",\n";
+    code += "  method: " + repr(method, imports) + ",\n";
   }
 
   if (
@@ -136,7 +133,7 @@ function buildOptionsObject(
     request.urls[0].queryDict.every((v) => !Array.isArray(v[1]))
   ) {
     code +=
-      "    searchParams: " +
+      "  searchParams: " +
       reprAsStringToStringDict(
         request.urls[0].queryDict as [Word, Word][],
         1,
@@ -144,15 +141,15 @@ function buildOptionsObject(
       ) +
       ",\n";
   } else if (request.urls[0].queryList) {
-    code += "    searchParams: new URLSearchParams([\n";
+    code += "  searchParams: new URLSearchParams([\n";
     for (const [key, val] of request.urls[0].queryList) {
-      code += `        [${repr(key, imports)}, ${repr(val, imports)}],\n`;
+      code += `    [${repr(key, imports)}, ${repr(val, imports)}],\n`;
     }
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
       code += "\n";
     }
-    code += "    ]),\n";
+    code += "  ]),\n";
   }
 
   const [bodyString, commentedOutBodyString] = getBodyString(request, imports); // can delete headers
@@ -164,15 +161,15 @@ function buildOptionsObject(
     ][];
     if (headers.length) {
       code +=
-        "    headers: " + reprAsStringToStringDict(headers, 1, imports) + ",\n";
+        "  headers: " + reprAsStringToStringDict(headers, 1, imports) + ",\n";
     }
   }
 
   if (request.urls[0].auth) {
     const [username, password] = request.urls[0].auth;
-    code += "    username: " + repr(username, imports) + ",\n";
+    code += "  username: " + repr(username, imports) + ",\n";
     if (password.toBool()) {
-      code += "    password: " + repr(password, imports) + ",\n";
+      code += "  password: " + repr(password, imports) + ",\n";
     }
     if (request.authType !== "basic") {
       // TODO: warn
@@ -181,13 +178,13 @@ function buildOptionsObject(
 
   if (request.data || request.multipartUploads) {
     if (commentedOutBodyString) {
-      code += "    // " + commentedOutBodyString + ",\n";
+      code += "  // " + commentedOutBodyString + ",\n";
     }
-    code += "    " + bodyString + ",\n";
+    code += "  " + bodyString + ",\n";
 
     // TODO: Does this work for HEAD?
     if (nonDataMethods.includes(methodStr.toUpperCase())) {
-      code += "    allowGetBody: true,\n";
+      code += "  allowGetBody: true,\n";
     }
   }
 
@@ -195,13 +192,13 @@ function buildOptionsObject(
     code += "    timeout: {\n";
     if (request.timeout) {
       code +=
-        "        request: " +
+        "    request: " +
         asParseFloatTimes1000(request.timeout, imports) +
         ",\n";
     }
     if (request.connectTimeout) {
       code +=
-        "        connect: " +
+        "    connect: " +
         asParseFloatTimes1000(request.connectTimeout, imports) +
         ",\n";
     }
@@ -209,7 +206,7 @@ function buildOptionsObject(
       code = code.slice(0, -2);
       code += "\n";
     }
-    code += "    },\n";
+    code += "  },\n";
   }
 
   // By default, curl doesn't follow redirects but got does.
@@ -226,7 +223,7 @@ function buildOptionsObject(
     maxRedirects !== "0" &&
     maxRedirects !== "10"; // got default
   if (!followRedirects || maxRedirects === "0") {
-    code += "    followRedirect: false,\n";
+    code += "  followRedirect: false,\n";
   } else if (maxRedirects) {
     if (maxRedirects === "-1") {
       maxRedirects = "Infinity";
@@ -240,21 +237,21 @@ function buildOptionsObject(
     ]);
   }
   if (hasMaxRedirects) {
-    code += "    maxRedirects: " + maxRedirects + ",\n";
+    code += "  maxRedirects: " + maxRedirects + ",\n";
   }
 
   if (request.compressed === false) {
-    code += "    decompress: false,\n";
+    code += "  decompress: false,\n";
   }
 
   if (request.insecure) {
-    code += "    https: {\n";
-    code += "        rejectUnauthorized: false\n";
-    code += "    },\n";
+    code += "  https: {\n";
+    code += "    rejectUnauthorized: false\n";
+    code += "  },\n";
   }
 
   if (request.http2) {
-    code += "    http2: true,\n";
+    code += "  http2: true,\n";
   }
 
   if (code.endsWith(",\n")) {

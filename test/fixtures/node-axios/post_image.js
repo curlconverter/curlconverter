@@ -6,11 +6,11 @@ const form = new FormData();
 form.append('image', fs.readFileSync('image.jpg'), 'image.jpg');
 
 const response = await axios.post(
-    'http://localhost:28139/targetservice',
-    form,
-    {
-        headers: {
-            ...form.getHeaders()
-        }
+  'http://localhost:28139/targetservice',
+  form,
+  {
+    headers: {
+      ...form.getHeaders()
     }
+  }
 );
