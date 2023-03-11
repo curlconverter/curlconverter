@@ -44,7 +44,7 @@ const supportedArgs = new Set([
   // "negotiate",
   // "no-negotiate",
   // "delegation", // GSS/kerberos
-  // "service-name", // GSS/kerberos, not supported
+  // "service-name", // GSS/kerberos
   "ntlm",
   "no-ntlm",
   "ntlm-wb",
@@ -89,14 +89,22 @@ function reprQueryDict(query: QueryDict, importLines: Set<string>): string {
   return (
     "{" +
     query
-      .map(
-        (q) =>
-          repr(q[0], importLines) + // TODO: as keyword
+      .map((q) => {
+        const key = q[0].toString();
+        if (!q[0].isString() || !safeAsKeyword(key)) {
+          throw new CCError(
+            "can't use query key as Clojure keyword: " + JSON.stringify(key)
+          );
+        }
+        return (
+          ":" +
+          key +
           " " +
           (Array.isArray(q[1])
             ? "[" + q[1].map((qq) => repr(qq, importLines)).join(" ") + "]"
             : repr(q[1], importLines))
-      )
+        );
+      })
       .join("\n ") +
     "}"
   );
@@ -114,6 +122,24 @@ function reprQueryList(query: QueryList, importLines: Set<string>): string {
       .join("\n ") +
     "]"
   );
+}
+
+function rerpQuery(
+  queryList: QueryList | null | undefined,
+  queryDict: QueryDict | null | undefined,
+  importLines: Set<string>
+): string | null {
+  if (queryDict) {
+    try {
+      return reprQueryDict(queryDict, importLines);
+    } catch {}
+  }
+  if (queryList) {
+    try {
+      return reprQueryList(queryList, importLines);
+    } catch {}
+  }
+  return null;
 }
 
 function reprHeaders(headers: Headers, importLines: Set<string>): string {
@@ -134,7 +160,6 @@ function indent(s: string, indent: number): string {
 
 function reprJson(
   obj: Word | Word[] | string | number | boolean | object | null,
-  level = 0,
   importLines?: Set<string>
 ): string {
   if (importLines && obj instanceof Word) {
@@ -157,7 +182,7 @@ function reprJson(
         if (totalLength < 100) {
           return "[" + objReprs.join(" ") + "]";
         }
-        return "[" + indent(objReprs.join("\n"), level + 1) + "]";
+        return "[" + indent(objReprs.join("\n"), 1) + "]";
       } else {
         const objReprs = Object.entries(obj).map(([k, v]) => {
           if (!safeAsKeyword(k)) {
@@ -166,13 +191,13 @@ function reprJson(
             );
           }
           // TODO: indent logic is wrong?
-          return ":" + k + " " + reprJson(v, level + 1 + k.length + 1);
+          return ":" + k + " " + indent(reprJson(v), 1 + k.length + 1);
         });
         const totalLength = objReprs.reduce((a, b) => a + b.length, 0);
         if (totalLength < 100 && objReprs.every((o) => !o.includes("\n"))) {
           return "{" + objReprs.join(" ") + "}";
         }
-        return "{" + indent(objReprs.join("\n"), level + 1) + "}";
+        return "{" + indent(objReprs.join("\n"), 1) + "}";
       }
     default:
       throw new CCError("unexpect type in JSON: " + typeof obj);
@@ -190,8 +215,7 @@ function addDataString(
   if (contentType === "application/json") {
     const dataStr = data.toString();
     const parsed = JSON.parse(dataStr);
-    // TODO: probably not true
-    // Only arrays and {} can be encoded as JSON
+    // Only convert arrays and {} as Clojure objects
     if (typeof parsed !== "object" || parsed === null) {
       params["body"] = repr(data, importLines);
       return;
@@ -202,16 +226,12 @@ function addDataString(
     params["form-params"] = jsonAsClojure;
     importLines.add("(require '[cheshire.core :as json])");
     if (!roundtrips) {
-      params["commented-body"] = originalAsStr;
+      params["commented-body"] = originalAsStr; // commented-body is a special case
     }
-    if (
-      // TODO: check if it's set and to this?
-      eq(exactContentType, "application/json")
-      // TODO: check if it's set and to this?
-    ) {
+    if (eq(exactContentType, "application/json")) {
       request.headers.delete("content-type");
     }
-    // Put this line after the commented body so that the options' closing }) isn't commented out
+    // Put this line after the commented body so that the option map's closing }) isn't commented out
     params["content-type"] = ":json";
     if (eq(request.headers.get("accept"), "application/json")) {
       request.headers.delete("accept");
@@ -222,29 +242,14 @@ function addDataString(
 
   if (contentType === "application/x-www-form-urlencoded") {
     const [queryList, queryDict] = parseQueryString(data);
-    if (queryDict) {
-      try {
-        const formParams = reprQueryDict(queryDict, importLines);
-        // TODO: what exactly is sent?
-        if (eq(exactContentType, "application/x-www-form-urlencoded")) {
-          request.headers.delete("content-type");
-        }
-        // TODO: check roundtrip, add a comment
-        params["form-params"] = formParams;
-        return;
-      } catch {}
-    }
-    if (queryList) {
-      try {
-        const formParams = reprQueryList(queryList, importLines);
-        // TODO: what exactly is sent?
-        if (eq(exactContentType, "application/x-www-form-urlencoded")) {
-          request.headers.delete("content-type");
-        }
-        // TODO: check roundtrip, add a comment
-        params["form-params"] = formParams;
-        return;
-      } catch {}
+    const formParams = rerpQuery(queryList, queryDict, importLines);
+    if (formParams !== null) {
+      if (eq(exactContentType, "application/x-www-form-urlencoded")) {
+        request.headers.delete("content-type");
+      }
+      // TODO: check roundtrip, add a comment
+      params["form-params"] = formParams;
+      return;
     }
   }
 
@@ -292,7 +297,11 @@ function addData(
   }
 }
 
-function reprMultipart(form: FormParam[], importLines: Set<string>): string {
+function reprMultipart(
+  form: FormParam[],
+  importLines: Set<string>,
+  warnings: Warnings
+): string {
   const parts = [];
   for (const f of form) {
     let part = "{:name " + repr(f.name, importLines);
@@ -304,8 +313,13 @@ function reprMultipart(form: FormParam[], importLines: Set<string>): string {
         repr(f.contentFile, importLines) +
         ")";
       if (f.filename && !eq(f.filename, f.contentFile)) {
-        // TODO: is this a real argument?
-        part += " :filename " + repr(f.filename, importLines);
+        warnings.push([
+          "cant-fake-filename",
+          "there's no way to send the filename " +
+            JSON.stringify(f.filename.toString()) +
+            " instead of " +
+            JSON.stringify(f.contentFile.toString()),
+        ]);
       }
     }
     parts.push(part + "}");
@@ -336,6 +350,7 @@ export function _toClojure(
     "MOVE",
     "PATCH",
   ]);
+  const dataMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
   const method = request.urls[0].method;
   const methodStr = method.toString();
@@ -351,19 +366,18 @@ export function _toClojure(
   }
 
   let url = request.urls[0].url; // TODO: .urlWithOriginalQuery?
-  if (request.urls[0].queryDict) {
-    url = request.urls[0].urlWithoutQueryList;
-    params["query-params"] = reprQueryDict(
+  try {
+    const queryParams = rerpQuery(
+      request.urls[0].queryList,
       request.urls[0].queryDict,
       importLines
     );
-  } else if (request.urls[0].queryList) {
-    url = request.urls[0].urlWithoutQueryList;
-    params["query-params"] = reprQueryList(
-      request.urls[0].queryList,
-      importLines
-    );
-  }
+
+    if (queryParams) {
+      params["query-params"] = queryParams;
+      url = request.urls[0].urlWithoutQueryList;
+    }
+  } catch {}
 
   // addData() can delete headers, but to put them before the body we add a placeholder here
   params["headers"] = "";
@@ -392,8 +406,19 @@ export function _toClojure(
   if (request.dataArray && request.data) {
     // Can delete headers
     addData(params, request, request.dataArray, importLines);
+    if (!dataMethods.has(methodStr)) {
+      warnings.push([
+        "data-not-posted",
+        "clj-http doesn't send data with " + methodStr + " requests",
+      ]);
+    }
   } else if (request.multipartUploads) {
-    params["multipart"] = reprMultipart(request.multipartUploads, importLines);
+    params["multipart"] = reprMultipart(
+      request.multipartUploads,
+      importLines,
+      warnings
+    );
+    // TODO: above warning probably also applies here
   }
 
   if (request.headers.length) {

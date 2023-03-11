@@ -1,11 +1,11 @@
 (require '[clj-http.client :as client])
 
-(client/options "http://localhost:28139/api/tunein/queue-and-play" {:query-params {"deviceSerialNumber" "xxx"
-                                                                                   "deviceType" "xxx"
-                                                                                   "guideId" "s56876"
-                                                                                   "contentType" "station"
-                                                                                   "callSign" ""
-                                                                                   "mediaOwnerCustomerId" "xxx"}
+(client/options "http://localhost:28139/api/tunein/queue-and-play" {:query-params {:deviceSerialNumber "xxx"
+                                                                                   :deviceType "xxx"
+                                                                                   :guideId "s56876"
+                                                                                   :contentType "station"
+                                                                                   :callSign ""
+                                                                                   :mediaOwnerCustomerId "xxx"}
                                                                     :headers {"Pragma" "no-cache",
                                                                               "Access-Control-Request-Method" "POST",
                                                                               "Origin" "https://alexa.amazon.de",

@@ -9,5 +9,5 @@
                                                             "Referer" "http://fiddle.jshell.net/_display/",
                                                             "X-Requested-With" "XMLHttpRequest",
                                                             "Connection" "keep-alive"}
-                                                  :form-params {"msg1" "wow"
-                                                                "msg2" "such"}})
+                                                  :form-params {:msg1 "wow"
+                                                                :msg2 "such"}})
