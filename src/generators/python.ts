@@ -1237,8 +1237,11 @@ function getDataString(
       eq(
         request.headers.get("content-type"),
         "application/x-www-form-urlencoded"
-      )
+      ) &&
+      request.headers.length === 1
     ) {
+      // Requests adds the header when you include a body
+      // so if it's the only header, don't print the headers
       request.headers.delete("content-type");
     }
     if (percentWarn) {
