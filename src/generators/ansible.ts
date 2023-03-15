@@ -1,4 +1,4 @@
-import { eq } from "../shell/Word.js";
+import { Word, eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
@@ -127,11 +127,11 @@ function getDataString(
     if (
       request.dataArray &&
       request.dataArray.length === 1 &&
-      Array.isArray(request.dataArray[0]) &&
-      request.dataArray[0][1] === null
+      !(request.dataArray[0] instanceof Word) &&
+      !request.dataArray[0].name
     ) {
-      const filetype = request.dataArray[0][0];
-      const filename = request.dataArray[0][2].toString();
+      const filetype = request.dataArray[0].filetype;
+      const filename = request.dataArray[0].filename.toString();
       // TODO: and newlines have to be stripped for others
       if (filetype === "urlencode") {
         // TODO: or the other ones don't need to be?
@@ -176,7 +176,7 @@ export function _toAnsible(
     request.dataReadsFile &&
     request.dataArray &&
     (request.dataArray.length > 1 ||
-      (Array.isArray(request.dataArray[0]) && request.dataArray[0][1] !== null))
+      (!(request.dataArray[0] instanceof Word) && request.dataArray[0].name))
   ) {
     warnings.push([
       "unsafe-data",

@@ -895,7 +895,7 @@ function formatDataAsEntries(
   // --data-urlencode adds an '&' before its value, so we don't have to worry about
   // --json <foo> --data-urlencode <bar>
   for (const d of dataArray) {
-    if (Array.isArray(d) && d[0] !== "urlencode") {
+    if (!(d instanceof Word) && d.filetype !== "urlencode") {
       return null;
     }
   }
@@ -991,21 +991,19 @@ function formatDataAsEntries(
       continue;
     }
 
-    const name = d[1];
-    const filename = d[2];
     // TODO: I bet Python doesn't treat file paths identically to curl
-    const readFile = eq(filename, "-")
+    const readFile = eq(d.filename, "-")
       ? "sys.stdin.read()"
-      : "open(" + repr(filename, osVars, imports, false, true) + ").read()";
+      : "open(" + repr(d.filename, osVars, imports, false, true) + ").read()";
 
-    if (!name) {
+    if (!d.name) {
       dataEntries.push([readFile, null]);
     } else {
       // Curl doesn't percent encode the name but Requests will
-      if (!eq(name, percentEncode(name))) {
+      if (!eq(d.name, percentEncode(d.name))) {
         return null;
       }
-      dataEntries.push([repr(name, osVars, imports), readFile]);
+      dataEntries.push([repr(d.name, osVars, imports), readFile]);
     }
   }
 
@@ -1033,7 +1031,9 @@ function formatDataAsStr(
   // An argument has to be binary when the input command has
   // --data-binary @filename
   // otherwise we could generate code that will try to read an image file as text and error.
-  const binary = dataArray.some((d) => Array.isArray(d) && d[0] === "binary");
+  const binary = dataArray.some(
+    (d) => !(d instanceof Word) && d.filetype === "binary"
+  );
   const reprFunc = binary ? reprb : repr;
   const prefix = binary ? "b" : "";
   const mode = binary ? ", 'rb'" : "";
@@ -1070,8 +1070,8 @@ function formatDataAsStr(
       continue;
     }
 
-    const [type, name, filename] = d;
-    if (type === "urlencode" && name) {
+    const { filetype, name, filename } = d;
+    if (filetype === "urlencode" && name) {
       line += reprFunc(extra.add(name).append("="), osVars, imports) + " + ";
       encodeOnSeparateLine = true; // we would need to add parentheses because of the +
     } else if (extra.toBool()) {
@@ -1099,11 +1099,11 @@ function formatDataAsStr(
       readFile += "f";
     }
     readFile += ".read()";
-    if (!["binary", "json", "urlencode"].includes(type)) {
+    if (!["binary", "json", "urlencode"].includes(filetype)) {
       readFile += `.replace(${prefix}'\\n', ${prefix}'').replace(${prefix}'\\r', ${prefix}'')`;
     }
 
-    if (type === "urlencode") {
+    if (filetype === "urlencode") {
       readFile = "quote_plus(" + readFile + ")";
       if (binary) {
         // quote_plus() always returns a string
@@ -1171,10 +1171,12 @@ function formatDataAsJson(
       } catch {}
       return [jsonDataString, jsonRoundtrips];
     } catch {}
-  } else if (d[0] === "json") {
+  } else if (d.filetype === "json") {
     let jsonDataString = "";
     jsonDataString +=
-      "with open(" + repr(d[2], osVars, imports, false, true) + ") as f:\n";
+      "with open(" +
+      repr(d.filename, osVars, imports, false, true) +
+      ") as f:\n";
     jsonDataString += "    json_data = json.load(f)\n";
     imports.add("json");
     return [jsonDataString, false];

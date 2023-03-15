@@ -375,14 +375,14 @@ function getData(
 
   const parts = [];
   const hasBinary = request.dataArray.some(
-    (d) => Array.isArray(d) && d[0] === "binary"
+    (d) => !(d instanceof Word) && d.filetype === "binary"
   );
   const encoding = hasBinary ? "" : ", 'utf-8'";
   for (const d of request.dataArray) {
     if (d instanceof Word) {
       parts.push(repr(d, imports));
     } else {
-      const [filetype, name, filename] = d;
+      const { filetype, name, filename } = d;
       if (filetype === "urlencode" && name) {
         // TODO: add this to the previous Word
         parts.push(reprFetch(name, isNode, imports));

@@ -26,8 +26,12 @@ import type { FormParam } from "./curl/form.js";
 export type FileParamType = "data" | "binary" | "urlencode" | "json";
 export type DataType = FileParamType | "raw";
 
-// [file type, name (thing left of "=", null if no "="), filename (to read for the value)]
-export type FileDataParam = [FileParamType, Word | null, Word];
+export type FileDataParam = {
+  filetype: FileParamType;
+  // The left side of "=" for --data-urlencode, can't be empty string
+  name?: Word;
+  filename: Word;
+};
 // "raw"-type SrcDataParams, and `FileParamType`s that read from stdin
 // when we have its contents (because it comes from a pipe) are converted
 // to plain strings
@@ -373,8 +377,15 @@ function buildData(
         data.push(dataStrState);
         dataStrState = new Word();
       }
-      // If `filename` isn't null, then `type` can't be "raw"
-      data.push([type as FileParamType, name, filename]);
+      const dataParam: DataParam = {
+        // If `filename` isn't null, then `type` can't be "raw"
+        filetype: type as FileParamType,
+        filename,
+      };
+      if (name) {
+        dataParam.name = name;
+      }
+      data.push(dataParam);
     } else {
       dataStrState = dataStrState.add(value);
     }
@@ -386,14 +397,12 @@ function buildData(
   let dataStrReadsFile: string | null = null;
   const dataStr = mergeWords(
     data.map((d) => {
-      if (Array.isArray(d)) {
-        const name = d[1];
-        const filename = d[2];
-        dataStrReadsFile ||= filename.toString(); // report first file
-        if (name) {
-          return mergeWords([name, "=@", filename]);
+      if (!(d instanceof Word)) {
+        dataStrReadsFile ||= d.filename.toString(); // report first file
+        if (d.name) {
+          return mergeWords([d.name, "=@", d.filename]);
         }
-        return filename.prepend("@");
+        return d.filename.prepend("@");
       }
       return d;
     })
@@ -678,7 +687,7 @@ function buildRequest(
     // TODO: remove these
     request.isDataRaw = false;
     request.isDataBinary = (data || []).some(
-      (d) => Array.isArray(d) && d[0] === "binary"
+      (d) => !(d instanceof Word) && d.filetype === "binary"
     );
   }
   if (queryArray) {

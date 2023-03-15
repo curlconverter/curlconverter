@@ -197,11 +197,10 @@ function getDataString(request: Request): [string, boolean] {
   if (
     request.dataArray &&
     request.dataArray.length === 1 &&
-    Array.isArray(request.dataArray[0]) &&
-    request.dataArray[0][1] === null
+    !(request.dataArray[0] instanceof Word) &&
+    !request.dataArray[0].name
   ) {
-    const filetype = request.dataArray[0][0];
-    const filename = request.dataArray[0][2];
+    const { filetype, filename } = request.dataArray[0];
 
     if (eq(filename, "-")) {
       if (filetype === "binary") {
@@ -346,7 +345,7 @@ function requestToRuby(
     request.dataArray &&
     request.dataArray.length &&
     (request.dataArray.length > 1 ||
-      (Array.isArray(request.dataArray[0]) && request.dataArray[0][1] !== null))
+      (!(request.dataArray[0] instanceof Word) && request.dataArray[0].name))
   ) {
     warnings.push([
       "unsafe-data",

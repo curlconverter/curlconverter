@@ -273,7 +273,7 @@ function addData(
     if (d instanceof Word) {
       parts.push(repr(d, importLines));
     } else {
-      const [filetype, name, filename] = d;
+      const { filetype, name, filename } = d;
       if (filetype === "urlencode" && name) {
         // TODO: add this to the previous Word
         parts.push(repr(name, importLines));
