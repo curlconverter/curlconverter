@@ -1,4 +1,4 @@
-import Parser from "tree-sitter";
+import Parser from "@curlconverter/tree-sitter";
 import Bash from "@curlconverter/tree-sitter-bash";
 
 const parser = new Parser();
