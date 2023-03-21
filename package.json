@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "4.5.0",
+  "version": "4.6.0",
   "description": "convert curl commands to Python, JavaScript, Go, PHP and more",
   "homepage": "https://curlconverter.com",
   "author": {
@@ -27,7 +27,7 @@
     "@curlconverter/tree-sitter-bash": "^0.0.2",
     "jsesc": "^3.0.2",
     "lossless-json": "^2.0.2",
-    "tree-sitter": "^0.20.1",
+    "@curlconverter/tree-sitter": "^0.0.8",
     "web-tree-sitter": "^0.20.7",
     "yamljs": "^0.3.0"
   },

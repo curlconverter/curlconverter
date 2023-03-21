@@ -6,7 +6,7 @@
 
 ### Setup
 
-First, make sure you're running **Node.js 16** or **18**. curlconverter currently [doesn't work](https://github.com/tree-sitter/tree-sitter/issues/1945) on Node 19.
+First, make sure you're running **Node.js 16+**.
 
 You can install Node.js 18 and npm on Ubuntu 22.10 with
 
