@@ -205,13 +205,17 @@ function requestToWget(request: Request, warnings: Warnings): string {
   const args: string[] = [];
 
   if (
+    request.urls[0].uploadFile ||
     (request.dataArray &&
-      request.dataArray.length &&
-      !eq(request.urls[0].method, "POST")) ||
-    (request.dataArray &&
-      !request.dataArray.length &&
-      !eq(request.urls[0].method, "GET"))
+      request.dataArray.length === 1 &&
+      !(request.dataArray[0] instanceof Word) &&
+      !request.dataArray[0].name) ||
+    request.data
   ) {
+    if (!eq(request.urls[0].method, "POST")) {
+      args.push("--method=" + repr(request.urls[0].method));
+    }
+  } else if (!eq(request.urls[0].method, "GET")) {
     args.push("--method=" + repr(request.urls[0].method));
   }
   if (request.urls.length > 1) {
@@ -223,7 +227,7 @@ function requestToWget(request: Request, warnings: Warnings): string {
     if (uniqueMethods.size > 1) {
       warnings.push([
         "mixed-methods",
-        "the curl command uses multiple HTTP methods, which Wget doesn't support: " +
+        "the input curl command uses multiple HTTP methods, which Wget doesn't support: " +
           request.urls
             .map((u) => JSON.stringify(u.method.toString()))
             .join(", "),
@@ -446,7 +450,9 @@ function requestToWget(request: Request, warnings: Warnings): string {
     args.push(repr(url.url));
   }
 
-  const joiner = args.length > 2 ? " \\\n  " : " ";
+  const multiline =
+    args.length > 3 || args.reduce((a, b) => a + b.length, 0) > 80 - 5;
+  const joiner = multiline ? " \\\n  " : " ";
   return "wget " + args.join(joiner) + "\n";
 }
 
