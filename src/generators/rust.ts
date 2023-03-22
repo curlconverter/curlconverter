@@ -75,7 +75,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
   const request = getFirst(requests, warnings);
 
   const imports = new Set<string>();
-  const lines = [];
+  const lines: string[] = [];
   lines.push("", "fn main() -> Result<(), Box<dyn std::error::Error>> {");
 
   if (request.headers.length) {

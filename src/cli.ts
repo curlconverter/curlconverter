@@ -43,6 +43,7 @@ import { _toPython, toPythonWarn } from "./generators/python.js";
 import { _toR, toRWarn } from "./generators/r.js";
 import { _toRuby, toRubyWarn } from "./generators/ruby.js";
 import { _toRust, toRustWarn } from "./generators/rust.js";
+import { _toWget, toWgetWarn } from "./generators/wget.js";
 
 import fs from "fs";
 
@@ -95,6 +96,7 @@ const translate: {
   r: [_toR, toRWarn],
   ruby: [_toRuby, toRubyWarn],
   rust: [_toRust, toRustWarn],
+  wget: [_toWget, toWgetWarn],
 };
 
 const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...]
@@ -121,6 +123,7 @@ language: the language to convert the curl command to. The choices are
   r
   ruby
   rust
+  wget
 
 -: read curl command from stdin
 

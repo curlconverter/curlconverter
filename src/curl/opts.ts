@@ -665,16 +665,27 @@ export interface OperationConfig {
   "netrc-optional"?: boolean;
   "netrc-file"?: Word;
 
-  insecure?: boolean;
   compressed?: boolean;
 
   head?: boolean;
   get?: boolean;
 
+  ipv4?: boolean;
+  ipv6?: boolean;
+
+  ciphers?: Word;
+  insecure?: boolean;
+  cert?: Word;
+  "cert-type"?: Word;
+  key?: Word;
+  "key-type"?: Word;
   cacert?: Word;
   capath?: Word;
-  cert?: Word;
-  key?: Word;
+  crlfile?: Word;
+  pinnedpubkey?: Word;
+  "random-file"?: Word;
+  "egd-file"?: Word;
+  hsts?: Word[];
 
   "proto-default"?: Word;
   globoff?: boolean;
@@ -685,6 +696,7 @@ export interface OperationConfig {
 
   proxy?: Word;
   "proxy-user"?: Word;
+  noproxy?: Word;
 
   range?: Word;
   referer?: Word;
@@ -723,6 +735,7 @@ const canBeList = new Set<keyof OperationConfig>([
   "cookie",
   "quote",
   "telnet-option",
+  "hsts",
 
   "authArgs", // used for error messages
 ]);
