@@ -81,6 +81,7 @@ export interface RequestUrl {
 export interface Request {
   // Will have at least one element (otherwise an error is raised)
   urls: RequestUrl[];
+  globoff?: boolean;
 
   // Just the part that comes from `--get --data` or `--url-query` (not the query in the URL)
   // unless there's only one URL, then it will include both.
@@ -109,18 +110,31 @@ export interface Request {
   isDataBinary?: boolean;
   isDataRaw?: boolean;
 
-  cert?: Word | [Word, Word];
-  cacert?: Word;
-  capath?: Word;
+  ipv4?: boolean;
+  ipv6?: boolean;
+
   ciphers?: Word;
   insecure?: boolean;
+  cert?: Word;
+  certType?: Word;
+  key?: Word;
+  keyType?: Word;
+  cacert?: Word;
+  capath?: Word;
+  crlfile?: Word;
+  pinnedpubkey?: Word;
+  randomFile?: Word;
+  egdFile?: Word;
+  hsts?: Word[]; // a filename
 
   proxy?: Word;
   proxyAuth?: Word;
+  noproxy?: Word; // a list of hosts or "*"
 
   // seconds, can have decimal
   timeout?: Word;
   connectTimeout?: Word;
+  limitRate?: Word;
 
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
@@ -635,6 +649,10 @@ function buildRequest(
     request.stdinFile = stdinFile;
   }
 
+  if (config.globoff !== undefined) {
+    request.globoff = config.globoff;
+  }
+
   if (cookies) {
     // generators that use .cookies need to do
     // deleteHeader(request, 'cookie')
@@ -696,14 +714,33 @@ function buildRequest(
     request.queryArray = queryArray;
   }
 
+  if (config["ipv4"] !== undefined) {
+    request["ipv4"] = config["ipv4"];
+  }
+  if (config["ipv6"] !== undefined) {
+    request["ipv6"] = config["ipv6"];
+  }
+
+  if (config.ciphers) {
+    request.ciphers = config.ciphers;
+  }
   if (config.insecure) {
     request.insecure = true;
   }
   // TODO: if the URL doesn't start with https://, curl doesn't verify
   // certificates, etc.
+  // TODO: --cert value might have password
   if (config.cert) {
-    // --key has no effect if --cert isn't passed
-    request.cert = config.key ? [config.cert, config.key] : config.cert;
+    request.cert = config.cert;
+  }
+  if (config["cert-type"]) {
+    request.certType = config["cert-type"];
+  }
+  if (config.key) {
+    request.key = config.key;
+  }
+  if (config["key-type"]) {
+    request.keyType = config["key-type"];
   }
   if (config.cacert) {
     request.cacert = config.cacert;
@@ -711,8 +748,20 @@ function buildRequest(
   if (config.capath) {
     request.capath = config.capath;
   }
-  if (config.ciphers) {
-    request.ciphers = config.ciphers;
+  if (config.crlfile) {
+    request.crlfile = config.crlfile;
+  }
+  if (config.pinnedpubkey) {
+    request.pinnedpubkey = config.pinnedpubkey;
+  }
+  if (config["random-file"]) {
+    request.randomFile = config["random-file"];
+  }
+  if (config["egd-file"]) {
+    request.egdFile = config["egd-file"];
+  }
+  if (config.hsts) {
+    request.hsts = config.hsts;
   }
 
   if (config.proxy) {
@@ -722,6 +771,10 @@ function buildRequest(
       request.proxyAuth = config["proxy-user"];
     }
   }
+  if (config.noproxy) {
+    request.noproxy = config.noproxy;
+  }
+
   if (config["max-time"]) {
     request.timeout = config["max-time"];
     if (
@@ -749,6 +802,10 @@ function buildRequest(
       ]);
     }
   }
+  if (config["limit-rate"]) {
+    request.limitRate = config["limit-rate"];
+  }
+
   if (Object.prototype.hasOwnProperty.call(config, "location")) {
     request.followRedirects = config.location;
   }

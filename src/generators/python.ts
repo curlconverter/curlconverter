@@ -1469,17 +1469,16 @@ function requestToPython(
   }
 
   let certStr;
-  if (request.cert) {
+  if (request.cert || request.key) {
     certStr = "cert = ";
-    if (Array.isArray(request.cert)) {
+    const certPart = request.cert
+      ? repr(request.cert, osVars, imports)
+      : "None";
+    if (request.key) {
       certStr +=
-        "(" +
-        repr(request.cert[0], osVars, imports) +
-        ", " +
-        repr(request.cert[1], osVars, imports) +
-        ")";
+        "(" + certPart + ", " + repr(request.key, osVars, imports) + ")";
     } else {
-      certStr += repr(request.cert, osVars, imports);
+      certStr += certPart;
     }
     certStr += "\n";
   }

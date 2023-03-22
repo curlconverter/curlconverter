@@ -275,12 +275,11 @@ export function _toAnsible(
     r.ca_path = request.cacert.toString();
   }
   if (request.cert) {
-    if (Array.isArray(request.cert)) {
-      r.client_cert = request.cert[0].toString();
-      r.client_key = request.cert[1].toString();
-    } else {
-      r.client_cert = request.cert.toString();
-    }
+    // TODO: might have password
+    r.client_cert = request.cert.toString();
+  }
+  if (request.key) {
+    r.client_key = request.key.toString();
   }
   if (request.ciphers) {
     r.ciphers = request.ciphers.toString();

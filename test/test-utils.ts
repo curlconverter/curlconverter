@@ -136,6 +136,11 @@ const converters = {
     extension: ".rs",
     converter: curlconverter.toRust,
   },
+  wget: {
+    name: "Wget",
+    extension: ".sh",
+    converter: curlconverter.toWget,
+  },
   parser: {
     name: "Parser",
     extension: ".json",

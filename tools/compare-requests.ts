@@ -53,6 +53,7 @@ const setup = {
   r: "",
   ruby: "",
   rust: "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
+  wget: "",
 } as const;
 
 const executables = {
@@ -79,6 +80,7 @@ const executables = {
   r: "r < <file> --no-save",
   ruby: "ruby <file>",
   rust: "cp <file> /tmp/curlconverter-rust/src/main.rs && cd /tmp/curlconverter-rust && cargo run",
+  wget: "bash <file>",
 } as const;
 
 const argv = await yargs(hideBin(process.argv))

@@ -15,22 +15,14 @@ sudo apt update
 sudo apt install nodejs npm
 ```
 
-on older Ubuntu versions follow [these instructions](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04#option-2-installing-node-js-with-apt-using-a-nodesource-ppa).
+Follow [these instructions](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04#option-2-installing-node-js-with-apt-using-a-nodesource-ppa) on older Ubuntu versions.
 
 Then install [Docker Engine](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
 
 On macOS, install Node.js with [Homebrew](https://brew.sh/)
 
 ```sh
-brew install node@18
-```
-
-and add these lines to your ~/.bashrc file
-
-```sh
-export PATH="/opt/homebrew/opt/node@18/bin:$PATH"
-export LDFLAGS="-L/opt/homebrew/opt/node@18/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/node@18/include"
+brew install node
 ```
 
 then install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/) for macOS and start it.
@@ -43,10 +35,11 @@ If you add a new generator, you'll need to
 
 - add it to [README.md](./README.md) in two places
 - export it in [index.ts](src/index.ts)
-- update the list of supported languages in [cli.ts](src/cli.ts) (or it won't be accessible from the command line)
+- update the list of supported languages in [cli.ts](src/cli.ts) in two places (or it won't be accessible from the command line)
 - add it to [test-utils.ts](test/test-utils.ts) (to make it part of the testing)
 - create a directory in [test/fixtures](test/fixtures/)
-- generate tests with `npm run gen-test -- --language <your language> --all`
+- generate tests with `npm run gen-test -- --all --language <language>`
+- optionally, add it to [tools/compare-requests.ts](tools/compare-requests.ts)
 
 If you want to add new functionality you can start with a test.
 
@@ -124,14 +117,14 @@ These first two steps are skipped if the input is already an array of strings.
 }]
 ```
 
-4. Convert that object into a more advanced object, for example with the input URLs split into their parts: scheme/path/etc.
-5. Generate a string of code in the desired output language by looking at that object
+4. Convert that object into a more advanced object, for example with the input URLs split into their parts: scheme/host/etc.
+5. Generate a string of code in the desired output language from that object
 
 The entry point of the code is a bunch of `toPython()`, `toJavaScript()`, etc. functions. They store a list of which curl arguments are supported by the language they generate, and pass that into the parser so that we can report when the input command uses an argument that is ignored by the code generator.
 
 They call [`parseCurlCommand()`](https://github.com/curlconverter/curlconverter/blob/4761ee93a91e0553b2cf6f24f4c66c900b05f3f6/src/parse.ts#L42) which performs steps 1 and 2 and then calls [`parseArgs()`](https://github.com/curlconverter/curlconverter/blob/0edf039c15b5ec750553807b79848c5d7247e4c1/src/util.ts#L1235), essentially a re-implementation of curl's [`parse_args()`](https://github.com/curl/curl/blob/curl-7_88_1/src/tool_getparam.c#L2476) that implements step 3.
 
-The command line acts as a drop-in replacement for the `curl` command but has a few of its own arguments and can repurpose some of curl's arguments for its own use: `--language <>` selects the output language, `--verbose` enables printing of warnings (and a stack traces if an error happens) during conversion and `-` reads the input command from stdin instead.
+The command line acts as a drop-in replacement for the `curl` command but adds two of its own arguments (`--language <language>` selects the output language and `-`/`--stdin` reads the input command from stdin instead of from the arguments and raises an error if other arguments (except `--verbose`) are passed), and repurposes curl's `--verbose` argument to enable printing of warnings and JavaScript error stack traces during conversion.
 
 ### How curl parses arguments
 
@@ -169,7 +162,7 @@ Then it passes this linked list to `run_all_transfers()`
 
 https://github.com/curl/curl/blob/curl-7_84_0/src/tool_operate.c#L2684
 
-and ultimately the code ends up in `single_transfer()`, which creates the object that the C library expects, mostly this involves just copying stuff from the struct to a new struct
+and ultimately the code ends up in `single_transfer()`, which creates the object that the C library expects, mostly this just copies stuff from the struct to a new struct
 
 https://github.com/curl/curl/blob/curl-7_84_0/src/tool_operate.c#L688
 
