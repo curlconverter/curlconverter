@@ -40,8 +40,9 @@ export type DataParam = Word | FileDataParam;
 // struct getout
 // https://github.com/curl/curl/blob/curl-7_86_0/src/tool_sdecls.h#L96
 export interface RequestUrl {
-  // The url exactly as it was passed in, used for error messages
+  // What it looked like in the input, used for error messages
   originalUrl: Word;
+
   url: Word;
   // the query string can contain instructions to
   // read the query string from a file, for example with
@@ -155,20 +156,11 @@ function buildURL(
   config: OperationConfig,
   url: Word,
   uploadFile?: Word,
+  outputFile?: Word,
   stdin?: Word,
   stdinFile?: Word
-): [
-  Curl_URL,
-  Word,
-  string | null,
-  Word,
-  QueryList | null,
-  QueryDict | null,
-  Word,
-  Word,
-  DataParam[] | null,
-  DataParam[] | null
-] {
+): RequestUrl {
+  const originalUrl = url;
   const u = parseurl(global, config, url);
 
   // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L1124
@@ -301,20 +293,68 @@ function buildURL(
 
   // TODO: --path-as-is
   // TODO: --request-target
-  return [
-    u,
-    url,
-    queryStrReadsFile,
 
+  // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
+  // will send, but most APIs will helpfully uppercase what you pass in as the method.
+  //
+  // There are many places where curl determines the method, this is the last one:
+  // https://github.com/curl/curl/blob/curl-7_85_0/lib/http.c#L2032
+  let method = new Word("GET");
+  if (
+    config.request &&
+    // Safari adds `-X null` if it can't determine the request type
+    // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
+    !eq(config.request, "null")
+  ) {
+    method = config.request;
+  } else if (config.head) {
+    method = new Word("HEAD");
+  } else if (uploadFile && uploadFile.toBool()) {
+    // --upload-file '' doesn't do anything.
+    method = new Word("PUT");
+  } else if (!config.get && (has(config, "data") || has(config, "form"))) {
+    method = new Word("POST");
+  }
+
+  const requestUrl: RequestUrl = {
+    originalUrl,
     urlWithoutQueryList,
-    queryList,
-    queryDict,
-
-    urlWithoutQueryArray,
+    url,
+    urlObj: u,
     urlWithOriginalQuery,
-    queryArray,
-    urlQueryArray,
-  ];
+    urlWithoutQueryArray,
+    method,
+  };
+  if (queryStrReadsFile) {
+    requestUrl.queryReadsFile = queryStrReadsFile;
+  }
+  if (queryList) {
+    requestUrl.queryList = queryList;
+    if (queryDict) {
+      requestUrl.queryDict = queryDict;
+    }
+  }
+  if (queryArray) {
+    requestUrl.queryArray = queryArray;
+  }
+  if (urlQueryArray) {
+    requestUrl.urlQueryArray = urlQueryArray;
+  }
+  if (uploadFile) {
+    requestUrl.uploadFile = uploadFile;
+  }
+  if (outputFile) {
+    requestUrl.output = outputFile;
+  }
+
+  // --user takes precedence over the URL
+  const auth = config.user || u.auth;
+  if (auth) {
+    const [user, pass] = auth.split(":", 2);
+    requestUrl.auth = [user, pass || new Word()];
+  }
+
+  return requestUrl;
 }
 
 function buildData(
@@ -532,87 +572,18 @@ function buildRequest(
   const urls: RequestUrl[] = [];
   const uploadFiles = config["upload-file"] || [];
   const outputFiles = config.output || [];
-  // eslint-disable-next-line prefer-const
-  for (let [i, originalUrl] of config.url.entries()) {
-    const uploadFile: Word | undefined = uploadFiles[i];
-    const output: Word | undefined = outputFiles[i];
-
-    const [
-      urlObj,
-      url,
-      queryReadsFile,
-
-      urlWithoutQueryList,
-      queryList,
-      queryDict,
-
-      urlWithoutQueryArray,
-      urlWithOriginalQuery,
-      queryArray,
-      urlQueryArray,
-    ] = buildURL(global, config, originalUrl, uploadFile, stdin, stdinFile);
-
-    // curl expects you to uppercase methods always. If you do -X PoSt, that's what it
-    // will send, but most APIs will helpfully uppercase what you pass in as the method.
-    //
-    // There are many places where curl determines the method, this is the last one:
-    // https://github.com/curl/curl/blob/curl-7_85_0/lib/http.c#L2032
-    let method = new Word("GET");
-    if (
-      config.request &&
-      // Safari adds `-X null` if it can't determine the request type
-      // https://github.com/WebKit/WebKit/blob/f58ef38d48f42f5d7723691cb090823908ff5f9f/Source/WebInspectorUI/UserInterface/Models/Resource.js#L1250
-      !eq(config.request, "null")
-    ) {
-      method = config.request;
-    } else if (config.head) {
-      method = new Word("HEAD");
-    } else if (uploadFile) {
-      // --upload-file '' doesn't do anything.
-      method = new Word("PUT");
-    } else if (!config.get && (has(config, "data") || has(config, "form"))) {
-      method = new Word("POST");
-    }
-
-    const requestUrl: RequestUrl = {
-      originalUrl: originalUrl,
-      urlWithoutQueryList,
-      url,
-      urlObj,
-      urlWithOriginalQuery,
-      urlWithoutQueryArray,
-      method,
-    };
-    if (queryReadsFile) {
-      requestUrl.queryReadsFile = queryReadsFile;
-    }
-    if (queryList) {
-      requestUrl.queryList = queryList;
-      if (queryDict) {
-        requestUrl.queryDict = queryDict;
-      }
-    }
-    if (queryArray) {
-      requestUrl.queryArray = queryArray;
-    }
-    if (urlQueryArray) {
-      requestUrl.urlQueryArray = urlQueryArray;
-    }
-    if (uploadFile) {
-      requestUrl.uploadFile = uploadFile;
-    }
-    if (output) {
-      requestUrl.output = output;
-    }
-
-    // --user takes precedence over the URL
-    const auth = config.user || urlObj.auth;
-    if (auth) {
-      const [user, pass] = auth.split(":", 2);
-      requestUrl.auth = [user, pass ? pass : new Word()];
-    }
-
-    urls.push(requestUrl);
+  for (const [i, url] of config.url.entries()) {
+    urls.push(
+      buildURL(
+        global,
+        config,
+        url,
+        uploadFiles[i],
+        outputFiles[i],
+        stdin,
+        stdinFile
+      )
+    );
   }
   // --get moves --data into the URL's query string
   if (config.get && config.data) {

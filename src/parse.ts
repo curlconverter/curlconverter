@@ -2,7 +2,11 @@ import { CCError } from "./util.js";
 import { Word } from "./shell/Word.js";
 import { tokenize } from "./shell/tokenizer.js";
 import * as curl from "./curl/opts.js";
-import { curlLongOpts, curlShortOpts } from "./curl/opts.js";
+import {
+  curlLongOpts,
+  curlLongOptsShortened,
+  curlShortOpts,
+} from "./curl/opts.js";
 import { buildRequests } from "./Request.js";
 import type { Request, RequestUrl } from "./Request.js";
 import type { Warnings } from "./Warnings.js";
@@ -49,6 +53,7 @@ export function parseCurlCommand(
   const globalConfig = curl.parseArgs(
     argv,
     curlLongOpts,
+    curlLongOptsShortened,
     curlShortOpts,
     supportedArgs,
     warnings

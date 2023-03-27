@@ -182,9 +182,7 @@ export function parseurl(
   if (authMatch !== -1) {
     const auth = u.host.slice(0, authMatch);
     u.host = u.host.slice(authMatch + 1); // throw away '@'
-    // TODO: this makes this command line option sort of supported but not really
     if (!config["disallow-username-in-url"]) {
-      // Curl will exit if this is the case, but we just remove it from the URL
       u.auth = auth;
       if (auth.includes(":")) {
         [u.user, u.password] = auth.split(":", 2);
@@ -192,6 +190,12 @@ export function parseurl(
         u.user = auth;
         u.password = new Word(); // if there's no ':', curl will append it
       }
+    } else {
+      // Curl will exit if this is the case, but we just remove it from the URL
+      warnf(global, [
+        "login-denied",
+        `Found auth in URL but --disallow-username-in-url was passed: ${auth.toString()}`,
+      ]);
     }
   }
 

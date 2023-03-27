@@ -3,7 +3,12 @@
 import { CCError, has } from "./util.js";
 import type { Warnings } from "./Warnings.js";
 import { Word } from "./shell/Word.js";
-import { parseArgs, curlLongOpts, curlShortOpts } from "./curl/opts.js";
+import {
+  parseArgs,
+  curlLongOpts,
+  curlLongOptsShortened,
+  curlShortOpts,
+} from "./curl/opts.js";
 import type { LongOpts, ShortOpts } from "./curl/opts.js";
 
 import { buildRequests } from "./Request.js";
@@ -133,15 +138,15 @@ curl_options: these should be passed exactly as they would be passed to curl.
   see 'curl --help' or 'curl --manual' for which options are allowed here`;
 
 const curlconverterLongOpts: LongOpts = {
+  ...curlLongOpts,
   language: { type: "string", name: "language" },
   stdin: { type: "bool", name: "stdin" },
 };
 const curlconverterShortOpts: ShortOpts = {
+  ...curlShortOpts,
   // a single "-" (dash) tells curlconverter to read input from stdin
   "": "stdin",
 };
-const longOpts: LongOpts = { ...curlLongOpts, ...curlconverterLongOpts };
-const shortOpts: ShortOpts = { ...curlShortOpts, ...curlconverterShortOpts };
 
 function printWarnings(warnings: Warnings, verbose: boolean): Warnings {
   if (!verbose) {
@@ -180,7 +185,14 @@ let warnings: Warnings = [];
 try {
   // TODO: we don't get "unsupported argument" warnings because we don't
   // know which language we're converting to yet.
-  global = parseArgs(argv, longOpts, shortOpts, undefined, warnings);
+  global = parseArgs(
+    argv,
+    curlconverterLongOpts,
+    curlLongOptsShortened,
+    curlconverterShortOpts,
+    undefined,
+    warnings
+  );
 } catch (e) {
   exitWithError(e);
 }

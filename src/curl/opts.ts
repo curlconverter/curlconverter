@@ -31,7 +31,7 @@ export interface ShortOpts {
 }
 
 // prettier-ignore
-export const curlLongOpts: LongOpts = {
+export const curlLongOpts = {
   // BEGIN GENERATED LONG OPTIONS
   "url": { type: "string", name: "url" },
   "dns-ipv4-addr": { type: "string", name: "dns-ipv4-addr" },
@@ -449,39 +449,37 @@ export const curlLongOpts: LongOpts = {
   "no-http1.1": { type: "bool", name: "http1.1", removed: "7.54.1" },
   "no-proxy-tlsv1": { type: "bool", name: "proxy-tlsv1", removed: "7.54.1" },
   "no-http2": { type: "bool", name: "http2", removed: "7.54.1" },
-};
+} as const;
 
 // curl lets you not type the full argument as long as it's unambiguous.
 // So --sil instead of --silent is okay, --s is not.
-const shortened: { [key: string]: LongShort | null } = {};
+export const curlLongOptsShortened: { [key: string]: LongShort | null } = {};
 for (const [opt, val] of Object.entries(curlLongOpts)) {
-  if (val === null) {
-    continue;
-  }
-
-  const expand = val.expand === undefined ? true : val.expand;
-  delete val.expand;
-
-  if (expand && !val.removed) {
+  const expand = "expand" in val ? val.expand : true;
+  const removed = "removed" in val ? val.removed : false;
+  if (expand && !removed) {
     for (let i = 1; i < opt.length; i++) {
       const shortenedOpt = opt.slice(0, i);
-      if (!Object.prototype.hasOwnProperty.call(shortened, shortenedOpt)) {
-        shortened[shortenedOpt] = val;
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          curlLongOptsShortened,
+          shortenedOpt
+        )
+      ) {
+        if (!Object.prototype.hasOwnProperty.call(curlLongOpts, shortenedOpt)) {
+          curlLongOptsShortened[shortenedOpt] = val;
+        }
       } else {
         // If more than one option shortens to this, it's ambiguous
-        shortened[shortenedOpt] = null;
+        curlLongOptsShortened[shortenedOpt] = null;
       }
     }
   }
 }
-for (const shortenedOpt of Object.keys(shortened)) {
-  if (!Object.prototype.hasOwnProperty.call(curlLongOpts, shortenedOpt)) {
-    curlLongOpts[shortenedOpt] = shortened[shortenedOpt];
-  }
-}
 
 // Arguments which are supported by all generators, because they're
-// already handled in util.ts or because they're easy to implement
+// easy to implement or because they're handled by upstream code and
+// affect something that's easy to implement.
 export const COMMON_SUPPORTED_ARGS: string[] = [
   "url",
   "proto-default",
@@ -514,6 +512,9 @@ export const COMMON_SUPPORTED_ARGS: string[] = [
   // Trivial support for globoff means controlling whether or not
   // backslash-escaped [] {} will have the backslash removed.
   "globoff",
+  // curl will exit if it finds auth credentials in the URL with this option,
+  // we remove it from the URL and emit a warning instead.
+  "disallow-username-in-url",
 ];
 
 // Unsupported args that users wouldn't expect to be warned about
@@ -522,7 +523,7 @@ export const ignoredArgs = new Set([
   "no-help",
   "silent",
   "no-silent",
-  "verbose",
+  "verbose", // TODO: some users expect this to effect the output
   "no-verbose",
   "version",
   "no-version",
@@ -545,7 +546,9 @@ export function toBoolean(opt: string): boolean {
 }
 
 // prettier-ignore
-export const curlShortOpts: ShortOpts = {
+export const curlShortOpts: {
+  [key: string]: keyof typeof curlLongOpts
+} = {
   // BEGIN GENERATED SHORT OPTIONS
   "0": "http1.0",
   "1": "tlsv1",
@@ -713,31 +716,247 @@ export interface OperationConfig {
 
   "cookie-jar"?: Word;
 
-  // TODO: list every argument
+  "unix-socket"?: Word;
+  // "abstract-unix-socket"?: Word;
+
+  // This needs to be updated any time a new argument is added
+  "3p-quote"?: Word;
+  "3p-url"?: Word;
+  "3p-user"?: Word;
+  "abstract-unix-socket"?: Word;
+  alpn?: boolean;
+  "alt-svc"?: Word;
+  anyauth?: boolean;
+  append?: boolean;
+  basic?: boolean;
+  buffer?: boolean;
+  "cert-status"?: boolean;
+  clobber?: boolean;
+  "compressed-ssh"?: boolean;
+  "continue-at"?: Word;
+  "create-dirs"?: boolean;
+  "create-file-mode"?: Word;
+  crlf?: boolean;
+  curves?: Word;
+  "data-ascii"?: Word;
+  "data-binary"?: Word;
+  "data-raw"?: Word;
+  "data-urlencode"?: Word;
+  digest?: boolean;
+  disable?: boolean;
+  "disable-eprt"?: boolean;
+  "disable-epsv"?: boolean;
+  "disallow-username-in-url"?: boolean;
+  "dns-interface"?: Word;
+  "dns-ipv4-addr"?: Word;
+  "dns-ipv6-addr"?: Word;
+  "dns-servers"?: Word;
+  "doh-cert-status"?: boolean;
+  "doh-insecure"?: boolean;
+  "doh-url"?: Word;
+  "dump-header"?: Word;
+  engine?: Word;
+  environment?: boolean;
+  eprt?: boolean;
+  epsv?: boolean;
+  "etag-compare"?: Word;
+  "etag-save"?: Word;
+  "expect100-timeout"?: Word;
+  fail?: boolean;
+  "fail-with-body"?: boolean;
+  "false-start"?: boolean;
+  "form-escape"?: boolean;
+  "form-string"?: Word;
+  "ftp-account"?: Word;
+  "ftp-alternative-to-user"?: Word;
+  "ftp-create-dirs"?: boolean;
+  "ftp-method"?: Word;
+  "ftp-pasv"?: boolean;
+  "ftp-port"?: Word;
+  "ftp-pret"?: boolean;
+  "ftp-skip-pasv-ip"?: boolean;
+  "ftp-ssl-ccc"?: boolean;
+  "ftp-ssl-ccc-mode"?: Word;
+  "ftp-ssl-control"?: boolean;
+  "happy-eyeballs-timeout-ms"?: Word;
+  "haproxy-protocol"?: boolean;
+  hostpubmd5?: Word;
+  hostpubsha256?: Word;
+  "http0.9"?: boolean;
+  "http1.0"?: boolean;
+  "http1.1"?: boolean;
+  "http2-prior-knowledge"?: boolean;
+  "ignore-content-length"?: boolean;
+  include?: boolean;
+  interface?: Word;
+  "junk-session-cookies"?: boolean;
+  keepalive?: boolean;
+  "keepalive-time"?: Word;
+  krb?: Word;
+  "limit-rate"?: Word;
+  "list-only"?: boolean;
+  "local-port"?: Word;
+  "login-options"?: Word;
+  "mail-auth"?: Word;
+  "mail-from"?: Word;
+  "mail-rcpt-allowfails"?: boolean;
+  manual?: boolean;
+  "max-filesize"?: Word;
+  metalink?: boolean;
+  negotiate?: boolean;
+  next?: boolean;
+  npn?: boolean;
+  ntlm?: boolean;
+  "ntlm-wb"?: boolean;
+  "output-dir"?: Word;
+  pass?: Word;
+  "path-as-is"?: boolean;
+  port?: Word;
+  post301?: boolean;
+  post302?: boolean;
+  post303?: boolean;
+  preproxy?: Word;
+  proto?: Word;
+  "proto-redir"?: Word;
+  "proxy-anyauth"?: boolean;
+  "proxy-basic"?: boolean;
+  "proxy-cacert"?: Word;
+  "proxy-capath"?: Word;
+  "proxy-cert"?: Word;
+  "proxy-cert-type"?: Word;
+  "proxy-ciphers"?: Word;
+  "proxy-crlfile"?: Word;
+  "proxy-digest"?: boolean;
+  "proxy-insecure"?: boolean;
+  "proxy-key"?: Word;
+  "proxy-key-type"?: Word;
+  "proxy-negotiate"?: boolean;
+  "proxy-ntlm"?: boolean;
+  "proxy-pass"?: Word;
+  "proxy-pinnedpubkey"?: Word;
+  "proxy-service-name"?: Word;
+  "proxy-ssl-allow-beast"?: boolean;
+  "proxy-ssl-auto-client-cert"?: boolean;
+  "proxy-tls13-ciphers"?: Word;
+  "proxy-tlsauthtype"?: Word;
+  "proxy-tlspassword"?: Word;
+  "proxy-tlsuser"?: Word;
+  "proxy-tlsv1"?: boolean;
+  "proxy1.0"?: Word;
+  proxytunnel?: boolean;
+  pubkey?: Word;
+  rate?: Word;
+  raw?: boolean;
+  "remote-header-name"?: boolean;
+  "remote-name"?: boolean;
+  "remote-name-all"?: boolean;
+  "remote-time"?: boolean;
+  "remove-on-error"?: boolean;
+  "request-target"?: Word;
+  retry?: Word;
+  "retry-all-errors"?: boolean;
+  "retry-connrefused"?: boolean;
+  "retry-delay"?: Word;
+  "retry-max-time"?: Word;
+  "sasl-authzid"?: Word;
+  "sasl-ir"?: boolean;
+  "service-name"?: Word;
+  sessionid?: boolean;
+  socks4?: Word;
+  socks4a?: Word;
+  socks5?: Word;
+  "socks5-basic"?: boolean;
+  "socks5-gssapi"?: boolean;
+  "socks5-gssapi-nec"?: boolean;
+  "socks5-hostname"?: Word;
+  "speed-limit"?: Word;
+  "speed-time"?: Word;
+  ssl?: boolean;
+  "ssl-allow-beast"?: boolean;
+  "ssl-auto-client-cert"?: boolean;
+  "ssl-no-revoke"?: boolean;
+  "ssl-reqd"?: boolean;
+  "ssl-revoke-best-effort"?: boolean;
+  sslv2?: boolean;
+  sslv3?: boolean;
+  "suppress-connect-headers"?: boolean;
+  "tcp-fastopen"?: boolean;
+  "tcp-nodelay"?: boolean;
+  "tftp-blksize"?: Word;
+  "tftp-no-options"?: boolean;
+  "tls-max"?: Word;
+  "tls13-ciphers"?: Word;
+  tlsauthtype?: Word;
+  tlspassword?: Word;
+  tlsuser?: Word;
+  tlsv1?: boolean;
+  "tlsv1.0"?: boolean;
+  "tlsv1.1"?: boolean;
+  "tlsv1.2"?: boolean;
+  "tlsv1.3"?: boolean;
+  "tr-encoding"?: boolean;
+  "use-ascii"?: boolean;
+  version?: boolean;
+  wdebug?: boolean;
+  "write-out"?: Word;
+  xattr?: boolean;
+
+  // These are actually global options
+  trace?: Word;
+  "trace-ascii"?: Word;
+  "trace-time"?: boolean;
+  stderr?: Word;
+  libcurl?: Word;
+  "test-event"?: boolean;
+  "progress-bar"?: boolean;
+  "progress-meter"?: boolean;
+  "fail-early"?: boolean;
+  "styled-output"?: boolean;
+  help?: boolean; // TODO: might use the next word, then curl exits immediately
+  config?: Word; // TODO: is it really global?
+  silent?: boolean;
+  "show-error"?: boolean;
+  verbose?: boolean;
+  parallel?: boolean;
+  "parallel-immediate"?: boolean;
+  "parallel-max"?: Word;
+
+  // TODO: --npn not supported warning
+  // TODO: --metalink disabled warning
+
+  // TODO: remove any.
+  // This is difficult because we have curl's arguments but also a couple
+  // curlconverter-specific arguments that are handled by the same code.
   [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
+// type Satisfies<T, U extends T> = void;
+// type AssertSubsetKeys = Satisfies<
+//   keyof typeof curlLongOpts | "authtype" | "authArgs",
+//   keyof OperationConfig
+// >;
+
 // These options can be specified more than once, they
 // are always returned as a list.
 // Normally, if you specify some option more than once,
 // curl will just take the last one.
 const canBeList = new Set<keyof OperationConfig>([
-  "url",
-  "upload-file",
-  "output",
-  "header",
-  "proxy-header",
-  "form",
-  "data",
-  "url-query",
-  "mail-rcpt",
-  "resolve",
+  "authArgs", // used for error messages
+
   "connect-to",
   "cookie",
-  "quote",
-  "telnet-option",
+  "data",
+  "form",
+  "header",
   "hsts",
-
-  "authArgs", // used for error messages
+  "mail-rcpt",
+  "output",
+  "proxy-header",
+  "quote",
+  "resolve",
+  "telnet-option",
+  "upload-file",
+  "url-query",
+  "url",
 ]);
 
 export interface GlobalConfig {
@@ -945,6 +1164,7 @@ function setArgValue(
 export function parseArgs(
   args: Word[],
   longOpts: LongOpts = curlLongOpts,
+  shortenedLongOpts: LongOpts = curlLongOptsShortened,
   shortOpts: ShortOpts = curlShortOpts,
   supportedOpts?: Set<string>,
   warnings: Warnings = []
@@ -976,7 +1196,11 @@ export function parseArgs(
         const argStr = arg.toString();
 
         const lookup = argStr.slice(2);
-        const longArg = longOpts[lookup];
+        let longArg = shortenedLongOpts[lookup];
+        if (typeof longArg === "undefined") {
+          longArg = longOpts[lookup];
+        }
+
         if (longArg === null) {
           throw new CCError("option " + argStr + ": is ambiguous");
         }
@@ -1000,7 +1224,7 @@ export function parseArgs(
           ); // TODO: all shortened args work correctly?
         }
 
-        checkSupported(global, "--" + lookup, longArg, supportedOpts);
+        checkSupported(global, argStr, longArg, supportedOpts);
       } else {
         // Short option. These can look like
         // -X POST    -> {request: 'POST'}
