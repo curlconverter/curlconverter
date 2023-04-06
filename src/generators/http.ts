@@ -48,28 +48,27 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   }
   s += "\n";
 
-  // TODO: these should come first
-  request.headers.setIfMissing("Host", urlObj.host.toString());
-  // TODO: update version with extract_curl_args.py
-  request.headers.setIfMissing("User-Agent", "curl/8.0.1");
-
-  if (request.compressed) {
-    request.headers.setIfMissing("Accept-Encoding", "deflate, gzip");
-    // Modern curl versions send this, but users are less likely to have
-    // decompressors for br and zstd.
-    // request.headers.setIfMissing("Accept-Encoding", "deflate, gzip, br, zstd");
-  }
-
+  // These have to be done in reverse order because of prependIfMissing
   if (request.urls[0].auth) {
     const [user, pass] = request.urls[0].auth;
     if (request.authType === "basic") {
-      request.headers.setIfMissing(
+      request.headers.prependIfMissing(
         "Authorization",
         // TODO
         "Basic " + btoa(user.toString() + ":" + pass.toString())
       );
     }
   }
+  if (request.compressed) {
+    request.headers.prependIfMissing("Accept-Encoding", "deflate, gzip");
+    // Modern curl versions send this, but users are less likely to have
+    // decompressors for br and zstd.
+    // request.headers.setIfMissing("Accept-Encoding", "deflate, gzip, br, zstd");
+  }
+  // TODO: update version with extract_curl_args.py
+  request.headers.prependIfMissing("Accept", "*/*");
+  request.headers.prependIfMissing("User-Agent", "curl/8.0.1");
+  request.headers.prependIfMissing("Host", urlObj.host.toString());
 
   // Generate a random boundary, just like curl, in a cryptographically secure way
   // TODO: use a hash of the so that this doesn't change on every keystroke
@@ -79,7 +78,18 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-  if (request.multipartUploads) {
+  if (request.data) {
+    request.headers.setIfMissing(
+      "Content-Length",
+      request.data.toString().length.toString()
+    );
+  } else if (request.urls[0].uploadFile) {
+    request.headers.setIfMissing(
+      "Content-Length",
+      // TODO: something better?
+      "<length of " + request.urls[0].uploadFile.toString() + ">"
+    );
+  } else if (request.multipartUploads) {
     const contentType = request.headers.get("Content-Type");
     if (contentType) {
       const m = contentType.toString().match(/boundary=(.*)/);

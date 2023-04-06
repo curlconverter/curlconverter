@@ -230,6 +230,20 @@ export class Headers implements Iterable<[Word, Word | null]> {
     return true;
   }
 
+  prependIfMissing(header: string, value: Word | string) {
+    if (this.has(header)) {
+      return false;
+    }
+
+    if (this.lowercase) {
+      header = header.toLowerCase();
+    }
+    const k = typeof header === "string" ? new Word(header) : header;
+    const v = typeof value === "string" ? new Word(value) : value;
+    this.headers.unshift([k, v]);
+    return true;
+  }
+
   set(header: string, value: Word | string) {
     if (this.lowercase) {
       header = header.toLowerCase();
