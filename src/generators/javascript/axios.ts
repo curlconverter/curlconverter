@@ -1,4 +1,4 @@
-import { isInt } from "../../util.js";
+import { isInt } from "../../utils.js";
 import { Word, eq } from "../../shell/Word.js";
 import {
   parseCurlCommand,

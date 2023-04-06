@@ -1,4 +1,4 @@
-import { CCError } from "./util.js";
+import { CCError } from "./utils.js";
 import { Word } from "./shell/Word.js";
 import { tokenize } from "./shell/tokenizer.js";
 import * as curl from "./curl/opts.js";

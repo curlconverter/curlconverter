@@ -1,4 +1,4 @@
-import { CCError, has } from "../util.js";
+import { CCError, has } from "../utils.js";
 import { Word, eq, firstShellToken } from "../shell/Word.js";
 import { warnf, underlineNode, type Warnings } from "../Warnings.js";
 import {

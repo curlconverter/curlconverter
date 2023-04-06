@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { CCError, has } from "./util.js";
+import { CCError, has } from "./utils.js";
 import type { Warnings } from "./Warnings.js";
 import { Word } from "./shell/Word.js";
 import {

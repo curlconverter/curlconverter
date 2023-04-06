@@ -71,6 +71,11 @@ const converters = {
     extension: ".go",
     converter: curlconverter.toGo,
   },
+  har: {
+    name: "HAR",
+    extension: ".json",
+    converter: curlconverter.toHarString,
+  },
   http: {
     name: "HTTP",
     extension: ".txt",

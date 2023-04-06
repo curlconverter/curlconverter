@@ -4,7 +4,7 @@
 // ["foobar", {type: "variable", value: "baz", text: "$baz"}, "qux"]
 
 import type { Parser } from "./Parser.js";
-import { CCError } from "../util.js";
+import { CCError } from "../utils.js";
 
 export interface ShellToken {
   type: "variable" | "command";

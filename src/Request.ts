@@ -1,6 +1,6 @@
 import { Word, eq, mergeWords, joinWords } from "./shell/Word.js";
 
-import { CCError, has, isInt } from "./util.js";
+import { CCError, has, isInt } from "./utils.js";
 import { warnf, warnIfPartsIgnored } from "./Warnings.js";
 import type { Warnings, Support } from "./Warnings.js";
 import type {

@@ -1,5 +1,5 @@
 import { Word, eq } from "./shell/Word.js";
-import { UTF8encoder } from "./util.js";
+import { UTF8encoder } from "./utils.js";
 
 export type QueryList = Array<[Word, Word]>;
 export type QueryDict = Array<[Word, Word | Array<Word>]>;
