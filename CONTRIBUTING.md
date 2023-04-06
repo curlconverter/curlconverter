@@ -37,8 +37,8 @@ If you add a new generator, you'll need to
 - export it in [index.ts](src/index.ts)
 - update the list of supported languages in [cli.ts](src/cli.ts) in two places (or it won't be accessible from the command line)
 - add it to [test-utils.ts](test/test-utils.ts) (to make it part of the testing)
-- create a directory in [test/fixtures](test/fixtures/)
-- generate tests with `npm run gen-test -- --all --language <language>`
+  - create a directory in [test/fixtures](test/fixtures/)
+  - generate tests with `npm run gen-test -- --all --language <language>`
 - optionally, add it to [tools/compare-requests.ts](tools/compare-requests.ts)
 
 If you want to add new functionality you can start with a test.

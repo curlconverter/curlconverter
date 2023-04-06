@@ -71,6 +71,11 @@ const converters = {
     extension: ".go",
     converter: curlconverter.toGo,
   },
+  http: {
+    name: "HTTP",
+    extension: ".txt",
+    converter: curlconverter.toHTTP,
+  },
   java: {
     name: "Java",
     extension: ".java",

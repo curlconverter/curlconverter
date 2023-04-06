@@ -22,6 +22,7 @@ import { _toDart, toDartWarn } from "./generators/dart.js";
 import { _toElixir, toElixirWarn } from "./generators/elixir.js";
 import { _toGo, toGoWarn } from "./generators/go.js";
 import { _toHarString, toHarStringWarn } from "./generators/har.js";
+import { _toHTTP, toHTTPWarn } from "./generators/http.js";
 import { _toJava, toJavaWarn } from "./generators/java.js";
 import {
   _toJavaScript,
@@ -77,6 +78,7 @@ const translate: {
   go: [_toGo, toGoWarn],
   golang: [_toGo, toGoWarn], // undocumented alias
   har: [_toHarString, toHarStringWarn],
+  http: [_toHTTP, toHTTPWarn],
   java: [_toJava, toJavaWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
@@ -115,6 +117,7 @@ language: the language to convert the curl command to. The choices are
   elixir
   go
   har
+  http
   java
   javascript
   json
