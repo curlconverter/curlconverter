@@ -1,7 +1,6 @@
-import { Word, eq } from "../shell/Word.js";
+import { Word } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
-import type { FormParam } from "../curl/form.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
