@@ -32,13 +32,13 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   let s = request.urls[0].method.toString() + " ";
 
   const urlObj = request.urls[0].urlObj;
-  // TODO: check that has both --url-query and query
   let url = urlObj.path.toString() + urlObj.query.toString();
   if (!url) {
     url = "/";
   }
   s += url + " ";
 
+  // TODO
   if (request.http3) {
     s += "HTTP/3";
   } else if (request.http2) {
@@ -54,7 +54,6 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
     if (request.authType === "basic") {
       request.headers.prependIfMissing(
         "Authorization",
-        // TODO
         "Basic " + btoa(user.toString() + ":" + pass.toString())
       );
     }
@@ -65,13 +64,14 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
     // decompressors for br and zstd.
     // request.headers.setIfMissing("Accept-Encoding", "deflate, gzip, br, zstd");
   }
-  // TODO: update version with extract_curl_args.py
   request.headers.prependIfMissing("Accept", "*/*");
+  // TODO: update version with extract_curl_args.py
   request.headers.prependIfMissing("User-Agent", "curl/8.0.1");
   request.headers.prependIfMissing("Host", urlObj.host.toString());
 
   // Generate a random boundary, just like curl
-  // TODO: use a hash of the so that this doesn't change on every keystroke and in tests
+  // TODO: this changes on every keystroke and in tests
+  // TODO: use a hash of something, like the data contents
   let boundary =
     "------------------------" +
     Array.from({ length: 16 }, () =>
@@ -89,16 +89,26 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
       request.data.toString().length.toString()
     );
   } else if (request.urls[0].uploadFile) {
-    request.headers.setIfMissing(
+    const contentLength =
+      "<length of " + request.urls[0].uploadFile.toString() + ">";
+    const wasMissing = request.headers.setIfMissing(
       "Content-Length",
-      // TODO: something better?
-      "<length of " + request.urls[0].uploadFile.toString() + ">"
+      contentLength
     );
+    if (wasMissing) {
+      warnings.push([
+        "bad-content-length",
+        "Content-Length header needs to be set: " +
+          JSON.stringify(contentLength),
+      ]);
+    }
   } else if (request.multipartUploads) {
     const contentType = request.headers.get("Content-Type");
     if (contentType) {
       const m = contentType.toString().match(/boundary=(.*)/);
       if (m) {
+        // curl actually doesn't respect the boundary in the Content-Type header
+        // and will append a second one and use that.
         boundary = m[1];
       } else {
         warnings.push([
@@ -152,7 +162,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
         }
       } else {
         if (f.filename) {
-          s += '; filename="' + f.name.toString() + '"';
+          s += '; filename="' + f.filename.toString() + '"';
         }
         // TODO: set content type from file extension
         s += "\n\n" + f.contentFile.toString() + "\n";

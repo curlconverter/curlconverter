@@ -216,7 +216,7 @@ export class Headers implements Iterable<[Word, Word | null]> {
   }
 
   // Doesn't overwrite existing headers
-  setIfMissing(header: string, value: Word | string) {
+  setIfMissing(header: string, value: Word | string): boolean {
     if (this.has(header)) {
       return false;
     }
