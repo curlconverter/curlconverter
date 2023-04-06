@@ -71,7 +71,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   request.headers.prependIfMissing("Host", urlObj.host.toString());
 
   // Generate a random boundary, just like curl, in a cryptographically secure way
-  // TODO: use a hash of the so that this doesn't change on every keystroke
+  // TODO: use a hash of the so that this doesn't change on every keystroke and in tests
   let boundary =
     "------------------------" +
     Array.from(crypto.getRandomValues(new Uint8Array(8)))
@@ -79,6 +79,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
       .join("");
 
   if (request.data) {
+    // TODO: we already added Content-Type earlier but curl puts Content-Type after Content-Length
     request.headers.setIfMissing(
       "Content-Length",
       request.data.toString().length.toString()
@@ -114,7 +115,13 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
     if (headerValue === null) {
       continue;
     }
-    s += headerName.toString() + ": " + headerValue.toString() + "\n";
+    const value = headerValue.toString();
+    if (value) {
+      s += headerName.toString() + ": " + value + "\n";
+    } else {
+      // Don't add extra space
+      s += headerName.toString() + ":\n";
+    }
   }
 
   s += "\n";
@@ -148,10 +155,10 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
       }
       s += "\n";
     }
-    s += "--" + boundary + "--" + "\n";
+    s += "--" + boundary + "--";
   }
 
-  return s;
+  return s + "\n";
 }
 
 export function toHTTPWarn(

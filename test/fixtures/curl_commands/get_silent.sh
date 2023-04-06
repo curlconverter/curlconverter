@@ -1,1 +1,1 @@
-curl --silent 'localhost:28139'
+curl --sil 'localhost:28139'
