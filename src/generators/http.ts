@@ -69,13 +69,17 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   request.headers.prependIfMissing("User-Agent", "curl/8.0.1");
   request.headers.prependIfMissing("Host", urlObj.host.toString());
 
-  // Generate a random boundary, just like curl, in a cryptographically secure way
+  // Generate a random boundary, just like curl
   // TODO: use a hash of the so that this doesn't change on every keystroke and in tests
   let boundary =
     "------------------------" +
-    Array.from(crypto.getRandomValues(new Uint8Array(8)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    Array.from({ length: 16 }, () =>
+      "0123456789abcdef".charAt(Math.floor(Math.random() * 16))
+    ).join("");
+  // crypto.getRandomValues() only available on Node 19+
+  // Array.from(crypto.getRandomValues(new Uint8Array(8)))
+  //   .map((b) => b.toString(16).padStart(2, "0"))
+  //   .join("");
 
   if (request.data) {
     // TODO: we already added Content-Type earlier but curl puts Content-Type after Content-Length
