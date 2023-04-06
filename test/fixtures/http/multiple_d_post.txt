@@ -1,0 +1,8 @@
+POST /webservices/rest.php HTTP/1.1
+Host: localhost:28139
+User-Agent: curl/8.0.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 118
+
+version=1.2&auth_user=fdgxf&auth_pwd=oxfdscds&json_data={ "operation": "core/get", "class": "Software", "key": "key" }

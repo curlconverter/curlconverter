@@ -1,6 +1,6 @@
 import { Word, Token, firstShellToken } from "./Word.js";
 
-import { CCError } from "../util.js";
+import { CCError } from "../utils.js";
 import { clip } from "../parse.js";
 
 import parser from "./Parser.js";

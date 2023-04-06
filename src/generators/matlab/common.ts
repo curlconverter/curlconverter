@@ -1,4 +1,4 @@
-import { CCError } from "../../util.js";
+import { CCError } from "../../utils.js";
 import { Word } from "../../shell/Word.js";
 import type { Request } from "../../parse.js";
 

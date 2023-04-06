@@ -1,3 +1,4 @@
+import { btoa } from "../utils.js";
 import { warnIfPartsIgnored } from "../Warnings.js";
 import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, RequestUrl, Warnings } from "../parse.js";

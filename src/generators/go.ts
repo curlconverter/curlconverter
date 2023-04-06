@@ -1,4 +1,4 @@
-import { CCError } from "../util.js";
+import { CCError } from "../utils.js";
 import { Word } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";

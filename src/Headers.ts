@@ -216,7 +216,7 @@ export class Headers implements Iterable<[Word, Word | null]> {
   }
 
   // Doesn't overwrite existing headers
-  setIfMissing(header: string, value: Word | string) {
+  setIfMissing(header: string, value: Word | string): boolean {
     if (this.has(header)) {
       return false;
     }
@@ -228,6 +228,39 @@ export class Headers implements Iterable<[Word, Word | null]> {
     const v = typeof value === "string" ? new Word(value) : value;
     this.headers.push([k, v]);
     return true;
+  }
+
+  prependIfMissing(header: string, value: Word | string) {
+    if (this.has(header)) {
+      return false;
+    }
+
+    if (this.lowercase) {
+      header = header.toLowerCase();
+    }
+    const k = typeof header === "string" ? new Word(header) : header;
+    const v = typeof value === "string" ? new Word(value) : value;
+    this.headers.unshift([k, v]);
+    return true;
+  }
+
+  set(header: string, value: Word | string) {
+    if (this.lowercase) {
+      header = header.toLowerCase();
+    }
+    const k = typeof header === "string" ? new Word(header) : header;
+    const v = typeof value === "string" ? new Word(value) : value;
+
+    // keep it in the same place if we overwrite
+    const searchHeader = k.toLowerCase().toString();
+    for (let i = 0; i < this.headers.length; i++) {
+      if (eq(this.headers[i][0].toLowerCase(), searchHeader)) {
+        this.headers[i][1] = v;
+        return;
+      }
+    }
+
+    this.headers.push([k, v]);
   }
 
   delete(header: string) {

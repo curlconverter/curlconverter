@@ -1,0 +1,7 @@
+GET /vc/moviesmagic?p=5&pub=testmovie&tkn=817263812 HTTP/1.1
+host: localhost:28139
+accept: */*
+x-msisdn: XXXXXXXXXXXXX
+user-agent: Mozilla Android6.1
+
+

@@ -1,4 +1,4 @@
-import { CCError } from "../util.js";
+import { CCError } from "../utils.js";
 import { Word, eq } from "../shell/Word.js";
 import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
@@ -513,8 +513,8 @@ export function toClojureWarn(
   warnings: Warnings = []
 ): [string, Warnings] {
   const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
-  const cSharp = _toClojure(requests, warnings);
-  return [cSharp, warnings];
+  const clojure = _toClojure(requests, warnings);
+  return [clojure, warnings];
 }
 export function toClojure(curlCommand: string | string[]): string {
   return toClojureWarn(curlCommand)[0];

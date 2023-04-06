@@ -12,6 +12,7 @@ export { toDart, toDartWarn } from "./generators/dart.js";
 export { toElixir, toElixirWarn } from "./generators/elixir.js";
 export { toGo, toGoWarn } from "./generators/go.js";
 export { toHarString, toHarStringWarn } from "./generators/har.js";
+export { toHTTP, toHTTPWarn } from "./generators/http.js";
 export { toJava, toJavaWarn } from "./generators/java.js";
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
@@ -34,5 +35,5 @@ export { toNode as toNodeFetch } from "./generators/javascript/javascript.js";
 export { toJavaScriptWarn as toBrowserWarn } from "./generators/javascript/javascript.js";
 export { toNodeWarn as toNodeFetchWarn } from "./generators/javascript/javascript.js";
 
-export { CCError } from "./util.js";
+export { CCError } from "./utils.js";
 export type { Warnings } from "./Warnings.js";

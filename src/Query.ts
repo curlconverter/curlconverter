@@ -1,10 +1,11 @@
 import { Word, eq } from "./shell/Word.js";
-import { UTF8encoder } from "./util.js";
+import { UTF8encoder } from "./utils.js";
 
 export type QueryList = Array<[Word, Word]>;
 export type QueryDict = Array<[Word, Word | Array<Word>]>;
 
-export type Query = [QueryList | null, QueryDict | null];
+// Can't have a QueryDict without a QueryList
+export type Query = [QueryList, QueryDict | null] | [null, null];
 
 // Match Python's urllib.parse.quote() behavior
 // https://github.com/python/cpython/blob/3.11/Lib/urllib/parse.py#L826

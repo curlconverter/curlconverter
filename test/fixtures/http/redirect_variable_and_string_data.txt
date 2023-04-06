@@ -1,0 +1,8 @@
+POST / HTTP/1.1
+Host: localhost:28139
+User-Agent: curl/8.0.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 22
+
+foo&@start$FILENAMEend
