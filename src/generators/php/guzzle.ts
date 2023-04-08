@@ -55,21 +55,21 @@ export function _toPhpGuzzle(
   warnings: Warnings = []
 ): string {
   const request = getFirst(requests, warnings);
-  const url = request.urls[0].urlWithoutQueryList;
+  const url = request.urls[0].queryDict
+    ? request.urls[0].urlWithoutQueryList
+    : request.urls[0].url;
   const method = request.urls[0].method;
 
-  let guzzleCode = "<?php\n";
-  guzzleCode += "require 'vendor/autoload.php';\n\n";
-  guzzleCode += "use GuzzleHttpClient;\n\n";
-  guzzleCode += "$client = new Client();\n\n"; // TODO
+  const imports = new Set<string>(["GuzzleHttp\\Client"]);
 
+  let guzzleCode = "$client = new Client();\n\n";
   guzzleCode += "$response = $client->";
 
   const methods = ["GET", "DELETE", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"];
   if (method.isString() && methods.includes(method.toString())) {
-    method.toString().toLowerCase() + "(";
+    guzzleCode += method.toString().toLowerCase() + "(";
   } else {
-    "request(" + repr(method) + ", ";
+    guzzleCode += "request(" + repr(method) + ", ";
   }
 
   let options = "";
@@ -79,7 +79,6 @@ export function _toPhpGuzzle(
     for (const [name, value] of request.urls[0].queryDict) {
       options += `        ${repr(name)} => `;
       if (Array.isArray(value)) {
-        // TODO: does this work?
         options += "[\n";
         for (const v of value) {
           options += `            ${repr(v)},\n`;
@@ -90,27 +89,28 @@ export function _toPhpGuzzle(
         options += `${repr(value)},\n`;
       }
     }
-  } else if (request.urls[0].queryList) {
-    options += "    'query' => [\n";
-    for (const [name, value] of request.urls[0].queryList) {
-      if (value === null) {
-        continue;
-      }
-      options += `        ${repr(name)} => ${repr(value)},\n`;
-    }
+    options = removeTrailingComma(options);
+    options += "    ],\n";
   }
 
-  if (request.headers.length && request.headers.toBool()) {
-    options += "    'headers' => [\n";
+  if (request.headers.length) {
+    const headerReprs = [];
     for (const [name, value] of request.headers) {
       if (value === null) {
         continue;
       }
-      // TODO: pad to longest header name
-      options += `        ${repr(name)} => ${repr(value)},\n`;
+      headerReprs.push([repr(name), repr(value)]);
     }
-    options = removeTrailingComma(options);
-    options += "    ],\n";
+
+    if (headerReprs.length) {
+      const longestHeader = Math.max(...headerReprs.map((h) => h[0].length));
+      options += "    'headers' => [\n";
+      for (const [name, value] of headerReprs) {
+        options += `        ${name.padEnd(longestHeader)} => ${value},\n`;
+      }
+      options = removeTrailingComma(options);
+      options += "    ],\n";
+    }
   }
 
   if (request.urls[0].auth) {
@@ -155,6 +155,7 @@ export function _toPhpGuzzle(
         options += `            'contents' => Psr7\\Utils::tryFopen(${repr(
           m.contentFile
         )}, 'r'),\n`;
+        imports.add("GuzzleHttp\\Psr7");
         // TODO: set content type from file extension
       }
 
@@ -165,6 +166,7 @@ export function _toPhpGuzzle(
     options += `    'body' => Psr7\\Utils::tryFopen(${repr(
       request.urls[0].uploadFile
     )}, 'r')\n`;
+    imports.add("GuzzleHttp\\Psr7");
   } else if (request.data) {
     const contentType = request.headers.getContentType();
     if (contentType === "application/x-www-form-urlencoded") {
@@ -254,7 +256,16 @@ export function _toPhpGuzzle(
   }
   guzzleCode += ");";
 
-  return guzzleCode;
+  return (
+    "<?php\n" +
+    "require 'vendor/autoload.php';\n\n" +
+    Array.from(imports)
+      .sort()
+      .map((i) => "use " + i + ";\n")
+      .join("") +
+    "\n" +
+    guzzleCode
+  );
 }
 
 export function toPhpGuzzleWarn(
