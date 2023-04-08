@@ -53,6 +53,7 @@ function removeTrailingComma(str: string): string {
   return str;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function jsonToPhp(obj: any, indent = 0): string {
   if (obj === null) {
     return "null";
