@@ -22,6 +22,7 @@ export {
   toNodeRequestWarn,
 } from "./generators/javascript/request.js";
 export { toPhp, toPhpWarn } from "./generators/php/php.js";
+export { toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 export { toPhpRequests, toPhpRequestsWarn } from "./generators/php/requests.js";
 export { toPython, toPythonWarn } from "./generators/python.js";
 export { toR, toRWarn } from "./generators/r.js";

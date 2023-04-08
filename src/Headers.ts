@@ -292,6 +292,10 @@ export class Headers implements Iterable<[Word, Word | null]> {
     }
     return count;
   }
+
+  toBool(): boolean {
+    return this.headers.length > 0 && this.headers.some((h) => h[1] !== null);
+  }
 }
 
 // Cookie is a type of header.

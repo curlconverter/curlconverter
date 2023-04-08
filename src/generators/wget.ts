@@ -342,18 +342,15 @@ function requestToWget(request: Request, warnings: Warnings): string {
     args.push("--no-check-certificate");
   }
   if (request.cert) {
-    args.push("--certificate=" + repr(request.cert));
-    // TODO
-    // if (Array.isArray(request.cert)) {
-    //   const [cert, password] = request.cert;
-    //   if (password) {
-    //     warnings.push([
-    //       "wget-cert-password",
-    //       // TODO: is this true?
-    //       "Wget does not support certificate passwords",
-    //     ]);
-    //   }
-    // }
+    const [cert, password] = request.cert;
+    args.push("--certificate=" + repr(cert));
+    if (password) {
+      warnings.push([
+        "wget-cert-password",
+        // TODO: is this true?
+        "Wget does not support certificate passwords",
+      ]);
+    }
   }
   if (request.certType) {
     args.push("--certificate-type=" + repr(request.certType));

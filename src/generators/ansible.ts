@@ -276,7 +276,15 @@ export function _toAnsible(
   }
   if (request.cert) {
     // TODO: might have password
-    r.client_cert = request.cert.toString();
+    const [cert, password] = request.cert;
+    r.client_cert = cert.toString();
+    if (password) {
+      warnings.push([
+        "cert-password",
+        "Ansible does not support client certificate passwords: " +
+          JSON.stringify(password.toString()),
+      ]);
+    }
   }
   if (request.key) {
     r.client_key = request.key.toString();

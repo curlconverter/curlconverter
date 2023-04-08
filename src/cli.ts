@@ -41,6 +41,7 @@ import {
   toNodeRequestWarn,
 } from "./generators/javascript/request.js";
 import { _toPhp, toPhpWarn } from "./generators/php/php.js";
+import { _toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 import {
   _toPhpRequests,
   toPhpRequestsWarn,
@@ -98,6 +99,8 @@ const translate: {
   "nodejs-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
   "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   php: [_toPhp, toPhpWarn],
+  "php-curl": [_toPhp, toPhpWarn], // undocumented alias
+  "php-guzzle": [_toPhpGuzzle, toPhpGuzzleWarn],
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],
   python: [_toPython, toPythonWarn],
   r: [_toR, toRWarn],
@@ -126,6 +129,7 @@ language: the language to convert the curl command to. The choices are
   node-axios
   node-request
   php
+  php-guzzle
   php-requests
   python (the default)
   r

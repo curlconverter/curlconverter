@@ -107,17 +107,17 @@ const converters = {
     converter: curlconverter.toNode,
   },
   "node-axios": {
-    name: "Node",
+    name: "Node + Axios",
     extension: ".js",
     converter: curlconverter.toNodeAxios,
   },
   "node-got": {
-    name: "Node",
+    name: "Node + Got",
     extension: ".js",
     converter: curlconverter.toNodeGot,
   },
   "node-request": {
-    name: "Node",
+    name: "Node + request",
     extension: ".js",
     converter: curlconverter.toNodeRequest,
   },
@@ -125,6 +125,11 @@ const converters = {
     name: "PHP",
     extension: ".php",
     converter: curlconverter.toPhp,
+  },
+  "php-guzzle": {
+    name: "PHP + Guzzle",
+    extension: ".php",
+    converter: curlconverter.toPhpGuzzle,
   },
   python: {
     name: "Python",

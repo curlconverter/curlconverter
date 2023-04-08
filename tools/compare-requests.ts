@@ -49,6 +49,8 @@ const setup = {
   // "node-got": "",
   // "node-request": "",
   php: "",
+  // php composer.phar global require guzzlehttp/guzzle:^7.0
+  "php-guzzle": "",
   python: "",
   r: "",
   ruby: "",
@@ -76,6 +78,7 @@ const executables = {
   // "node-got": "",
   // "node-request": "",
   php: "php <file>",
+  "php-guzzle": "php <file>",
   python: "python3 <file>",
   r: "r < <file> --no-save",
   ruby: "ruby <file>",
