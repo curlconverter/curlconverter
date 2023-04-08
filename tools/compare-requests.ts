@@ -49,6 +49,9 @@ const setup = {
   // "node-got": "",
   // "node-request": "",
   php: "",
+  // php composer.phar global require guzzlehttp/guzzle:^7.0
+  "php-guzzle":
+    "cd /tmp && mkdir curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
   python: "",
   r: "",
   ruby: "",
@@ -76,6 +79,8 @@ const executables = {
   // "node-got": "",
   // "node-request": "",
   php: "php <file>",
+  "php-guzzle":
+    "cp <file> /tmp/curlconverter-php-guzzle/main.php && cd /tmp/curlconverter-php-guzzle && php main.php",
   python: "python3 <file>",
   r: "r < <file> --no-save",
   ruby: "ruby <file>",

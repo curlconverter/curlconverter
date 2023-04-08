@@ -270,6 +270,20 @@ export class Word implements Iterable<Token> {
     return null;
   }
 
+  search(regex: RegExp): number {
+    let offset = 0;
+    for (const t of this.tokens) {
+      if (typeof t === "string") {
+        const match = t.search(regex);
+        if (match !== -1) {
+          return offset + match;
+        }
+        offset += t.length;
+      }
+    }
+    return -1;
+  }
+
   // .replace() is called per-string, so it won't work through shell variables
   replace(search: string | RegExp, replacement: string): Word {
     const ret: Token[] = [];

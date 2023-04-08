@@ -1471,9 +1471,18 @@ function requestToPython(
   let certStr;
   if (request.cert || request.key) {
     certStr = "cert = ";
-    const certPart = request.cert
-      ? repr(request.cert, osVars, imports)
-      : "None";
+    let certPart = "None";
+    if (request.cert) {
+      const [cert, password] = request.cert;
+      certPart = repr(cert, osVars, imports);
+      if (password) {
+        warnings.push([
+          "cert-password",
+          "passing a password to --cert is not supported: " +
+            JSON.stringify(password.toString()),
+        ]);
+      }
+    }
     if (request.key) {
       certStr +=
         "(" + certPart + ", " + repr(request.key, osVars, imports) + ")";

@@ -116,7 +116,7 @@ export interface Request {
 
   ciphers?: Word;
   insecure?: boolean;
-  cert?: Word;
+  cert?: [Word, Word | null];
   certType?: Word;
   key?: Word;
   keyType?: Word;
@@ -700,9 +700,25 @@ function buildRequest(
   }
   // TODO: if the URL doesn't start with https://, curl doesn't verify
   // certificates, etc.
-  // TODO: --cert value might have password
   if (config.cert) {
-    request.cert = config.cert;
+    if (config.cert.startsWith("pkcs11:") || !config.cert.match(/[:\\]/)) {
+      request.cert = [config.cert, null];
+    } else {
+      // TODO: curl does more complex processing
+      // find un-backslash-escaped colon, backslash might also be escaped with a backslash
+      const colon = config.cert.search(/(?<!\\)(?:\\\\)*:/);
+      if (colon === -1) {
+        request.cert = [config.cert, null];
+      } else {
+        const cert = config.cert.slice(0, colon);
+        const password = config.cert.slice(colon + 1);
+        if (password.toBool()) {
+          request.cert = [cert, password];
+        } else {
+          request.cert = [cert, null];
+        }
+      }
+    }
   }
   if (config["cert-type"]) {
     request.certType = config["cert-type"];
