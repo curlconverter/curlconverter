@@ -5,8 +5,9 @@ import {
 } from "../../parse.js";
 import { eq } from "../../shell/Word.js";
 import type { Request, Warnings } from "../../parse.js";
-import { repr } from "./php.js";
 import { parseQueryString } from "../../Query.js";
+
+import { reprStr, repr } from "./php.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -33,6 +34,7 @@ const supportedArgs = new Set([
   "cacert",
   "capath",
   "cert",
+  "key",
 
   "compressed", // TODO: check behavior
   "no-compressed",
@@ -40,7 +42,8 @@ const supportedArgs = new Set([
   "location",
   "no-location",
 
-  // "proxy",
+  "proxy",
+  "noproxy",
 ]);
 
 function removeTrailingComma(str: string): string {
@@ -48,6 +51,65 @@ function removeTrailingComma(str: string): string {
     return str.slice(0, -2) + "\n";
   }
   return str;
+}
+
+function jsonToPhp(obj: any, indent = 0): string {
+  if (obj === null) {
+    return "null";
+  }
+  if (typeof obj === "boolean") {
+    return obj ? "true" : "false";
+  }
+  if (typeof obj === "number") {
+    return obj.toString();
+  }
+  if (typeof obj === "string") {
+    return reprStr(obj);
+  }
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) {
+      return "[]";
+    }
+    let str = "[\n";
+    for (const item of obj) {
+      str += " ".repeat(indent + 4);
+      str += jsonToPhp(item, indent + 4);
+      str += ",\n";
+    }
+    str = removeTrailingComma(str);
+    str += " ".repeat(indent);
+    str += "]";
+    return str;
+  }
+  if (typeof obj === "object") {
+    const entries = Object.entries(obj);
+    if (entries.length === 0) {
+      return "new stdClass()";
+    }
+    let str = "[\n";
+    for (const [key, value] of entries) {
+      str += " ".repeat(indent + 4);
+      str += reprStr(key);
+      str += " => ";
+      str += jsonToPhp(value, indent + 4);
+      str += ",\n";
+    }
+    str = removeTrailingComma(str);
+    str += " ".repeat(indent);
+    str += "]";
+    return str;
+  }
+  throw new Error("Unknown type");
+}
+
+function jsonStrToPhp(obj: string, indent = 0): [string, boolean] {
+  const json = JSON.parse(obj);
+  if (json === null) {
+    throw new Error("null as a top level JSON object doesn't work");
+  }
+  const jsonAsPhp = jsonToPhp(json, indent);
+  const roundtrips = JSON.stringify(json) === obj;
+  return [jsonAsPhp, roundtrips];
 }
 
 export function _toPhpGuzzle(
@@ -162,6 +224,10 @@ export function _toPhpGuzzle(
       options = removeTrailingComma(options);
       options += "        ],\n";
     }
+
+    options = removeTrailingComma(options);
+    options += "    ],\n";
+    // TODO: remove some headers?
   } else if (request.urls[0].uploadFile) {
     options += `    'body' => Psr7\\Utils::tryFopen(${repr(
       request.urls[0].uploadFile
@@ -190,19 +256,42 @@ export function _toPhpGuzzle(
 
         options = removeTrailingComma(options);
         options += "    ],\n";
+        // TODO: remove some headers?
       } else {
         options += `    'body' => ${repr(request.data)},\n`;
       }
-    } else if (contentType === "application/json") {
+    } else if (contentType === "application/json" && request.data.isString()) {
       // TODO: parse JSON into PHP
-      options += `    'json' => ${repr(request.data)},\n`;
+      try {
+        const [json, roundtrips] = jsonStrToPhp(request.data.toString(), 4);
+        if (!roundtrips) {
+          options += `    // 'body' => ${repr(request.data)},\n`;
+        }
+        options += `    'json' => ${json},\n`;
+        // TODO: remove some headers?
+      } catch {
+        options += `    'body' => ${repr(request.data)},\n`;
+      }
     } else {
       options += `    'body' => ${repr(request.data)},\n`;
     }
   }
 
-  if (request.proxy) {
-    // TODO: proxy and no-proxy
+  // TODO: put --proxy-user in proxy URL
+  if (request.noproxy) {
+    options += `    'proxy' => [\n`;
+    if (request.proxy) {
+      options += `        'http' => ${repr(request.proxy)},\n`;
+      options += `        'https' => ${repr(request.proxy)},\n`;
+    }
+    const noproxies = request.noproxy.split(",").map((s) => s.trim());
+    options += `        'no' => [${noproxies
+      .map((np) => repr(np))
+      .join(", ")}]\n`;
+    options += "    ],\n";
+  } else if (request.proxy) {
+    // TODO: is this right for SOCKS proxies?
+    options += `    'proxy' => ${repr(request.proxy)},\n`;
   }
 
   if (request.timeout) {
@@ -240,9 +329,9 @@ export function _toPhpGuzzle(
   }
 
   if (request.http3) {
-    options += "    'http_version' => '3.0',\n";
+    options += "    'http_version' => 3.0,\n";
   } else if (request.http2) {
-    options += "    'http_version' => '2.0',\n";
+    options += "    'http_version' => 2.0,\n";
   }
 
   options = removeTrailingComma(options);
@@ -264,7 +353,8 @@ export function _toPhpGuzzle(
       .map((i) => "use " + i + ";\n")
       .join("") +
     "\n" +
-    guzzleCode
+    guzzleCode +
+    "\n"
   );
 }
 
