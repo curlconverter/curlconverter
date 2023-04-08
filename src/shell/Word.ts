@@ -2,6 +2,7 @@
 // characters can be shell variables or expressions.
 // They're implemented like this:
 // ["foobar", {type: "variable", value: "baz", text: "$baz"}, "qux"]
+// Except for the empty string [""], there should be no empty strings in the array.
 
 import type { Parser } from "./Parser.js";
 import { CCError } from "../utils.js";
@@ -338,6 +339,48 @@ export class Word implements Iterable<Token> {
     return new Word(
       this.tokens.map((t) => (typeof t === "string" ? t.toUpperCase() : t))
     );
+  }
+
+  trimStart(): Word {
+    const ret: Token[] = [];
+    let i, t;
+    for ([i, t] of this.tokens.entries()) {
+      if (typeof t === "string") {
+        if (i === 0) {
+          t = t.trimStart();
+        }
+        if (t) {
+          ret.push(t);
+        }
+      } else {
+        ret.push(t);
+      }
+    }
+    if (ret.length === 0) {
+      return new Word();
+    }
+    return new Word(ret);
+  }
+
+  trimEnd(): Word {
+    const ret: Token[] = [];
+    let i, t;
+    for ([i, t] of this.tokens.entries()) {
+      if (typeof t === "string") {
+        if (i === this.tokens.length - 1) {
+          t = t.trimEnd();
+        }
+        if (t) {
+          ret.push(t);
+        }
+      } else {
+        ret.push(t);
+      }
+    }
+    if (ret.length === 0) {
+      return new Word();
+    }
+    return new Word(ret);
   }
 
   trim(): Word {

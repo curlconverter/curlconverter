@@ -685,8 +685,9 @@ function buildRequest(
   } else if (config.data) {
     headers.setIfMissing("Content-Type", "application/x-www-form-urlencoded");
   } else if (config.form) {
-    // TODO: set content-type?
-    request.multipartUploads = parseForm(config.form);
+    // TODO: warn when details (;filename=, etc.) are not supported
+    // by each converter.
+    request.multipartUploads = parseForm(config.form, global.warnings);
   }
 
   if (config["aws-sigv4"]) {

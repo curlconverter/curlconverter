@@ -1276,21 +1276,18 @@ function getFilesString(
     // https://github.com/psf/requests/blob/2d5517682b3b38547634d153cea43d48fbc8cdb5/requests/models.py#L117
     //
     // Requests's multipart syntax looks like this:
-    // (name/filename, content)
-    // (name, open(filename/contentFile))
-    // (name, (filename, open(contentFile))
-    // (name, (filename, open(contentFile), contentType, headers)) // this isn't parsed from --form yet
+    // name/filename: content
+    // name: open(filename/contentFile)
+    // name: (filename, open(contentFile))
+    // name: (filename, open(contentFile), contentType, headers))
     const name = m.name ? repr(m.name, osVars, imports) : "None";
-    const sentFilename =
-      "filename" in m && m.filename
-        ? repr(m.filename, osVars, imports)
-        : "None";
-    if ("contentFile" in m) {
-      if (eq(m.contentFile, "-")) {
-        // TODO: use piped stdin if we have it
-        usesStdin = true;
-        return [name, "(" + sentFilename + ", sys.stdin.buffer.read())"];
-      } else if (eq(m.contentFile, m.filename)) {
+
+    if (!("contentType" in m) && !("headers" in m) && !("encoder" in m)) {
+      if (
+        "contentFile" in m &&
+        eq(m.contentFile, m.filename) &&
+        !eq(m.contentFile, "-")
+      ) {
         return [
           name,
           "open(" +
@@ -1298,19 +1295,38 @@ function getFilesString(
             ", 'rb')",
         ];
       }
-      return [
-        name,
-        "(" +
-          sentFilename +
-          ", open(" +
-          repr(m.contentFile, osVars, imports, false, true) +
-          ", 'rb'))",
-      ];
+      if ("content" in m && "filename" in m && eq(m.name, m.filename)) {
+        return [name, repr(m.content, osVars, imports)];
+      }
     }
-    return [
-      name,
-      "(" + sentFilename + ", " + repr(m.content, osVars, imports) + ")",
-    ];
+
+    const sentFilename =
+      "filename" in m && m.filename
+        ? repr(m.filename, osVars, imports)
+        : "None";
+    const tuple = [sentFilename];
+    if ("contentFile" in m) {
+      if (eq(m.contentFile, "-")) {
+        // TODO: use piped stdin if we have it
+        usesStdin = true;
+        tuple.push("sys.stdin.buffer.read())");
+      } else {
+        tuple.push(
+          "open(" +
+            repr(m.contentFile, osVars, imports, false, true) +
+            ", 'rb')"
+        );
+      }
+    } else {
+      tuple.push(repr(m.content, osVars, imports));
+    }
+    if ("contentType" in m && m.contentType) {
+      tuple.push(repr(m.contentType, osVars, imports));
+    }
+    if ("headers" in m && m.headers) {
+      // TODO
+    }
+    return [name, "(" + tuple.join(", ") + ")"];
   });
 
   const multipartUploadsAsDict = Object.fromEntries(multipartUploads);
