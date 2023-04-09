@@ -93,7 +93,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `javascript`, `node`, `node-axios`, `node-got`, `node-request`
 - `json`
 - `matlab`
-- `php`, `php-requests`
+- `php`, `php-guzzle`, `php-requests`
 - `python` (the default)
 - `r`
 - `ruby`

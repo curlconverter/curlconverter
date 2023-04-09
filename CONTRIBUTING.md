@@ -33,7 +33,7 @@ Docker is used as a hack to run an older version of Emscripten because the curre
 
 If you add a new generator, you'll need to
 
-- add it to [README.md](./README.md) in two places
+- add it to [README.md](./README.md) in **two places**
 - export it in [index.ts](src/index.ts)
 - update the list of supported languages in [cli.ts](src/cli.ts) in two places (or it won't be accessible from the command line)
 - add it to [test-utils.ts](test/test-utils.ts) (to make it part of the testing)

@@ -706,7 +706,14 @@ function buildRequest(
     } else {
       // TODO: curl does more complex processing
       // find un-backslash-escaped colon, backslash might also be escaped with a backslash
-      const colon = config.cert.search(/(?<!\\)(?:\\\\)*:/);
+      let colon = -1;
+
+      try {
+        // Safari versions older than 16.4 don't support negative lookbehind
+        colon = config.cert.search(/(?<!\\)(?:\\\\)*:/);
+      } catch {
+        colon = config.cert.search(/:/);
+      }
       if (colon === -1) {
         request.cert = [config.cert, null];
       } else {
