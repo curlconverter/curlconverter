@@ -265,10 +265,18 @@ function warnAboutErrorNodes(
   cursor.gotoFirstChild();
   while (cursor.gotoNextSibling()) {
     if (cursor.nodeType === "ERROR") {
+      let currentNode = cursor.currentNode;
+      try {
+        // TreeCursor.currentNode is a property in Node but a function in the browser
+        // https://github.com/tree-sitter/tree-sitter/issues/2195
+        currentNode = (
+          cursor.currentNode as unknown as () => Parser.SyntaxNode
+        )();
+      } catch {}
       warnings.push([
         "bash",
         `Bash parsing error on line ${cursor.startPosition.row + 1}:\n` +
-          underlineNode(cursor.currentNode, curlCommand),
+          underlineNode(currentNode, curlCommand),
       ]);
       break;
     }
