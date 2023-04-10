@@ -6,7 +6,7 @@ import { clip } from "../parse.js";
 import parser from "./Parser.js";
 import type { Parser } from "./Parser.js";
 
-import { underlineNode, underlineNodeEnd, type Warnings } from "../Warnings.js";
+import { underlineNode, type Warnings } from "../Warnings.js";
 
 const BACKSLASHES = /\\./gs;
 function removeBackslash(m: string) {
@@ -255,13 +255,144 @@ function toWord(
   return new Word(toTokens(node, curlCommand, warnings));
 }
 
-// TODO: check entire AST for ERROR/MISSING nodes
-// TODO: get all command nodes
-function findFirstCommandNode(
+function warnAboutErrorNodes(
   ast: Parser.Tree,
   curlCommand: string,
   warnings: Warnings
+) {
+  // TODO: get only named children?
+  const cursor = ast.walk();
+  cursor.gotoFirstChild();
+  while (cursor.gotoNextSibling()) {
+    if (cursor.nodeType === "ERROR") {
+      warnings.push([
+        "bash",
+        `Bash parsing error on line ${cursor.startPosition.row + 1}:\n` +
+          underlineNode(cursor.currentNode, curlCommand),
+      ]);
+      break;
+    }
+  }
+}
+
+function warnAboutUselessBackslash(
+  n: Parser.SyntaxNode,
+  curlCommandLines: string[],
+  warnings: Warnings
+) {
+  const lastCommandLine = curlCommandLines[n.endPosition.row];
+  const impromperBackslash = lastCommandLine.match(/\\\s+$/);
+  if (
+    impromperBackslash &&
+    curlCommandLines.length > n.endPosition.row + 1 &&
+    impromperBackslash.index !== undefined
+  ) {
+    warnings.push([
+      "unescaped-newline",
+      "The trailling '\\' on line " +
+        (n.endPosition.row + 1) +
+        " is followed by whitespace, so it won't escape the newline after it:\n" +
+        // TODO: cut off line if it's very long?
+        lastCommandLine +
+        "\n" +
+        " ".repeat(impromperBackslash.index) +
+        "^".repeat(impromperBackslash[0].length),
+    ]);
+  }
+}
+
+function extractRedirect(
+  node: Parser.SyntaxNode,
+  curlCommand: string,
+  warnings: Warnings
 ): [Parser.SyntaxNode, Word?, Word?] {
+  if (!node.childCount) {
+    throw new CCError('got empty "redirected_statement" AST node');
+  }
+
+  let stdin, stdinFile;
+  const [command, ...redirects] = node.namedChildren;
+  if (command.type !== "command") {
+    throw new CCError(
+      'got "redirected_statement" AST node whose first child is not a "command", got ' +
+        command.type +
+        " instead\n" +
+        underlineNode(command, curlCommand)
+    );
+  }
+  if (node.childCount < 2) {
+    throw new CCError(
+      'got "redirected_statement" AST node with only one child - no redirect'
+    );
+  }
+  if (redirects.length > 1) {
+    warnings.push([
+      "multiple-redirects",
+      // TODO: this is misleading because not all generators use the redirect
+      "found " +
+        redirects.length +
+        " redirect nodes. Only the first one will be used:\n" +
+        underlineNode(redirects[1], curlCommand),
+    ]);
+  }
+  const redirect = redirects[0];
+  if (redirect.type === "file_redirect") {
+    stdinFile = toWord(redirect.namedChildren[0], curlCommand, warnings);
+  } else if (redirect.type === "heredoc_redirect") {
+    // heredoc bodies are children of the parent program node
+    // https://github.com/tree-sitter/tree-sitter-bash/issues/118
+    if (redirect.namedChildCount < 1) {
+      throw new CCError(
+        'got "redirected_statement" AST node with heredoc but no heredoc start'
+      );
+    }
+    const heredocStart = redirect.namedChildren[0].text;
+    const heredocBody = node.nextNamedSibling;
+    if (!heredocBody) {
+      throw new CCError(
+        'got "redirected_statement" AST node with no heredoc body'
+      );
+    }
+    // TODO: herestrings and heredocs are different
+    if (heredocBody.type !== "heredoc_body") {
+      throw new CCError(
+        'got "redirected_statement" AST node with heredoc but no heredoc body, got ' +
+          heredocBody.type +
+          " instead"
+      );
+    }
+    // TODO: heredocs can do variable expansion and stuff
+    if (heredocStart.length) {
+      stdin = new Word(heredocBody.text.slice(0, -heredocStart.length));
+    } else {
+      // this shouldn't happen
+      stdin = new Word(heredocBody.text);
+    }
+  } else if (redirect.type === "herestring_redirect") {
+    if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
+      throw new CCError(
+        'got "redirected_statement" AST node with empty herestring'
+      );
+    }
+    // TODO: this just converts bash code to text
+    stdin = new Word(redirect.firstNamedChild.text);
+  } else {
+    throw new CCError(
+      'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
+        command.type +
+        " instead"
+    );
+  }
+  return [command, stdin, stdinFile];
+}
+
+// TODO: check entire AST for ERROR/MISSING nodes
+// TODO: get all command nodes
+function extractCommandNodes(
+  ast: Parser.Tree,
+  curlCommand: string,
+  warnings: Warnings
+): [Parser.SyntaxNode, Word?, Word?][] {
   // https://github.com/tree-sitter/tree-sitter-bash/blob/master/grammar.js
   // The AST must be in a nice format, i.e.
   // (program
@@ -282,17 +413,7 @@ function findFirstCommandNode(
   //     body: (command, same as above)
   //     redirect))
 
-  // TODO: get only named children?
-  for (const n of [ast.rootNode, ...ast.rootNode.children]) {
-    if (n.type === "ERROR") {
-      warnings.push([
-        "bash",
-        `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
-          underlineNode(n, curlCommand),
-      ]);
-      break;
-    }
-  }
+  // Shouldn't happen.
   if (ast.rootNode.type !== "program") {
     // TODO: better error message.
     throw new CCError(
@@ -303,173 +424,67 @@ function findFirstCommandNode(
     );
   }
 
-  if (ast.rootNode.childCount < 1 || !ast.rootNode.children) {
+  if (ast.rootNode.namedChildCount < 1 || !ast.rootNode.namedChildren) {
     // TODO: better error message.
     throw new CCError('empty "program" node');
   }
 
-  // Get the curl call AST node. Skip comments
-  let command, lastNode, stdin, stdinFile;
-  for (const n of ast.rootNode.children) {
-    if (n.type === "comment") {
-      continue;
-    } else if (n.type === "command") {
-      command = n;
-      lastNode = n;
-      break;
-    } else if (n.type === "redirected_statement") {
-      if (!n.childCount) {
-        throw new CCError('got empty "redirected_statement" AST node');
-      }
-      let redirects;
-      [command, ...redirects] = n.namedChildren;
-      lastNode = n;
-      if (command.type !== "command") {
+  const curlCommandLines = curlCommand.split("\n");
+  let sawComment = false;
+  const commands: [Parser.SyntaxNode, Word?, Word?][] = [];
+  // Get top-level command and redirected_statement AST nodes, skipping comments
+  for (const n of ast.rootNode.namedChildren) {
+    switch (n.type) {
+      case "comment":
+        sawComment = true;
+        continue;
+      case "command":
+        commands.push([n, undefined, undefined]);
+        warnAboutUselessBackslash(n, curlCommandLines, warnings);
+        break;
+      case "redirected_statement":
+        commands.push(extractRedirect(n, curlCommand, warnings));
+        warnAboutUselessBackslash(n, curlCommandLines, warnings);
+        break;
+      case "heredoc_body": // https://github.com/tree-sitter/tree-sitter-bash/issues/118
+        continue;
+      case "ERROR":
         throw new CCError(
-          'got "redirected_statement" AST node whose first child is not a "command", got ' +
-            command.type +
-            " instead\n" +
-            underlineNode(command, curlCommand)
+          `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
+            underlineNode(n, curlCommand)
         );
-      }
-      if (n.childCount < 2) {
+      default:
+        // TODO: better error message.
         throw new CCError(
-          'got "redirected_statement" AST node with only one child - no redirect'
+          'expected a "command" or "redirected_statement" AST node, instead got ' +
+            JSON.stringify(n.type) +
+            "\n" +
+            underlineNode(n, curlCommand)
         );
-      }
-      if (redirects.length > 1) {
-        warnings.push([
-          "multiple-redirects",
-          // TODO: only the Python generator uses the redirect so this is misleading.
-          "found " +
-            redirects.length +
-            " redirect nodes. Only the first one will be used:\n" +
-            underlineNode(redirects[1], curlCommand),
-        ]);
-      }
-      const redirect = redirects[0];
-      if (redirect.type === "file_redirect") {
-        stdinFile = toWord(redirect.namedChildren[0], curlCommand, warnings);
-      } else if (redirect.type === "heredoc_redirect") {
-        // heredoc bodies are children of the parent program node
-        // https://github.com/tree-sitter/tree-sitter-bash/issues/118
-        if (redirect.namedChildCount < 1) {
-          throw new CCError(
-            'got "redirected_statement" AST node with heredoc but no heredoc start'
-          );
-        }
-        const heredocStart = redirect.namedChildren[0].text;
-        const heredocBody = n.nextNamedSibling;
-        lastNode = heredocBody;
-        if (!heredocBody) {
-          throw new CCError(
-            'got "redirected_statement" AST node with no heredoc body'
-          );
-        }
-        // TODO: herestrings and heredocs are different
-        if (heredocBody.type !== "heredoc_body") {
-          throw new CCError(
-            'got "redirected_statement" AST node with heredoc but no heredoc body, got ' +
-              heredocBody.type +
-              " instead"
-          );
-        }
-        // TODO: heredocs do variable expansion and stuff
-        if (heredocStart.length) {
-          stdin = new Word(heredocBody.text.slice(0, -heredocStart.length));
-        } else {
-          // this shouldn't happen
-          stdin = new Word(heredocBody.text);
-        }
-      } else if (redirect.type === "herestring_redirect") {
-        if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
-          throw new CCError(
-            'got "redirected_statement" AST node with empty herestring'
-          );
-        }
-        // TODO: this just converts bash code to text
-        stdin = new Word(redirect.firstNamedChild.text);
-      } else {
-        throw new CCError(
-          'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
-            command.type +
-            " instead"
-        );
-      }
-
-      break;
-    } else if (n.type === "ERROR") {
-      throw new CCError(
-        `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
-          underlineNode(n, curlCommand)
-      );
-    } else {
-      // TODO: better error message.
-      throw new CCError(
-        'expected a "command" or "redirected_statement" AST node, instead got ' +
-          ast.rootNode.children[0].type +
-          "\n" +
-          underlineNode(ast.rootNode.children[0], curlCommand)
-      );
     }
   }
-  // TODO: better logic, skip comments.
-  if (lastNode && lastNode.nextNamedSibling) {
-    // TODO: better wording
-    warnings.push([
-      "extra-commands",
-      `curl command ends on line ${
-        lastNode.endPosition.row + 1
-      }, everything after this is ignored:\n` +
-        underlineNodeEnd(lastNode, curlCommand),
-    ]);
-
-    const curlCommandLines = curlCommand.split("\n");
-    const lastNodeLine = curlCommandLines[lastNode.endPosition.row];
-    const impromperBackslash = lastNodeLine.match(/\\\s+$/);
-    if (
-      impromperBackslash &&
-      curlCommandLines.length > lastNode.endPosition.row + 1 &&
-      impromperBackslash.index !== undefined
-    ) {
-      warnings.push([
-        "unescaped-newline",
-        "The trailling '\\' on line " +
-          (lastNode.endPosition.row + 1) +
-          " is followed by whitespace, so it won't escape the newline after it:\n" +
-          // TODO: cut off line if it's very long?
-          lastNodeLine +
-          "\n" +
-          " ".repeat(impromperBackslash.index) +
-          "^".repeat(impromperBackslash[0].length),
-      ]);
-    }
-  }
-  if (!command) {
+  if (!commands.length) {
     // NOTE: if you add more node types in the `for` loop above, this error needs to be updated.
     // We would probably need to keep track of the node types we've seen.
     throw new CCError(
-      'expected a "command" or "redirected_statement" AST node, only found "comment" nodes'
+      'expected a "command" or "redirected_statement" AST node' +
+        (sawComment ? ', only found "comment" nodes' : "")
     );
   }
 
-  return [command, stdin, stdinFile];
+  return commands;
 }
 
-export function tokenize(
+function toNameAndArgv(
+  command: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings = []
-): [Word[], Word?, Word?] {
-  const ast = parser.parse(curlCommand);
-
-  const [command, stdin, stdinFile] = findFirstCommandNode(
-    ast,
-    curlCommand,
-    warnings
-  );
+  warnings: Warnings
+): [Parser.SyntaxNode, Parser.SyntaxNode[]] {
   if (command.childCount < 1) {
     // TODO: better error message.
-    throw new CCError('empty "command" node');
+    throw new CCError(
+      'empty "command" node\n' + underlineNode(command, curlCommand)
+    );
   }
 
   // TODO: add childrenForFieldName to tree-sitter node/web bindings
@@ -499,15 +514,26 @@ export function tokenize(
       break;
     }
   }
+
   const [name, ...args] = command.namedChildren.slice(commandNameLoc);
 
-  // None of these things should happen, but just in case
+  // Shouldn't happen
   if (name === undefined) {
     throw new CCError(
       'found "command" AST node with no "command_name" child\n' +
         underlineNode(command, curlCommand)
     );
   }
+
+  return [name, args];
+}
+
+// Checks that name is "curl"
+function nameToWord(
+  name: Parser.SyntaxNode,
+  curlCommand: string,
+  warnings: Warnings
+): Word {
   if (name.childCount < 1 || !name.firstChild) {
     throw new CCError(
       'found empty "command_name" AST node\n' + underlineNode(name, curlCommand)
@@ -520,7 +546,8 @@ export function tokenize(
     ]);
   }
 
-  const nameWord = toWord(name.firstChild, curlCommand, warnings);
+  const nameNode = name.firstChild;
+  const nameWord = toWord(nameNode, curlCommand, warnings);
   const nameWordStr = nameWord.toString();
   const cmdNameShellToken = firstShellToken(nameWord);
   if (cmdNameShellToken) {
@@ -539,17 +566,39 @@ export function tokenize(
   } else if (nameWordStr.trim() !== "curl") {
     const c = nameWordStr.trim();
     if (!c) {
-      throw new CCError("found command without a command_name");
+      throw new CCError(
+        "found command without a command_name\n" + underlineNode(nameNode)
+      );
     }
     throw new CCError(
       'command should begin with "curl" but instead begins with ' +
-        JSON.stringify(clip(c))
+        JSON.stringify(clip(c)) +
+        "\n" +
+        underlineNode(nameNode)
     );
   }
+  return nameWord;
+}
 
-  return [
-    [nameWord, ...args.map((a) => toWord(a, curlCommand, warnings))],
-    stdin,
-    stdinFile,
-  ];
+export function tokenize(
+  curlCommand: string,
+  warnings: Warnings = []
+): [Word[], Word?, Word?][] {
+  const ast = parser.parse(curlCommand);
+  warnAboutErrorNodes(ast, curlCommand, warnings);
+
+  const commandNodes = extractCommandNodes(ast, curlCommand, warnings);
+  const commands: [Word[], Word?, Word?][] = [];
+  for (const [command, stdin, stdinFile] of commandNodes) {
+    const [name, argv] = toNameAndArgv(command, curlCommand, warnings);
+    commands.push([
+      [
+        nameToWord(name, curlCommand, warnings),
+        ...argv.map((arg) => toWord(arg, curlCommand, warnings)),
+      ],
+      stdin,
+      stdinFile,
+    ]);
+  }
+  return commands;
 }

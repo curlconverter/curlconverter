@@ -1,6 +1,6 @@
 import { btoa } from "../utils.js";
 import { warnIfPartsIgnored } from "../Warnings.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, RequestUrl, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
 import type { Request as HARRequest, PostData as PostData } from "har-format";
@@ -136,7 +136,7 @@ export function toHarStringWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   requests.map((r) => warnIfPartsIgnored(r, warnings, { multipleUrls: true }));
 
   const har = _toHarString(requests, warnings);

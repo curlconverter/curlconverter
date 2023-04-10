@@ -1,7 +1,7 @@
 import { CCError, has } from "../utils.js";
 import { warnIfPartsIgnored } from "../Warnings.js";
 import { Word, eq } from "../shell/Word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryDict } from "../Query.js";
 
@@ -551,7 +551,7 @@ export function toRubyWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const ruby = _toRuby(requests, warnings);
   return [ruby, warnings];
 }

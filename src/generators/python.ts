@@ -1,6 +1,6 @@
 import { CCError, has, UTF8encoder } from "../utils.js";
 import { Word, eq } from "../shell/Word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { wordDecodeURIComponent, percentEncode } from "../Query.js";
 import { DataParam } from "../Request.js";
@@ -2132,7 +2132,7 @@ export function toPythonWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const python = _toPython(requests, warnings);
   return [python, warnings];
 }

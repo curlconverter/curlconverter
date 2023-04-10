@@ -1,6 +1,6 @@
 import { warnIfPartsIgnored } from "../Warnings.js";
 import { Word, joinWords } from "../shell/Word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
 
@@ -342,7 +342,7 @@ export function toElixirWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const elixir = _toElixir(requests, warnings);
   return [elixir, warnings];
 }

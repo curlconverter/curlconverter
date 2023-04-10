@@ -1,6 +1,6 @@
 import { warnIfPartsIgnored } from "../Warnings.js";
 import { Word, eq, mergeWords } from "../shell/Word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
 const supportedArgs = new Set([
@@ -462,7 +462,7 @@ export function toWgetWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const ruby = _toWget(requests, warnings);
   return [ruby, warnings];
 }

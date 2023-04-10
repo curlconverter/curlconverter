@@ -23,10 +23,10 @@ export function clip(s: string, maxLength = 30): string {
   return s;
 }
 
-function toArgv(
+function findCommands(
   curlCommand: string | string[],
   warnings: Warnings
-): [Word[], Word?, Word?] {
+): [Word[], Word?, Word?][] {
   if (typeof curlCommand === "string") {
     return tokenize(curlCommand, warnings);
   }
@@ -40,24 +40,33 @@ function toArgv(
         JSON.stringify(clip(curlCommand[0]))
     );
   }
-  return [curlCommand.map((arg) => new Word(arg)), undefined, undefined];
+  return [[curlCommand.map((arg) => new Word(arg)), undefined, undefined]];
 }
 
-export function parseCurlCommand(
-  curlCommand: string | string[],
+/**
+ * Accepts a string of Bash code or a tokenized argv array.
+ * Returns an array of parsed curl objects.
+ * @param command a string of Bash code containing at least one curl command or an
+ * array of shell argument tokens (meant for passing process.argv).
+ */
+export function parse(
+  command: string | string[],
   supportedArgs?: Set<string>,
   warnings: Warnings = []
 ): Request[] {
-  const [argv, stdin, stdinFile] = toArgv(curlCommand, warnings);
+  let requests: Request[] = [];
+  const curlCommands = findCommands(command, warnings);
+  for (const [argv, stdin, stdinFile] of curlCommands) {
+    const globalConfig = curl.parseArgs(
+      argv,
+      curlLongOpts,
+      curlLongOptsShortened,
+      curlShortOpts,
+      supportedArgs,
+      warnings
+    );
 
-  const globalConfig = curl.parseArgs(
-    argv,
-    curlLongOpts,
-    curlLongOptsShortened,
-    curlShortOpts,
-    supportedArgs,
-    warnings
-  );
-
-  return buildRequests(globalConfig, stdin, stdinFile);
+    requests = requests.concat(buildRequests(globalConfig, stdin, stdinFile));
+  }
+  return requests;
 }

@@ -1,5 +1,5 @@
 import { Word, eq } from "../shell/Word.js";
-import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
 
@@ -352,7 +352,7 @@ export function toAnsibleWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const ansible = _toAnsible(requests, warnings);
   return [ansible, warnings];
 }

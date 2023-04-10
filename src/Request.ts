@@ -714,6 +714,7 @@ function buildRequest(
       } catch {
         colon = config.cert.search(/:/);
       }
+
       if (colon === -1) {
         request.cert = [config.cert, null];
       } else {
@@ -866,9 +867,11 @@ export function getFirst(
   if (requests.length > 1) {
     warnings.push([
       "next",
+      // TODO: better message, we might have two requests because of
+      // --next or because of multiple curl commands or both
       "got " +
         requests.length +
-        " configs because of --next, using the first one",
+        " curl requests, only converting the first one",
     ]);
   }
   const request = requests[0];

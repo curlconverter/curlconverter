@@ -122,7 +122,7 @@ These first two steps are skipped if the input is already an array of strings.
 
 The entry point of the code is a bunch of `toPython()`, `toJavaScript()`, etc. functions. They store a list of which curl arguments are supported by the language they generate, and pass that into the parser so that we can report when the input command uses an argument that is ignored by the code generator.
 
-They call [`parseCurlCommand()`](https://github.com/curlconverter/curlconverter/blob/4761ee93a91e0553b2cf6f24f4c66c900b05f3f6/src/parse.ts#L42) which performs steps 1 and 2 and then calls [`parseArgs()`](https://github.com/curlconverter/curlconverter/blob/0edf039c15b5ec750553807b79848c5d7247e4c1/src/util.ts#L1235), essentially a re-implementation of curl's [`parse_args()`](https://github.com/curl/curl/blob/curl-7_88_1/src/tool_getparam.c#L2476) that implements step 3.
+They call [`parse()`](https://github.com/curlconverter/curlconverter/blob/4761ee93a91e0553b2cf6f24f4c66c900b05f3f6/src/parse.ts#L42) which performs steps 1 and 2 and then calls [`parseArgs()`](https://github.com/curlconverter/curlconverter/blob/0edf039c15b5ec750553807b79848c5d7247e4c1/src/util.ts#L1235), essentially a re-implementation of curl's [`parse_args()`](https://github.com/curl/curl/blob/curl-7_88_1/src/tool_getparam.c#L2476) that implements step 3.
 
 The command line acts as a drop-in replacement for the `curl` command but adds two of its own arguments (`--language <language>` selects the output language and `-`/`--stdin` reads the input command from stdin instead of from the arguments and raises an error if other arguments (except `--verbose`) are passed), and repurposes curl's `--verbose` argument to enable printing of warnings and JavaScript error stack traces during conversion.
 

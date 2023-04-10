@@ -1,6 +1,6 @@
 import { btoa } from "../utils.js";
 import { Word } from "../shell/Word.js";
-import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
 const supportedArgs = new Set([
@@ -179,7 +179,7 @@ export function toHTTPWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const http = _toHTTP(requests, warnings);
   return [http, warnings];
 }

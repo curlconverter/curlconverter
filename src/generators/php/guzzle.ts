@@ -1,8 +1,4 @@
-import {
-  parseCurlCommand,
-  getFirst,
-  COMMON_SUPPORTED_ARGS,
-} from "../../parse.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import { eq } from "../../shell/Word.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
@@ -363,7 +359,7 @@ export function toPhpGuzzleWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const guzzle = _toPhpGuzzle(requests, warnings);
   return [guzzle, warnings];
 }
