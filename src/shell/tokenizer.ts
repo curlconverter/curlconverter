@@ -394,6 +394,52 @@ function extractRedirect(
   return [command, stdin, stdinFile];
 }
 
+function findCurlInPipeline(
+  node: Parser.SyntaxNode,
+  curlCommand: string,
+  warnings: Warnings
+): [Parser.SyntaxNode, Word?, Word?] {
+  for (const child of node.namedChildren) {
+    if (child.type === "command") {
+      const commandName = child.namedChildren[0];
+      if (commandName.type !== "command_name") {
+        throw new CCError(
+          'got "command" AST node whose first child is not a "command_name", got ' +
+            commandName.type +
+            " instead\n" +
+            underlineNode(commandName, curlCommand)
+        );
+      }
+      const commandNameWord = commandName.namedChildren[0];
+      if (commandNameWord.type !== "word") {
+        throw new CCError(
+          'got "command_name" AST node whose first child is not a "word", got ' +
+            commandNameWord.type +
+            " instead\n" +
+            underlineNode(commandNameWord, curlCommand)
+        );
+      }
+      if (commandNameWord.text === "curl") {
+        return [child, undefined, undefined];
+      }
+    } else if (child.type === "redirected_statement") {
+      const [command, stdin, stdinFile] = extractRedirect(
+        child,
+        curlCommand,
+        warnings
+      );
+      if (command.namedChildren[0].text === "curl") {
+        return [command, stdin, stdinFile];
+      }
+    }
+  }
+
+  throw new CCError(
+    "could not find curl command in pipeline\n" +
+      underlineNode(node, curlCommand)
+  );
+}
+
 // TODO: check entire AST for ERROR/MISSING nodes
 // TODO: get all command nodes
 function extractCommandNodes(
@@ -454,6 +500,10 @@ function extractCommandNodes(
         commands.push(extractRedirect(n, curlCommand, warnings));
         warnAboutUselessBackslash(n, curlCommandLines, warnings);
         break;
+      case "pipeline":
+        commands.push(findCurlInPipeline(n, curlCommand, warnings));
+        warnAboutUselessBackslash(n, curlCommandLines, warnings);
+        break;
       case "heredoc_body": // https://github.com/tree-sitter/tree-sitter-bash/issues/118
         continue;
       case "ERROR":
@@ -464,9 +514,9 @@ function extractCommandNodes(
       default:
         // TODO: better error message.
         throw new CCError(
-          'expected a "command" or "redirected_statement" AST node, instead got ' +
+          "found " +
             JSON.stringify(n.type) +
-            "\n" +
+            ' AST node, only "command", "pipeline" or "redirected_statement" are supported\n' +
             underlineNode(n, curlCommand)
         );
     }
