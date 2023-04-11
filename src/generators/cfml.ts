@@ -1,5 +1,5 @@
 import { Word } from "../shell/Word.js";
-import { parseCurlCommand, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
@@ -145,7 +145,7 @@ export function toCFMLWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const cfml = _toCFML(requests, warnings);
   return [cfml, warnings];
 }

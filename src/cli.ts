@@ -190,13 +190,13 @@ const argv = process.argv.slice(1).map((arg) => new Word(arg));
 let global;
 let warnings: Warnings = [];
 try {
-  // TODO: we don't get "unsupported argument" warnings because we don't
-  // know which language we're converting to yet.
   global = parseArgs(
     argv,
     curlconverterLongOpts,
     curlLongOptsShortened,
     curlconverterShortOpts,
+    // TODO: warn about unsupported arguments once we know
+    // which language we're converting to
     undefined,
     warnings
   );

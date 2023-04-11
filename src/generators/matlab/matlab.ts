@@ -1,8 +1,4 @@
-import {
-  parseCurlCommand,
-  getFirst,
-  COMMON_SUPPORTED_ARGS,
-} from "../../parse.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 
 import { toWebServices } from "./webservices.js";
@@ -34,7 +30,7 @@ export function toMATLABWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, supportedArgs, warnings);
+  const requests = parse(curlCommand, supportedArgs, warnings);
   const matlab = _toMATLAB(requests, warnings);
   return [matlab, warnings];
 }

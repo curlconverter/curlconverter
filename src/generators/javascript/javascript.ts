@@ -1,6 +1,6 @@
 import { warnIfPartsIgnored } from "../../Warnings.js";
 import { Word, eq, joinWords } from "../../shell/Word.js";
-import { parseCurlCommand, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
 
@@ -709,11 +709,7 @@ export function toJavaScriptWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(
-    curlCommand,
-    javaScriptSupportedArgs,
-    warnings
-  );
+  const requests = parse(curlCommand, javaScriptSupportedArgs, warnings);
   return [_toJavaScript(requests, warnings), warnings];
 }
 export function toJavaScript(curlCommand: string | string[]): string {
@@ -725,7 +721,7 @@ export function toNodeWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
-  const requests = parseCurlCommand(curlCommand, nodeSupportedArgs, warnings);
+  const requests = parse(curlCommand, nodeSupportedArgs, warnings);
   return [_toNode(requests, warnings), warnings];
 }
 export function toNode(curlCommand: string | string[]): string {
