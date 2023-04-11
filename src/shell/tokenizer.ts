@@ -595,6 +595,9 @@ export function tokenize(
   const ast = parser.parse(curlCommand);
   warnAboutErrorNodes(ast, curlCommand, warnings);
 
+  // TODO: pass syntax nodes for each token downstream and use it to
+  // highlight the problematic parts in warnings/errors so that it's clear
+  // which command a warning/error is for
   const commandNodes = extractCommandNodes(ast, curlCommand, warnings);
   const commands: [Word[], Word?, Word?][] = [];
   for (const [command, stdin, stdinFile] of commandNodes) {
