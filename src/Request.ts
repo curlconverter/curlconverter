@@ -341,9 +341,36 @@ function buildURL(
     requestUrl.urlQueryArray = urlQueryArray;
   }
   if (uploadFile) {
-    requestUrl.uploadFile = uploadFile;
+    if (eq(uploadFile, "-") || eq(uploadFile, ".")) {
+      if (stdinFile) {
+        requestUrl.uploadFile = stdinFile;
+      } else if (stdin) {
+        warnf(global, [
+          "upload-file-with-stdin-content",
+          "--upload-file with stdin content is not supported",
+        ]);
+        requestUrl.uploadFile = uploadFile;
+
+        // TODO: this is complicated,
+        // --upload-file only applies per-URL so .data needs to become per-URL...
+        // if you pass --data and --upload-file or --get and --upload-file, curl will error
+        // if (config.url && config.url.length === 1) {
+        //   config.data = [["raw", stdin]];
+        // } else {
+        //   warnf(global, [
+        //     "upload-file-with-stdin-content-and-multiple-urls",
+        //     "--upload-file with stdin content and multiple URLs is not supported",
+        //   ]);
+        // }
+      } else {
+        requestUrl.uploadFile = uploadFile;
+      }
+    } else {
+      requestUrl.uploadFile = uploadFile;
+    }
   }
   if (outputFile) {
+    // TODO: get stdout redirects of command
     requestUrl.output = outputFile;
   }
 
