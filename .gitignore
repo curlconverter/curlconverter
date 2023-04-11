@@ -4,5 +4,6 @@ npm-debug.log
 .idea
 .DS_Store
 .vscode/
+coverage/
 
 dist/
