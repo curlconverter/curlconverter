@@ -163,7 +163,7 @@ export function reprStr(s: string): string {
   return s;
 }
 
-function repr(w: Word): string {
+export function repr(w: Word): string {
   // TODO: put variables in the quotes
   const args: string[] = [];
   for (const t of w.tokens) {
@@ -463,8 +463,8 @@ export function toWgetWarn(
   warnings: Warnings = []
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
-  const ruby = _toWget(requests, warnings);
-  return [ruby, warnings];
+  const wget = _toWget(requests, warnings);
+  return [wget, warnings];
 }
 
 export function toWget(curlCommand: string | string[]): string {
