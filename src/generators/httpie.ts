@@ -22,9 +22,7 @@ const supportedArgs = new Set([
   "ciphers",
   "insecure",
   "cert",
-  // "cert-type",
   "key",
-  // "key-type",
   "cacert",
   "capath",
 
@@ -382,21 +380,14 @@ function requestToHttpie(
   }
 
   if (request.cert) {
-    const [cert, password] = request.cert;
-    flags.push("--cert=" + repr(cert));
-    if (password) {
-      flags.push("--cert-key-pass=" + repr(password));
-    }
+    flags.push("--cert=" + repr(request.cert[0]));
   }
-  // if (request.certType) {
-  //   flags.push("--certificate-type=" + repr(request.certType));
-  // }
   if (request.key) {
     flags.push("--cert-key=" + repr(request.key));
   }
-  // if (request.keyType) {
-  //   flags.push("--private-key-type=" + repr(request.keyType));
-  // }
+  if (request.cert && request.cert[1]) {
+    flags.push("--cert-key-pass=" + repr(request.cert[1]));
+  }
   // TODO: --ssl= for the version
   if (request.ciphers) {
     flags.push("--ciphers=" + repr(request.ciphers));
