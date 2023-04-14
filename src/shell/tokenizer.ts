@@ -394,11 +394,12 @@ function extractRedirect(
   return [command, stdin, stdinFile];
 }
 
-function findCurlInPipeline(
+function _findCurlInPipeline(
   node: Parser.SyntaxNode,
   curlCommand: string,
   warnings: Warnings
-): [Parser.SyntaxNode, Word?, Word?] {
+): [Parser.SyntaxNode?, Word?, Word?] {
+  let command, stdin, stdinFile;
   for (const child of node.namedChildren) {
     if (child.type === "command") {
       const commandName = child.namedChildren[0];
@@ -420,24 +421,85 @@ function findCurlInPipeline(
         );
       }
       if (commandNameWord.text === "curl") {
-        return [child, undefined, undefined];
+        if (!command) {
+          command = child;
+        } else {
+          warnings.push([
+            "multiple-curl-in-pipeline",
+            "found multiple curl commands in pipeline:\n" +
+              underlineNode(child, curlCommand),
+          ]);
+        }
       }
     } else if (child.type === "redirected_statement") {
-      const [command, stdin, stdinFile] = extractRedirect(
+      const [redirCommand, redirStdin, redirStdinFile] = extractRedirect(
         child,
         curlCommand,
         warnings
       );
-      if (command.namedChildren[0].text === "curl") {
-        return [command, stdin, stdinFile];
+      if (redirCommand.namedChildren[0].text === "curl") {
+        if (!command) {
+          [command, stdin, stdinFile] = [
+            redirCommand,
+            redirStdin,
+            redirStdinFile,
+          ];
+        } else {
+          warnings.push([
+            "multiple-curl-in-pipeline",
+            "found multiple curl commands in pipeline:\n" +
+              underlineNode(redirCommand, curlCommand),
+          ]);
+        }
+      }
+    } else if (child.type === "pipeline") {
+      // pipelines can be nested
+      // https://github.com/tree-sitter/tree-sitter-bash/issues/167
+      const [nestedCommand, nestedStdin, nestedStdinFile] = _findCurlInPipeline(
+        child,
+        curlCommand,
+        warnings
+      );
+      if (!nestedCommand) {
+        continue;
+      }
+      if (nestedCommand.namedChildren[0].text === "curl") {
+        if (!command) {
+          [command, stdin, stdinFile] = [
+            nestedCommand,
+            nestedStdin,
+            nestedStdinFile,
+          ];
+        } else {
+          warnings.push([
+            "multiple-curl-in-pipeline",
+            "found multiple curl commands in pipeline:\n" +
+              underlineNode(nestedCommand, curlCommand),
+          ]);
+        }
       }
     }
   }
+  return [command, stdin, stdinFile];
+}
 
-  throw new CCError(
-    "could not find curl command in pipeline\n" +
-      underlineNode(node, curlCommand)
+function findCurlInPipeline(
+  node: Parser.SyntaxNode,
+  curlCommand: string,
+  warnings: Warnings
+): [Parser.SyntaxNode, Word?, Word?] {
+  const [command, stdin, stdinFile] = _findCurlInPipeline(
+    node,
+    curlCommand,
+    warnings
   );
+  if (!command) {
+    throw new CCError(
+      "could not find curl command in pipeline\n" +
+        underlineNode(node, curlCommand)
+    );
+  }
+  return [command, stdin, stdinFile];
 }
 
 // TODO: check entire AST for ERROR/MISSING nodes
