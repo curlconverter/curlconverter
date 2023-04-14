@@ -11,7 +11,7 @@ import { diffLines } from "diff";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { parse, type Warnings } from "../src/parse.js";
+import { parse } from "../src/parse.js";
 import { fixturesDir, converters } from "../test/test-utils.js";
 
 const awaitableExec = promisify(exec);
@@ -128,6 +128,7 @@ const testFile = async (
 ): Promise<void> => {
   const rawRequests: string[] = [];
 
+  // TODO: this is flaky
   const server = net.createServer();
   server.on("connection", (socket) => {
     socket.setEncoding("utf8");
@@ -282,7 +283,7 @@ if (tests.length) {
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-for (const test of tests) {
+for (const test of tests.sort()) {
   const testName = path.parse(test.toString()).name;
   await testFile(testName, languages);
   await delay(1000);
