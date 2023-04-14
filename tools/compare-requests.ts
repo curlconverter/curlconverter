@@ -40,6 +40,7 @@ const setup = {
   // elixir:
   //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
   go: "",
+  httpie: "",
   java: "mkdir -p /tmp/curlconverter-java",
   // javascript: "",
   // json: "",
@@ -70,6 +71,8 @@ const executables = {
   elixir:
     "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
   go: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
+  httpie:
+    'printf "%s --ignore-stdin" "$(cat <file>)" > /tmp/curlconverter-httpie && chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie',
   java: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
   // javascript: "",
   // json: "",
@@ -175,7 +178,9 @@ const testFile = async (
     throw new Error("input file doesn't exist: " + inputFile);
   }
   const curlCommand = fs.readFileSync(inputFile, "utf8");
-  const requestedUrl = parse(curlCommand)[0].urls[0].url.replace("http://", "");
+  const requestedUrl = parse(curlCommand)[0]
+    .urls[0].url.replace("http://", "")
+    .toString();
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
     console.error("bad requested URL for " + testFilename);
     console.error("  " + requestedUrl);

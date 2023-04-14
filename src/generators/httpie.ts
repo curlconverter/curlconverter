@@ -2,9 +2,10 @@ import { warnIfPartsIgnored } from "../Warnings.js";
 import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, RequestUrl, Warnings } from "../parse.js";
+import { Headers } from "../Headers.js";
 import { parseQueryString } from "../Query.js";
 
-import { repr } from "./wget.js";
+import { repr, reprStr } from "./wget.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -58,6 +59,138 @@ const supportedArgs = new Set([
 
   "next",
 ]);
+
+function escapeJsonStr(val: string): string {
+  return val; // TODO: un-backslash escape stuff?
+}
+
+function escapeJsonName(name: string): string {
+  name = name.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]");
+  // "A regular integer in a path (e.g [10]) means an array index;
+  // but if you want it to be treated as a string, you can escape
+  // the whole number by using a backslash (\) prefix."
+  // TODO: check this regex
+  if (/^\d+$/.test(name)) {
+    name = "\\" + name;
+  }
+  // TODO: =?
+  return name;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toJson(obj: any, key = ""): string[] {
+  if (obj === null) {
+    return [reprStr(key) + ":=null"];
+  } else if (typeof obj === "boolean") {
+    return [reprStr(key) + ":=" + obj];
+  } else if (typeof obj === "number") {
+    return [reprStr(key) + ":=" + reprStr(obj.toString())];
+  } else if (typeof obj === "string") {
+    return [reprStr(key) + "=" + reprStr(escapeJsonStr(obj))];
+  } else if (Array.isArray(obj)) {
+    if (!obj.length) {
+      return [reprStr(key) + ":=" + "[]"];
+    }
+    return obj.map((item) => toJson(item, key + "[]")).flat();
+  } else {
+    if (!Object.keys(obj).length) {
+      return [reprStr(key) + ":=" + "{}"];
+    }
+    return Object.entries(obj)
+      .map(([name, value]) =>
+        toJson(
+          value,
+          key ? key + "[" + escapeJsonName(name) + "]" : escapeJsonName(name)
+        )
+      )
+      .flat();
+  }
+}
+
+function jsonAsHttpie(flags: string[], items: string[], data: string) {
+  let json;
+  try {
+    json = JSON.parse(data);
+  } catch {}
+  // Only non-empty, top-level objects and arrays can be serialized as command line arguments
+  if (
+    (typeof json === "object" && json !== null && Object.keys(json).length) ||
+    (Array.isArray(json) && json.length)
+  ) {
+    let jsonItems;
+    try {
+      jsonItems = toJson(json);
+    } catch {}
+    if (jsonItems) {
+      for (const jsonItem of jsonItems) {
+        items.push(jsonItem);
+      }
+      return;
+    }
+  }
+  flags.push("--raw " + (reprStr(data) || "''"));
+}
+
+function escapeUrlEncodedName(name: Word): Word {
+  if (name.endsWith("=")) {
+    // TODO: escape
+  }
+  if (name.includes(":")) {
+    // TODO: escape
+  }
+  return name;
+}
+function escapeUrlEncodedVal(value: Word): Word {
+  if (value.startsWith("=")) {
+    // TODO: escape
+    // TODO: if it can be escaped, back slashes have to be escaped too?
+  }
+  if (value.startsWith("@")) {
+    // TODO: escape or has to be --raw
+  }
+  return value;
+}
+function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
+  const [queryList] = parseQueryString(data);
+  if (!queryList) {
+    flags.push("--raw " + (repr(data) || "''"));
+    return;
+  }
+
+  flags.push("--form");
+  for (const [name, value] of queryList) {
+    items.push(
+      repr(
+        mergeWords([
+          escapeUrlEncodedName(name),
+          "=",
+          escapeUrlEncodedVal(value),
+        ])
+      )
+    );
+  }
+}
+
+function formatData(
+  flags: string[],
+  items: string[],
+  data: Word,
+  headers: Headers
+) {
+  const contentType = headers.getContentType();
+  if (contentType === "application/json" && data.isString()) {
+    jsonAsHttpie(flags, items, data.toString());
+  } else if (contentType === "application/x-www-form-urlencoded") {
+    urlencodedAsHttpie(flags, items, data);
+  } else {
+    flags.push("--raw " + (repr(data) || "''"));
+  }
+}
+
+// TODO: does this work?
+function escapeFormName(name: Word): Word {
+  return name.replace("\\", "\\\\").replace("@", "\\@").replace("=", "\\=");
+}
 
 function requestToHttpie(
   request: Request,
@@ -156,49 +289,25 @@ function requestToHttpie(
   ) {
     items.push("@" + repr(request.dataArray[0].filename));
   } else if (request.data) {
-    const contentType = request.headers.getContentType();
-    if (request.data.isString()) {
-      if (contentType === "application/json") {
-        // TODO
-        // try {
-        //   const json = JSON.parse(request.data.toString());
-        // } catch {
-        //   flags.push("--raw " + repr(request.data));
-        // }
-        flags.push("--raw " + repr(request.data));
-      } else if (contentType === "application/x-www-form-urlencoded") {
-        const [queryList] = parseQueryString(request.data);
-        if (queryList) {
-          flags.push("--form");
-          for (const [name, value] of queryList) {
-            if (name.endsWith("=")) {
-              // TODO: escape
-            }
-            if (name.includes(":")) {
-              // TODO: escape
-            }
-            if (value.startsWith("=")) {
-              // TODO: escape
-              // TODO: if it can be escaped, back slashes have to be escaped too?
-            }
-            if (value.startsWith("@")) {
-              // TODO: escape or has to be --raw
-            }
-            items.push(repr(mergeWords([name, "=", value])));
-          }
-        } else {
-          flags.push("--raw " + repr(request.data));
-        }
-      } else {
-        flags.push("--raw " + repr(request.data));
-      }
-    } else {
-      flags.push("--raw " + repr(request.data));
-    }
+    formatData(flags, items, request.data, request.headers);
   } else if (request.multipartUploads) {
     flags.push("--multipart");
     for (const m of request.multipartUploads) {
-      // TODO
+      if ("content" in m) {
+        items.push(repr(escapeFormName(m.name)) + "=" + repr(m.content));
+      } else {
+        if ("filename" in m && m.filename) {
+          items.push(repr(escapeFormName(m.name)) + "@" + repr(m.filename));
+          if (!eq(m.filename, m.contentFile)) {
+            warnings.push([
+              "httpie-multipart-fake-filename",
+              "HTTPie doesn't support multipart uploads that read a certain filename but send a different filename",
+            ]);
+          }
+        } else {
+          items.push(repr(escapeFormName(m.name)) + "=@" + repr(m.contentFile));
+        }
+      }
     }
   }
 
