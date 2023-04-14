@@ -81,6 +81,11 @@ const converters = {
     extension: ".txt",
     converter: curlconverter.toHTTP,
   },
+  httpie: {
+    name: "HTTPie",
+    extension: ".sh",
+    converter: curlconverter.toHttpie,
+  },
   java: {
     name: "Java",
     extension: ".java",

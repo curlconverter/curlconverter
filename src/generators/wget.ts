@@ -76,7 +76,7 @@ const unprintableChars = /(?! )(\p{C}|\p{Z})/gu; // TODO: there's probably more
 const regexAnsiCEscape = /\p{C}|\p{Z}|\\|'/gu;
 // https://unix.stackexchange.com/questions/270977/
 const shellChars = /[\002-\011\013-\032\\#?`(){}[\]^*<=>~|; "!$&'\202-\377]/;
-export function reprStr(s: string): string {
+export function reprStr(s: string, mustQuote = false): string {
   const containsUnprintableChars = unprintableChars.test(s);
   if (containsUnprintableChars) {
     return (
@@ -128,12 +128,13 @@ export function reprStr(s: string): string {
     (s.includes('"') ||
       s.includes("$") ||
       s.includes("`") ||
-      s.includes("!")) &&
+      s.includes("!") ||
+      mustQuote) &&
     !s.includes("'")
   ) {
     return "'" + s + "'";
   }
-  if (shellChars.test(s)) {
+  if (shellChars.test(s) || mustQuote) {
     return (
       '"' +
       s.replace(regexDoubleEscape, (c: string) => {
@@ -163,12 +164,14 @@ export function reprStr(s: string): string {
   return s;
 }
 
-function repr(w: Word): string {
+export function repr(w: Word): string {
   // TODO: put variables in the quotes
   const args: string[] = [];
-  for (const t of w.tokens) {
+  for (const [i, t] of w.tokens.entries()) {
     if (typeof t === "string") {
-      args.push(reprStr(t));
+      // A string after a variable cannot be un-quoted
+      // After a subcommand it's usually okay but that's more complex.
+      args.push(reprStr(t, !!i));
     } else if (t.type === "variable") {
       args.push(t.text);
     } else {
@@ -463,8 +466,8 @@ export function toWgetWarn(
   warnings: Warnings = []
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
-  const ruby = _toWget(requests, warnings);
-  return [ruby, warnings];
+  const wget = _toWget(requests, warnings);
+  return [wget, warnings];
 }
 
 export function toWget(curlCommand: string | string[]): string {

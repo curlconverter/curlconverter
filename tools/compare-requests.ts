@@ -11,7 +11,7 @@ import { diffLines } from "diff";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { parse, type Warnings } from "../src/parse.js";
+import { parse } from "../src/parse.js";
 import { fixturesDir, converters } from "../test/test-utils.js";
 
 const awaitableExec = promisify(exec);
@@ -40,6 +40,7 @@ const setup = {
   // elixir:
   //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
   go: "",
+  httpie: "",
   java: "mkdir -p /tmp/curlconverter-java",
   // javascript: "",
   // json: "",
@@ -70,6 +71,8 @@ const executables = {
   elixir:
     "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
   go: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
+  httpie:
+    'printf "%s --ignore-stdin" "$(cat <file>)" > /tmp/curlconverter-httpie && chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie',
   java: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
   // javascript: "",
   // json: "",
@@ -125,6 +128,7 @@ const testFile = async (
 ): Promise<void> => {
   const rawRequests: string[] = [];
 
+  // TODO: this is flaky
   const server = net.createServer();
   server.on("connection", (socket) => {
     socket.setEncoding("utf8");
@@ -175,7 +179,9 @@ const testFile = async (
     throw new Error("input file doesn't exist: " + inputFile);
   }
   const curlCommand = fs.readFileSync(inputFile, "utf8");
-  const requestedUrl = parse(curlCommand)[0].urls[0].url.replace("http://", "");
+  const requestedUrl = parse(curlCommand)[0]
+    .urls[0].url.replace("http://", "")
+    .toString();
   if (!requestedUrl.startsWith(EXPECTED_URL)) {
     console.error("bad requested URL for " + testFilename);
     console.error("  " + requestedUrl);
@@ -277,7 +283,7 @@ if (tests.length) {
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-for (const test of tests) {
+for (const test of tests.sort()) {
   const testName = path.parse(test.toString()).name;
   await testFile(testName, languages);
   await delay(1000);

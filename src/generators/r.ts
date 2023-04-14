@@ -276,8 +276,8 @@ export function toRWarn(
   warnings: Warnings = []
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
-  const r = _toR(requests, warnings);
-  return [r, warnings];
+  const rHttr = _toR(requests, warnings);
+  return [rHttr, warnings];
 }
 export function toR(curlCommand: string | string[]): string {
   return toRWarn(curlCommand)[0];
