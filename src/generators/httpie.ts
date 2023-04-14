@@ -1,3 +1,4 @@
+import { CCError } from "../utils.js";
 import { warnIfPartsIgnored } from "../Warnings.js";
 import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
@@ -63,29 +64,64 @@ const supportedArgs = new Set([
   "next",
 ]);
 
-function escapeJsonStr(val: string): string {
-  return val; // TODO: un-backslash escape stuff?
+function escapeHeader(name: Word): Word {
+  // TODO: more complicated, have to check that it's not already backslashed
+  // and not all values might be representable
+  return name.replace("=", "\\=");
+}
+function escapeHeaderValue(value: Word): Word {
+  if ((value.startsWith("="), value.startsWith("@"))) {
+    value = value.prepend("\\");
+  }
+  return value;
 }
 
-function escapeJsonName(name: string): string {
-  name = name.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]");
+function escapeJsonName(name: string, isFirstKey = false): string {
+  name = name
+    .replace("\\", "\\\\")
+    .replace("[", "\\[")
+    .replace("]", "\\]")
+    .replace(":", "\\:") // both := need to be escaped individually or you get weird results
+    .replace("=", "\\=");
+
   // "A regular integer in a path (e.g [10]) means an array index;
   // but if you want it to be treated as a string, you can escape
   // the whole number by using a backslash (\) prefix."
   // TODO: check this regex
-  if (/^\d+$/.test(name)) {
+  if (!isFirstKey && /^\d+$/.test(name)) {
     name = "\\" + name;
   }
-  // TODO: =?
   return name;
 }
-
+function escapeJsonStr(value: string): string {
+  // The backslash only has an effect on some characters and not
+  // the backslash itself, so it seems like there's no way to send a literal '\='
+  // value = value.replace("\\=", "\\\\=");
+  if (value.startsWith("\\=")) {
+    throw new CCError(
+      "Unrepresentable JSON string: " +
+        JSON.stringify(value) +
+        ' (starts with "\\=")'
+    );
+  }
+  if (value.startsWith("\\@")) {
+    throw new CCError(
+      "Unrepresentable JSON string: " +
+        JSON.stringify(value) +
+        ' (starts with "\\@")'
+    );
+  }
+  if (value.startsWith("=") || value.startsWith("@")) {
+    value = "\\" + value;
+  }
+  return value;
+}
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toJson(obj: any, key = ""): string[] {
   if (obj === null) {
     return [reprStr(key) + ":=null"];
   } else if (typeof obj === "boolean") {
-    return [reprStr(key) + ":=" + obj];
+    return [reprStr(key) + ":=" + obj.toString()];
   } else if (typeof obj === "number") {
     return [reprStr(key) + ":=" + reprStr(obj.toString())];
   } else if (typeof obj === "string") {
@@ -103,13 +139,14 @@ function toJson(obj: any, key = ""): string[] {
       .map(([name, value]) =>
         toJson(
           value,
-          key ? key + "[" + escapeJsonName(name) + "]" : escapeJsonName(name)
+          key
+            ? key + "[" + escapeJsonName(name) + "]"
+            : escapeJsonName(name, true)
         )
       )
       .flat();
   }
 }
-
 function jsonAsHttpie(flags: string[], items: string[], data: string) {
   let json;
   try {
@@ -134,22 +171,16 @@ function jsonAsHttpie(flags: string[], items: string[], data: string) {
   flags.push("--raw " + (reprStr(data) || "''"));
 }
 
-function escapeUrlEncodedName(name: Word): Word {
-  if (name.endsWith("=")) {
-    // TODO: escape
-  }
-  if (name.includes(":")) {
-    // TODO: escape
-  }
-  return name;
+function escapeQueryName(name: Word): Word {
+  // an unquoted ":" turns into ": "
+  return name.replace("\\", "\\\\").replace(":", "\\:").replace("=", "\\=");
 }
-function escapeUrlEncodedVal(value: Word): Word {
-  if (value.startsWith("=")) {
-    // TODO: escape
-    // TODO: if it can be escaped, back slashes have to be escaped too?
-  }
-  if (value.startsWith("@")) {
-    // TODO: escape or has to be --raw
+function escapeQueryValue(value: Word): Word {
+  // TODO: the backslash only has an effect on some characters and not
+  // the backslash itself, so it seems like there's no way to send a literal '\='
+  // value = value.replace("\\=", "\\\\=");
+  if ((value.startsWith("="), value.startsWith("@"))) {
+    value = value.prepend("\\");
   }
   return value;
 }
@@ -163,13 +194,7 @@ function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
   flags.push("--form");
   for (const [name, value] of queryList) {
     items.push(
-      repr(
-        mergeWords([
-          escapeUrlEncodedName(name),
-          "=",
-          escapeUrlEncodedVal(value),
-        ])
-      )
+      repr(mergeWords([escapeQueryName(name), "=", escapeQueryValue(value)]))
     );
   }
 }
@@ -217,16 +242,19 @@ function requestToHttpie(
   if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
-        items.push(repr(mergeWords([headerName, ":"])));
+        items.push(repr(mergeWords([escapeHeader(headerName), ":"])));
       } else if (!headerValue.toBool()) {
-        items.push(repr(mergeWords([headerName, ";"])));
+        items.push(repr(mergeWords([escapeHeader(headerName), ";"])));
       } else {
-        if (headerValue.startsWith("@")) {
-          // TODO: check this
-          items.push(repr(mergeWords([headerName, ":\\", headerValue])));
-        } else {
-          items.push(repr(mergeWords([headerName, ":", headerValue])));
-        }
+        items.push(
+          repr(
+            mergeWords([
+              escapeHeader(headerName),
+              ":",
+              escapeHeaderValue(headerValue),
+            ])
+          )
+        );
       }
     }
   }
@@ -266,12 +294,14 @@ function requestToHttpie(
   }
 
   // TODO: don't need to add "http://" to URL
-  // TODO: use "https" command and not add "https://" to URL
+  // TODO: use "https" command and remove "https://" from URL
   // TODO: use localhost shorthands
   if (url.queryList) {
     urlArg = url.urlWithoutQueryList;
     for (const [name, value] of url.queryList) {
-      items.push(repr(mergeWords([name, "==", value])));
+      items.push(
+        repr(mergeWords([escapeQueryName(name), "==", escapeQueryValue(value)]))
+      );
     }
   }
 
@@ -406,6 +436,7 @@ function requestToHttpie(
     flags.push(method);
   }
   // If any of the field names or headers starts with a dash, add a -- argument
+  // TODO: this might have edge cases
   if (items.some((i) => i.startsWith("-"))) {
     items.unshift("--");
   }
