@@ -54,6 +54,9 @@ const supportedArgs = new Set([
   // TODO: this doesn't work
   "no-netrc", // only explicitly disabling netrc has an effect,
 
+  "verbose",
+  "silent",
+
   // "output",
   "upload-file",
 
@@ -369,19 +372,32 @@ function requestToHttpie(
     flags.push("--ciphers=" + repr(request.ciphers));
   }
 
-  if (request.timeout) {
-    flags.push("--timeout=" + repr(request.timeout));
-    // warn that this is not for the whole request
-    warnings.push([
-      "httpie-timeout",
-      "HTTPie's timeout is just for the connection, not for the whole request",
-    ]);
-  }
   if (request.connectTimeout) {
     flags.push("--timeout=" + repr(request.connectTimeout));
   }
+  if (request.timeout) {
+    if (request.connectTimeout) {
+      warnings.push([
+        "httpie-timeout-with-connect-timeout",
+        "ignoring --timeout because HTTPie's timeout is more similar to curl's --connect-timeout",
+      ]);
+    } else {
+      flags.push("--timeout=" + repr(request.timeout));
+      // warn that this is not for the whole request
+      warnings.push([
+        "httpie-timeout",
+        "HTTPie's timeout is just for the connection, not for the whole request",
+      ]);
+    }
+  }
 
-  // TODO: --verbose --quite
+  if (request.verbose) {
+    flags.push("--verbose");
+  }
+  if (request.silent) {
+    flags.push("--quiet");
+  }
+
   if (url.output) {
     // TODO: pipe output
   }

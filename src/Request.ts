@@ -149,6 +149,10 @@ export interface Request {
 
   unixSocket?: Word;
   netrc?: "optional" | "required" | "ignored"; // undefined means implicitly "ignored"
+
+  // These are global options
+  verbose?: boolean;
+  silent?: boolean;
 }
 
 function buildURL(
@@ -867,6 +871,13 @@ function buildRequest(
   } else if (config.netrc === false) {
     // TODO || config["netrc-optional"] === false ?
     request.netrc = "ignored";
+  }
+
+  if (global.verbose) {
+    request.verbose = true;
+  }
+  if (global.silent) {
+    request.silent = true;
   }
 
   return request;

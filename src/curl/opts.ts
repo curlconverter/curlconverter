@@ -515,25 +515,10 @@ export const COMMON_SUPPORTED_ARGS: string[] = [
   // curl will exit if it finds auth credentials in the URL with this option,
   // we remove it from the URL and emit a warning instead.
   "disallow-username-in-url",
-];
 
-// Unsupported args that users wouldn't expect to be warned about
-export const ignoredArgs = new Set([
-  "help",
-  "no-help",
-  "silent",
-  "no-silent",
-  "verbose", // TODO: some users expect this to effect the output
-  "no-verbose",
-  "version",
-  "no-version",
-  "progress-bar",
-  "no-progress-bar",
-  "progress-meter",
-  "no-progress-meter",
-  "show-error",
-  "no-show-error",
-]);
+  // TODO: --compressed is already the default for some runtimes, in
+  // which case we might have to only warn that --no-compressed isn't supported.
+];
 
 export function toBoolean(opt: string): boolean {
   if (opt.startsWith("no-disable-")) {
@@ -901,26 +886,6 @@ export interface OperationConfig {
   "write-out"?: Word;
   xattr?: boolean;
 
-  // These are actually global options
-  trace?: Word;
-  "trace-ascii"?: Word;
-  "trace-time"?: boolean;
-  stderr?: Word;
-  libcurl?: Word;
-  "test-event"?: boolean;
-  "progress-bar"?: boolean;
-  "progress-meter"?: boolean;
-  "fail-early"?: boolean;
-  "styled-output"?: boolean;
-  help?: boolean; // TODO: might use the next word, then curl exits immediately
-  config?: Word; // TODO: is it really global?
-  silent?: boolean;
-  "show-error"?: boolean;
-  verbose?: boolean;
-  parallel?: boolean;
-  "parallel-immediate"?: boolean;
-  "parallel-max"?: Word;
-
   // TODO: --npn not supported warning
   // TODO: --metalink disabled warning
 
@@ -937,8 +902,8 @@ export interface OperationConfig {
 
 // These options can be specified more than once, they
 // are always returned as a list.
-// Normally, if you specify some option more than once,
-// curl will just take the last one.
+// For all other options, if you specify it more than once
+// curl will use the last one.
 const canBeList = new Set<keyof OperationConfig>([
   "authArgs", // used for error messages
 
@@ -960,9 +925,25 @@ const canBeList = new Set<keyof OperationConfig>([
 ]);
 
 export interface GlobalConfig {
-  verbose?: boolean;
-  help?: boolean;
   version?: boolean;
+  trace?: Word;
+  "trace-ascii"?: Word;
+  "trace-time"?: boolean;
+  stderr?: Word;
+  libcurl?: Word;
+  "test-event"?: boolean;
+  "progress-bar"?: boolean;
+  "progress-meter"?: boolean;
+  "fail-early"?: boolean;
+  "styled-output"?: boolean;
+  help?: boolean; // TODO: might use the next word, then curl exits immediately
+  config?: Word; // TODO: is it really global?
+  silent?: boolean;
+  "show-error"?: boolean;
+  verbose?: boolean;
+  parallel?: boolean;
+  "parallel-immediate"?: boolean;
+  "parallel-max"?: Word;
 
   configs: OperationConfig[];
   warnings: Warnings;
@@ -978,11 +959,7 @@ function checkSupported(
   longArg: LongShort,
   supportedOpts?: Set<string>
 ) {
-  if (
-    supportedOpts &&
-    !supportedOpts.has(longArg.name) &&
-    !ignoredArgs.has(longArg.name)
-  ) {
+  if (supportedOpts && !supportedOpts.has(longArg.name)) {
     // TODO: better message. include generator name?
     warnf(global, [
       longArg.name,
@@ -1067,6 +1044,15 @@ function pushArgValue(
       pushProp(config, "unix-socket", value);
       break;
 
+    case "trace":
+    case "trace-ascii":
+    case "stderr":
+    case "libcurl":
+    case "config":
+    case "parallel-max":
+      global[argName] = value;
+      break;
+
     case "language": // --language is a curlconverter specific option
       global[argName] = value.toString();
       return;
@@ -1138,7 +1124,17 @@ function setArgValue(
       break;
     case "verbose":
     case "version":
+    case "trace-time":
+    case "test-event":
+    case "progress-bar":
+    case "progress-meter":
+    case "fail-early":
+    case "styled-output":
     case "help":
+    case "silent":
+    case "show-error":
+    case "parallel":
+    case "parallel-immediate":
     case "stdin": // --stdin or - is a curlconverter specific option
       global[argName] = toggle;
       break;
