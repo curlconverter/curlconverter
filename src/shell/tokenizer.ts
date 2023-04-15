@@ -483,6 +483,8 @@ function _findCurlInPipeline(
   return [command, stdin, stdinFile];
 }
 
+// TODO: use pipeline input/output redirects,
+// i.e. add stdinCommand and stdout/stdoutFile/stdoutCommand
 function findCurlInPipeline(
   node: Parser.SyntaxNode,
   curlCommand: string,
