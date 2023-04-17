@@ -6,28 +6,22 @@
 
 ### Setup
 
-First, make sure you're running **Node.js 16+**.
+Building curlconverter requires **Node.js 16+** and Emscripten 3.
 
-You can install Node.js 18 and npm on Ubuntu 22.10 with
+On Ubuntu 22.10 you can install Node.js 18, npm and Emscripten 3.1.6 with
 
 ```sh
 sudo apt update
-sudo apt install nodejs npm
+sudo apt install nodejs npm emscripten
 ```
 
-Follow [these instructions](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04#option-2-installing-node-js-with-apt-using-a-nodesource-ppa) on older Ubuntu versions.
+On older Ubuntu versions, follow [these instructions](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04#option-2-installing-node-js-with-apt-using-a-nodesource-ppa) for installing Node.js.
 
-Then install [Docker Engine](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
-
-On macOS, install Node.js with [Homebrew](https://brew.sh/)
+On macOS, install them with [Homebrew](https://brew.sh/)
 
 ```sh
-brew install node
+brew install node emscripten
 ```
-
-then install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/) for macOS and start it.
-
-Docker is used as a hack to run an older version of Emscripten because the current release of tree-sitter [doesn't work with Emscripten 3](https://github.com/tree-sitter/tree-sitter/issues/1560).
 
 ### Adding a new generator
 
@@ -41,20 +35,22 @@ If you add a new generator, you'll need to
   - generate tests with `npm run gen-test -- --all --language <language>`
   - optionally, add it to [tools/compare-requests.ts](tools/compare-requests.ts)
 
-If you want to add new functionality you can start with a test.
+### Tests
+
+To add a new test
 
 - create a file containing the curl command in [test/fixtures/curl_commands/](test/fixtures/curl_commands) with a descriptive filename like `post_with_headers.sh`
 - run `npm run gen-test post_with_headers` to save the result of converting that file to [test/fixtures/\<language>/](test/fixtures) with a matching filename but different file extension like `post_with_headers.py`
-- modifying the code and re-run `npm run gen-test` until your test is converted correctly
-- run `npm test` to make sure the old tests still pass
+  - modify the generator and re-run `npm run gen-test` until your test is converted correctly
+- run `npm test` to make sure all the old tests still pass
 
 You can run a specific test with:
 
 ```sh
-npm test -- --test post_with_data_binary.sh
+npm test -- --test post_with_data_binary
 ```
 
-where `test_name` is a file (with or without the `.sh` extension) in [test/fixtures/curl_commands/](test/fixtures/curl_commands)
+where `post_with_data_binary` is the name of a file in [test/fixtures/curl_commands/](test/fixtures/curl_commands). Any path or file extension in the test name argument is ignored so `npm test -- --test some/random/path/post_with_data_binary.py` is fine as long as test/fixtures/curl_commands/post_with_data_binary.sh exists.
 
 You can run only the tests for a specific language generator with:
 
@@ -64,13 +60,13 @@ npm test -- --language python
 
 ### Debugging commands
 
-First check which characters the input is made up of (it might contain [non-breaking spaces](https://github.com/curlconverter/curlconverter/issues/331) for example) with `xxd` or https://verhovs.ky/text-inspector/ .
+First check which characters the input is made up of with [https://verhovs.ky/text-inspector/](https://verhovs.ky/text-inspector/) or `xxd`. It might [contain non-breaking spaces](https://github.com/curlconverter/curlconverter/issues/331) for example.
 
 Next, check how the Bash is parsed on the [tree-sitter playground](https://tree-sitter.github.io/tree-sitter/playground). Keep in mind that the playground runs the `master` branch of [tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash). curlconverter uses an [internal fork](https://github.com/curlconverter/tree-sitter-bash) that might be a few commits behind.
 
 ## How it works
 
-curlconverter supports two types of input. Either a string of Bash code:
+curlconverter supports two types of input, either a string of Bash code:
 
 - `toPython('curl example.com')` (used on [curlconverter.com](https://curlconverter.com))
 - `echo curl example.com | curlconverter -`
@@ -80,10 +76,11 @@ or an array of arguments:
 - `toPython(['curl', 'example.com'])`
 - `curlconverter example.com`
 
-There are 5 steps. When the input is a string, we:
+There are 6 steps. When the input is a string, we:
 
 1. Parse Bash code into an [abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree) (AST) using [tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash) (an imperfect approximation of the real Bash grammar)
-2. Convert the AST into an array of `Word`s, i.e. shell tokens, doing things like removing quotes around strings. If the command pipes in input via stdin, we also keep track of that
+2. Find the curl commands in the AST
+3. Convert the command AST nodes into an array of `Word` objects (shell tokens), doing things like removing quotes around strings. If the command redirects stdin, we also keep track of that
 
 ```none
 curl --data $VAR "example.com"
@@ -104,9 +101,9 @@ program [0, 0] - [2, 0]
 ['curl', '--data', <Shell variable>, 'example.com']
 ```
 
-These first two steps are skipped if the input is already an array of strings.
+These first 3 steps are skipped if the input is already an array of strings.
 
-3. Iterate over the list of shell tokens and convert it into an object that mostly just maps argument names to a value (boolean, `Word` or list of `Word`s). A few arguments write to the same argument name here.
+4. Iterate over the list of shell tokens and convert it into an object that mostly just maps argument names to either a boolean, a `Word` or list of `Word`s. A few arguments write to the same argument name.
 
 ```none
 ->
@@ -117,14 +114,14 @@ These first two steps are skipped if the input is already an array of strings.
 }]
 ```
 
-4. Convert that object into a more advanced object, for example with the input URLs split into their parts: scheme/host/etc.
-5. Generate a string of code in the desired output language from that object
+5. Convert that object into a more advanced object, for example with the input URLs split into their parts: scheme/host/etc.
+6. Generate a string of code in the desired output language from that object
 
 The entry point of the code is a bunch of `toPython()`, `toJavaScript()`, etc. functions. They store a list of which curl arguments are supported by the language they generate, and pass that into the parser so that we can report when the input command uses an argument that is ignored by the code generator.
 
-They call [`parse()`](https://github.com/curlconverter/curlconverter/blob/4761ee93a91e0553b2cf6f24f4c66c900b05f3f6/src/parse.ts#L42) which performs steps 1 and 2 and then calls [`parseArgs()`](https://github.com/curlconverter/curlconverter/blob/0edf039c15b5ec750553807b79848c5d7247e4c1/src/util.ts#L1235), essentially a re-implementation of curl's [`parse_args()`](https://github.com/curl/curl/blob/curl-7_88_1/src/tool_getparam.c#L2476) that implements step 3.
+They call [`parse()`](https://github.com/curlconverter/curlconverter/blob/4761ee93a91e0553b2cf6f24f4c66c900b05f3f6/src/parse.ts#L42) which performs steps 1, 2 and 3 and then calls [`parseArgs()`](https://github.com/curlconverter/curlconverter/blob/0edf039c15b5ec750553807b79848c5d7247e4c1/src/util.ts#L1235), essentially a re-implementation of curl's [`parse_args()`](https://github.com/curl/curl/blob/curl-7_88_1/src/tool_getparam.c#L2476) that implements step 4.
 
-The command line acts as a drop-in replacement for the `curl` command but adds two of its own arguments (`--language <language>` selects the output language and `-`/`--stdin` reads the input command from stdin instead of from the arguments and raises an error if other arguments (except `--verbose`) are passed), and repurposes curl's `--verbose` argument to enable printing of warnings and JavaScript error stack traces during conversion.
+curlconverter's command line interface is a drop-in replacement for the `curl` command but adds two of its own arguments (`--language <language>` selects the output language and `-`/`--stdin` reads the input command from stdin instead of from the arguments and raises an error if other arguments (except `--verbose`) are passed), and repurposes curl's `--verbose` argument to enable printing of warnings and JavaScript error stack traces during conversion.
 
 ### How curl parses arguments
 
