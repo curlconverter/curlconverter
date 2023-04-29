@@ -689,14 +689,15 @@ function nameToWord(
     const c = nameWordStr.trim();
     if (!c) {
       throw new CCError(
-        "found command without a command_name\n" + underlineNode(nameNode)
+        "found command without a command_name\n" +
+          underlineNode(nameNode, curlCommand)
       );
     }
     throw new CCError(
       'command should begin with "curl" but instead begins with ' +
         JSON.stringify(clip(c)) +
         "\n" +
-        underlineNode(nameNode)
+        underlineNode(nameNode, curlCommand)
     );
   }
   return nameWord;

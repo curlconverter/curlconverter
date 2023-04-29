@@ -12,34 +12,76 @@ export function underlineNode(
   node: Parser.SyntaxNode,
   curlCommand?: string
 ): string {
-  // TODO: If this needs to be desirialized, it would be more efficient
-  // to pass the original command as a string.
-  curlCommand = node.tree.rootNode.text;
+  // doesn't include leading whitespace
+  const command = node.tree.rootNode;
+  let startIndex = node.startIndex;
+  let endIndex = node.endIndex;
+  if (!curlCommand) {
+    curlCommand = command.text;
+    startIndex -= command.startIndex;
+    endIndex -= command.startIndex;
+  }
+  if (startIndex === endIndex) {
+    endIndex++;
+  }
 
-  // TODO: is this exactly how tree-sitter splits lines?
-  const line = curlCommand.split("\n")[node.startPosition.row];
-  const onOneLine = node.endPosition.row === node.startPosition.row;
-  const end = onOneLine ? node.endPosition.column : line.length;
-  return (
-    `${line}\n` +
-    " ".repeat(node.startPosition.column) +
-    "^".repeat(end - node.startPosition.column) +
-    (onOneLine ? "" : "^") // TODO: something else?
-  );
+  // TODO: \r ?
+  let lineStart = startIndex;
+  if (startIndex > 0) {
+    // If it's -1 we're on the first line
+    lineStart = curlCommand.lastIndexOf("\n", startIndex - 1) + 1;
+  }
+
+  let underlineLength = endIndex - startIndex;
+  let lineEnd = curlCommand.indexOf("\n", startIndex);
+  if (lineEnd === -1) {
+    lineEnd = curlCommand.length;
+  } else if (lineEnd < endIndex) {
+    // Add extra "^" past the end of a line to signal that the node continues
+    underlineLength = lineEnd - startIndex + 1;
+  }
+
+  const line = curlCommand.slice(lineStart, lineEnd);
+  const underline =
+    " ".repeat(startIndex - lineStart) + "^".repeat(underlineLength);
+  return line + "\n" + underline;
 }
 
 export function underlineNodeEnd(
   node: Parser.SyntaxNode,
   curlCommand?: string
 ): string {
-  curlCommand = node.tree.rootNode.text;
+  // doesn't include leading whitespace
+  const command = node.tree.rootNode;
+  let startIndex = node.startIndex;
+  let endIndex = node.endIndex;
+  if (!curlCommand) {
+    curlCommand = command.text;
+    startIndex -= command.startIndex;
+    endIndex -= command.startIndex;
+  }
+  if (startIndex === endIndex) {
+    endIndex++;
+  }
 
-  // TODO: is this exactly how tree-sitter splits lines?
-  const line = curlCommand.split("\n")[node.endPosition.row];
-  const onOneLine = node.endPosition.row === node.startPosition.row;
-  const start = onOneLine ? node.startPosition.column : 0;
-  // TODO: cut off line if it's too long
-  return `${line}\n` + " ".repeat(start) + "^".repeat(node.endPosition.column);
+  // TODO: \r ?
+  let lineStart = startIndex;
+  if (startIndex > 0) {
+    // If it's -1 we're on the first line
+    lineStart = curlCommand.lastIndexOf("\n", endIndex - 1) + 1;
+  }
+
+  const underlineStart = Math.max(startIndex, lineStart);
+  const underlineLength = endIndex - underlineStart;
+  let lineEnd = curlCommand.indexOf("\n", endIndex);
+  if (lineEnd === -1) {
+    lineEnd = curlCommand.length;
+  }
+
+  const line = curlCommand.slice(lineStart, lineEnd);
+  const underline =
+    " ".repeat(underlineStart - lineStart) + "^".repeat(underlineLength);
+  return line + "\n" + underline;
 }
 
 export interface Support {
