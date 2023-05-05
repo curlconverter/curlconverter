@@ -1,5 +1,5 @@
 http --multipart \
-  http://localhost:28139/api/library \
+  :28139/api/library \
   accept:application/json \
   Content-Type:multipart/form-data \
   files@47.htz \

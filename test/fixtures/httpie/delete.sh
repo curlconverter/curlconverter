@@ -1,1 +1,1 @@
-http DELETE http://localhost:28139/page
+http DELETE :28139/page

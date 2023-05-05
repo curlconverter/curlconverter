@@ -1,1 +1,1 @@
-http --multipart http://localhost:28139/targetservice image@image.jpg
+http --multipart :28139/targetservice image@image.jpg
