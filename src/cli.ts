@@ -56,7 +56,7 @@ import { _toWget, toWgetWarn } from "./generators/wget.js";
 import fs from "fs";
 
 // This line is updated by extract_curl_args.py
-const VERSION = "4.7.0 (curl 8.0.1)";
+const VERSION = "4.7.1 (curl 8.0.1)";
 
 // sets a default in case --language isn't passed
 const defaultLanguage = "python";
