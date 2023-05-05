@@ -1,1 +1,1 @@
-http http://localhost:28139/ foo:bar
+http :28139/ foo:bar

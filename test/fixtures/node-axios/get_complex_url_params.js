@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const params = new URLSearchParams();
 params.append('page', '1');

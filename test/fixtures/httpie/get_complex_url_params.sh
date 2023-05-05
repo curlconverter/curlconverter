@@ -1,4 +1,4 @@
-http http://localhost:28139/house-sitting/ \
+http :28139/house-sitting/ \
   "page==1" \
   "available==" \
   "available==1" \

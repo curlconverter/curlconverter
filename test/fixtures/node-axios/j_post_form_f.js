@@ -1,6 +1,5 @@
-const axios = require('axios');
-const FormData = require('form-data');
-
+import axios from 'axios';
+import { FormData } from 'form-data';
 const form = new FormData();
 form.append('d1', 'data1');
 form.append('d2', 'data');

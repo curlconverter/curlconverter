@@ -1,1 +1,1 @@
-http -a some_username:some_password --verify=no http://localhost:28139/
+http -a some_username:some_password --verify=no :28139/

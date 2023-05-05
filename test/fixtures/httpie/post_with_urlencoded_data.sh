@@ -1,5 +1,5 @@
 http --form \
-  http://localhost:28139/echo/html/ \
+  :28139/echo/html/ \
   Origin:http://fiddle.jshell.net \
   "Accept-Encoding:gzip, deflate" \
   "Accept-Language:en-US,en;q=0.8" \

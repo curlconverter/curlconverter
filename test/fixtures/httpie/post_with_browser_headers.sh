@@ -1,5 +1,5 @@
 http POST \
-  http://localhost:28139/ajax/demo_post.asp \
+  :28139/ajax/demo_post.asp \
   Origin:http://www.w3schools.com \
   "Accept-Encoding:gzip, deflate" \
   "Accept-Language:en-US,en;q=0.8" \

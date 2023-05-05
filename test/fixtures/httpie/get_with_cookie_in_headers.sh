@@ -1,4 +1,4 @@
-http http://localhost:28139/cookies \
+http :28139/cookies \
   Pragma:no-cache \
   "Accept-Encoding:gzip, deflate, br" \
   "Accept-Language:en-US,en;q=0.9" \

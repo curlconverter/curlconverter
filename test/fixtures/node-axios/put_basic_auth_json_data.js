@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const response = await axios.put(
   'http://localhost:28139/test/_security',

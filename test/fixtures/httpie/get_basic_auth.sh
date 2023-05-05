@@ -1,1 +1,1 @@
-http -a some_username:some_password http://localhost:28139/
+http -a some_username:some_password :28139/

@@ -1,1 +1,1 @@
-http --timeout=20 http://localhost:28139
+http --timeout=20 :28139

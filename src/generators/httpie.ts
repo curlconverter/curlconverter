@@ -291,9 +291,6 @@ function requestToHttpie(
     flags.push("-a " + repr(mergeWords([user, ":", password])));
   }
 
-  // TODO: don't need to add "http://" to URL
-  // TODO: use "https" command and remove "https://" from URL
-  // TODO: use localhost shorthands
   if (url.queryList) {
     urlArg = url.urlWithoutQueryList;
     for (const [name, value] of url.queryList) {
@@ -419,6 +416,22 @@ function requestToHttpie(
     flags.push("--quiet");
   }
 
+  function localhostShorthand(u: Word): Word {
+    if (u.startsWith("localhost:")) {
+      return u.slice("localhost".length);
+    } else if (u.startsWith("localhost/") || eq(u, "localhost")) {
+      return u.slice("localhost".length).prepend(":");
+    }
+    return u;
+  }
+  let command = "http";
+  if (urlArg.startsWith("https://")) {
+    command = "https";
+    urlArg = localhostShorthand(urlArg.slice("https://".length));
+  } else if (urlArg.startsWith("http://")) {
+    urlArg = localhostShorthand(urlArg.slice("http://".length));
+  }
+
   if (url.output) {
     // TODO: pipe output
   }
@@ -435,7 +448,7 @@ function requestToHttpie(
   const multiline =
     args.length > 3 || args.reduce((a, b) => a + b.length, 0) > 80 - 5;
   const joiner = multiline ? " \\\n  " : " ";
-  return "http " + args.join(joiner) + "\n";
+  return command + " " + args.join(joiner) + "\n";
 }
 
 export function _toHttpie(

@@ -1,6 +1,6 @@
 http --form \
   GET \
-  http://localhost:28139/echo/html/ \
+  :28139/echo/html/ \
   Origin:http://fiddle.jshell.net \
   Content-Type:application/x-www-form-urlencoded \
   "msg1=value1" \

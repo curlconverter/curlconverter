@@ -1,5 +1,5 @@
 http --form \
-  http://localhost:28139/api/Listing.svc/PropertySearch_Post \
+  :28139/api/Listing.svc/PropertySearch_Post \
   Origin:http://www.realtor.ca \
   "Accept-Encoding:gzip, deflate" \
   "Accept-Language:en-US,en;q=0.8" \

@@ -1,1 +1,1 @@
-http --quiet http://localhost:28139
+http --quiet :28139

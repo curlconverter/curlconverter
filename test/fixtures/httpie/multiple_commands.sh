@@ -1,7 +1,7 @@
-http http://localhost:28139
+http :28139
 
 
-http http://localhost:28139/second
+http :28139/second
 
 
-http PUT http://localhost:28139/third @input_redirected_file.txt
+http PUT :28139/third @input_redirected_file.txt
