@@ -14,7 +14,7 @@ import {
   asParseFloatTimes1000,
   type JSImports,
   addImport,
-  reprImportsRequire,
+  reprImports,
 } from "./javascript.js";
 
 const supportedArgs = new Set([
@@ -241,7 +241,7 @@ export function _toNodeAxios(
 ): string {
   const request = getFirst(requests, warnings);
 
-  let importCode = "const axios = require('axios');\n";
+  let importCode = "import axios from 'axios';\n";
   const imports: JSImports = [];
 
   let code = "";
@@ -384,7 +384,7 @@ export function _toNodeAxios(
 
   code += ");\n";
 
-  importCode += reprImportsRequire(imports);
+  importCode += reprImports(imports);
 
   return importCode + "\n" + code;
 }

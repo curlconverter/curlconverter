@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const response = await axios.options('http://localhost:28139/api/tunein/queue-and-play', {
   params: {

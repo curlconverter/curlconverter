@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const response = await axios.patch(
   'http://localhost:28139/patch',
