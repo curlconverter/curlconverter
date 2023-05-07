@@ -1,6 +1,6 @@
-import { Word, joinWords } from "../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
+import { Word, joinWords } from "../../shell/Word.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -11,6 +11,7 @@ const supportedArgs = new Set([
 
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.3
+// Also used for Clojure
 const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
 const regexDigit = /[0-9]/; // it's 0-7 actually but that would generate confusing code
 export function reprStr(s: string): string {
@@ -56,8 +57,7 @@ export function reprStr(s: string): string {
   );
 }
 
-type Vars = { [key: string]: string };
-function repr(w: Word, imports: Set<string>): string {
+export function repr(w: Word, imports: Set<string>): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
@@ -84,7 +84,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     "java.net.URL",
     "java.util.Scanner",
   ]);
-  const vars: Vars = {};
+
   let javaCode = "";
 
   javaCode +=
@@ -167,16 +167,6 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     preambleCode += "import " + imp + ";\n";
   }
   if (imports.size) {
-    preambleCode += "\n";
-  }
-
-  for (const [name, expr] of Array.from(Object.entries(vars)).sort()) {
-    preambleCode += "\t" + name + ", err := " + expr + "\n";
-  }
-  for (const varExpr of Array.from(Object.values(vars)).sort()) {
-    preambleCode += "\t" + varExpr + "\n";
-  }
-  if (Object.values(vars).length) {
     preambleCode += "\n";
   }
 

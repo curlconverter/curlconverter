@@ -38,7 +38,6 @@ Limitations:
 - Shell variables can arbitrarily change how the command would be parsed at runtime. For example, in a command like `curl example.com?foo=bar&baz=$VAR`, if `$VAR` contains `=` or `&` characters or percent encoded characters, that could make the generated code wrong. curlconverter assumes that environment variables don't contain characters that would affect parsing
 - Only simple subcommands such as `curl $(echo example.com)` work, more complicated subcommands (such as nested commands or subcommands that redirect the output) won't generate valid code
 - The Bash parser isn't the real Bash's parser
-- Piped commands are not supported
 - and much more
 
 ## Install
@@ -61,7 +60,7 @@ curlconverter requires Node 12+.
 
 ### Usage from the command line
 
-The command line tool acts as a drop-in replacement for curl. Take a curl command, change "`curl`" to "`curlconverter`" and it will print code instead of making the request
+`curlconverter` acts as a drop-in replacement for curl. Take any curl command, change "`curl`" to "`curlconverter`" and it will print code instead of making the request
 
 ```shell
 $ curlconverter example.com
@@ -70,7 +69,7 @@ import requests
 response = requests.get('http://example.com')
 ```
 
-or pass `-` to read the curl command from stdin
+To read the curl command from stdin, pass `-`
 
 ```shell
 $ echo 'curl example.com' | curlconverter -
@@ -91,7 +90,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `har`
 - `http`
 - `httpie`
-- `java`
+- `java`, `java-okhttp`
 - `javascript`, `node`, `node-axios`, `node-got`, `node-request`
 - `json`
 - `matlab`
@@ -133,7 +132,7 @@ If you want to host curlconverter yourself and use it in the browser, it needs t
 
 ### Usage in VS Code
 
-There's a VS Code extension that adds a "Paste cURL as \<language\>" option to the right-click menu: [https://marketplace.visualstudio.com/items?itemName=curlconverter.curlconverter](https://marketplace.visualstudio.com/items?itemName=curlconverter.curlconverter). It [has to use an old version of curlconverter](https://github.com/curlconverter/curlconverter-vscode/issues/1), so it doesn't support the same languages, curl arguments or Bash syntax as the current version.
+There's a VS Code extension that adds a "Paste cURL as \<language\>" option to the right-click menu: [https://marketplace.visualstudio.com/items?itemName=curlconverter.curlconverter](https://marketplace.visualstudio.com/items?itemName=curlconverter.curlconverter). It doesn't support the same languages, curl arguments or Bash syntax as the current version because it has to [use an old version of curlconverter](https://github.com/curlconverter/curlconverter-vscode/issues/1).
 
 ## Contributing
 

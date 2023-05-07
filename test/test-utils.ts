@@ -91,6 +91,11 @@ const converters = {
     extension: ".java",
     converter: curlconverter.toJava,
   },
+  "java-okhttp": {
+    name: "Java",
+    extension: ".java",
+    converter: curlconverter.toJavaOkHttp,
+  },
   javascript: {
     name: "JavaScript",
     extension: ".js",
