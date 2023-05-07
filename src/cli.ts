@@ -24,7 +24,8 @@ import { _toGo, toGoWarn } from "./generators/go.js";
 import { _toHarString, toHarStringWarn } from "./generators/har.js";
 import { _toHTTP, toHTTPWarn } from "./generators/http.js";
 import { _toHttpie, toHttpieWarn } from "./generators/httpie.js";
-import { _toJava, toJavaWarn } from "./generators/java.js";
+import { _toJava, toJavaWarn } from "./generators/java/java.js";
+import { _toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
 import {
   _toJavaScript,
   toJavaScriptWarn,
@@ -83,6 +84,7 @@ const translate: {
   http: [_toHTTP, toHTTPWarn],
   httpie: [_toHttpie, toHttpieWarn],
   java: [_toJava, toJavaWarn],
+  "java-okhttp": [_toJavaOkHttp, toJavaOkHttpWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias

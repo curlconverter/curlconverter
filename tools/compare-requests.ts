@@ -42,6 +42,9 @@ const setup = {
   go: "",
   httpie: "",
   java: "mkdir -p /tmp/curlconverter-java",
+  // mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
+  // "java-okhttp":
+  //   "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
   // javascript: "",
   // json: "",
   // matlab: "",
@@ -74,6 +77,8 @@ const executables = {
   httpie:
     'printf "%s --ignore-stdin" "$(cat <file>)" > /tmp/curlconverter-httpie && chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie',
   java: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
+  // "java-okhttp":
+  //   "cp <file> /tmp/curlconverter-java-okhttp/Main.java && cd /tmp/curlconverter-java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
   // javascript: "",
   // json: "",
   // matlab: "",
