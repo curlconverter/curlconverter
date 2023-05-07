@@ -88,11 +88,11 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
   let javaCode = "";
 
   javaCode +=
-    "\t\tURL url = new URL(" + repr(request.urls[0].url, imports) + ");\n";
+    "        URL url = new URL(" + repr(request.urls[0].url, imports) + ");\n";
   javaCode +=
-    "\t\tHttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n";
+    "        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n";
   javaCode +=
-    "\t\thttpConn.setRequestMethod(" +
+    "        httpConn.setRequestMethod(" +
     repr(request.urls[0].method, imports) +
     ");\n\n";
 
@@ -103,7 +103,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
         continue;
       }
       javaCode +=
-        "\t\thttpConn.setRequestProperty(" +
+        "        httpConn.setRequestProperty(" +
         repr(headerName, imports) +
         ", " +
         repr(headerValue, imports) +
@@ -120,46 +120,47 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
 
   if (request.urls[0].auth) {
     javaCode +=
-      "\t\tbyte[] message = (" +
+      "        byte[] message = (" +
       repr(joinWords(request.urls[0].auth, ":"), imports) +
       ').getBytes("UTF-8");\n';
     javaCode +=
-      "\t\tString basicAuth = DatatypeConverter.printBase64Binary(message);\n";
+      "        String basicAuth = DatatypeConverter.printBase64Binary(message);\n";
     javaCode +=
-      '\t\thttpConn.setRequestProperty("Authorization", "Basic " + basicAuth);\n';
+      '        httpConn.setRequestProperty("Authorization", "Basic " + basicAuth);\n';
     javaCode += "\n";
 
     imports.add("javax.xml.bind.DatatypeConverter");
   }
 
   if (request.data) {
-    javaCode += "\t\thttpConn.setDoOutput(true);\n";
+    javaCode += "        httpConn.setDoOutput(true);\n";
     javaCode +=
-      "\t\tOutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n";
-    javaCode += "\t\twriter.write(" + repr(request.data, imports) + ");\n";
-    javaCode += "\t\twriter.flush();\n";
-    javaCode += "\t\twriter.close();\n";
-    javaCode += "\t\thttpConn.getOutputStream().close();\n";
+      "        OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n";
+    javaCode += "        writer.write(" + repr(request.data, imports) + ");\n";
+    javaCode += "        writer.flush();\n";
+    javaCode += "        writer.close();\n";
+    javaCode += "        httpConn.getOutputStream().close();\n";
     javaCode += "\n";
 
     imports.add("java.io.OutputStreamWriter");
   }
 
   javaCode +=
-    "\t\tInputStream responseStream = httpConn.getResponseCode() / 100 == 2\n";
-  javaCode += "\t\t\t\t? httpConn.getInputStream()\n";
-  javaCode += "\t\t\t\t: httpConn.getErrorStream();\n";
+    "        InputStream responseStream = httpConn.getResponseCode() / 100 == 2\n";
+  javaCode += "                ? httpConn.getInputStream()\n";
+  javaCode += "                : httpConn.getErrorStream();\n";
   if (gzip) {
-    javaCode += '\t\tif ("gzip".equals(httpConn.getContentEncoding())) {\n';
-    javaCode += "\t\t\tresponseStream = new GZIPInputStream(responseStream);\n";
-    javaCode += "\t\t}\n";
+    javaCode += '        if ("gzip".equals(httpConn.getContentEncoding())) {\n';
+    javaCode +=
+      "            responseStream = new GZIPInputStream(responseStream);\n";
+    javaCode += "        }\n";
   }
   javaCode +=
-    '\t\tScanner s = new Scanner(responseStream).useDelimiter("\\\\A");\n';
-  javaCode += '\t\tString response = s.hasNext() ? s.next() : "";\n';
-  javaCode += "\t\tSystem.out.println(response);\n";
+    '        Scanner s = new Scanner(responseStream).useDelimiter("\\\\A");\n';
+  javaCode += '        String response = s.hasNext() ? s.next() : "";\n';
+  javaCode += "        System.out.println(response);\n";
 
-  javaCode += "\t}\n";
+  javaCode += "    }\n";
   javaCode += "}";
 
   let preambleCode = "";
@@ -174,21 +175,21 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
   preambleCode += "\n";
   if (imports.has("java.lang.Runtime")) {
     // Helper function that runs a bash command and always returns a string
-    preambleCode += "\tpublic static String exec(String cmd) {\n";
-    preambleCode += "\t\ttry {\n";
-    preambleCode += "\t\t\tProcess p = Runtime.getRuntime().exec(cmd);\n";
-    preambleCode += "\t\t\tp.waitFor();\n";
+    preambleCode += "    public static String exec(String cmd) {\n";
+    preambleCode += "        try {\n";
+    preambleCode += "            Process p = Runtime.getRuntime().exec(cmd);\n";
+    preambleCode += "            p.waitFor();\n";
     preambleCode +=
-      '\t\t\tScanner s = new Scanner(p.getInputStream()).useDelimiter("\\\\A");\n';
-    preambleCode += '\t\t\treturn s.hasNext() ? s.next() : "";\n';
-    preambleCode += "\t\t} catch (Exception e) {\n";
-    preambleCode += '\t\t\treturn "";\n';
-    preambleCode += "\t\t}\n";
-    preambleCode += "\t}\n";
+      '            Scanner s = new Scanner(p.getInputStream()).useDelimiter("\\\\A");\n';
+    preambleCode += '            return s.hasNext() ? s.next() : "";\n';
+    preambleCode += "        } catch (Exception e) {\n";
+    preambleCode += '            return "";\n';
+    preambleCode += "        }\n";
+    preambleCode += "    }\n";
     preambleCode += "\n";
   }
   preambleCode +=
-    "\tpublic static void main(String[] args) throws IOException {\n";
+    "    public static void main(String[] args) throws IOException {\n";
 
   return preambleCode + javaCode + "\n";
 }
