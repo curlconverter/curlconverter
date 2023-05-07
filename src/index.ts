@@ -17,6 +17,7 @@ export { toHttpie, toHttpieWarn } from "./generators/httpie.js";
 export { toJava, toJavaWarn } from "./generators/java/java.js";
 export { toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
+export { toKotlin, toKotlinWarn } from "./generators/kotlin.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 export {

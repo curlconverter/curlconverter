@@ -196,7 +196,7 @@ export function _toJavaOkHttp(
         repr(headerName, imports) +
         ", " +
         repr(headerValue, imports) +
-        ");\n";
+        ")\n";
     }
   }
   if (url.auth) {

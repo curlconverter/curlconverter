@@ -47,6 +47,7 @@ const setup = {
   //   "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
   // javascript: "",
   // json: "",
+  kotlin: "mkdir -p /tmp/curlconverter-kotlin",
   // matlab: "",
   node: "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
   // "node-axios": "",
@@ -82,6 +83,8 @@ const executables = {
   // javascript: "",
   // json: "",
   // matlab: "",
+  kotlin:
+    'printf \'@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\\n\\n%s\' "$(cat <file>)" > /tmp/curlconverter-kotlin/script.main.kts && cd /tmp/curlconverter-kotlin && kotlin script.main.kts',
   node: "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
   // "node-axios": "",
   // "node-got": "",
@@ -240,8 +243,10 @@ const testFile = async (
   console.log("=".repeat(requestName.length));
   console.log(fs.readFileSync(inputFile).toString());
   for (const f of files) {
-    console.log("=".repeat(requestName.length));
-    console.log(fs.readFileSync(f).toString());
+    if (fs.existsSync(f)) {
+      console.log("=".repeat(requestName.length));
+      console.log(fs.readFileSync(f).toString());
+    }
   }
   console.log("=".repeat(requestName.length));
 
