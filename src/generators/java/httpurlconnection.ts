@@ -74,7 +74,10 @@ export function repr(w: Word, imports: Set<string>): string {
   return args.join(" + ");
 }
 
-export function _toJava(requests: Request[], warnings: Warnings = []): string {
+export function _toJavaHttpUrlConnection(
+  requests: Request[],
+  warnings: Warnings = []
+): string {
   const request = getFirst(requests, warnings);
 
   const imports = new Set<string>([
@@ -193,15 +196,17 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
 
   return preambleCode + javaCode + "\n";
 }
-export function toJavaWarn(
+export function toJavaHttpUrlConnectionWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
-  const java = _toJava(requests, warnings);
+  const java = _toJavaHttpUrlConnection(requests, warnings);
   return [java, warnings];
 }
 
-export function toJava(curlCommand: string | string[]): string {
-  return toJavaWarn(curlCommand)[0];
+export function toJavaHttpUrlConnection(
+  curlCommand: string | string[]
+): string {
+  return toJavaHttpUrlConnectionWarn(curlCommand)[0];
 }

@@ -14,7 +14,10 @@ export { toGo, toGoWarn } from "./generators/go.js";
 export { toHarString, toHarStringWarn } from "./generators/har.js";
 export { toHTTP, toHTTPWarn } from "./generators/http.js";
 export { toHttpie, toHttpieWarn } from "./generators/httpie.js";
-export { toJava, toJavaWarn } from "./generators/java/java.js";
+export {
+  toJavaHttpUrlConnection,
+  toJavaHttpUrlConnectionWarn,
+} from "./generators/java/httpurlconnection.js";
 export { toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
 export { toKotlin, toKotlinWarn } from "./generators/kotlin.js";

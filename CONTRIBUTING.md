@@ -27,13 +27,13 @@ brew install node emscripten
 
 If you add a new generator, you'll need to
 
-- add it to [README.md](./README.md) in **two places**
-- export it in [index.ts](src/index.ts)
-- update the list of supported languages in [cli.ts](src/cli.ts) in two places (or it won't be accessible from the command line)
-- add it to [test-utils.ts](test/test-utils.ts) (to make it part of the testing)
-  - create a directory in [test/fixtures](test/fixtures/)
-  - generate tests with `npm run gen-test -- --all --language <language>`
-  - optionally, add it to [tools/compare-requests.ts](tools/compare-requests.ts)
+1. add it to [README.md](./README.md) to the first sentence and to the CLI documentation
+2. export it in [index.ts](src/index.ts)
+3. add it to [cli.ts](src/cli.ts) to the list of args and to the --help message
+4. add it to [test-utils.ts](test/test-utils.ts) (to make it part of the testing)
+   - create a directory in [test/fixtures](test/fixtures/)
+   - generate tests with `npm run gen-test -- --all --language <language>`
+   - add it to [tools/compare-requests.ts](tools/compare-requests.ts), if possible
 
 ### Tests
 

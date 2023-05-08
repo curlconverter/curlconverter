@@ -3,7 +3,7 @@ import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
 
-import { repr } from "./java.js";
+import { repr } from "./httpurlconnection.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

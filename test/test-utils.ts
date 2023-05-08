@@ -86,10 +86,10 @@ const converters = {
     extension: ".sh",
     converter: curlconverter.toHttpie,
   },
-  java: {
-    name: "Java",
+  "java-httpurlconnection": {
+    name: "Java + HttpUrlConnection",
     extension: ".java",
-    converter: curlconverter.toJava,
+    converter: curlconverter.toJavaHttpUrlConnection,
   },
   "java-okhttp": {
     name: "Java + OkHttp",
