@@ -131,6 +131,7 @@ language: the language to convert the curl command to. The choices are
   java
   javascript
   json
+  kotlin
   matlab
   node
   node-axios
