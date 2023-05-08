@@ -31,6 +31,7 @@ import {
   toJavaScriptWarn,
 } from "./generators/javascript/javascript.js";
 import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
+import { _toKotlin, toKotlinWarn } from "./generators/kotlin.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 import {
@@ -91,6 +92,7 @@ const translate: {
   "javascript-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   json: [_toJsonString, toJsonStringWarn],
+  kotlin: [_toKotlin, toKotlinWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
   "node-fetch": [_toNode, toNodeWarn], // undocumented alias
@@ -129,6 +131,7 @@ language: the language to convert the curl command to. The choices are
   java
   javascript
   json
+  kotlin
   matlab
   node
   node-axios

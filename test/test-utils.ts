@@ -92,7 +92,7 @@ const converters = {
     converter: curlconverter.toJava,
   },
   "java-okhttp": {
-    name: "Java",
+    name: "Java + OkHttp",
     extension: ".java",
     converter: curlconverter.toJavaOkHttp,
   },
@@ -105,6 +105,11 @@ const converters = {
     name: "Json",
     extension: ".json",
     converter: curlconverter.toJsonString,
+  },
+  kotlin: {
+    name: "Kotlin",
+    extension: ".kt",
+    converter: curlconverter.toKotlin,
   },
   matlab: {
     name: "MATLAB",
