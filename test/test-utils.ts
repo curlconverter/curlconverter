@@ -86,6 +86,11 @@ const converters = {
     extension: ".sh",
     converter: curlconverter.toHttpie,
   },
+  java: {
+    name: "Java + HttpClient",
+    extension: ".java",
+    converter: curlconverter.toJava,
+  },
   "java-httpurlconnection": {
     name: "Java + HttpUrlConnection",
     extension: ".java",

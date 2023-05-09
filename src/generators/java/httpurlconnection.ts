@@ -2,77 +2,14 @@ import { Word, joinWords } from "../../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 
+import { repr } from "./java.js";
+
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   // TODO
   // "form",
   // "form-string",
 ]);
-
-// https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6
-// https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.3
-// Also used for Clojure
-const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
-const regexDigit = /[0-9]/; // it's 0-7 actually but that would generate confusing code
-export function reprStr(s: string): string {
-  return (
-    '"' +
-    s.replace(regexEscape, (c: string, index: number, string: string) => {
-      switch (c) {
-        case " ":
-          return " ";
-        case "\\":
-          return "\\\\";
-        case "\b":
-          return "\\b";
-        case "\f":
-          return "\\f";
-        case "\n":
-          return "\\n";
-        case "\r":
-          return "\\r";
-        case "\t":
-          return "\\t";
-        case '"':
-          return '\\"';
-      }
-
-      if (c.length === 2) {
-        const first = c.charCodeAt(0);
-        const second = c.charCodeAt(1);
-        return (
-          "\\u" +
-          first.toString(16).padStart(4, "0") +
-          "\\u" +
-          second.toString(16).padStart(4, "0")
-        );
-      }
-
-      if (c === "\0" && !regexDigit.test(string.charAt(index + 1))) {
-        return "\\0";
-      }
-      return "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0");
-    }) +
-    '"'
-  );
-}
-
-export function repr(w: Word, imports: Set<string>): string {
-  const args: string[] = [];
-  for (const t of w.tokens) {
-    if (typeof t === "string") {
-      args.push(reprStr(t));
-    } else if (t.type === "variable") {
-      args.push("System.getenv(" + reprStr(t.value) + ")");
-      imports.add("java.lang.System");
-    } else {
-      args.push("exec(" + reprStr(t.value) + ")");
-      imports.add("java.lang.Runtime");
-      imports.add("java.util.Scanner");
-    }
-  }
-  return args.join(" + ");
-}
 
 export function _toJavaHttpUrlConnection(
   requests: Request[],
