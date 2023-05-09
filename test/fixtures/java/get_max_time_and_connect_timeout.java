@@ -5,8 +5,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
-class Main {
-    public static void main(String[] args) throws Exception {
 HttpClient client = HttpClient.newBuilder()
     .connectTimeout(Duration.ofSeconds(13.9999))
     .build();
@@ -18,5 +16,3 @@ HttpRequest request = HttpRequest.newBuilder()
     .build();
 
 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-}

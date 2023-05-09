@@ -246,7 +246,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     preambleCode += "\n";
   }
 
-  preambleCode += "class Main {\n";
+  // preambleCode += "class Main {\n";
   if (imports.has("java.lang.Runtime")) {
     // Helper function that runs a bash command and always returns a string
     preambleCode += "public static String exec(String cmd) {\n";
@@ -262,11 +262,11 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     preambleCode += "}\n";
     preambleCode += "\n";
   }
-  preambleCode +=
-    "    public static void main(String[] args) throws Exception {\n";
+  // preambleCode +=
+  //   "    public static void main(String[] args) throws Exception {\n";
 
-  return preambleCode + javaCode + "    }\n" + "}" + "\n";
-  return preambleCode + javaCode + "\n";
+  // return preambleCode + javaCode + "    }\n" + "}" + "\n";
+  return preambleCode + javaCode;
 }
 export function toJavaWarn(
   curlCommand: string | string[],

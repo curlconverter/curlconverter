@@ -5,8 +5,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
 
-class Main {
-    public static void main(String[] args) throws Exception {
 HttpClient client = HttpClient.newHttpClient();
 
 String credentials = "some_username" + ":" + "some_password";
@@ -19,5 +17,3 @@ HttpRequest request = HttpRequest.newBuilder()
     .build();
 
 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-}
