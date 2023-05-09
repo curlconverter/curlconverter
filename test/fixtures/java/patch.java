@@ -1,37 +1,22 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Scanner;
-import javax.xml.bind.DatatypeConverter;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.util.Base64;
 
-class Main {
+HttpClient client = HttpClient.newHttpClient();
 
-    public static void main(String[] args) throws IOException {
-        URL url = new URL("http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da");
-        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-        httpConn.setRequestMethod("PATCH");
+String credentials = "username" + ":" + "password";
+String auth = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
 
-        httpConn.setRequestProperty("Accept", "application/vnd.go.cd.v4+json");
-        httpConn.setRequestProperty("Content-Type", "application/json");
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da"))
+    .method("PATCH", BodyPublishers.ofString("{\n        \"hostname\": \"agent02.example.com\",\n        \"agent_config_state\": \"Enabled\",\n        \"resources\": [\"Java\",\"Linux\"],\n        \"environments\": [\"Dev\"]\n        }"))
+    .setHeader("Accept", "application/vnd.go.cd.v4+json")
+    .setHeader("Content-Type", "application/json")
+    .setHeader("Authorization", auth)
+    .build();
 
-        byte[] message = ("username:password").getBytes("UTF-8");
-        String basicAuth = DatatypeConverter.printBase64Binary(message);
-        httpConn.setRequestProperty("Authorization", "Basic " + basicAuth);
-
-        httpConn.setDoOutput(true);
-        OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-        writer.write("{\n        \"hostname\": \"agent02.example.com\",\n        \"agent_config_state\": \"Enabled\",\n        \"resources\": [\"Java\",\"Linux\"],\n        \"environments\": [\"Dev\"]\n        }");
-        writer.flush();
-        writer.close();
-        httpConn.getOutputStream().close();
-
-        InputStream responseStream = httpConn.getResponseCode() / 100 == 2
-                ? httpConn.getInputStream()
-                : httpConn.getErrorStream();
-        Scanner s = new Scanner(responseStream).useDelimiter("\\A");
-        String response = s.hasNext() ? s.next() : "";
-        System.out.println(response);
-    }
-}
+HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

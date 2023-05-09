@@ -1,12 +1,18 @@
-import { Word, joinWords } from "../../shell/Word.js";
+import { Word, eq } from "../../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
+  "max-time",
+  "connect-timeout",
+  "location",
+  // "location-trusted",
+  "upload-file",
   // TODO
   // "form",
   // "form-string",
+  "http2",
 ]);
 
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6
@@ -76,92 +82,161 @@ export function repr(w: Word, imports: Set<string>): string {
 
 export function _toJava(requests: Request[], warnings: Warnings = []): string {
   const request = getFirst(requests, warnings);
+  const url = request.urls[0];
 
   const imports = new Set<string>([
+    "java.net.URI",
+    "java.net.http.HttpClient",
+    "java.net.http.HttpRequest",
+    "java.net.http.HttpResponse",
     "java.io.IOException",
-    "java.io.InputStream",
-    "java.net.HttpURLConnection",
-    "java.net.URL",
-    "java.util.Scanner",
   ]);
 
   let javaCode = "";
 
-  javaCode +=
-    "        URL url = new URL(" + repr(request.urls[0].url, imports) + ");\n";
-  javaCode +=
-    "        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();\n";
-  javaCode +=
-    "        httpConn.setRequestMethod(" +
-    repr(request.urls[0].method, imports) +
-    ");\n\n";
+  javaCode += "HttpClient client = ";
 
-  let gzip = false;
+  const clientLines = [];
+  if (request.followRedirects) {
+    // .NEVER is the default
+    // .ALWAYS will follow redirect from HTTPS to HTTP, which isn't what --location-trusted does
+    clientLines.push("    .followRedirects(HttpClient.Redirect.NORMAL)\n");
+  } else if (request.followRedirects === false) {
+    clientLines.push("    .followRedirects(HttpClient.Redirect.NEVER)\n");
+  }
+  if (request.connectTimeout) {
+    // TODO: won't work if it's a float
+    clientLines.push(
+      "    .connectTimeout(Duration.ofSeconds(" +
+        request.connectTimeout.toString() +
+        "))\n"
+    );
+    imports.add("java.time.Duration");
+  }
+  // TODO: Proxy
+  if (clientLines.length) {
+    javaCode += "HttpClient.newBuilder()\n";
+    for (const line of clientLines) {
+      javaCode += line;
+    }
+    javaCode += "    .build()";
+  } else {
+    javaCode += "HttpClient.newHttpClient()";
+  }
+  javaCode += ";\n";
+  javaCode += "\n";
+
+  const methodCallArgs = [];
+  if (url.uploadFile) {
+    if (eq(url.uploadFile, "-") || eq(url.uploadFile, ".")) {
+      warnings.push(["upload-stdin", "uploading from stdin isn't supported"]);
+    }
+    methodCallArgs.push(
+      "BodyPublishers.ofFile(Paths.get(" + repr(url.uploadFile, imports) + "))"
+    );
+    imports.add("java.net.http.HttpRequest.BodyPublishers");
+    imports.add("java.nio.file.Paths");
+  } else if (
+    request.dataArray &&
+    request.dataArray.length === 1 &&
+    !(request.dataArray[0] instanceof Word) &&
+    !request.dataArray[0].name
+  ) {
+    // TODO: surely --upload-file and this can't be identical,
+    // doesn't this ignore url encoding?
+    methodCallArgs.push(
+      "BodyPublishers.ofFile(Paths.get(" +
+        repr(request.dataArray[0].filename, imports) +
+        "))"
+    );
+    imports.add("java.net.http.HttpRequest.BodyPublishers");
+    imports.add("java.nio.file.Paths");
+  } else if (request.data) {
+    methodCallArgs.push(
+      "BodyPublishers.ofString(" + repr(request.data, imports) + ")"
+    );
+    imports.add("java.net.http.HttpRequest.BodyPublishers");
+  }
+
+  if (url.auth) {
+    const [name, password] = url.auth;
+    javaCode +=
+      "String credentials = " +
+      repr(name, imports) +
+      ' + ":" + ' +
+      repr(password, imports) +
+      ";\n";
+    javaCode +=
+      'String auth = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());\n\n';
+    imports.add("java.util.Base64");
+
+    if (request.authType !== "basic") {
+      warnings.push([
+        "unsupported-auth-type",
+        `"${request.authType}" authentication is not supported`,
+      ]);
+    }
+  }
+
+  javaCode += "HttpRequest request = HttpRequest.newBuilder()\n";
+  javaCode += "    .uri(URI.create(" + repr(url.url, imports) + "))\n";
+  const methods = ["DELETE", "GET", "POST", "PUT"];
+  const dataMethods = ["POST", "PUT"];
+  const method = url.method;
+  let methodCall = "method";
+  if (
+    !method.isString() ||
+    !methods.includes(method.toString()) ||
+    // If we appended something to methodCallArgs it means we need to send data
+    (methodCallArgs.length && !dataMethods.includes(method.toString()))
+  ) {
+    if (!methodCallArgs.length) {
+      methodCallArgs.push("HttpRequest.BodyPublishers.noBody()");
+    }
+    methodCallArgs.unshift(repr(method, imports));
+  } else {
+    if (!methodCallArgs.length && dataMethods.includes(method.toString())) {
+      methodCallArgs.push("HttpRequest.BodyPublishers.noBody()");
+    }
+    methodCall = method.toString();
+  }
+  javaCode += "    ." + methodCall + "(" + methodCallArgs.join(", ") + ")\n";
+
   if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
         continue;
       }
       javaCode +=
-        "        httpConn.setRequestProperty(" +
+        "    .setHeader(" +
         repr(headerName, imports) +
         ", " +
         repr(headerValue, imports) +
-        ");\n";
-      if (
-        headerName.toLowerCase().toString() === "accept-encoding" &&
-        headerValue
-      ) {
-        gzip = headerValue.indexOf("gzip") !== -1;
-      }
+        ")\n";
     }
-    javaCode += "\n";
+  }
+  if (url.auth) {
+    const authHeader = request.headers.lowercase
+      ? "authorization"
+      : "Authorization";
+    javaCode += '    .setHeader("' + authHeader + '", auth)\n';
   }
 
-  if (request.urls[0].auth) {
+  if (request.http2) {
+    javaCode += "    .version(HttpClient.Version.HTTP_2)\n";
+    // TODO: more granular control
+  }
+  if (request.timeout) {
+    // TODO: won't work if it's a float
     javaCode +=
-      "        byte[] message = (" +
-      repr(joinWords(request.urls[0].auth, ":"), imports) +
-      ').getBytes("UTF-8");\n';
-    javaCode +=
-      "        String basicAuth = DatatypeConverter.printBase64Binary(message);\n";
-    javaCode +=
-      '        httpConn.setRequestProperty("Authorization", "Basic " + basicAuth);\n';
-    javaCode += "\n";
-
-    imports.add("javax.xml.bind.DatatypeConverter");
+      "    .timeout(Duration.ofSeconds(" + request.timeout.toString() + "))\n";
+    imports.add("java.time.Duration");
   }
 
-  if (request.data) {
-    javaCode += "        httpConn.setDoOutput(true);\n";
-    javaCode +=
-      "        OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());\n";
-    javaCode += "        writer.write(" + repr(request.data, imports) + ");\n";
-    javaCode += "        writer.flush();\n";
-    javaCode += "        writer.close();\n";
-    javaCode += "        httpConn.getOutputStream().close();\n";
-    javaCode += "\n";
-
-    imports.add("java.io.OutputStreamWriter");
-  }
-
+  javaCode += "    .build();\n";
+  javaCode += "\n";
   javaCode +=
-    "        InputStream responseStream = httpConn.getResponseCode() / 100 == 2\n";
-  javaCode += "                ? httpConn.getInputStream()\n";
-  javaCode += "                : httpConn.getErrorStream();\n";
-  if (gzip) {
-    javaCode += '        if ("gzip".equals(httpConn.getContentEncoding())) {\n';
-    javaCode +=
-      "            responseStream = new GZIPInputStream(responseStream);\n";
-    javaCode += "        }\n";
-  }
-  javaCode +=
-    '        Scanner s = new Scanner(responseStream).useDelimiter("\\\\A");\n';
-  javaCode += '        String response = s.hasNext() ? s.next() : "";\n';
-  javaCode += "        System.out.println(response);\n";
-
-  javaCode += "    }\n";
-  javaCode += "}";
+    "HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());\n";
 
   let preambleCode = "";
   for (const imp of Array.from(imports).sort()) {
@@ -171,27 +246,27 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     preambleCode += "\n";
   }
 
-  preambleCode += "class Main {\n";
-  preambleCode += "\n";
+  // preambleCode += "class Main {\n";
   if (imports.has("java.lang.Runtime")) {
     // Helper function that runs a bash command and always returns a string
-    preambleCode += "    public static String exec(String cmd) {\n";
-    preambleCode += "        try {\n";
-    preambleCode += "            Process p = Runtime.getRuntime().exec(cmd);\n";
-    preambleCode += "            p.waitFor();\n";
+    preambleCode += "public static String exec(String cmd) {\n";
+    preambleCode += "    try {\n";
+    preambleCode += "        Process p = Runtime.getRuntime().exec(cmd);\n";
+    preambleCode += "        p.waitFor();\n";
     preambleCode +=
-      '            Scanner s = new Scanner(p.getInputStream()).useDelimiter("\\\\A");\n';
-    preambleCode += '            return s.hasNext() ? s.next() : "";\n';
-    preambleCode += "        } catch (Exception e) {\n";
-    preambleCode += '            return "";\n';
-    preambleCode += "        }\n";
+      '        Scanner s = new Scanner(p.getInputStream()).useDelimiter("\\\\A");\n';
+    preambleCode += '        return s.hasNext() ? s.next() : "";\n';
+    preambleCode += "    } catch (Exception e) {\n";
+    preambleCode += '        return "";\n';
     preambleCode += "    }\n";
+    preambleCode += "}\n";
     preambleCode += "\n";
   }
-  preambleCode +=
-    "    public static void main(String[] args) throws IOException {\n";
+  // preambleCode +=
+  //   "    public static void main(String[] args) throws Exception {\n";
 
-  return preambleCode + javaCode + "\n";
+  // return preambleCode + javaCode + "    }\n" + "}" + "\n";
+  return preambleCode + javaCode;
 }
 export function toJavaWarn(
   curlCommand: string | string[],
