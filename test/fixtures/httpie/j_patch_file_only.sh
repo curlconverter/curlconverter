@@ -1,4 +1,4 @@
 http --multipart \
   PATCH \
-  http://localhost:28139/patch \
+  :28139/patch \
   file1@./test/fixtures/curl_commands/delete.sh

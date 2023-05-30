@@ -10,7 +10,7 @@ import { parseQueryString } from "../Query.js";
 
 // "Clojure strings are Java Strings."
 // https://clojure.org/reference/data_structures#Strings
-import { reprStr } from "./java.js";
+import { reprStr } from "./java/java.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

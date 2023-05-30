@@ -1,21 +1,14 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Scanner;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
-class Main {
+HttpClient client = HttpClient.newHttpClient();
 
-	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://localhost:28139");
-		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-		httpConn.setRequestMethod("wHat");
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("http://localhost:28139"))
+    .method("wHat", HttpRequest.BodyPublishers.noBody())
+    .build();
 
-		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
-				? httpConn.getInputStream()
-				: httpConn.getErrorStream();
-		Scanner s = new Scanner(responseStream).useDelimiter("\\A");
-		String response = s.hasNext() ? s.next() : "";
-		System.out.println(response);
-	}
-}
+HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

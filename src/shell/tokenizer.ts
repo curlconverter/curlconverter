@@ -112,10 +112,10 @@ function toTokens(
       return [removeBackslashes(node.text)];
     case "raw_string":
       return [node.text.slice(1, -1)];
-    case "ansii_c_string":
+    case "ansi_c_string":
       return [removeAnsiCBackslashes(node.text.slice(2, -1))];
     case "string":
-    case "string_expansion": {
+    case "translated_string": {
       // TODO: MISSING quotes, for example
       // curl "example.com
       let prevEnd = node.type === "string" ? 1 : 2;
@@ -241,7 +241,7 @@ function toTokens(
       throw new CCError(
         "unexpected argument type " +
           JSON.stringify(node.type) +
-          '. Must be one of "word", "string", "raw_string", "ansii_c_string", "expansion", "simple_expansion", "string_expansion" or "concatenation"\n' +
+          '. Must be one of "word", "string", "raw_string", "ansi_c_string", "expansion", "simple_expansion", "translated_string" or "concatenation"\n' +
           underlineNode(node, curlCommand)
       );
   }
@@ -520,8 +520,8 @@ function extractCommandNodes(
   //       word |
   //       "string" |
   //       'raw_string' |
-  //       $'ansii_c_string' |
-  //       $"string_expansion" |
+  //       $'ansi_c_string' |
+  //       $"translated_string" |
   //       ${expansion} |
   //       $simple_expansion |
   //       concatenation)))
@@ -689,14 +689,15 @@ function nameToWord(
     const c = nameWordStr.trim();
     if (!c) {
       throw new CCError(
-        "found command without a command_name\n" + underlineNode(nameNode)
+        "found command without a command_name\n" +
+          underlineNode(nameNode, curlCommand)
       );
     }
     throw new CCError(
       'command should begin with "curl" but instead begins with ' +
         JSON.stringify(clip(c)) +
         "\n" +
-        underlineNode(nameNode)
+        underlineNode(nameNode, curlCommand)
     );
   }
   return nameWord;

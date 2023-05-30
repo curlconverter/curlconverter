@@ -1,4 +1,4 @@
-http "http://localhost:28139/?format=json&" \
+http ":28139/?format=json&" \
   Host:api.ipify.org \
   "Accept:*/*" \
   "User-Agent:GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)" \

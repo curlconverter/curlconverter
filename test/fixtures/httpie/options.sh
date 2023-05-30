@@ -1,5 +1,5 @@
 http OPTIONS \
-  http://localhost:28139/api/tunein/queue-and-play \
+  :28139/api/tunein/queue-and-play \
   Pragma:no-cache \
   Access-Control-Request-Method:POST \
   Origin:https://alexa.amazon.de \

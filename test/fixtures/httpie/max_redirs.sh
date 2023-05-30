@@ -1,1 +1,1 @@
-http --max-redirects=20 http://localhost:28139
+http --max-redirects=20 :28139

@@ -1,1 +1,1 @@
-http --follow http://localhost:28139
+http --follow :28139

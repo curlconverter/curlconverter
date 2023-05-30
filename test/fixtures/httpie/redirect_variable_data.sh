@@ -1,3 +1,1 @@
-http --raw "foo&@"$FILENAME \
-  http://localhost:28139 \
-  Content-Type:application/x-www-form-urlencoded
+http --raw "foo&@"$FILENAME :28139 Content-Type:application/x-www-form-urlencoded

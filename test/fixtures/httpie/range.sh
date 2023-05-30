@@ -1,1 +1,1 @@
-http http://localhost:28139 "Range:bytes=600-"
+http :28139 "Range:bytes=600-"

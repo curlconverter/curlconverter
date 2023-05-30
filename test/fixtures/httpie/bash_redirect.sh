@@ -1,5 +1,5 @@
 http -a USER:PASS \
-  http://localhost:28139/api/2.0/fo/auth/unix/ \
+  :28139/api/2.0/fo/auth/unix/ \
   X-Requested-With:curl \
   Content-Type:text/xml \
   "action==create" \

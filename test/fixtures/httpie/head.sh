@@ -1,1 +1,1 @@
-http HEAD http://localhost:28139/page
+http HEAD :28139/page

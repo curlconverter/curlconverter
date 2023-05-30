@@ -1,1 +1,1 @@
-http http://httpbin.org/test
+http httpbin.org/test

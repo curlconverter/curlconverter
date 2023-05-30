@@ -1,31 +1,16 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Scanner;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 
-class Main {
+HttpClient client = HttpClient.newHttpClient();
 
-	public static void main(String[] args) throws IOException {
-		URL url = new URL("http://localhost:28139/twitter/_mapping/user?pretty");
-		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-		httpConn.setRequestMethod("PUT");
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("http://localhost:28139/twitter/_mapping/user?pretty"))
+    .PUT(BodyPublishers.ofString("{\"properties\": {\"email\": {\"type\": \"keyword\"}}}"))
+    .setHeader("Content-Type", "application/json")
+    .build();
 
-		httpConn.setRequestProperty("Content-Type", "application/json");
-
-		httpConn.setDoOutput(true);
-		OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-		writer.write("{\"properties\": {\"email\": {\"type\": \"keyword\"}}}");
-		writer.flush();
-		writer.close();
-		httpConn.getOutputStream().close();
-
-		InputStream responseStream = httpConn.getResponseCode() / 100 == 2
-				? httpConn.getInputStream()
-				: httpConn.getErrorStream();
-		Scanner s = new Scanner(responseStream).useDelimiter("\\A");
-		String response = s.hasNext() ? s.next() : "";
-		System.out.println(response);
-	}
-}
+HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

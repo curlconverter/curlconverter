@@ -1,7 +1,6 @@
-const axios = require('axios');
-const FormData = require('form-data');
-const fs = require('fs');
-
+import axios from 'axios';
+import { FormData } from 'form-data';
+import { fs } from 'fs';
 const form = new FormData();
 form.append('file1', fs.readFileSync('./test/fixtures/curl_commands/delete.sh'), './test/fixtures/curl_commands/delete.sh');
 form.append('form1', 'form+data+1');

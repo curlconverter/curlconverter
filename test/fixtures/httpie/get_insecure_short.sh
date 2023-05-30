@@ -1,1 +1,1 @@
-http --verify=no http://localhost:28139/
+http --verify=no :28139/

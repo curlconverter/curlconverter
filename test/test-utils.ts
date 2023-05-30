@@ -87,9 +87,19 @@ const converters = {
     converter: curlconverter.toHttpie,
   },
   java: {
-    name: "Java",
+    name: "Java + HttpClient",
     extension: ".java",
     converter: curlconverter.toJava,
+  },
+  "java-httpurlconnection": {
+    name: "Java + HttpUrlConnection",
+    extension: ".java",
+    converter: curlconverter.toJavaHttpUrlConnection,
+  },
+  "java-okhttp": {
+    name: "Java + OkHttp",
+    extension: ".java",
+    converter: curlconverter.toJavaOkHttp,
   },
   javascript: {
     name: "JavaScript",
@@ -100,6 +110,11 @@ const converters = {
     name: "Json",
     extension: ".json",
     converter: curlconverter.toJsonString,
+  },
+  kotlin: {
+    name: "Kotlin",
+    extension: ".kt",
+    converter: curlconverter.toKotlin,
   },
   matlab: {
     name: "MATLAB",

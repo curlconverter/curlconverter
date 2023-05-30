@@ -24,12 +24,18 @@ import { _toGo, toGoWarn } from "./generators/go.js";
 import { _toHarString, toHarStringWarn } from "./generators/har.js";
 import { _toHTTP, toHTTPWarn } from "./generators/http.js";
 import { _toHttpie, toHttpieWarn } from "./generators/httpie.js";
-import { _toJava, toJavaWarn } from "./generators/java.js";
+import { _toJava, toJavaWarn } from "./generators/java/java.js";
+import {
+  _toJavaHttpUrlConnection,
+  toJavaHttpUrlConnectionWarn,
+} from "./generators/java/httpurlconnection.js";
+import { _toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
 import {
   _toJavaScript,
   toJavaScriptWarn,
 } from "./generators/javascript/javascript.js";
 import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
+import { _toKotlin, toKotlinWarn } from "./generators/kotlin.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 import {
@@ -56,7 +62,7 @@ import { _toWget, toWgetWarn } from "./generators/wget.js";
 import fs from "fs";
 
 // This line is updated by extract_curl_args.py
-const VERSION = "4.6.0 (curl 8.0.1)";
+const VERSION = "4.7.1 (curl 8.0.1)";
 
 // sets a default in case --language isn't passed
 const defaultLanguage = "python";
@@ -83,12 +89,18 @@ const translate: {
   http: [_toHTTP, toHTTPWarn],
   httpie: [_toHttpie, toHttpieWarn],
   java: [_toJava, toJavaWarn],
+  "java-httpurlconnection": [
+    _toJavaHttpUrlConnection,
+    toJavaHttpUrlConnectionWarn,
+  ],
+  "java-okhttp": [_toJavaOkHttp, toJavaOkHttpWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
   "javascript-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   json: [_toJsonString, toJsonStringWarn],
+  kotlin: [_toKotlin, toKotlinWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
   "node-fetch": [_toNode, toNodeWarn], // undocumented alias
@@ -125,8 +137,11 @@ language: the language to convert the curl command to. The choices are
   http
   httpie
   java
+  java-httpurlconnection
+  java-okhttp
   javascript
   json
+  kotlin
   matlab
   node
   node-axios
