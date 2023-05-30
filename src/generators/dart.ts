@@ -12,16 +12,29 @@ const supportedArgs = new Set([
   "form-string",
   "no-compressed",
 ]);
+
 function escape(value: string, quote: '"' | "'"): string {
   // Escape Dart's $string interpolation syntax
   // TODO: does Dart have the same escape sequences as JS?
   return jsesc(value, quote).replace(/\$/g, "\\$");
 }
+
 function reprStr(value: string): string {
   const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
   return quote + escape(value, quote) + quote;
 }
-function repr(value: Word, imports: Set<string>): string {
+
+function repr(value: Word | Word[], imports: Set<string>): string {
+  if (value instanceof Word) return reprForWord(value, imports);
+
+  const ret: string[] = [];
+  for (const v of value) {
+    ret.push(reprForWord(v, imports));
+  }
+  return "[" + ret.join(", ") + "]";
+}
+
+function reprForWord(value: Word, imports: Set<string>): string {
   const ret: string[] = [];
   for (const t of value.tokens) {
     if (typeof t === "string") {
@@ -36,6 +49,7 @@ function repr(value: Word, imports: Set<string>): string {
       imports.add("dart:io");
     }
   }
+
   return ret.join(" + ");
 }
 
@@ -52,13 +66,13 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     const [uname, pword] = request.urls[0].auth;
 
     s +=
-      "  var uname = " +
+      "  final uname = " +
       repr(uname, imports) +
       ";\n" +
-      "  var pword = " +
+      "  final pword = " +
       repr(pword, imports) +
       ";\n" +
-      "  var authn = 'Basic ' + base64Encode(utf8.encode('$uname:$pword'));\n" +
+      "  final authn = 'Basic ${base64Encode(utf8.encode('$uname:$pword'))}';\n" +
       "\n";
   }
 
@@ -72,7 +86,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     request.isDataBinary ||
     request.urls[0].method.toLowerCase().toString() === "put";
   if (hasHeaders && !rawRequestObj) {
-    s += "  var headers = {\n";
+    s += "  final headers = {\n";
     for (const [hname, hval] of request.headers) {
       s +=
         "    " +
@@ -90,23 +104,19 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     s += "\n";
   }
 
-  // TODO: Uri() can accept a params dict
   const queryIsRepresentable =
-    request.urls[0].queryList &&
-    request.urls[0].queryDict &&
-    Object.values(request.urls[0].queryDict).every((v) => !Array.isArray(v));
+    request.urls[0].queryList && request.urls[0].queryDict; /*&&
+    Object.values(request.urls[0].queryDict).every((v) => !Array.isArray(v))*/
   if (queryIsRepresentable && request.urls[0].queryList) {
-    // TODO: dict won't work with repeated keys
-    s += "  var params = {\n";
-    for (const [paramName, rawValue] of request.urls[0].queryList) {
+    s += "  final params = {\n";
+    for (const [
+      _,
+      [paramName, rawValue],
+    ] of request.urls[0].queryDict!.entries()) {
       const paramValue = repr(rawValue ?? new Word(), imports);
       s += "    " + repr(paramName, imports) + ": " + paramValue + ",\n";
     }
     s += "  };\n";
-    // TODO: Uri() can accept a queryParameters dict, requires parsing out the port
-    /* eslint-disable no-template-curly-in-string */
-    s +=
-      "  var query = params.entries.map((p) => '${p.key}=${p.value}').join('&');\n";
     s += "\n";
   }
 
@@ -114,7 +124,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
   if (request.data) {
     const [parsedQuery] = parseQueryString(request.data);
     if (parsedQuery && parsedQuery.length) {
-      s += "  var data = {\n";
+      s += "  final data = {\n";
       for (const param of parsedQuery) {
         const [key, val] = param;
         s += "    " + repr(key, imports) + ": " + repr(val, imports) + ",\n";
@@ -122,22 +132,22 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
       s += "  };\n";
       s += "\n";
     } else {
-      s += `  var data = ${repr(request.data, imports)};\n\n`;
+      s += `  final data = ${repr(request.data, imports)};\n\n`;
     }
   }
 
   if (queryIsRepresentable) {
-    let urlString = repr(request.urls[0].urlWithoutQueryList, imports);
-    // Use Dart's $var interpolation for the query
-    if (urlString.endsWith("'") || urlString.endsWith('"')) {
-      urlString = urlString.slice(0, -1) + "?$query" + urlString.slice(-1);
-    } else {
-      urlString += " + '?$query'";
-    }
-    s += "  var url = Uri.parse(" + urlString + ");\n";
+    const urlString = repr(request.urls[0].urlWithoutQueryList, imports);
+    s +=
+      "  final url = Uri.parse(" +
+      urlString +
+      ")\n" +
+      "      .replace(queryParameters: params);\n";
   } else {
-    s += "  var url = Uri.parse(" + repr(request.urls[0].url, imports) + ");\n";
+    s +=
+      "  final url = Uri.parse(" + repr(request.urls[0].url, imports) + ");\n";
   }
+  s += "\n";
 
   if (rawRequestObj) {
     let multipart = "http.";
@@ -204,35 +214,45 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
           "    ..fields[" + name + "] = " + repr(m.content, imports) + "\n";
       }
     }
+    multipart += "    ;\n\n";
 
-    if (hasHeaders || request.urls[0].auth) {
-      s += "  var req = new " + multipart;
-      for (const [hname, hval] of request.headers) {
-        s +=
-          "  req.headers[" +
-          repr(hname, imports) +
-          "] = " +
-          repr(hval || new Word(), imports) +
-          ";\n";
+    if (hasHeaders || request.urls[0].auth || rawRequestObj) {
+      s += "  final req = " + multipart;
+
+      if (request.headers.length != 0) {
+        for (const [hname, hval] of request.headers) {
+          s +=
+            "  req.headers[" +
+            repr(hname, imports) +
+            "] = " +
+            repr(hval || new Word(), imports) +
+            ";\n";
+        }
+        s += "\n";
       }
+
       if (request.urls[0].auth) {
         s += "  req.headers['Authorization'] = authn;\n";
+        s += "\n";
       }
-      s += "  var res = await req.send();\n";
+      s += "  final stream = await req.send();\n";
+      s += "  final res = await http.Response.fromStream(stream);\n";
     } else {
       // TODO: this might not work, I think it's client.send(req)
-      s += "  var res = await " + multipart;
+      s += "  final res = await " + multipart;
     }
 
     /* eslint-disable no-template-curly-in-string */
     s +=
-      "  if (res.statusCode != 200) throw Exception('http.send" +
-      " error: statusCode= ${res.statusCode}');\n" +
+      "  final status = res.statusCode;\n" +
+      "  if (status != 200) throw Exception('http.send" +
+      " error: statusCode= $status');\n" +
+      "\n" +
       "  print(res.body);\n" +
       "}";
   } else {
     s +=
-      "  var res = await http." +
+      "  final res = await http." +
       request.urls[0].method.toLowerCase().toString() +
       "(url";
 
@@ -243,9 +263,11 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
 
     /* eslint-disable no-template-curly-in-string */
     s +=
-      "  if (res.statusCode != 200) throw Exception('http." +
+      "  final status = res.statusCode;\n" +
+      "  if (status != 200) throw Exception('http." +
       request.urls[0].method.toLowerCase().toString() +
-      " error: statusCode= ${res.statusCode}');\n" +
+      " error: statusCode= $status');\n" +
+      "\n" +
       "  print(res.body);\n" +
       "}";
   }
@@ -257,6 +279,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
   importString += "import 'package:http/http.dart' as http;\n";
   return importString + "\n" + s + "\n";
 }
+
 export function toDartWarn(
   curlCommand: string | string[],
   warnings: Warnings = []
@@ -265,6 +288,7 @@ export function toDartWarn(
   const dart = _toDart(requests, warnings);
   return [dart, warnings];
 }
+
 export function toDart(curlCommand: string | string[]): string {
   return toDartWarn(curlCommand)[0];
 }

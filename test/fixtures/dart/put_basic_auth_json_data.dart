@@ -2,19 +2,22 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 void main() async {
-  var uname = 'admin';
-  var pword = '123';
-  var authn = 'Basic ' + base64Encode(utf8.encode('$uname:$pword'));
+  final uname = 'admin';
+  final pword = '123';
+  final authn = 'Basic ${base64Encode(utf8.encode('$uname:$pword'))}';
 
-  var headers = {
+  final headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Authorization': authn,
   };
 
-  var data = '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}';
+  final data = '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}';
 
-  var url = Uri.parse('http://localhost:28139/test/_security');
-  var res = await http.put(url, headers: headers, body: data);
-  if (res.statusCode != 200) throw Exception('http.put error: statusCode= ${res.statusCode}');
+  final url = Uri.parse('http://localhost:28139/test/_security');
+
+  final res = await http.put(url, headers: headers, body: data);
+  final status = res.statusCode;
+  if (status != 200) throw Exception('http.put error: statusCode= $status');
+
   print(res.body);
 }
