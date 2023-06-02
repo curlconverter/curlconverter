@@ -178,11 +178,11 @@ export function addImport(imports: JSImports, name: string, from: string) {
   imports.push([name, from]);
 }
 export function reprImports(imports: JSImports): string {
-  const ret: string[] = [];
+  let ret = "";
   for (const [name, from] of imports.sort(bySecondElem)) {
-    ret.push(`import { ${name} } from ${reprStr(from)};`);
+    ret += `import { ${name} } from ${reprStr(from)};\n`;
   }
-  return ret.join("\n");
+  return ret;
 }
 export function reprImportsRequire(imports: JSImports): string {
   const ret: string[] = [];

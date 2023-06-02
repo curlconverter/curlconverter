@@ -91,10 +91,11 @@ Choose the output language by passing `--language <language>`. The options are
 - `http`
 - `httpie`
 - `java`, `java-httpurlconnection`, `java-okhttp`
-- `javascript`, `node`, `node-axios`, `node-got`, `node-request`
+- `javascript`, `javascript-jquery`, `javascript-xhr`
 - `json`
 - `kotlin`
 - `matlab`
+- `node`, `node-http`, `node-axios`, `node-got`, `node-request`
 - `php`, `php-guzzle`, `php-requests`
 - `python` (the default)
 - `r`

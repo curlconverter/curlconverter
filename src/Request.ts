@@ -150,7 +150,7 @@ export interface Request {
   unixSocket?: Word;
   netrc?: "optional" | "required" | "ignored"; // undefined means implicitly "ignored"
 
-  // These are global options
+  // Global options
   verbose?: boolean;
   silent?: boolean;
 }

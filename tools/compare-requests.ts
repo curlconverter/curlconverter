@@ -26,80 +26,72 @@ Content-Type: text/plain; charset=utf-8
 
 Hello World!`.replace(/\n/g, "\r\n");
 
-const setup = {
-  // ansible: "",
-  // cfml: "",
-  clojure: "mkdir -p /tmp/curlconverter-clojure",
-  csharp:
+const executables = {
+  clojure: [
+    "mkdir -p /tmp/curlconverter-clojure",
+    'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
+  ],
+  csharp: [
     "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
-  dart: "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
+    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
+  ],
+  dart: [
+    "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
+    "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
+  ],
   // mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get
-  elixir:
-    "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
   // (on not macOS (Linux and maybe Windows))
   // elixir:
   //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-  go: "",
-  httpie: "",
-  java: "mkdir -p /tmp/curlconverter-java",
-  // "java-httpurlconnection": "mkdir -p /tmp/curlconverter-java-httpurlconnection",
-  // mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
-  // "java-okhttp":
-  //   "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
-  // javascript: "",
-  // json: "",
-  kotlin: "mkdir -p /tmp/curlconverter-kotlin",
-  // matlab: "",
-  node: "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
-  // "node-axios": "",
-  // "node-got": "",
-  // "node-request": "",
-  php: "",
-  // php composer.phar global require guzzlehttp/guzzle:^7.0
-  "php-guzzle":
-    "cd /tmp && mkdir curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
-  python: "",
-  r: "",
-  ruby: "",
-  rust: "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
-  wget: "",
-} as const;
-
-const executables = {
-  // ansible: "",
-  // cfml: "",
-  clojure:
-    'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
-  csharp:
-    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
-  dart: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
-  elixir:
+  elixir: [
+    "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
     "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
-  go: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
-  httpie:
+  ],
+  go: ["", "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go"],
+  httpie: [
+    "",
     'printf "%s --ignore-stdin" "$(cat <file>)" > /tmp/curlconverter-httpie && chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie',
-  java: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
-  // "java-httpurlconnection":
+  ],
+  java: [
+    "mkdir -p /tmp/curlconverter-java",
+    "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
+  ],
+  // "java-httpurlconnection": [
+  //   "mkdir -p /tmp/curlconverter-java-httpurlconnection",
   //   "cp <file> /tmp/curlconverter-java-httpurlconnection/Main.java && cd /tmp/curlconverter-java-httpurlconnection && javac Main.java && java Main",
-  // "java-okhttp":
+  // ],
+  // mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
+  // "java-okhttp": [
+  //   "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
   //   "cp <file> /tmp/curlconverter-java-okhttp/Main.java && cd /tmp/curlconverter-java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
-  // javascript: "",
-  // json: "",
-  // matlab: "",
-  kotlin:
+  // ],
+  // javascript: ["", ""],
+  "javascript-jquery": [
+    "cd /tmp && mkdir curlconverter-javascript-jquery && cd curlconverter-javascript-jquery && npm init -y && npm install jquery",
+    "cp <file> /tmp/curlconverter-javascript-jquery/main.js && cd /tmp/curlconverter-javascript-jquery && node main.js",
+  ],
+  kotlin: [
+    "mkdir -p /tmp/curlconverter-kotlin",
     'printf \'@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\\n\\n%s\' "$(cat <file>)" > /tmp/curlconverter-kotlin/script.main.kts && cd /tmp/curlconverter-kotlin && kotlin script.main.kts',
-  node: "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
-  // "node-axios": "",
-  // "node-got": "",
-  // "node-request": "",
-  php: "php <file>",
-  "php-guzzle":
+  ],
+  node: [
+    "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
+    "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
+  ],
+  php: ["", "php <file>"],
+  // php composer.phar global require guzzlehttp/guzzle:^7.0
+  "php-guzzle": [
+    "cd /tmp && mkdir curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
     "cp <file> /tmp/curlconverter-php-guzzle/main.php && cd /tmp/curlconverter-php-guzzle && php main.php",
-  python: "python3 <file>",
-  r: "r < <file> --no-save",
-  ruby: "ruby <file>",
-  rust: "cp <file> /tmp/curlconverter-rust/src/main.rs && cd /tmp/curlconverter-rust && cargo run",
-  wget: "bash <file>",
+  ],
+  python: ["", "python3 <file>"],
+  r: ["", "r < <file> --no-save"],
+  ruby: ["", "ruby <file>"],
+  rust: [
+    "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
+    "cp <file> /tmp/curlconverter-rust/src/main.rs && cd /tmp/curlconverter-rust && cargo run",
+  ],
+  wget: ["", "bash <file>"],
 } as const;
 
 const argv = await yargs(hideBin(process.argv))
@@ -214,7 +206,7 @@ const testFile = async (
     const languageFile = files[i];
     if (fs.existsSync(languageFile)) {
       // TODO: escape?
-      const command = executables[language].replace("<file>", languageFile);
+      const command = executables[language][1].replace("<file>", languageFile);
       try {
         await awaitableExec(command);
       } catch (e) {
@@ -284,7 +276,7 @@ const tests = argv._.length
 // await awaitableExec("rm -rf /tmp/curlconverter*");
 if (tests.length) {
   for (const l of languages) {
-    const setupCommands = setup[l];
+    const setupCommands = executables[l][0];
     if (setupCommands) {
       console.error("running");
       console.error(setupCommands);

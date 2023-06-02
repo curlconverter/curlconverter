@@ -5,7 +5,6 @@
 # two JS objects (one for --long-options and one for -s (short) options)
 # to ../src/util.ts.
 #
-# curl defines its arguments in src/tool_getparam.c:
 # https://github.com/curl/curl/blob/master/src/tool_getparam.c#L72
 #
 # Each argument definition is composed of
@@ -16,14 +15,12 @@
 # second argument or not.
 #   ARG_STRING, ARG_FILENAME - consume a second argument
 #   ARG_BOOL, ARG_NONE - don't consume a second argument.
-# Historically, TRUE and FALSE were used.
+#   TRUE / FALSE - no longer used
+# ARG_BOOL arguments get a --no-<lname> counterpart. ARG_NONE arguments do not.
 #
-# Each boolean argument (ARG_BOOL) also gets a --no-OPTION-NAME
-# counterpart. ARG_NONE arguments do not.
-#
-# Multiple options can have the same `letter` if an option was renamed but
-# the old name needs to also be kept for backwards compatibility. To these
-# options we add a "name" property with the newest name.
+# Options can have the same `letter` when an option was renamed but
+# the old name was also kept for backwards compatibility. 
+# We add a "name" property with the newest name to these options.
 
 import json
 import subprocess
@@ -61,10 +58,10 @@ RAW_ALIAS_TYPES = ALIAS_TYPES + ["true", "false"]
 
 OUTPUT_FILE = Path(__file__).parent.parent / "src" / "curl" / "opts.ts"
 
-JS_LONG_PARAMS_START = "BEGIN GENERATED LONG OPTIONS"
-JS_LONG_PARAMS_END = "END GENERATED LONG OPTIONS"
-JS_SHORT_PARAMS_START = "BEGIN GENERATED SHORT OPTIONS"
-JS_SHORT_PARAMS_END = "END GENERATED SHORT OPTIONS"
+JS_PARAMS_START = "BEGIN EXTRACTED OPTIONS"
+JS_PARAMS_END = "END EXTRACTED OPTIONS"
+JS_SHORT_PARAMS_START = "BEGIN EXTRACTED SHORT OPTIONS"
+JS_SHORT_PARAMS_END = "END EXTRACTED SHORT OPTIONS"
 
 PACKAGE_JSON = Path(__file__).parent.parent / "package.json"
 CLI_FILE = Path(__file__).parent.parent / "src" / "cli.ts"
@@ -427,7 +424,7 @@ if __name__ == "__main__":
     )
     long_args, short_args = split(current_aliases)
 
-    js_long_params_lines = list(format_as_js(long_args))
+    js_params_lines = list(format_as_js(long_args))
     js_short_params_lines = list(format_as_js(short_args))
 
     new_lines = []
@@ -450,7 +447,7 @@ if __name__ == "__main__":
                 raise ValueError(f"{'// ' + end!r} not in {OUTPUT_FILE}")
 
         add_between(
-            f, new_lines, js_long_params_lines, JS_LONG_PARAMS_START, JS_LONG_PARAMS_END
+            f, new_lines, js_params_lines, JS_PARAMS_START, JS_PARAMS_END
         )
         add_between(
             f,

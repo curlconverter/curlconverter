@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { FormData } from 'form-data';
 import { fs } from 'fs';
+
 const form = new FormData();
 form.append('image', fs.readFileSync('image.jpg'), 'image.jpg');
 

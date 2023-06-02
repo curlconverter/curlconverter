@@ -6,10 +6,10 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 charset = utf-8
 
-[*.js]
+[{*.ts, *.js, *.json, *.yml}]
 indent_style = space
 indent_size = 2
 
-[{package.json,*.yml,*.cjson}]
+[{*.py}]
 indent_style = space
-indent_size = 2
+indent_size = 4

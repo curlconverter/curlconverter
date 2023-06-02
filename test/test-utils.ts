@@ -106,6 +106,16 @@ const converters = {
     extension: ".js",
     converter: curlconverter.toJavaScript,
   },
+  "javascript-jquery": {
+    name: "JavaScript + jQuery",
+    extension: ".js",
+    converter: curlconverter.toJavaScriptJquery,
+  },
+  "javascript-xhr": {
+    name: "JavaScript + XHR",
+    extension: ".js",
+    converter: curlconverter.toJavaScriptXHR,
+  },
   json: {
     name: "Json",
     extension: ".json",
@@ -135,6 +145,11 @@ const converters = {
     name: "Node + Got",
     extension: ".js",
     converter: curlconverter.toNodeGot,
+  },
+  "node-http": {
+    name: "Node + http",
+    extension: ".js",
+    converter: curlconverter.toNodeHttp,
   },
   "node-request": {
     name: "Node + request",
