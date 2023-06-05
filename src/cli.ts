@@ -56,6 +56,10 @@ import {
   _toNodeRequest,
   toNodeRequestWarn,
 } from "./generators/javascript/request.js";
+import {
+  _toNodeSuperAgent,
+  toNodeSuperAgentWarn,
+} from "./generators/javascript/superagent.js";
 import { _toPhp, toPhpWarn } from "./generators/php/php.js";
 import { _toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 import {
@@ -109,6 +113,7 @@ const translate: {
   "javascript-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
   "javascript-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn],
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
+  "javascript-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
   "javascript-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn],
   json: [_toJsonString, toJsonStringWarn],
   kotlin: [_toKotlin, toKotlinWarn],
@@ -120,6 +125,7 @@ const translate: {
   "node-http": [_toNodeHttp, toNodeHttpWarn], // undocumented alias
   "node-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn], // undocumented alias
   "node-request": [_toNodeRequest, toNodeRequestWarn],
+  "node-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn],
   "node-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn], // undocumented alias
   nodejs: [_toNode, toNodeWarn], // undocumented alias
   "nodejs-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
@@ -128,6 +134,7 @@ const translate: {
   "nodejs-http": [_toNodeHttp, toNodeHttpWarn], // undocumented alias
   "nodejs-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn], // undocumented alias
   "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
+  "nodejs-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
   "nodejs-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn], // undocumented alias
   php: [_toPhp, toPhpWarn],
   "php-curl": [_toPhp, toPhpWarn], // undocumented alias
@@ -164,7 +171,9 @@ language: the language to convert the curl command to. The choices are
   matlab
   node
   node-axios
+  node-http
   node-request
+  node-superagent
   php
   php-guzzle
   php-requests

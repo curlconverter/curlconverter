@@ -156,6 +156,11 @@ const converters = {
     extension: ".js",
     converter: curlconverter.toNodeRequest,
   },
+  "node-superagent": {
+    name: "Node + SuperAgent",
+    extension: ".js",
+    converter: curlconverter.toNodeSuperAgent,
+  },
   php: {
     name: "PHP",
     extension: ".php",

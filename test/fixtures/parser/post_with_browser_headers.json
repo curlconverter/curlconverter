@@ -8,9 +8,9 @@
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",
+          "port": "",
           "path": "/ajax/demo_post.asp",
           "query": "",
-          "originalQuery": "",
           "fragment": ""
         },
         "urlWithOriginalQuery": "http://localhost:28139/ajax/demo_post.asp",

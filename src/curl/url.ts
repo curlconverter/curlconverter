@@ -14,10 +14,9 @@ export interface Curl_URL {
   // options: string /* IMAP only? */;
   host: Word;
   // zoneid: string /* for numerical IPv6 addresses */;
-  // port: string;
+  port: Word;
   path: Word;
   query: Word;
-  originalQuery: Word;
   fragment: Word;
   // portnum: number /* the numerical version */;
 }
@@ -109,9 +108,9 @@ export function parseurl(
   const u: Curl_URL = {
     scheme: new Word(),
     host: new Word(),
+    port: new Word(),
     path: new Word(), // with leading '/'
     query: new Word(), // with leading '?'
-    originalQuery: new Word(), // with leading '?'
     fragment: new Word(), // with leading '#'
   };
 

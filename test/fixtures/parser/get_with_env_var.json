@@ -8,9 +8,9 @@
         "urlObj": {
           "scheme": "http",
           "host": "localhost:28139",
+          "port": "",
           "path": "/v2/images",
           "query": "?type=distribution",
-          "originalQuery": "",
           "fragment": ""
         },
         "urlWithOriginalQuery": "http://localhost:28139/v2/images?type=distribution",

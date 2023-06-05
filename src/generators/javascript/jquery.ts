@@ -3,6 +3,7 @@ import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
 import type { Query } from "../../Query.js";
+import type { FormParam } from "../../curl/form.js";
 
 import {
   repr,
@@ -20,10 +21,10 @@ const supportedArgs = new Set([
   "max-time",
 ]);
 
-function dedent(s: string): string {
+export function dedent(s: string): string {
   return s.replace(/^ {2}/gm, "");
 }
-function indent(s: string): string {
+export function indent(s: string): string {
   return s.split("\n").join("\n  ");
 }
 
@@ -118,7 +119,7 @@ function _getDataString(
   return [exactContentType, originalStringRepr, null, traditional];
 }
 
-function getDataString(
+export function getDataString(
   request: Request,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
@@ -139,6 +140,34 @@ function getDataString(
     dataString = repr(request.data, imports);
   }
   return [exactContentType, dataString, commentedOutDataString, traditional];
+}
+
+export function getFormString(
+  multipartUploads: FormParam[],
+  imports: JSImports
+): [string, string] {
+  const dataString = "form";
+  let code = "const form = new FormData();\n";
+  for (const m of multipartUploads) {
+    code += "form.append(" + repr(m.name, imports) + ", ";
+    if ("contentFile" in m) {
+      // TODO: no fs in browser
+      addImport(imports, "fs", "fs");
+      if (eq(m.contentFile, "-")) {
+        code += "fs.readFileSync(0).toString()";
+      } else {
+        code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
+      }
+      if ("filename" in m && m.filename) {
+        code += ", " + repr(m.filename, imports);
+      }
+    } else {
+      code += repr(m.content, imports);
+    }
+    code += ");\n";
+  }
+  code += "\n";
+  return [dataString, code];
 }
 
 export function _toJavaScriptJquery(
@@ -190,27 +219,9 @@ export function _toJavaScriptJquery(
     [exactContentType, dataString, commentedOutDataString, traditional] =
       getDataString(request, contentType, exactContentType, imports);
   } else if (request.multipartUploads) {
-    dataString = "form";
-    code += "const form = new FormData();\n";
-    for (const m of request.multipartUploads) {
-      code += "form.append(" + repr(m.name, imports) + ", ";
-      if ("contentFile" in m) {
-        // TODO: no fs in browser
-        addImport(imports, "fs", "fs");
-        if (eq(m.contentFile, "-")) {
-          code += "fs.readFileSync(0).toString()";
-        } else {
-          code += "fs.readFileSync(" + repr(m.contentFile, imports) + ")";
-        }
-        if ("filename" in m && m.filename) {
-          code += ", " + repr(m.filename, imports);
-        }
-      } else {
-        code += repr(m.content, imports);
-      }
-      code += ");\n";
-    }
-    code += "\n";
+    let formCode;
+    [dataString, formCode] = getFormString(request.multipartUploads, imports);
+    code += formCode;
   }
   if (nonDataMethods.includes(methodStr) && hasData) {
     warnings.push([

@@ -95,7 +95,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `json`
 - `kotlin`
 - `matlab`
-- `node`, `node-http`, `node-axios`, `node-got`, `node-request`
+- `node`, `node-http`, `node-axios`, `node-got`, `node-request`, `node-superagent`
 - `php`, `php-guzzle`, `php-requests`
 - `python` (the default)
 - `r`

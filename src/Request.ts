@@ -185,7 +185,6 @@ function buildURL(
     }
   }
 
-  // TODO: remove .originalQuery
   const urlWithOriginalQuery = mergeWords([
     u.scheme,
     "://",

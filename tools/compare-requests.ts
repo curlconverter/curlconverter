@@ -27,71 +27,132 @@ Content-Type: text/plain; charset=utf-8
 Hello World!`.replace(/\n/g, "\r\n");
 
 const executables = {
-  clojure: [
-    "mkdir -p /tmp/curlconverter-clojure",
-    'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
-  ],
-  csharp: [
-    "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
-    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
-  ],
-  dart: [
-    "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
-    "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
-  ],
+  clojure: {
+    setup: "mkdir -p /tmp/curlconverter-clojure",
+    exec: 'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
+  },
+  csharp: {
+    setup:
+      "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
+    exec: "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
+  },
+  dart: {
+    setup:
+      "cd /tmp && mkdir -p curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
+    exec: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
+  },
   // mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get
   // (on not macOS (Linux and maybe Windows))
-  // elixir:
   //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-  elixir: [
-    "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-    "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
-  ],
-  go: ["", "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go"],
-  httpie: [
-    "",
-    'printf "%s --ignore-stdin" "$(cat <file>)" > /tmp/curlconverter-httpie && chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie',
-  ],
-  java: [
-    "mkdir -p /tmp/curlconverter-java",
-    "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
-  ],
-  // "java-httpurlconnection": [
-  //   "mkdir -p /tmp/curlconverter-java-httpurlconnection",
-  //   "cp <file> /tmp/curlconverter-java-httpurlconnection/Main.java && cd /tmp/curlconverter-java-httpurlconnection && javac Main.java && java Main",
-  // ],
+  elixir: {
+    setup:
+      "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
+    exec: "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
+    dir: "/tmp/curlconverterelixir", // dir: is not used, just to highlight that it's different
+  },
+  go: {
+    exec: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
+    dir: "/tmp",
+  },
+  httpie: {
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter-httpie",
+        contents.trimEnd() + " --ignore-stdin" + "\n",
+        "utf8"
+      );
+    },
+    exec: "chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie",
+    dir: "/tmp",
+  },
+  java: {
+    setup: "mkdir -p /tmp/curlconverter-java",
+    exec: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
+  },
+  // "java-httpurlconnection": {
+  //   setup: "mkdir -p /tmp/curlconverter-java-httpurlconnection",
+  //   exec: "cp <file> /tmp/curlconverter-java-httpurlconnection/Main.java && cd /tmp/curlconverter-java-httpurlconnection && javac Main.java && java Main",
+  // },
   // mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
-  // "java-okhttp": [
-  //   "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
-  //   "cp <file> /tmp/curlconverter-java-okhttp/Main.java && cd /tmp/curlconverter-java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
-  // ],
-  // javascript: ["", ""],
-  "javascript-jquery": [
-    "cd /tmp && mkdir curlconverter-javascript-jquery && cd curlconverter-javascript-jquery && npm init -y && npm install jquery",
-    "cp <file> /tmp/curlconverter-javascript-jquery/main.js && cd /tmp/curlconverter-javascript-jquery && node main.js",
-  ],
-  kotlin: [
-    "mkdir -p /tmp/curlconverter-kotlin",
-    'printf \'@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\\n\\n%s\' "$(cat <file>)" > /tmp/curlconverter-kotlin/script.main.kts && cd /tmp/curlconverter-kotlin && kotlin script.main.kts',
-  ],
-  node: [
-    "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
-    "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
-  ],
-  php: ["", "php <file>"],
+  // "java-okhttp": {
+  //   setup: "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
+  //   exec: "cp <file> /tmp/curlconverter-java-okhttp/Main.java && cd /tmp/curlconverter-java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
+  // },
+  // javascript:
+  "javascript-jquery": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter-javascript-jquery && cd curlconverter-javascript-jquery && npm init -y es6 && npm install jquery jsdom",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter-javascript-jquery/main.js",
+        `import { JSDOM } from 'jsdom';
+const { window } = new JSDOM();
+import jQueryInit from 'jquery';
+var $ = jQueryInit(window);
+
+` + contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter-javascript-jquery && node main.js",
+  },
+  "javascript-xhr": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter-javascript-xhr && cd curlconverter-javascript-xhr && npm init -y es6",
+    copy: "cp <file> /tmp/curlconverter-javascript-xhr/main.js",
+    exec: "cd /tmp/curlconverter-javascript-xhr && node main.js",
+  },
+  kotlin: {
+    setup: "mkdir -p /tmp/curlconverter-kotlin",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter-kotlin/script.main.kts",
+        '@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\n\n' + contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter-kotlin && kotlin script.main.kts",
+  },
+  node: {
+    setup:
+      "cd /tmp && mkdir -p curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
+    copy: "cp <file> /tmp/curlconverter-node/main.js",
+    exec: "cd /tmp/curlconverter-node && node main.js",
+  },
+  "node-http": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter-node-http && cd curlconverter-node-http && npm init -y es6",
+    copy: "cp <file> /tmp/curlconverter-node-http/main.js",
+    exec: "cd /tmp/curlconverter-node-http && node main.js",
+  },
+  php: {
+    exec: "php <file>",
+  },
   // php composer.phar global require guzzlehttp/guzzle:^7.0
-  "php-guzzle": [
-    "cd /tmp && mkdir curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
-    "cp <file> /tmp/curlconverter-php-guzzle/main.php && cd /tmp/curlconverter-php-guzzle && php main.php",
-  ],
-  python: ["", "python3 <file>"],
-  r: ["", "r < <file> --no-save"],
-  ruby: ["", "ruby <file>"],
-  rust: [
-    "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
-    "cp <file> /tmp/curlconverter-rust/src/main.rs && cd /tmp/curlconverter-rust && cargo run",
-  ],
-  wget: ["", "bash <file>"],
+  "php-guzzle": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
+    copy: "cp <file> /tmp/curlconverter-php-guzzle/main.php",
+    exec: "cd /tmp/curlconverter-php-guzzle && php main.php",
+  },
+  python: {
+    exec: "python3 <file>",
+  },
+  r: {
+    exec: "r < <file> --no-save",
+  },
+  ruby: {
+    exec: "ruby <file>",
+  },
+  rust: {
+    setup:
+      "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
+    copy: "cp <file> /tmp/curlconverter-rust/src/main.rs",
+    exec: "cd /tmp/curlconverter-rust && cargo run",
+  },
+  wget: {
+    exec: "bash <file>",
+  },
 } as const;
 
 const argv = await yargs(hideBin(process.argv))
@@ -204,9 +265,17 @@ const testFile = async (
   for (let i = 0; i < languages.length; i++) {
     const language = languages[i];
     const languageFile = files[i];
+    const executable = executables[language];
     if (fs.existsSync(languageFile)) {
+      if ("copy" in executable) {
+        if (typeof executable.copy === "function") {
+          executable.copy(fs.readFileSync(languageFile).toString());
+        } else {
+          await awaitableExec(executable.copy.replace("<file>", languageFile));
+        }
+      }
       // TODO: escape?
-      const command = executables[language][1].replace("<file>", languageFile);
+      const command = executable.exec.replace("<file>", languageFile);
       try {
         await awaitableExec(command);
       } catch (e) {
@@ -276,11 +345,11 @@ const tests = argv._.length
 // await awaitableExec("rm -rf /tmp/curlconverter*");
 if (tests.length) {
   for (const l of languages) {
-    const setupCommands = executables[l][0];
-    if (setupCommands) {
+    const executable = executables[l];
+    if ("setup" in executable) {
       console.error("running");
-      console.error(setupCommands);
-      await awaitableExec(setupCommands);
+      console.error(executable.setup);
+      await awaitableExec(executable.setup);
       console.error();
     }
   }
