@@ -26,65 +26,68 @@ Content-Type: text/plain; charset=utf-8
 
 Hello World!`.replace(/\n/g, "\r\n");
 
+const testDir = "/tmp/curlconverter"; // files are copied here to be executed
 const executables = {
   clojure: {
-    setup: "mkdir -p /tmp/curlconverter-clojure",
-    exec: 'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
+    copy: "cp <file> /tmp/curlconverter/clojure/main.clj",
+    exec: 'cd /tmp/curlconverter/clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
   },
   csharp: {
     setup:
-      "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
-    exec: "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
+      "cd /tmp/curlconverter && dotnet new console -o csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter/csharp/csharp.csproj",
+    copy: "cp <file> /tmp/curlconverter/csharp/Program.cs",
+    exec: "cd /tmp/curlconverter/csharp && dotnet run",
   },
   dart: {
     setup:
-      "cd /tmp && mkdir -p curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
-    exec: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
+      "cd /tmp && mkdir -p curlconverter/dart && cd /tmp/curlconverter/dart && echo $'name:\\n  dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
+    copy: "cp <file> /tmp/curlconverter/dart/main.dart",
+    exec: "cd /tmp/curlconverter/dart && dart run main.dart",
   },
-  // mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get
-  // (on not macOS (Linux and maybe Windows))
-  //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
   elixir: {
     setup:
-      "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-    exec: "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
-    dir: "/tmp/curlconverterelixir", // dir: is not used, just to highlight that it's different
+      "mix new /tmp/curlconverter/elixircurlconverter/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverter/elixirelixircurlconverter/mix.exs && cd /tmp/curlconverter/elixirelixircurlconverter/ && mix deps.get",
+    copy: "cp <file> /tmp/curlconverter/elixirelixircurlconverter/main.ex",
+    exec: "cd /tmp/curlconverter/elixirelixircurlconverter && mix run main.ex",
+    dir: "elixircurlconverter",
   },
   go: {
-    exec: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
-    dir: "/tmp",
+    copy: "go build -o /tmp/curlconverter/go/go <file>",
+    exec: "cd /tmp/curlconverter/go && /tmp/curlconverter/go/go",
   },
   httpie: {
     copy: function (contents: string) {
       fs.writeFileSync(
-        "/tmp/curlconverter-httpie",
+        "/tmp/curlconverter/httpie/main",
         contents.trimEnd() + " --ignore-stdin" + "\n",
         "utf8"
       );
     },
-    exec: "chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie",
-    dir: "/tmp",
+    exec: "chmod +x /tmp/curlconverter/httpie/main && /tmp/curlconverter/httpie/main",
   },
   java: {
-    setup: "mkdir -p /tmp/curlconverter-java",
-    exec: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
+    setup: "mkdir -p /tmp/curlconverter/java",
+    copy: "cp <file> /tmp/curlconverter/java/Main.java",
+    exec: "cd /tmp/curlconverter/java && javac Main.java && java Main",
   },
   // "java-httpurlconnection": {
-  //   setup: "mkdir -p /tmp/curlconverter-java-httpurlconnection",
-  //   exec: "cp <file> /tmp/curlconverter-java-httpurlconnection/Main.java && cd /tmp/curlconverter-java-httpurlconnection && javac Main.java && java Main",
+  //   setup: "mkdir -p /tmp/curlconverter/java-httpurlconnection",
+  //   copy: "cp <file> /tmp/curlconverter/java-httpurlconnection/Main.java",
+  //   exec: "&& cd /tmp/curlconverter/java-httpurlconnection && javac Main.java && java Main",
   // },
-  // mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
+  // mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
   // "java-okhttp": {
-  //   setup: "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
-  //   exec: "cp <file> /tmp/curlconverter-java-okhttp/Main.java && cd /tmp/curlconverter-java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
+  //   setup: "mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp",
+  //   copy: "cp <file> /tmp/curlconverter/java-okhttp/Main.java",
+  //   exec: "cd /tmp/curlconverter/java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
   // },
   // javascript:
   "javascript-jquery": {
     setup:
-      "cd /tmp && mkdir -p curlconverter-javascript-jquery && cd curlconverter-javascript-jquery && npm init -y es6 && npm install jquery jsdom",
+      "cd /tmp && mkdir -p curlconverter/javascript-jquery && cd curlconverter/javascript-jquery && npm init -y es6 && npm install jquery jsdom",
     copy: function (contents: string) {
       fs.writeFileSync(
-        "/tmp/curlconverter-javascript-jquery/main.js",
+        "/tmp/curlconverter/javascript-jquery/main.js",
         `import { JSDOM } from 'jsdom';
 const { window } = new JSDOM();
 import jQueryInit from 'jquery';
@@ -94,36 +97,48 @@ var $ = jQueryInit(window);
         "utf8"
       );
     },
-    exec: "cd /tmp/curlconverter-javascript-jquery && node main.js",
+    exec: "cd /tmp/curlconverter/javascript-jquery && node main.js",
   },
   "javascript-xhr": {
     setup:
-      "cd /tmp && mkdir -p curlconverter-javascript-xhr && cd curlconverter-javascript-xhr && npm init -y es6",
-    copy: "cp <file> /tmp/curlconverter-javascript-xhr/main.js",
-    exec: "cd /tmp/curlconverter-javascript-xhr && node main.js",
-  },
-  kotlin: {
-    setup: "mkdir -p /tmp/curlconverter-kotlin",
+      "cd /tmp && mkdir -p curlconverter/javascript-xhr && cd curlconverter/javascript-xhr && npm init -y es6 && npm install xmlhttprequest",
     copy: function (contents: string) {
       fs.writeFileSync(
-        "/tmp/curlconverter-kotlin/script.main.kts",
+        "/tmp/curlconverter/javascript-xhr/main.js",
+        "import { XMLHttpRequest } from 'xmlhttprequest';\n\n" + contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/javascript-xhr && node main.js",
+  },
+  kotlin: {
+    setup: "mkdir -p /tmp/curlconverter/kotlin",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/kotlin/script.main.kts",
         '@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\n\n' + contents,
         "utf8"
       );
     },
-    exec: "cd /tmp/curlconverter-kotlin && kotlin script.main.kts",
+    exec: "cd /tmp/curlconverter/kotlin && kotlin script.main.kts",
   },
   node: {
     setup:
-      "cd /tmp && mkdir -p curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
-    copy: "cp <file> /tmp/curlconverter-node/main.js",
-    exec: "cd /tmp/curlconverter-node && node main.js",
+      "cd /tmp && mkdir -p curlconverter/node && cd curlconverter/node && npm init -y && npm install node-fetch",
+    copy: "cp <file> /tmp/curlconverter/node/main.js",
+    exec: "cd /tmp/curlconverter/node && node main.js",
   },
   "node-http": {
     setup:
-      "cd /tmp && mkdir -p curlconverter-node-http && cd curlconverter-node-http && npm init -y es6",
-    copy: "cp <file> /tmp/curlconverter-node-http/main.js",
-    exec: "cd /tmp/curlconverter-node-http && node main.js",
+      "cd /tmp && mkdir -p curlconverter/node-http && cd curlconverter/node-http && npm init -y es6",
+    copy: "cp <file> /tmp/curlconverter/node-http/main.js",
+    exec: "cd /tmp/curlconverter/node-http && node main.js",
+  },
+  "node-superagent": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/node-superagent && cd curlconverter/node-superagent && npm init -y es6 && npm install superagent",
+    copy: "cp <file> /tmp/curlconverter/node-superagent/main.js",
+    exec: "cd /tmp/curlconverter/node-superagent && node main.js",
   },
   php: {
     exec: "php <file>",
@@ -131,9 +146,9 @@ var $ = jQueryInit(window);
   // php composer.phar global require guzzlehttp/guzzle:^7.0
   "php-guzzle": {
     setup:
-      "cd /tmp && mkdir -p curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
-    copy: "cp <file> /tmp/curlconverter-php-guzzle/main.php",
-    exec: "cd /tmp/curlconverter-php-guzzle && php main.php",
+      "cd /tmp && mkdir -p curlconverter/php-guzzle && cd curlconverter/php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
+    copy: "cp <file> /tmp/curlconverter/php-guzzle/main.php",
+    exec: "cd /tmp/curlconverter/php-guzzle && php main.php",
   },
   python: {
     exec: "python3 <file>",
@@ -146,9 +161,9 @@ var $ = jQueryInit(window);
   },
   rust: {
     setup:
-      "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
-    copy: "cp <file> /tmp/curlconverter-rust/src/main.rs",
-    exec: "cd /tmp/curlconverter-rust && cargo run",
+      "cd /tmp && cargo init --vcs none /tmp/curlconverter/rust && cd /tmp/curlconverter/rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
+    copy: "cp <file> /tmp/curlconverter/rust/src/main.rs",
+    exec: "cd /tmp/curlconverter/rust && cargo run",
   },
   wget: {
     exec: "bash <file>",
@@ -342,10 +357,15 @@ const tests = argv._.length
       .readdirSync(path.join(fixturesDir, "curl_commands"))
       .filter((n) => n.endsWith(".sh"));
 
-// await awaitableExec("rm -rf /tmp/curlconverter*");
+// fs.rmSync(testDir, { recursive: true, force: true });
 if (tests.length) {
   for (const l of languages) {
     const executable = executables[l];
+    let dir: string = l;
+    if ("dir" in executable) {
+      dir = executable.dir;
+    }
+    fs.mkdirSync(path.join(testDir, dir), { recursive: true });
     if ("setup" in executable) {
       console.error("running");
       console.error(executable.setup);
