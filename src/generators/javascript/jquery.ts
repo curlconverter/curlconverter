@@ -33,7 +33,10 @@ export function commentOut(s: string, indent = 0): string {
   return s.split("\n").join("\n" + indentation + "// ");
 }
 
-function serializeQuery(query: Query, imports: JSImports): [string, boolean] {
+export function serializeQuery(
+  query: Query,
+  imports: JSImports
+): [string, boolean] {
   const [queryList, queryDict] = query;
   let code = "";
   let traditional = false;

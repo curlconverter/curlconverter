@@ -130,7 +130,7 @@ var $ = jQueryInit(window);
   },
   "node-http": {
     setup:
-      "cd /tmp && mkdir -p curlconverter/node-http && cd curlconverter/node-http && npm init -y es6",
+      "cd /tmp && mkdir -p curlconverter/node-http && cd curlconverter/node-http && npm init -y es6 && npm install form-data",
     copy: "cp <file> /tmp/curlconverter/node-http/main.js",
     exec: "cd /tmp/curlconverter/node-http && node main.js",
   },

@@ -1,23 +1,84 @@
-import { eq, mergeWords, joinWords } from "../../shell/Word.js";
+import { Word, eq, mergeWords, joinWords } from "../../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString } from "../../Query.js";
 
 import {
   repr,
+  reprObj,
   asParseFloatTimes1000,
   type JSImports,
+  addImport,
   reprImports,
 } from "./javascript.js";
 
 // TODO: these need to be modified
-import { dedent, getDataString, getFormString } from "./jquery.js";
+import { indent, dedent, serializeQuery, getFormString } from "./jquery.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
-  // "form",
-  // "form-string",
+  "form",
+  "form-string",
   "max-time",
 ]);
+
+// TODO: @
+function _getDataString(
+  data: Word,
+  contentType: string | null | undefined,
+  imports: JSImports
+): ["string" | "object", string, string | null] {
+  const originalStringRepr = repr(data, imports);
+
+  if (contentType === "application/json" && data.isString()) {
+    const dataStr = data.toString();
+    const parsed = JSON.parse(dataStr);
+    // Only arrays and {} can be passed to axios to be encoded as JSON
+    // TODO: check this in other generators
+    if (typeof parsed !== "object" || parsed === null) {
+      return ["string", originalStringRepr, null];
+    }
+    const roundtrips = JSON.stringify(parsed) === dataStr;
+    const jsonAsJavaScript = "JSON.stringify(" + reprObj(parsed, 1) + ")";
+    return ["string", jsonAsJavaScript, roundtrips ? null : originalStringRepr];
+  }
+  if (contentType === "application/x-www-form-urlencoded") {
+    const [queryList, queryDict] = parseQueryString(data);
+    if (queryList) {
+      // if (
+      //   eq(exactContentType, "application/x-www-form-urlencoded; charset=utf-8")
+      // ) {
+      //   exactContentType = null;
+      // }
+      // TODO: does this format work?
+      const [queryObj] = serializeQuery([queryList, queryDict], imports);
+      // TODO: check roundtrip, add a comment
+      return ["object", indent(queryObj), null];
+    }
+  }
+  return ["string", originalStringRepr, null];
+}
+
+export function getDataString(
+  data: Word,
+  contentType: string | null | undefined,
+  imports: JSImports
+): ["string" | "object", string, string | null] {
+  let dataType: "string" | "object" = "string";
+  let dataString: string | null = null;
+  let commentedOutDataString: string | null = null;
+  try {
+    [dataType, dataString, commentedOutDataString] = _getDataString(
+      data,
+      contentType,
+      imports
+    );
+  } catch {}
+  if (!dataString) {
+    dataString = repr(data, imports);
+  }
+  return [dataType, dataString, commentedOutDataString];
+}
 
 export function _toNodeHttp(
   requests: Request[],
@@ -26,6 +87,7 @@ export function _toNodeHttp(
   const request = getFirst(requests, warnings);
   const imports: JSImports = [];
 
+  let importCode = "";
   let code = "";
   let options = "";
 
@@ -45,17 +107,20 @@ export function _toNodeHttp(
 
   const url = request.urls[0].url;
 
-  let dataString, commentedOutDataString;
+  let dataType, dataString, commentedOutDataString;
+  let formString;
   const contentType = request.headers.getContentType();
-  let exactContentType = request.headers.get("content-type");
   if (request.data) {
-    // might delete content-type header
-    [exactContentType, dataString, commentedOutDataString] = getDataString(
+    [dataType, dataString, commentedOutDataString] = getDataString(
       request.data,
       contentType,
-      exactContentType,
       imports
     );
+  } else if (request.multipartUploads) {
+    formString = getFormString(request.multipartUploads, imports);
+    code += formString;
+    // Node 18's native FormData doesn't have .pipe() or .getHeaders()
+    importCode += "import FormData from 'form-data';\n";
   }
 
   if (request.urls[0].auth) {
@@ -74,11 +139,16 @@ export function _toNodeHttp(
       options +=
         "    " + repr(key, imports) + ": " + repr(value, imports) + ",\n";
     }
+    if (formString) {
+      options += "    ...form.getHeaders(),\n";
+    }
     if (options.endsWith(",\n")) {
       options = options.slice(0, -2);
       options += "\n";
     }
     options += "  },\n";
+  } else if (formString) {
+    options += "  headers: form.getHeaders(),\n";
   }
 
   if (request.timeout) {
@@ -97,8 +167,14 @@ export function _toNodeHttp(
   if (options) {
     code += "const options = {\n";
     code += "  hostname: " + repr(urlObj.host, imports) + ",\n";
-    // TODO
-    // code += "  port: " + repr(request.urls[0].urlObj.port, imports) + ",\n";
+    if (urlObj.host.includes(":")) {
+      // TODO
+      // code += "  port: " + repr(request.urls[0].urlObj.port, imports) + ",\n";
+      warnings.push([
+        "node-http-port",
+        "Parsing the port out of the hostname is not supported. If you get an ENOTFOUND error, you'll need to do it manually",
+      ]);
+    }
     const path = mergeWords([urlObj.path, urlObj.query]);
     if (path.toBool()) {
       code += "  path: " + repr(path, imports) + ",\n";
@@ -112,32 +188,50 @@ export function _toNodeHttp(
   }
 
   const module = urlObj.scheme.toString() === "https" ? "https" : "http";
-  const fn = eq(method, "GET") ? "get" : "request";
+  const fn =
+    eq(method, "GET") && !dataString && !commentedOutDataString && !formString
+      ? "get"
+      : "request";
   code +=
     "const req = " + module + "." + fn + "(" + optArg + ", function (res) {\n";
-  code += "  const chunks = [];\n";
-  code += "\n";
-  code += "  res.on('data', function (chunk) {\n";
-  code += "    chunks.push(chunk);\n";
-  code += "  });\n";
-  code += "\n";
-  code += "  res.on('end', function () {\n";
-  code += "    const body = Buffer.concat(chunks);\n";
-  code += "    console.log(body.toString());\n";
-  code += "  });\n";
+  if (dataType === "object") {
+    code += "  const rawData = '';\n";
+    code += "  res.on('data', function (chunk) {\n";
+    code += "    rawData += chunk;\n";
+    code += "  });\n";
+    code += "  res.on('end', function () {\n";
+    code += "    console.log(rawData);\n";
+    code += "  });\n";
+  } else {
+    code += "  const chunks = [];\n";
+    code += "\n";
+    code += "  res.on('data', function (chunk) {\n";
+    code += "    chunks.push(chunk);\n";
+    code += "  });\n";
+    code += "\n";
+    code += "  res.on('end', function () {\n";
+    code += "    const body = Buffer.concat(chunks);\n";
+    code += "    console.log(body.toString());\n";
+    code += "  });\n";
+  }
   code += "});\n";
 
   if (commentedOutDataString) {
     code += "\n// req.write(" + commentedOutDataString + ");";
   }
   if (dataString) {
+    // TODO: if this isn't a string
+    // chunks.push(chunk)
+    // doesn't work.
     code += "\nreq.write(" + dedent(dataString) + ");\n";
+  } else if (formString) {
+    code += "\nform.pipe(req);\n";
   }
-  if (fn !== "get") {
+  if (fn !== "get" && !formString) {
     code += "req.end();\n";
   }
 
-  let importCode = "import " + module + " from '" + module + "';\n";
+  importCode = "import " + module + " from '" + module + "';\n" + importCode;
   importCode += reprImports(imports);
   importCode += "\n";
 
