@@ -128,6 +128,12 @@ var $ = jQueryInit(window);
     copy: "cp <file> /tmp/curlconverter/node/main.js",
     exec: "cd /tmp/curlconverter/node && node main.js",
   },
+  "node-axios": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/node-axios && cd curlconverter/node-axios && npm init -y es6 && npm install axios form-data",
+    copy: "cp <file> /tmp/curlconverter/node-axios/main.js",
+    exec: "cd /tmp/curlconverter/node-axios && node main.js",
+  },
   "node-http": {
     setup:
       "cd /tmp && mkdir -p curlconverter/node-http && cd curlconverter/node-http && npm init -y es6 && npm install form-data",

@@ -265,7 +265,7 @@ export function _toNodeAxios(
   }
 
   if (request.multipartUploads) {
-    addImport(imports, "FormData", "form-data");
+    importCode += "import FormData from 'form-data';\n";
     code += "const form = new FormData();\n";
     for (const m of request.multipartUploads) {
       code += "form.append(" + repr(m.name, imports) + ", ";
