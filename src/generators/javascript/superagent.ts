@@ -24,10 +24,15 @@ const supportedArgs = new Set([
   "max-time",
   "connect-timeout",
 
+  "location", // --no-location only has an effect
+  "max-redirs",
+
+  "insecure",
   "cert",
   "key",
   "cacert",
-  "insecure",
+
+  "http2",
 ]);
 
 function serializeQuery(

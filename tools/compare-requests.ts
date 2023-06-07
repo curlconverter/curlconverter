@@ -137,7 +137,16 @@ var $ = jQueryInit(window);
   "node-http": {
     setup:
       "cd /tmp && mkdir -p curlconverter/node-http && cd curlconverter/node-http && npm init -y es6 && npm install form-data",
-    copy: "cp <file> /tmp/curlconverter/node-http/main.js",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/node-http/main.js",
+        contents.replace(
+          "hostname: 'localhost:28139',",
+          "hostname: 'localhost', port: 28139,"
+        ),
+        "utf8"
+      );
+    },
     exec: "cd /tmp/curlconverter/node-http && node main.js",
   },
   "node-superagent": {

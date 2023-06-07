@@ -9,10 +9,11 @@ import {
   asParseFloatTimes1000,
   type JSImports,
   reprImports,
+  reprAsStringToStringDict,
+  reprAsStringTuples,
 } from "./javascript.js";
 
-// TODO: these need to be modified
-import { indent, dedent, serializeQuery, getFormString } from "./jquery.js";
+import { dedent, getFormString } from "./jquery.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -26,20 +27,19 @@ function _getDataString(
   data: Word,
   contentType: string | null | undefined,
   imports: JSImports
-): ["string" | "object", string, string | null] {
+): [string, string | null] {
   const originalStringRepr = repr(data, imports);
 
   if (contentType === "application/json" && data.isString()) {
     const dataStr = data.toString();
     const parsed = JSON.parse(dataStr);
-    // Only arrays and {} can be passed to axios to be encoded as JSON
-    // TODO: check this in other generators
+    // Only format arrays and {} as JavaScript objects
     if (typeof parsed !== "object" || parsed === null) {
-      return ["string", originalStringRepr, null];
+      return [originalStringRepr, null];
     }
     const roundtrips = JSON.stringify(parsed) === dataStr;
     const jsonAsJavaScript = "JSON.stringify(" + reprObj(parsed, 1) + ")";
-    return ["string", jsonAsJavaScript, roundtrips ? null : originalStringRepr];
+    return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
     const [queryList, queryDict] = parseQueryString(data);
@@ -50,24 +50,26 @@ function _getDataString(
       //   exactContentType = null;
       // }
       // TODO: does this format work?
-      const [queryObj] = serializeQuery([queryList, queryDict], imports);
+      const queryObj =
+        queryDict && queryDict.every((q) => !Array.isArray(q[1]))
+          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
+          : reprAsStringTuples(queryList, 1, imports);
       // TODO: check roundtrip, add a comment
-      return ["object", indent(queryObj), null];
+      return ["new URLSearchParams(" + queryObj + ").toString()", null];
     }
   }
-  return ["string", originalStringRepr, null];
+  return [originalStringRepr, null];
 }
 
 export function getDataString(
   data: Word,
   contentType: string | null | undefined,
   imports: JSImports
-): ["string" | "object", string, string | null] {
-  let dataType: "string" | "object" = "string";
+): [string, string | null] {
   let dataString: string | null = null;
   let commentedOutDataString: string | null = null;
   try {
-    [dataType, dataString, commentedOutDataString] = _getDataString(
+    [dataString, commentedOutDataString] = _getDataString(
       data,
       contentType,
       imports
@@ -76,7 +78,7 @@ export function getDataString(
   if (!dataString) {
     dataString = repr(data, imports);
   }
-  return [dataType, dataString, commentedOutDataString];
+  return [dataString, commentedOutDataString];
 }
 
 export function _toNodeHttp(
@@ -106,11 +108,11 @@ export function _toNodeHttp(
 
   const url = request.urls[0].url;
 
-  let dataType, dataString, commentedOutDataString;
+  let dataString, commentedOutDataString;
   let formString;
   const contentType = request.headers.getContentType();
   if (request.data) {
-    [dataType, dataString, commentedOutDataString] = getDataString(
+    [dataString, commentedOutDataString] = getDataString(
       request.data,
       contentType,
       imports
@@ -152,7 +154,7 @@ export function _toNodeHttp(
 
   if (request.timeout) {
     options +=
-      "  timeout: " + asParseFloatTimes1000(request.timeout, imports) + ";\n";
+      "  timeout: " + asParseFloatTimes1000(request.timeout, imports) + ",\n";
     // TODO: warn about differences from curl
   }
 
@@ -193,35 +195,22 @@ export function _toNodeHttp(
       : "request";
   code +=
     "const req = " + module + "." + fn + "(" + optArg + ", function (res) {\n";
-  if (dataType === "object") {
-    code += "  const rawData = '';\n";
-    code += "  res.on('data', function (chunk) {\n";
-    code += "    rawData += chunk;\n";
-    code += "  });\n";
-    code += "  res.on('end', function () {\n";
-    code += "    console.log(rawData);\n";
-    code += "  });\n";
-  } else {
-    code += "  const chunks = [];\n";
-    code += "\n";
-    code += "  res.on('data', function (chunk) {\n";
-    code += "    chunks.push(chunk);\n";
-    code += "  });\n";
-    code += "\n";
-    code += "  res.on('end', function () {\n";
-    code += "    const body = Buffer.concat(chunks);\n";
-    code += "    console.log(body.toString());\n";
-    code += "  });\n";
-  }
+  code += "  const chunks = [];\n";
+  code += "\n";
+  code += "  res.on('data', function (chunk) {\n";
+  code += "    chunks.push(chunk);\n";
+  code += "  });\n";
+  code += "\n";
+  code += "  res.on('end', function () {\n";
+  code += "    const body = Buffer.concat(chunks);\n";
+  code += "    console.log(body.toString());\n";
+  code += "  });\n";
   code += "});\n";
 
   if (commentedOutDataString) {
     code += "\n// req.write(" + commentedOutDataString + ");";
   }
   if (dataString) {
-    // TODO: if this isn't a string
-    // chunks.push(chunk)
-    // doesn't work.
     code += "\nreq.write(" + dedent(dataString) + ");\n";
   } else if (formString) {
     code += "\nform.pipe(req);\n";
