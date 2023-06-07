@@ -49,9 +49,9 @@ function getBodyString(
   request: Request,
   imports: JSImports
 ): [string | null, string | null] {
+  const contentType = request.headers.getContentType();
   // can have things like ; charset=utf-8 which we want to preserve
   const exactContentType = request.headers.get("content-type");
-  const contentType = request.headers.getContentType();
 
   if (request.multipartUploads) {
     if (eq(exactContentType, "multipart/form-data")) {

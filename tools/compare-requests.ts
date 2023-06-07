@@ -26,80 +26,163 @@ Content-Type: text/plain; charset=utf-8
 
 Hello World!`.replace(/\n/g, "\r\n");
 
-const setup = {
-  // ansible: "",
-  // cfml: "",
-  clojure: "mkdir -p /tmp/curlconverter-clojure",
-  csharp:
-    "cd /tmp && dotnet new console -o curlconverter-csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter-csharp/curlconverter-csharp.csproj",
-  dart: "cd /tmp && mkdir curlconverter-dart && cd /tmp/curlconverter-dart && echo $'name:\\n  curlconverter_dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
-  // mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, "~> 0.3.0"}/{:httpoison, "~> 1.8"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get
-  elixir:
-    "mix new /tmp/curlconverterelixir/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-  // (on not macOS (Linux and maybe Windows))
-  // elixir:
-  //   "mix new /tmp/curlconverterelixir/ && sed -i 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverterelixir/mix.exs && cd /tmp/curlconverterelixir/ && mix deps.get",
-  go: "",
-  httpie: "",
-  java: "mkdir -p /tmp/curlconverter-java",
-  // "java-httpurlconnection": "mkdir -p /tmp/curlconverter-java-httpurlconnection",
-  // mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
-  // "java-okhttp":
-  //   "mkdir -p /tmp/curlconverter-java-okhttp && cd /tmp/curlconverter-java-okhttp",
-  // javascript: "",
-  // json: "",
-  kotlin: "mkdir -p /tmp/curlconverter-kotlin",
-  // matlab: "",
-  node: "cd /tmp && mkdir curlconverter-node && cd curlconverter-node && npm init -y && npm install node-fetch",
-  // "node-axios": "",
-  // "node-got": "",
-  // "node-request": "",
-  php: "",
-  // php composer.phar global require guzzlehttp/guzzle:^7.0
-  "php-guzzle":
-    "cd /tmp && mkdir curlconverter-php-guzzle && cd curlconverter-php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
-  python: "",
-  r: "",
-  ruby: "",
-  rust: "cd /tmp && cargo init --vcs none /tmp/curlconverter-rust && cd /tmp/curlconverter-rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
-  wget: "",
-} as const;
-
+const testDir = "/tmp/curlconverter"; // files are copied here to be executed
 const executables = {
-  // ansible: "",
-  // cfml: "",
-  clojure:
-    'cp <file> /tmp/curlconverter-clojure/main.clj && cd /tmp/curlconverter-clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
-  csharp:
-    "cp <file> /tmp/curlconverter-csharp/Program.cs && cd /tmp/curlconverter-csharp && dotnet run",
-  dart: "cp <file> /tmp/curlconverter-dart/main.dart && cd /tmp/curlconverter-dart && dart run main.dart",
-  elixir:
-    "cp <file> /tmp/curlconverterelixir/main.ex && cd /tmp/curlconverterelixir && mix run main.ex",
-  go: "go build -o /tmp/curlconverter-go <file> && /tmp/curlconverter-go",
-  httpie:
-    'printf "%s --ignore-stdin" "$(cat <file>)" > /tmp/curlconverter-httpie && chmod +x /tmp/curlconverter-httpie && /tmp/curlconverter-httpie',
-  java: "cp <file> /tmp/curlconverter-java/Main.java && cd /tmp/curlconverter-java && javac Main.java && java Main",
-  // "java-httpurlconnection":
-  //   "cp <file> /tmp/curlconverter-java-httpurlconnection/Main.java && cd /tmp/curlconverter-java-httpurlconnection && javac Main.java && java Main",
-  // "java-okhttp":
-  //   "cp <file> /tmp/curlconverter-java-okhttp/Main.java && cd /tmp/curlconverter-java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
-  // javascript: "",
-  // json: "",
-  // matlab: "",
-  kotlin:
-    'printf \'@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\\n\\n%s\' "$(cat <file>)" > /tmp/curlconverter-kotlin/script.main.kts && cd /tmp/curlconverter-kotlin && kotlin script.main.kts',
-  node: "cp <file> /tmp/curlconverter-node/main.js && cd /tmp/curlconverter-node && node main.js",
-  // "node-axios": "",
-  // "node-got": "",
-  // "node-request": "",
-  php: "php <file>",
-  "php-guzzle":
-    "cp <file> /tmp/curlconverter-php-guzzle/main.php && cd /tmp/curlconverter-php-guzzle && php main.php",
-  python: "python3 <file>",
-  r: "r < <file> --no-save",
-  ruby: "ruby <file>",
-  rust: "cp <file> /tmp/curlconverter-rust/src/main.rs && cd /tmp/curlconverter-rust && cargo run",
-  wget: "bash <file>",
+  clojure: {
+    copy: "cp <file> /tmp/curlconverter/clojure/main.clj",
+    exec: 'cd /tmp/curlconverter/clojure && clj -Sdeps \'{:deps {clj-http/clj-http {:mvn/version "3.12.3"} cheshire/cheshire {:mvn/version "5.11.0"}}}\' -M main.clj',
+  },
+  csharp: {
+    setup:
+      "cd /tmp/curlconverter && dotnet new console -o csharp && sed -i '' 's/<ImplicitUsings>enable/<ImplicitUsings>disable/' /tmp/curlconverter/csharp/csharp.csproj",
+    copy: "cp <file> /tmp/curlconverter/csharp/Program.cs",
+    exec: "cd /tmp/curlconverter/csharp && dotnet run",
+  },
+  dart: {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/dart && cd /tmp/curlconverter/dart && echo $'name:\\n  dart\\nenvironment:\\n  sdk: \">=2.14.0\"\\ndependencies:\\n  http: any\\n' > pubspec.yaml && dart pub get",
+    copy: "cp <file> /tmp/curlconverter/dart/main.dart",
+    exec: "cd /tmp/curlconverter/dart && dart run main.dart",
+  },
+  elixir: {
+    setup:
+      "mix new /tmp/curlconverter/elixircurlconverter/ && sed -i '' 's/# {:dep_from_hexpm, \"~> 0.3.0\"}/{:httpoison, \"~> 1.8\"}/g' /tmp/curlconverter/elixirelixircurlconverter/mix.exs && cd /tmp/curlconverter/elixirelixircurlconverter/ && mix deps.get",
+    copy: "cp <file> /tmp/curlconverter/elixirelixircurlconverter/main.ex",
+    exec: "cd /tmp/curlconverter/elixirelixircurlconverter && mix run main.ex",
+    dir: "elixircurlconverter",
+  },
+  go: {
+    copy: "go build -o /tmp/curlconverter/go/go <file>",
+    exec: "cd /tmp/curlconverter/go && /tmp/curlconverter/go/go",
+  },
+  httpie: {
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/httpie/main",
+        contents.trimEnd() + " --ignore-stdin" + "\n",
+        "utf8"
+      );
+    },
+    exec: "chmod +x /tmp/curlconverter/httpie/main && /tmp/curlconverter/httpie/main",
+  },
+  java: {
+    setup: "mkdir -p /tmp/curlconverter/java",
+    copy: "cp <file> /tmp/curlconverter/java/Main.java",
+    exec: "cd /tmp/curlconverter/java && javac Main.java && java Main",
+  },
+  // "java-httpurlconnection": {
+  //   setup: "mkdir -p /tmp/curlconverter/java-httpurlconnection",
+  //   copy: "cp <file> /tmp/curlconverter/java-httpurlconnection/Main.java",
+  //   exec: "&& cd /tmp/curlconverter/java-httpurlconnection && javac Main.java && java Main",
+  // },
+  // mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
+  // "java-okhttp": {
+  //   setup: "mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp",
+  //   copy: "cp <file> /tmp/curlconverter/java-okhttp/Main.java",
+  //   exec: "cd /tmp/curlconverter/java-okhttp && javac -cp okhttp-4.11.0.jar Main.java && java Main",
+  // },
+  // javascript:
+  "javascript-jquery": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/javascript-jquery && cd curlconverter/javascript-jquery && npm init -y es6 && npm install jquery jsdom",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/javascript-jquery/main.js",
+        `import { JSDOM } from 'jsdom';
+const { window } = new JSDOM();
+import jQueryInit from 'jquery';
+var $ = jQueryInit(window);
+
+` + contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/javascript-jquery && node main.js",
+  },
+  "javascript-xhr": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/javascript-xhr && cd curlconverter/javascript-xhr && npm init -y es6 && npm install xmlhttprequest",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/javascript-xhr/main.js",
+        "import { XMLHttpRequest } from 'xmlhttprequest';\n\n" + contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/javascript-xhr && node main.js",
+  },
+  kotlin: {
+    setup: "mkdir -p /tmp/curlconverter/kotlin",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/kotlin/script.main.kts",
+        '@file:DependsOn("com.squareup.okhttp3:okhttp:4.11.0")\n\n' + contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/kotlin && kotlin script.main.kts",
+  },
+  node: {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/node && cd curlconverter/node && npm init -y es6 && npm install node-fetch",
+    copy: "cp <file> /tmp/curlconverter/node/main.js",
+    exec: "cd /tmp/curlconverter/node && node main.js",
+  },
+  "node-axios": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/node-axios && cd curlconverter/node-axios && npm init -y es6 && npm install axios form-data",
+    copy: "cp <file> /tmp/curlconverter/node-axios/main.js",
+    exec: "cd /tmp/curlconverter/node-axios && node main.js",
+  },
+  "node-http": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/node-http && cd curlconverter/node-http && npm init -y es6 && npm install form-data",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/node-http/main.js",
+        contents.replace(
+          "hostname: 'localhost:28139',",
+          "hostname: 'localhost', port: 28139,"
+        ),
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/node-http && node main.js",
+  },
+  "node-superagent": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/node-superagent && cd curlconverter/node-superagent && npm init -y es6 && npm install superagent",
+    copy: "cp <file> /tmp/curlconverter/node-superagent/main.js",
+    exec: "cd /tmp/curlconverter/node-superagent && node main.js",
+  },
+  php: {
+    exec: "php <file>",
+  },
+  // php composer.phar global require guzzlehttp/guzzle:^7.0
+  "php-guzzle": {
+    setup:
+      "cd /tmp && mkdir -p curlconverter/php-guzzle && cd curlconverter/php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
+    copy: "cp <file> /tmp/curlconverter/php-guzzle/main.php",
+    exec: "cd /tmp/curlconverter/php-guzzle && php main.php",
+  },
+  python: {
+    exec: "python3 <file>",
+  },
+  r: {
+    exec: "r < <file> --no-save",
+  },
+  ruby: {
+    exec: "ruby <file>",
+  },
+  rust: {
+    setup:
+      "cd /tmp && cargo init --vcs none /tmp/curlconverter/rust && cd /tmp/curlconverter/rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
+    copy: "cp <file> /tmp/curlconverter/rust/src/main.rs",
+    exec: "cd /tmp/curlconverter/rust && cargo run",
+  },
+  wget: {
+    exec: "bash <file>",
+  },
 } as const;
 
 const argv = await yargs(hideBin(process.argv))
@@ -212,9 +295,17 @@ const testFile = async (
   for (let i = 0; i < languages.length; i++) {
     const language = languages[i];
     const languageFile = files[i];
+    const executable = executables[language];
     if (fs.existsSync(languageFile)) {
+      if ("copy" in executable) {
+        if (typeof executable.copy === "function") {
+          executable.copy(fs.readFileSync(languageFile).toString());
+        } else {
+          await awaitableExec(executable.copy.replace("<file>", languageFile));
+        }
+      }
       // TODO: escape?
-      const command = executables[language].replace("<file>", languageFile);
+      const command = executable.exec.replace("<file>", languageFile);
       try {
         await awaitableExec(command);
       } catch (e) {
@@ -281,14 +372,19 @@ const tests = argv._.length
       .readdirSync(path.join(fixturesDir, "curl_commands"))
       .filter((n) => n.endsWith(".sh"));
 
-// await awaitableExec("rm -rf /tmp/curlconverter*");
+// fs.rmSync(testDir, { recursive: true, force: true });
 if (tests.length) {
   for (const l of languages) {
-    const setupCommands = setup[l];
-    if (setupCommands) {
+    const executable = executables[l];
+    let dir: string = l;
+    if ("dir" in executable) {
+      dir = executable.dir;
+    }
+    fs.mkdirSync(path.join(testDir, dir), { recursive: true });
+    if ("setup" in executable) {
       console.error("running");
-      console.error(setupCommands);
-      await awaitableExec(setupCommands);
+      console.error(executable.setup);
+      await awaitableExec(executable.setup);
       console.error();
     }
   }

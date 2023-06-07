@@ -73,8 +73,12 @@ for (const inPath of inPaths) {
     const newFilename = path
       .basename(inPath)
       .replace(/\.sh$/, converter.extension);
-    // TODO: make directory when doesn't exist? happens when adding a new generator
-    const outPath = path.resolve(inPath, "../..", language, newFilename);
+    const outDir = path.resolve(inPath, "../..", language);
+    if (!fs.existsSync(outDir)) {
+      console.error("creating directory " + outDir);
+      fs.mkdirSync(outDir);
+    }
+    const outPath = path.join(outDir, newFilename);
 
     let code;
     try {
@@ -97,7 +101,7 @@ for (const inPath of inPaths) {
 
     fs.writeFileSync(outPath, code);
     if (printEachFile) {
-      console.error("wrote to " + outPath);
+      console.error("wrote to " + path.relative(fixturesDir, outPath));
     } else {
       total += 1;
     }

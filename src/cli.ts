@@ -34,6 +34,14 @@ import {
   _toJavaScript,
   toJavaScriptWarn,
 } from "./generators/javascript/javascript.js";
+import {
+  _toJavaScriptJquery,
+  toJavaScriptJqueryWarn,
+} from "./generators/javascript/jquery.js";
+import {
+  _toJavaScriptXHR,
+  toJavaScriptXHRWarn,
+} from "./generators/javascript/xhr.js";
 import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
 import { _toKotlin, toKotlinWarn } from "./generators/kotlin.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
@@ -43,10 +51,15 @@ import {
   toNodeAxiosWarn,
 } from "./generators/javascript/axios.js";
 import { _toNodeGot, toNodeGotWarn } from "./generators/javascript/got.js";
+import { _toNodeHttp, toNodeHttpWarn } from "./generators/javascript/http.js";
 import {
   _toNodeRequest,
   toNodeRequestWarn,
 } from "./generators/javascript/request.js";
+import {
+  _toNodeSuperAgent,
+  toNodeSuperAgentWarn,
+} from "./generators/javascript/superagent.js";
 import { _toPhp, toPhpWarn } from "./generators/php/php.js";
 import { _toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 import {
@@ -95,23 +108,34 @@ const translate: {
   ],
   "java-okhttp": [_toJavaOkHttp, toJavaOkHttpWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
-  "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
+  "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
   "javascript-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
+  "javascript-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn],
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
+  "javascript-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
+  "javascript-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn],
   json: [_toJsonString, toJsonStringWarn],
   kotlin: [_toKotlin, toKotlinWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
-  "node-fetch": [_toNode, toNodeWarn], // undocumented alias
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],
+  "node-fetch": [_toNode, toNodeWarn], // undocumented alias
   "node-got": [_toNodeGot, toNodeGotWarn],
+  "node-http": [_toNodeHttp, toNodeHttpWarn], // undocumented alias
+  "node-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn], // undocumented alias
   "node-request": [_toNodeRequest, toNodeRequestWarn],
+  "node-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn],
+  "node-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn], // undocumented alias
   nodejs: [_toNode, toNodeWarn], // undocumented alias
-  "nodejs-fetch": [_toNode, toNodeWarn], // undocumented alias
   "nodejs-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
+  "nodejs-fetch": [_toNode, toNodeWarn], // undocumented alias
   "nodejs-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
+  "nodejs-http": [_toNodeHttp, toNodeHttpWarn], // undocumented alias
+  "nodejs-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn], // undocumented alias
   "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
+  "nodejs-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
+  "nodejs-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn], // undocumented alias
   php: [_toPhp, toPhpWarn],
   "php-curl": [_toPhp, toPhpWarn], // undocumented alias
   "php-guzzle": [_toPhpGuzzle, toPhpGuzzleWarn],
@@ -140,12 +164,16 @@ language: the language to convert the curl command to. The choices are
   java-httpurlconnection
   java-okhttp
   javascript
+  javascript-jquery
+  javascript-xhr
   json
   kotlin
   matlab
   node
   node-axios
+  node-http
   node-request
+  node-superagent
   php
   php-guzzle
   php-requests
