@@ -8,7 +8,6 @@ import {
   reprObj,
   asParseFloatTimes1000,
   type JSImports,
-  addImport,
   reprImports,
 } from "./javascript.js";
 

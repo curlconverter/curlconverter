@@ -1,4 +1,4 @@
-import { Word, joinWords } from "../../shell/Word.js";
+import { joinWords } from "../../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 
