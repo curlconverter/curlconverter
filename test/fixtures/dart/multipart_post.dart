@@ -6,8 +6,7 @@ void main() async {
   final req = http.MultipartRequest('POST', url)
     ..fields['attributes'] = '{"name":"tigers.jpeg", "parent":{"id":"11446498"}}'
     ..files.add(await http.MultipartFile.fromPath(
-      'file', 'myfile.jpg'))
-    ;
+      'file', 'myfile.jpg'));
 
   req.headers['Authorization'] = 'Bearer ACCESS_TOKEN';
 

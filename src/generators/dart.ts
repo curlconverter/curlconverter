@@ -24,17 +24,7 @@ function reprStr(value: string): string {
   return quote + escape(value, quote) + quote;
 }
 
-function repr(value: Word | Word[], imports: Set<string>): string {
-  if (value instanceof Word) return reprForWord(value, imports);
-
-  const ret: string[] = [];
-  for (const v of value) {
-    ret.push(reprForWord(v, imports));
-  }
-  return "[" + ret.join(", ") + "]";
-}
-
-function reprForWord(value: Word, imports: Set<string>): string {
+function repr(value: Word, imports: Set<string>): string {
   const ret: string[] = [];
   for (const t of value.tokens) {
     if (typeof t === "string") {
@@ -51,6 +41,16 @@ function reprForWord(value: Word, imports: Set<string>): string {
   }
 
   return ret.join(" + ");
+}
+
+function reprWords(value: Word | Word[], imports: Set<string>): string {
+  if (value instanceof Word) return repr(value, imports);
+
+  const ret: string[] = [];
+  for (const v of value) {
+    ret.push(repr(v, imports));
+  }
+  return "[" + ret.join(", ") + "]";
 }
 
 export function _toDart(requests: Request[], warnings: Warnings = []): string {
@@ -104,17 +104,15 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     s += "\n";
   }
 
-  const queryIsRepresentable =
-    request.urls[0].queryList && request.urls[0].queryDict; /*&&
-    Object.values(request.urls[0].queryDict).every((v) => !Array.isArray(v))*/
-  if (queryIsRepresentable && request.urls[0].queryList) {
+  if (request.urls[0].queryDict) {
     s += "  final params = {\n";
-    for (const [
-      _,
-      [paramName, rawValue],
-    ] of request.urls[0].queryDict!.entries()) {
-      const paramValue = repr(rawValue ?? new Word(), imports);
-      s += "    " + repr(paramName, imports) + ": " + paramValue + ",\n";
+    for (const [paramName, rawValue] of request.urls[0].queryDict) {
+      s +=
+        "    " +
+        repr(paramName, imports) +
+        ": " +
+        reprWords(rawValue, imports) +
+        ",\n";
     }
     s += "  };\n";
     s += "\n";
@@ -136,7 +134,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     }
   }
 
-  if (queryIsRepresentable) {
+  if (request.urls[0].queryDict) {
     const urlString = repr(request.urls[0].urlWithoutQueryList, imports);
     s +=
       "  final url = Uri.parse(" +
@@ -156,7 +154,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     } else {
       multipart += "Request";
     }
-    multipart += "(" + repr(request.urls[0].method, imports) + ", url)\n";
+    multipart += "(" + repr(request.urls[0].method, imports) + ", url)";
 
     for (const m of request.multipartUploads || []) {
       // MultipartRequest syntax looks like this:
@@ -164,11 +162,11 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
       // or
       // ..files.add(await http.MultipartFile.fromPath(
       //   'package', 'build/package.tar.gz',
-      //   contentType: MediaType('application', 'x-tar')));
+      //   contentType: MediaType('application', 'x-tar')))
       const name = repr(m.name, imports); // TODO: what if name is empty string?
       const sentFilename = "filename" in m && m.filename;
       if ("contentFile" in m) {
-        multipart += "    ..files.add(await http.MultipartFile.";
+        multipart += "\n    ..files.add(await http.MultipartFile.";
         if (eq(m.contentFile, "-")) {
           if (request.stdinFile) {
             multipart += "fromPath(\n";
@@ -178,7 +176,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
               multipart += ",\n";
               multipart += "      filename: " + repr(sentFilename, imports);
             }
-            multipart += "))\n";
+            multipart += "))";
           } else if (request.stdin) {
             multipart += "fromString(\n";
             multipart += "      " + name + ", " + repr(request.stdin, imports);
@@ -186,7 +184,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
               multipart += ",\n";
               multipart += "      filename: " + repr(sentFilename, imports);
             }
-            multipart += "))\n";
+            multipart += "))";
           } else {
             multipart += "fromString(\n";
             // TODO: read the entire thing, not one line.
@@ -196,7 +194,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
               multipart += ",\n";
               multipart += "      filename: " + repr(sentFilename, imports);
             }
-            multipart += "))\n";
+            multipart += "))";
             imports.add("dart:io");
             imports.add("dart:convert");
           }
@@ -207,19 +205,19 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
             multipart += ",\n";
             multipart += "      filename: " + repr(sentFilename, imports);
           }
-          multipart += "))\n";
+          multipart += "))";
         }
       } else {
         multipart +=
-          "    ..fields[" + name + "] = " + repr(m.content, imports) + "\n";
+          "\n    ..fields[" + name + "] = " + repr(m.content, imports);
       }
     }
-    multipart += "    ;\n\n";
+    multipart += ";\n\n";
 
-    if (hasHeaders || request.urls[0].auth || rawRequestObj) {
+    if (hasHeaders || request.urls[0].auth) {
       s += "  final req = " + multipart;
 
-      if (request.headers.length != 0) {
+      if (request.headers.length) {
         for (const [hname, hval] of request.headers) {
           s +=
             "  req.headers[" +
@@ -238,8 +236,9 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
       s += "  final stream = await req.send();\n";
       s += "  final res = await http.Response.fromStream(stream);\n";
     } else {
-      // TODO: this might not work, I think it's client.send(req)
-      s += "  final res = await " + multipart;
+      s += "  final req = " + multipart;
+      s += "  final stream = await req.send();\n";
+      s += "  final res = await http.Response.fromStream(stream);\n";
     }
 
     /* eslint-disable no-template-curly-in-string */

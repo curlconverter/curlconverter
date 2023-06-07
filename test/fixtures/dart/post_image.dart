@@ -5,8 +5,7 @@ void main() async {
 
   final req = http.MultipartRequest('POST', url)
     ..files.add(await http.MultipartFile.fromPath(
-      'image', 'image.jpg'))
-    ;
+      'image', 'image.jpg'));
 
   final stream = await req.send();
   final res = await http.Response.fromStream(stream);

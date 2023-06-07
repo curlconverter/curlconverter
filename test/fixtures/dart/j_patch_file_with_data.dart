@@ -7,8 +7,7 @@ void main() async {
     ..files.add(await http.MultipartFile.fromPath(
       'file1', './test/fixtures/curl_commands/delete.sh'))
     ..fields['form1'] = 'form+data+1'
-    ..fields['form2'] = 'form_data_2'
-    ;
+    ..fields['form2'] = 'form_data_2';
 
   final stream = await req.send();
   final res = await http.Response.fromStream(stream);

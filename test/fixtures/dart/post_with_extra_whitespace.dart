@@ -9,8 +9,7 @@ void main() async {
     ..fields['name'] = '47'
     ..fields['oldMediaId'] = '47'
     ..fields['updateInLayouts'] = '1'
-    ..fields['deleteOldRevisions'] = '1'
-    ;
+    ..fields['deleteOldRevisions'] = '1';
 
   req.headers['accept'] = 'application/json';
   req.headers['Content-Type'] = 'multipart/form-data';

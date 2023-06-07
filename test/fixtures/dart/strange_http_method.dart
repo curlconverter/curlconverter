@@ -3,8 +3,7 @@ import 'package:http/http.dart' as http;
 void main() async {
   final url = Uri.parse('http://localhost:28139');
 
-  final req = http.Request('wHat', url)
-    ;
+  final req = http.Request('wHat', url);
 
   final stream = await req.send();
   final res = await http.Response.fromStream(stream);
