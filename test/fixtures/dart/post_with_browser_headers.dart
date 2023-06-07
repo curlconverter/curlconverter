@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 
 void main() async {
-  var headers = {
+  final headers = {
     'Origin': 'http://www.w3schools.com',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-US,en;q=0.8',
@@ -14,8 +14,11 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var url = Uri.parse('http://localhost:28139/ajax/demo_post.asp');
-  var res = await http.post(url, headers: headers);
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  final url = Uri.parse('http://localhost:28139/ajax/demo_post.asp');
+
+  final res = await http.post(url, headers: headers);
+  final status = res.statusCode;
+  if (status != 200) throw Exception('http.post error: statusCode= $status');
+
   print(res.body);
 }

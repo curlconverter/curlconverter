@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 
 void main() async {
-  var headers = {
+  final headers = {
     'Accept-Encoding': 'gzip, deflate, sdch',
     'Accept-Language': 'en-US,en;q=0.8',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
@@ -12,8 +12,11 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var url = Uri.parse('http://localhost:28139/');
-  var res = await http.get(url, headers: headers);
-  if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
+  final url = Uri.parse('http://localhost:28139/');
+
+  final res = await http.get(url, headers: headers);
+  final status = res.statusCode;
+  if (status != 200) throw Exception('http.get error: statusCode= $status');
+
   print(res.body);
 }

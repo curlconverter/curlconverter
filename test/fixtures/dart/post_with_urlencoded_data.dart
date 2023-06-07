@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 
 void main() async {
-  var headers = {
+  final headers = {
     'Origin': 'http://fiddle.jshell.net',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'en-US,en;q=0.8',
@@ -14,13 +14,16 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var data = {
+  final data = {
     'msg1': 'wow',
     'msg2': 'such',
   };
 
-  var url = Uri.parse('http://localhost:28139/echo/html/');
-  var res = await http.post(url, headers: headers, body: data);
-  if (res.statusCode != 200) throw Exception('http.post error: statusCode= ${res.statusCode}');
+  final url = Uri.parse('http://localhost:28139/echo/html/');
+
+  final res = await http.post(url, headers: headers, body: data);
+  final status = res.statusCode;
+  if (status != 200) throw Exception('http.post error: statusCode= $status');
+
   print(res.body);
 }

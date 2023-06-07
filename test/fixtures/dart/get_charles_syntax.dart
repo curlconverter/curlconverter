@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 
 void main() async {
-  var headers = {
+  final headers = {
     'Host': 'api.ipify.org',
     'Accept': '*/*',
     'User-Agent': 'GiftTalk/2.7.2 (iPhone; iOS 9.0.2; Scale/3.00)',
@@ -9,8 +9,11 @@ void main() async {
     'Accept-Encoding': 'gzip',
   };
 
-  var url = Uri.parse('http://localhost:28139/?format=json&');
-  var res = await http.get(url, headers: headers);
-  if (res.statusCode != 200) throw Exception('http.get error: statusCode= ${res.statusCode}');
+  final url = Uri.parse('http://localhost:28139/?format=json&');
+
+  final res = await http.get(url, headers: headers);
+  final status = res.statusCode;
+  if (status != 200) throw Exception('http.get error: statusCode= $status');
+
   print(res.body);
 }
