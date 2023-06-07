@@ -12,8 +12,7 @@ void main() async {
     ..fields['from'] = 'test@tester.com'
     ..fields['to'] = 'devs@tester.net'
     ..fields['subject'] = 'Hello'
-    ..fields['text'] = 'Testing the converter!'
-    ;
+    ..fields['text'] = 'Testing the converter!';
 
   req.headers['Authorization'] = authn;
 

@@ -5,8 +5,7 @@ void main() async {
 
   final req = http.MultipartRequest('PATCH', url)
     ..files.add(await http.MultipartFile.fromPath(
-      'file1', './test/fixtures/curl_commands/delete.sh'))
-    ;
+      'file1', './test/fixtures/curl_commands/delete.sh'));
 
   final stream = await req.send();
   final res = await http.Response.fromStream(stream);

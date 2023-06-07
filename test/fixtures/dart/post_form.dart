@@ -5,8 +5,7 @@ void main() async {
 
   final req = http.MultipartRequest('POST', url)
     ..fields['username'] = 'davidwalsh'
-    ..fields['password'] = 'something'
-    ;
+    ..fields['password'] = 'something';
 
   final stream = await req.send();
   final res = await http.Response.fromStream(stream);
