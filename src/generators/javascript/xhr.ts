@@ -1,16 +1,19 @@
-import { eq } from "../../shell/Word.js";
+import { Word, eq } from "../../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString } from "../../Query.js";
 
 import {
   repr,
+  reprObj,
   asParseFloatTimes1000,
   type JSImports,
   reprImports,
+  reprAsStringToStringDict,
+  reprAsStringTuples,
 } from "./javascript.js";
 
-// TODO: these need to be modified
-import { dedent, getDataString, getFormString } from "./jquery.js";
+import { dedent, getFormString } from "./jquery.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -18,6 +21,58 @@ const supportedArgs = new Set([
   "form-string",
   "max-time",
 ]);
+
+function _getDataString(
+  data: Word,
+  contentType: string | null | undefined,
+  imports: JSImports
+): [string, string | null] {
+  const originalStringRepr = repr(data, imports);
+
+  if (contentType === "application/json" && data.isString()) {
+    const dataStr = data.toString();
+    const parsed = JSON.parse(dataStr);
+    // Only convert arrays and {} to JS objects
+    if (typeof parsed !== "object" || parsed === null) {
+      return [originalStringRepr, null];
+    }
+    const roundtrips = JSON.stringify(parsed) === dataStr;
+    const jsonAsJavaScript = "JSON.stringify(" + reprObj(parsed, 1) + ")";
+    return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
+  }
+  if (contentType === "application/x-www-form-urlencoded") {
+    const [queryList, queryDict] = parseQueryString(data);
+    if (queryList) {
+      const queryObj =
+        queryDict && queryDict.every((q) => !Array.isArray(q[1]))
+          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
+          : reprAsStringTuples(queryList, 1, imports);
+      // TODO: check roundtrip, add a comment
+      return ["new URLSearchParams(" + queryObj + ")", null];
+    }
+  }
+  return [originalStringRepr, null];
+}
+
+export function getDataString(
+  data: Word,
+  contentType: string | null | undefined,
+  imports: JSImports
+): [string, string | null] {
+  let dataString: string | null = null;
+  let commentedOutDataString: string | null = null;
+  try {
+    [dataString, commentedOutDataString] = _getDataString(
+      data,
+      contentType,
+      imports
+    );
+  } catch {}
+  if (!dataString) {
+    dataString = repr(data, imports);
+  }
+  return [dataString, commentedOutDataString];
+}
 
 export function _toJavaScriptXHR(
   requests: Request[],
@@ -45,16 +100,12 @@ export function _toJavaScriptXHR(
 
   const url = request.urls[0].url;
 
-  let dataString, commentedOutDataString;
-
-  let exactContentType = request.headers.get("content-type");
   const contentType = request.headers.getContentType();
   if (request.data) {
     // might delete content-type header
-    [exactContentType, dataString, commentedOutDataString] = getDataString(
+    const [dataString, commentedOutDataString] = getDataString(
       request.data,
       contentType,
-      exactContentType,
       imports
     );
     if (commentedOutDataString) {
@@ -65,7 +116,6 @@ export function _toJavaScriptXHR(
     }
   } else if (request.multipartUploads) {
     code += getFormString(request.multipartUploads, imports);
-    dataString = "form";
   }
   if (nonDataMethods.includes(methodStr) && hasData) {
     warnings.push([
@@ -118,13 +168,10 @@ export function _toJavaScriptXHR(
   code += "};\n";
   code += "\n";
 
-  if (hasData) {
-    if (request.multipartUploads) {
-      // TODO: generate code using this variable
-      code += "xhr.send(form);\n";
-    } else {
-      code += "xhr.send(data);\n";
-    }
+  if (request.data) {
+    code += "xhr.send(data);\n";
+  } else if (request.multipartUploads) {
+    code += "xhr.send(form);\n";
   } else {
     code += "xhr.send();\n";
   }

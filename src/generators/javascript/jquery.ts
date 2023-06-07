@@ -91,8 +91,7 @@ function _getDataString(
   if (contentType === "application/json" && data.isString()) {
     const dataStr = data.toString();
     const parsed = JSON.parse(dataStr);
-    // Only arrays and {} can be passed to axios to be encoded as JSON
-    // TODO: check this in other generators
+    // Only convert arrays and {} to JavaScript objects
     if (typeof parsed !== "object" || parsed === null) {
       return [exactContentType, originalStringRepr, null, traditional];
     }
@@ -245,7 +244,6 @@ export function _toJavaScriptJquery(
         "data-with-get",
         "jQuery doesn't allow sending data with GET or HEAD requests. The data will be sent in the URL instead",
       ]);
-      // TODO: add the data, commented out
     }
   }
 

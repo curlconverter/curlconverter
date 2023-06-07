@@ -1,7 +1,7 @@
-const data = {
+const data = new URLSearchParams({
   'msg1': 'wow',
   'msg2': 'such'
-};
+});
 
 let xhr = new XMLHttpRequest();
 xhr.withCredentials = true;

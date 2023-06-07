@@ -1,4 +1,4 @@
-const data = {
+const data = new URLSearchParams({
   'CultureId': '1',
   'ApplicationId': '1',
   'RecordsPerPage': '200',
@@ -20,7 +20,7 @@ const data = {
   'Latitude': '43.6552047278685',
   'ZoomLevel': '13',
   'CurrentPage': '1'
-};
+});
 
 let xhr = new XMLHttpRequest();
 xhr.withCredentials = true;

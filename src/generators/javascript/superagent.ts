@@ -93,8 +93,7 @@ function _getDataString(
   if (contentType === "application/json" && request.data.isString()) {
     const dataStr = request.data.toString();
     const parsed = JSON.parse(dataStr);
-    // Only arrays and {} can be passed to axios to be encoded as JSON
-    // TODO: check this in other generators
+    // Only convert arrays and {} to JavaScript objects
     if (typeof parsed !== "object" || parsed === null) {
       return [exactContentType, originalStringRepr, null];
     }

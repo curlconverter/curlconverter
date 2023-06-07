@@ -49,7 +49,6 @@ function _getDataString(
       // ) {
       //   exactContentType = null;
       // }
-      // TODO: does this format work?
       const queryObj =
         queryDict && queryDict.every((q) => !Array.isArray(q[1]))
           ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
@@ -92,7 +91,6 @@ export function _toNodeHttp(
   let code = "";
   let options = "";
 
-  // TODO: check sending data with GET
   const method = request.urls[0].method;
   if (!eq(method, "GET")) {
     options += "  method: " + repr(method, imports) + ",\n";
