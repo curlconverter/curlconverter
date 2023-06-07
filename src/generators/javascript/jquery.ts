@@ -24,8 +24,13 @@ const supportedArgs = new Set([
 export function dedent(s: string): string {
   return s.replace(/^ {2}/gm, "");
 }
-export function indent(s: string): string {
-  return s.split("\n").join("\n  ");
+export function indent(s: string, indent = 1): string {
+  const indentation = "  ".repeat(indent);
+  return s.split("\n").join("\n" + indentation);
+}
+export function commentOut(s: string, indent = 0): string {
+  const indentation = "  ".repeat(indent);
+  return s.split("\n").join("\n" + indentation + "// ");
 }
 
 function serializeQuery(query: Query, imports: JSImports): [string, boolean] {
@@ -72,20 +77,16 @@ function serializeQuery(query: Query, imports: JSImports): [string, boolean] {
 
 // TODO: @
 function _getDataString(
-  request: Request,
+  data: Word,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
   imports: JSImports
-): [Word | null | undefined, string | null, string | null, boolean] {
-  if (!request.data) {
-    return [exactContentType, null, null, false];
-  }
-
+): [Word | null | undefined, string, string | null, boolean] {
   let traditional = false;
-  const originalStringRepr = repr(request.data, imports);
+  const originalStringRepr = repr(data, imports);
 
-  if (contentType === "application/json" && request.data.isString()) {
-    const dataStr = request.data.toString();
+  if (contentType === "application/json" && data.isString()) {
+    const dataStr = data.toString();
     const parsed = JSON.parse(dataStr);
     // Only arrays and {} can be passed to axios to be encoded as JSON
     // TODO: check this in other generators
@@ -102,7 +103,7 @@ function _getDataString(
     ];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(data);
     if (queryList) {
       if (
         eq(exactContentType, "application/x-www-form-urlencoded; charset=utf-8")
@@ -120,24 +121,20 @@ function _getDataString(
 }
 
 export function getDataString(
-  request: Request,
+  data: Word,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
   imports: JSImports
-): [Word | null | undefined, string | null, string | null, boolean] {
-  if (!request.data) {
-    return [exactContentType, null, null, false];
-  }
-
-  let traditional = false;
+): [Word | null | undefined, string, string | null, boolean] {
   let dataString: string | null = null;
   let commentedOutDataString: string | null = null;
+  let traditional = false;
   try {
     [exactContentType, dataString, commentedOutDataString, traditional] =
-      _getDataString(request, contentType, exactContentType, imports);
+      _getDataString(data, contentType, exactContentType, imports);
   } catch {}
   if (!dataString) {
-    dataString = repr(request.data, imports);
+    dataString = repr(data, imports);
   }
   return [exactContentType, dataString, commentedOutDataString, traditional];
 }
@@ -145,8 +142,7 @@ export function getDataString(
 export function getFormString(
   multipartUploads: FormParam[],
   imports: JSImports
-): [string, string] {
-  const dataString = "form";
+): string {
   let code = "const form = new FormData();\n";
   for (const m of multipartUploads) {
     code += "form.append(" + repr(m.name, imports) + ", ";
@@ -167,7 +163,7 @@ export function getFormString(
     code += ");\n";
   }
   code += "\n";
-  return [dataString, code];
+  return code;
 }
 
 export function _toJavaScriptJquery(
@@ -186,48 +182,68 @@ export function _toJavaScriptJquery(
   if (!eq(request.urls[0].method.toUpperCase(), method)) {
     warnings.push([
       "method-case",
-      "jQuery converts method names to uppercase, so the method name will be changed to " +
-        method.toUpperCase().toString(),
+      "jQuery uppercases the method, so it will be changed to " +
+        JSON.stringify(method.toUpperCase().toString()),
     ]);
   }
 
-  const hasData = request.data || request.multipartUploads;
-  const hasSearchParams =
-    nonDataMethods.includes(methodStr) && request.urls[0].queryList && !hasData;
-
-  const url = hasSearchParams
-    ? request.urls[0].urlWithoutQueryList
-    : request.urls[0].url;
-
-  let dataString, commentedOutDataString;
-  let traditional = false;
-  if (
-    hasSearchParams &&
-    request.urls[0].queryList // placate type checker
-  ) {
-    [dataString, traditional] = serializeQuery(
-      [request.urls[0].queryList, request.urls[0].queryDict ?? null],
-      imports
-    );
-  }
-
-  let exactContentType = request.headers.get("content-type");
   const contentType = request.headers.getContentType();
+  let exactContentType = request.headers.get("content-type");
   request.headers.delete("content-type");
+
+  let url = request.urls[0].url;
+
+  let dataString: string | null = null;
+  let commentedOutDataString: string | null = null;
+  let traditional = false;
+
   if (request.data) {
-    // might delete content-type header
+    // can delete content-type header by returning null for exactContentType
     [exactContentType, dataString, commentedOutDataString, traditional] =
-      getDataString(request, contentType, exactContentType, imports);
+      getDataString(request.data, contentType, exactContentType, imports);
+    if (commentedOutDataString) {
+      commentedOutDataString = "  // data: " + commentedOutDataString + ",\n";
+    }
   } else if (request.multipartUploads) {
-    let formCode;
-    [dataString, formCode] = getFormString(request.multipartUploads, imports);
-    code += formCode;
-  }
-  if (nonDataMethods.includes(methodStr) && hasData) {
+    code += getFormString(request.multipartUploads, imports);
+    dataString = "form";
+
     warnings.push([
-      "data-with-get",
-      "jQuery doesn't allow sending data with GET or HEAD requests. The data will be sent in the URL instead.",
+      "multipart-form",
+      // TODO: remove this when jQuery supports FormData
+      "jQuery doesn't support sending FormData yet",
     ]);
+  }
+
+  if (nonDataMethods.includes(methodStr)) {
+    if (request.urls[0].queryList) {
+      if (dataString) {
+        warnings.push([
+          "data-with-get",
+          "jQuery doesn't allow sending data in the body with GET or HEAD requests",
+        ]);
+        if (commentedOutDataString) {
+          commentedOutDataString +=
+            "  // data: " + indent(commentOut(dedent(dataString))) + ",\n";
+        } else {
+          commentedOutDataString =
+            "  // data: " + indent(commentOut(dedent(dataString))) + ",\n";
+        }
+      }
+
+      [dataString, traditional] = serializeQuery(
+        [request.urls[0].queryList, request.urls[0].queryDict ?? null],
+        imports
+      );
+      dataString = indent(dataString);
+      url = request.urls[0].urlWithoutQueryList;
+    } else if (request.data || request.multipartUploads) {
+      warnings.push([
+        "data-with-get",
+        "jQuery doesn't allow sending data with GET or HEAD requests. The data will be sent in the URL instead",
+      ]);
+      // TODO: add the data, commented out
+    }
   }
 
   const needsConfig = !!(
@@ -237,41 +253,39 @@ export function _toJavaScriptJquery(
       nonDataMethods.includes(methodStr)) ||
     request.timeout ||
     (exactContentType !== null && exactContentType !== undefined) ||
+    commentedOutDataString ||
     traditional
   );
 
-  if (methodStr === "GET" && !needsConfig) {
+  let done = "";
+  done += ".done(function(response) {\n";
+  done += "  console.log(response);\n";
+  done += "});";
+
+  if (
+    !needsConfig &&
+    method.isString() &&
+    ["GET", "POST"].includes(methodStr)
+  ) {
     // TODO: .getJSON()
-    code += "$.get(";
+    const fn = methodStr === "GET" ? "get" : "post";
+    code += "$." + fn + "(";
     code += repr(url, imports);
     if (dataString) {
       code += ", " + dedent(dataString);
     }
     code += ")\n";
-    code += "  .done(function(response) {\n";
-    code += "    console.log(response);\n";
-    code += "  });\n";
-  } else if (methodStr === "POST" && !needsConfig && !commentedOutDataString) {
-    code += "$.post(";
-    code += repr(url, imports);
-    if (dataString) {
-      code += ", " + dedent(dataString);
-    }
-    code += ")\n";
-    code += "  .done(function(response) {\n";
-    code += "    console.log(response);\n";
-    code += "  });\n";
+    code += "  " + indent(done) + "\n";
   } else {
-    code += "$.ajax(";
-    code += "{\n";
+    code += "$.ajax({\n";
     code += "  url: " + repr(url, imports) + ",\n";
+    code += "  crossDomain: true,\n";
 
     if (methodStr !== "GET") {
       // jQuery uppercases methods
-      let sentMethod = method;
-      if (eq(request.urls[0].method.toUpperCase(), method)) {
-        sentMethod = method.toLowerCase();
-      }
+      const sentMethod = eq(request.urls[0].method.toUpperCase(), method)
+        ? method.toLowerCase()
+        : method;
       code += "  method: " + repr(sentMethod, imports) + ",\n";
     }
 
@@ -300,13 +314,11 @@ export function _toJavaScriptJquery(
       code += "  password: " + repr(password, imports) + ",\n";
     }
 
-    if (hasData) {
-      if (commentedOutDataString) {
-        code += "  // data: " + commentedOutDataString + ",\n";
-      }
-      if (dataString) {
-        code += "  data: " + dataString + ",\n";
-      }
+    if (commentedOutDataString) {
+      code += commentedOutDataString;
+    }
+    if (dataString) {
+      code += "  data: " + dataString + ",\n";
     }
 
     if (traditional) {
@@ -320,11 +332,10 @@ export function _toJavaScriptJquery(
 
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2);
+      code += "\n";
     }
-    code += "\n}";
-    code += ").done(function(response) {\n";
-    code += "  console.log(response);\n";
-    code += "});\n";
+
+    code += "})" + done + "\n";
   }
 
   let importCode = reprImports(imports);

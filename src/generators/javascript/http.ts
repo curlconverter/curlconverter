@@ -32,27 +32,26 @@ export function _toNodeHttp(
   // TODO: check sending data with GET
   const method = request.urls[0].method;
   if (!eq(method, "GET")) {
-    options += "method: " + repr(method, imports) + ",\n";
+    options += "  method: " + repr(method, imports) + ",\n";
   }
 
-  // TODO: check this
   if (!eq(request.urls[0].method.toUpperCase(), method)) {
     warnings.push([
       "method-case",
-      "http converts method names to uppercase, so the method name will be changed to " +
-        method.toUpperCase().toString(),
+      "http uppercases the method, so it will be changed to " +
+        JSON.stringify(method.toUpperCase().toString()),
     ]);
   }
 
   const url = request.urls[0].url;
 
   let dataString, commentedOutDataString;
-  let exactContentType = request.headers.get("content-type");
   const contentType = request.headers.getContentType();
+  let exactContentType = request.headers.get("content-type");
   if (request.data) {
     // might delete content-type header
     [exactContentType, dataString, commentedOutDataString] = getDataString(
-      request,
+      request.data,
       contentType,
       exactContentType,
       imports
@@ -105,7 +104,7 @@ export function _toNodeHttp(
       code += "  path: " + repr(path, imports) + ",\n";
     }
     // code += "  protocol: " + repr(urlObj.scheme, imports) + ",\n";
-    code += "  " + options;
+    code += options;
     code += "};\n";
     code += "\n";
 

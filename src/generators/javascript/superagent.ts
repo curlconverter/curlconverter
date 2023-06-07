@@ -14,15 +14,20 @@ import {
   reprImports,
 } from "./javascript.js";
 
-// TODO: these need to be modified
-import { indent, dedent } from "./jquery.js";
+import { indent } from "./jquery.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
+
   "max-time",
   "connect-timeout",
+
+  "cert",
+  "key",
+  "cacert",
+  "insecure",
 ]);
 
 function serializeQuery(
@@ -184,12 +189,11 @@ export function _toNodeSuperAgent(
   // https://github.com/ladjs/superagent/blob/73c7efb5e9a0cf0409da9918d49b89055be29db5/src/client.js#L899
   const nonDataMethods = ["GET", "HEAD"];
 
-  // TODO: check this
   if (!eq(request.urls[0].method.toUpperCase(), method)) {
     warnings.push([
       "method-case",
-      "SuperAgent converts method names to uppercase, so the method name will be changed to " +
-        method.toUpperCase().toString(),
+      "SuperAgent uppercases the method, so it will be changed to " +
+        JSON.stringify(method.toUpperCase().toString()),
     ]);
   }
 
@@ -198,13 +202,12 @@ export function _toNodeSuperAgent(
     ? request.urls[0].urlWithoutQueryList
     : request.urls[0].url;
 
-  let exactContentType = request.headers.get("content-type");
   const contentType = request.headers.getContentType();
+  let exactContentType = request.headers.get("content-type");
   request.headers.delete("content-type");
   let dataCode, commentedOutDataCode;
   if (request.data) {
     // might delete content-type header
-    // TODO: delete only when "application/x-www-form-urlencoded" not "application/x-www-form-urlencoded; charset=utf-8"
     [exactContentType, dataCode, commentedOutDataCode] = getDataString(
       request,
       contentType,
@@ -218,7 +221,7 @@ export function _toNodeSuperAgent(
   if (nonDataMethods.includes(methodStr) && hasData) {
     warnings.push([
       "data-with-get",
-      "XHR doesn't send data with GET or HEAD requests",
+      "SuperAgent doesn't send data with GET or HEAD requests",
     ]);
   }
 
@@ -260,7 +263,6 @@ export function _toNodeSuperAgent(
       ")\n";
   }
 
-  // TODO: keep content-type header if it's not multipart/form-data
   // TODO: warn about unsent headers
   if (request.headers.length) {
     for (const [key, value] of request.headers) {
@@ -314,11 +316,27 @@ export function _toNodeSuperAgent(
   if (request.insecure) {
     code += "  .disableTLSCerts()\n";
   }
-  // TODO:
-  // .ca(): Set the CA certificate(s) to trust
-  // .cert(): Set the client certificate chain(s)
-  // .key(): Set the client private key(s)
-  // .pfx(): Set the client PFX or PKCS12 encoded private key and certificate chain
+  if (request.cert) {
+    const [cert, password] = request.cert;
+    code += "  .cert(fs.readFileSync(" + repr(cert, imports) + "))\n";
+    addImport(imports, "fs", "fs");
+    if (password) {
+      warnings.push([
+        "cert-password",
+        "SuperAgent doesn't support certificate passwords: " +
+          JSON.stringify(password.toString()),
+      ]);
+    }
+  }
+  if (request.key) {
+    code += "  .key(fs.readFileSync(" + repr(request.key, imports) + "))\n";
+    addImport(imports, "fs", "fs");
+  }
+  // TODO: is this correct?
+  if (request.cacert) {
+    code += "  .ca(fs.readFileSync(" + repr(request.cacert, imports) + "))\n";
+    addImport(imports, "fs", "fs");
+  }
 
   if (request.http2) {
     code += "  .http2()\n";

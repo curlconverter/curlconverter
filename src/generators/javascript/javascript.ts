@@ -18,6 +18,33 @@ const javaScriptSupportedArgs = new Set([
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
 
+// https://fetch.spec.whatwg.org/#forbidden-method
+export const FORBIDDEN_METHODS = ["CONNECT", "TRACE", "TRACK"];
+// https://fetch.spec.whatwg.org/#forbidden-request-header
+export const FORBIDDEN_HEADERS = [
+  "Accept-Charset",
+  "Accept-Encoding",
+  "Access-Control-Request-Headers",
+  "Access-Control-Request-Method",
+  "Connection",
+  "Content-Length",
+  "Cookie",
+  "Cookie2",
+  "Date",
+  "DNT",
+  "Expect",
+  "Host",
+  "Keep-Alive",
+  "Origin",
+  "Referer",
+  "Set-Cookie",
+  "TE",
+  "Trailer",
+  "Transfer-Encoding",
+  "Upgrade",
+  "Via",
+].map((h) => h.toLowerCase());
+
 // TODO: implement?
 export function reprObj(value: object, indentLevel?: number): string {
   const escaped = jsescObj(value, {
@@ -528,6 +555,15 @@ function requestToJavaScriptOrNode(
       ]);
     }
     const method = urlObj.method.toLowerCase();
+    const methodStr = urlObj.method.toString();
+    if (method.isString() && FORBIDDEN_METHODS.includes(methodStr)) {
+      warnings.push([
+        "forbidden-method",
+        "the method " +
+          JSON.stringify(methodStr) +
+          " is not allowed in fetch()",
+      ]);
+    }
 
     if (
       !eq(method, "get") ||
@@ -562,6 +598,18 @@ function requestToJavaScriptOrNode(
             ": " +
             reprFetch(headerValue || new Word(), isNode, imports) +
             ",\n";
+          if (
+            !isNode &&
+            headerName.isString() &&
+            FORBIDDEN_HEADERS.includes(headerName.toString().toLowerCase())
+          ) {
+            warnings.push([
+              "forbidden-header",
+              "the header " +
+                JSON.stringify(headerName.toString()) +
+                " is not allowed in fetch()",
+            ]);
+          }
         }
         if (urlObj.auth && request.authType === "basic") {
           // TODO: if -H 'Authorization:' is passed, don't set this

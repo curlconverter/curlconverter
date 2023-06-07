@@ -33,12 +33,11 @@ export function _toJavaScriptXHR(
   const method = request.urls[0].method;
   const methodStr = method.toString();
 
-  // TODO: check this
   if (!eq(request.urls[0].method.toUpperCase(), method)) {
     warnings.push([
       "method-case",
-      "XHR converts method names to uppercase, so the method name will be changed to " +
-        method.toUpperCase().toString(),
+      "XHR uppercases the method, so it will be changed to " +
+        JSON.stringify(method.toUpperCase().toString()),
     ]);
   }
 
@@ -53,7 +52,7 @@ export function _toJavaScriptXHR(
   if (request.data) {
     // might delete content-type header
     [exactContentType, dataString, commentedOutDataString] = getDataString(
-      request,
+      request.data,
       contentType,
       exactContentType,
       imports
@@ -65,9 +64,8 @@ export function _toJavaScriptXHR(
       code += "const data = " + dedent(dataString) + ";\n\n";
     }
   } else if (request.multipartUploads) {
-    let formCode;
-    [dataString, formCode] = getFormString(request.multipartUploads, imports);
-    code += formCode;
+    code += getFormString(request.multipartUploads, imports);
+    dataString = "form";
   }
   if (nonDataMethods.includes(methodStr) && hasData) {
     warnings.push([

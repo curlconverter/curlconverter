@@ -124,7 +124,7 @@ var $ = jQueryInit(window);
   },
   node: {
     setup:
-      "cd /tmp && mkdir -p curlconverter/node && cd curlconverter/node && npm init -y && npm install node-fetch",
+      "cd /tmp && mkdir -p curlconverter/node && cd curlconverter/node && npm init -y es6 && npm install node-fetch",
     copy: "cp <file> /tmp/curlconverter/node/main.js",
     exec: "cd /tmp/curlconverter/node && node main.js",
   },
