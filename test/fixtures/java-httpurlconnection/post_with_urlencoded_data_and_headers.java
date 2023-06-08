@@ -4,6 +4,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
+import java.util.zip.GZIPInputStream;
 
 class Main {
 

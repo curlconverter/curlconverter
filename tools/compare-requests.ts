@@ -67,14 +67,30 @@ const executables = {
   },
   java: {
     setup: "mkdir -p /tmp/curlconverter/java",
-    copy: "cp <file> /tmp/curlconverter/java/Main.java",
+    copy: function (contents: string) {
+      const [imports, ...rest] = contents.split("\n\n");
+
+      fs.writeFileSync(
+        "/tmp/curlconverter/java/Main.java",
+        imports +
+          "\n\n" +
+          "public class Main {\n" +
+          "  public static void main(String[] args) throws Exception {\n" +
+          "    " +
+          rest.join("\n\n") +
+          "\n" +
+          "  }\n" +
+          "}\n",
+        "utf8"
+      );
+    },
     exec: "cd /tmp/curlconverter/java && javac Main.java && java Main",
   },
-  // "java-httpurlconnection": {
-  //   setup: "mkdir -p /tmp/curlconverter/java-httpurlconnection",
-  //   copy: "cp <file> /tmp/curlconverter/java-httpurlconnection/Main.java",
-  //   exec: "&& cd /tmp/curlconverter/java-httpurlconnection && javac Main.java && java Main",
-  // },
+  "java-httpurlconnection": {
+    setup: "mkdir -p /tmp/curlconverter/java-httpurlconnection",
+    copy: "cp <file> /tmp/curlconverter/java-httpurlconnection/Main.java",
+    exec: "cd /tmp/curlconverter/java-httpurlconnection && javac Main.java && java Main",
+  },
   // mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
   // "java-okhttp": {
   //   setup: "mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp",

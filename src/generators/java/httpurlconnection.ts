@@ -94,6 +94,8 @@ export function _toJavaHttpUrlConnection(
     javaCode +=
       "            responseStream = new GZIPInputStream(responseStream);\n";
     javaCode += "        }\n";
+
+    imports.add("java.util.zip.GZIPInputStream");
   }
   javaCode +=
     '        Scanner s = new Scanner(responseStream).useDelimiter("\\\\A");\n';
