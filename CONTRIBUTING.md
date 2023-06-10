@@ -223,3 +223,4 @@ https://hg.mozilla.org/mozilla-central/file/tip/devtools/client/shared/curl.js
 - DainisGorbunovs (MATLAB support)
 - TennyZhuang (data-raw support)
 - scottsteinbeck (CFML support)
+- CBaldemir (Java + jsoup support)
