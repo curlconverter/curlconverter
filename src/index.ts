@@ -13,6 +13,7 @@ export {
   toJavaHttpUrlConnection,
   toJavaHttpUrlConnectionWarn,
 } from "./generators/java/httpurlconnection.js";
+export { toJavaJsoup, toJavaJsoupWarn } from "./generators/java/jsoup.js";
 export { toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
 export {
   toJavaScript,

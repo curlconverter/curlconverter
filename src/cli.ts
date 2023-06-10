@@ -29,6 +29,7 @@ import {
   _toJavaHttpUrlConnection,
   toJavaHttpUrlConnectionWarn,
 } from "./generators/java/httpurlconnection.js";
+import { _toJavaJsoup, toJavaJsoupWarn } from "./generators/java/jsoup.js";
 import { _toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
 import {
   _toJavaScript,
@@ -106,6 +107,7 @@ const translate: {
     _toJavaHttpUrlConnection,
     toJavaHttpUrlConnectionWarn,
   ],
+  "java-jsoup": [_toJavaJsoup, toJavaJsoupWarn],
   "java-okhttp": [_toJavaOkHttp, toJavaOkHttpWarn],
   javascript: [_toJavaScript, toJavaScriptWarn],
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
@@ -162,6 +164,7 @@ language: the language to convert the curl command to. The choices are
   httpie
   java
   java-httpurlconnection
+  java-jsoup
   java-okhttp
   javascript
   javascript-jquery
