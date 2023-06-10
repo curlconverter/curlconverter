@@ -1,8 +1,8 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion ML, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, PHP, Python, R, Ruby, Rust, Wget, Ansible, HAR, HTTP or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into Python, C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, PHP, PowerShell, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
 
-Try it on [curlconverter.com](https://curlconverter.com) or from the command line as a drop-in replacement for `curl`:
+Try it on [curlconverter.com](https://curlconverter.com) or as a drop-in replacement for `curl`:
 
 ```shell
 $ curlconverter --data "hello=world" example.com
@@ -17,12 +17,12 @@ response = requests.post('http://example.com', data=data)
 
 Features:
 
-- Knows about all 250 of curl's arguments, as well as the deleted ones, but most are ignored
 - Implements a lot of curl's argument parsing logic
+  - Knows about all 254 arguments, as well as the deleted ones, but most are ignored
   - Supports shortening `-O -v -X POST` to `-OvXPOST`
   - `--data @filename` generates code that reads that file and `@-` reads stdin
 - Understands Bash syntax
-  - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting), which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150)
+  - [ANSI-C quoted](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) strings
   - Stdin redirects and [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents)
   - Generates code that gets environment variables and runs subcommands
   - Ignores comments
@@ -97,10 +97,12 @@ Choose the output language by passing `--language <language>`. The options are
 - `matlab`
 - `node`, `node-http`, `node-axios`, `node-got`, `node-request`, `node-superagent`
 - `php`, `php-guzzle`, `php-requests`
+- `powershell`, `powershell-webrequest`
 - `python` (the default)
 - `r`
 - `ruby`
 - `rust`
+- `swift`
 - `wget`
 
 `--verbose` enables printing of conversion warnings and error tracebacks.

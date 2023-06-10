@@ -201,6 +201,11 @@ const converters = {
     extension: ".rs",
     converter: curlconverter.toRust,
   },
+  swift: {
+    name: "Swift",
+    extension: ".swift",
+    converter: curlconverter.toSwift,
+  },
   wget: {
     name: "Wget",
     extension: ".sh",
