@@ -1,0 +1,20 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+
+
+class Main {
+
+	public static void main(String[] args) throws IOException {
+		Connection.Response response = Jsoup.connect("http://localhost:28139/api/retail/books/list")
+			.header("Accept", "application/json")
+			.header("user-token", "75d7ce4350c7d6239347bf23d3a3e668")
+			.method(org.jsoup.Connection.Method.GET)
+			.ignoreContentType(true)
+			.execute();
+
+		System.out.println(response.parse());
+	}
+}

@@ -96,6 +96,11 @@ const converters = {
     extension: ".java",
     converter: curlconverter.toJavaHttpUrlConnection,
   },
+  "java-jsoup": {
+    name: "Java + jsoup",
+    extension: ".java",
+    converter: curlconverter.toJavaJsoup,
+  },
   "java-okhttp": {
     name: "Java + OkHttp",
     extension: ".java",

@@ -91,6 +91,44 @@ const executables = {
     copy: "cp <file> /tmp/curlconverter/java-httpurlconnection/Main.java",
     exec: "cd /tmp/curlconverter/java-httpurlconnection && javac Main.java && java Main",
   },
+  "java-jsoup": {
+    setup:
+      "if [ ! -d /tmp/curlconverter/java-jsoup ]; then echo setup java-jsoup by hand. && exit 1; fi",
+    // Like this:
+    // cd /tmp/curlconverter && mvn archetype:generate -DgroupId=com.mycompany.app -DartifactId=java-jsoup -DarchetypeArtifactId=maven-archetype-quickstart -DarchetypeVersion=1.4 -DinteractiveMode=false
+    // cd java-jsoup
+    // then manually edit java-jsoup/pom.xml to fix the version of Java:
+
+    // <properties>
+    //   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    //   <maven.compiler.source>18</maven.compiler.source>
+    //   <maven.compiler.target>18</maven.compiler.target>
+    // </properties>
+
+    // and to install jsoup:
+
+    // <dependencies>
+    //   <dependency>
+    //     <groupId>org.jsoup</groupId>
+    //     <artifactId>jsoup</artifactId>
+    //     <version>1.16.1</version>
+    //   </dependency>
+    // </dependencies>
+
+    // then install:
+    // mvn install
+
+    // setup: "cd /tmp/curlconverter && mvn archetype:generate -DgroupId=com.mycompany.app -DartifactId=java-jsoup -DarchetypeArtifactId=maven-archetype-quickstart -DarchetypeVersion=1.4 -DinteractiveMode=false",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/java-jsoup/src/main/java/com/mycompany/app/Main.java",
+        `package com.mycompany.app;\n\n` +
+          contents.replace("class Main", "public class Main"),
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/java-jsoup && mvn compile && mvn exec:java -Dexec.mainClass=com.mycompany.app.Main",
+  },
   // mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
   // "java-okhttp": {
   //   setup: "mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp",

@@ -90,7 +90,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `har`
 - `http`
 - `httpie`
-- `java`, `java-httpurlconnection`, `java-okhttp`
+- `java`, `java-httpurlconnection`, `java-jsoup`, `java-okhttp`
 - `javascript`, `javascript-jquery`, `javascript-xhr`
 - `json`
 - `kotlin`
