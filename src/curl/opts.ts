@@ -209,6 +209,8 @@ export const curlLongOpts = {
   "http3-only": { type: "bool", name: "http3-only" },
   "http0.9": { type: "bool", name: "http0.9" },
   "no-http0.9": { type: "bool", name: "http0.9", expand: false },
+  "proxy-http2": { type: "bool", name: "proxy-http2" },
+  "no-proxy-http2": { type: "bool", name: "proxy-http2", expand: false },
   "tlsv1": { type: "bool", name: "tlsv1" },
   "tlsv1.0": { type: "bool", name: "tlsv1.0" },
   "tlsv1.1": { type: "bool", name: "tlsv1.1" },
