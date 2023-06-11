@@ -235,6 +235,30 @@ var $ = jQueryInit(window);
     copy: "cp <file> /tmp/curlconverter/rust/src/main.rs",
     exec: "cd /tmp/curlconverter/rust && cargo run",
   },
+  swift: {
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/swift/main.swift",
+        contents
+          .replace(
+            "import Foundation",
+            "import Foundation\nlet group = DispatchGroup()\ngroup.enter()\n"
+          )
+          .replace(
+            'print("Received data:\\n\\(str ?? "")")\n    }',
+            'print("Received data:\\n\\(str ?? "")")\n    }\n    group.leave()'
+          ) +
+          `group.notify(queue: .main) {
+    exit(EXIT_SUCCESS) // Exit program when done
+}
+
+dispatchMain()\n`,
+
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/swift && swift main.swift",
+  },
   wget: {
     exec: "bash <file>",
   },

@@ -89,7 +89,7 @@ export function _toSwift(requests: Request[], warnings: Warnings = []): string {
     code += "let loginData = loginString.data(using: String.Encoding.utf8)!\n";
     code += "let base64LoginString = loginData.base64EncodedString()\n";
     code +=
-      'request.setValue("Basic (base64LoginString)", forHTTPHeaderField: "Authorization")\n';
+      'request.setValue("Basic \\(base64LoginString)", forHTTPHeaderField: "Authorization")\n';
     code += "\n";
   }
 

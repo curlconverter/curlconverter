@@ -149,7 +149,7 @@ function toTokens(
       // '$' + variable_name or special_variable_name
       warnings.push([
         "expansion",
-        "found shell environment variable\n" + underlineNode(node, curlCommand),
+        "found environment variable\n" + underlineNode(node, curlCommand),
       ]);
       if (
         node.firstNamedChild &&
