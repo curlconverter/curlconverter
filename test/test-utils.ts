@@ -176,6 +176,11 @@ const converters = {
     extension: ".php",
     converter: curlconverter.toPhpGuzzle,
   },
+  powershell: {
+    name: "PowerShell",
+    extension: ".ps1",
+    converter: curlconverter.toPowershellRestMethod,
+  },
   python: {
     name: "Python",
     extension: ".py",

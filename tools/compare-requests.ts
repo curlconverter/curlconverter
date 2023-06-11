@@ -66,7 +66,6 @@ const executables = {
     exec: "chmod +x /tmp/curlconverter/httpie/main && /tmp/curlconverter/httpie/main",
   },
   java: {
-    setup: "mkdir -p /tmp/curlconverter/java",
     copy: function (contents: string) {
       const [imports, ...rest] = contents.split("\n\n");
 
@@ -87,7 +86,6 @@ const executables = {
     exec: "cd /tmp/curlconverter/java && javac Main.java && java Main",
   },
   "java-httpurlconnection": {
-    setup: "mkdir -p /tmp/curlconverter/java-httpurlconnection",
     copy: "cp <file> /tmp/curlconverter/java-httpurlconnection/Main.java",
     exec: "cd /tmp/curlconverter/java-httpurlconnection && javac Main.java && java Main",
   },
@@ -166,7 +164,6 @@ var $ = jQueryInit(window);
     exec: "cd /tmp/curlconverter/javascript-xhr && node main.js",
   },
   kotlin: {
-    setup: "mkdir -p /tmp/curlconverter/kotlin",
     copy: function (contents: string) {
       fs.writeFileSync(
         "/tmp/curlconverter/kotlin/script.main.kts",
@@ -218,6 +215,10 @@ var $ = jQueryInit(window);
       "cd /tmp && mkdir -p curlconverter/php-guzzle && cd curlconverter/php-guzzle && php composer.phar require guzzlehttp/guzzle:^7.0",
     copy: "cp <file> /tmp/curlconverter/php-guzzle/main.php",
     exec: "cd /tmp/curlconverter/php-guzzle && php main.php",
+  },
+  powershell: {
+    copy: "cp <file> /tmp/curlconverter/powershell/main.ps1",
+    exec: "cd /tmp/curlconverter/powershell && pwsh main.ps1",
   },
   python: {
     exec: "python3 <file>",
@@ -420,11 +421,32 @@ const testFile = async (
 };
 
 // if no tests were specified, run them all
-const tests = argv._.length
-  ? argv._
-  : fs
-      .readdirSync(path.join(fixturesDir, "curl_commands"))
-      .filter((n) => n.endsWith(".sh"));
+const tests = argv._;
+if (!tests.length) {
+  const possibleTestFiles = fs
+    .readdirSync(path.join(fixturesDir, "curl_commands"))
+    .filter((n) => n.endsWith(".sh"));
+  for (const testFile of possibleTestFiles) {
+    for (const l of languages) {
+      if (
+        fs.existsSync(
+          path.join(
+            fixturesDir,
+            l,
+            testFile.replace(".sh", converters[l].extension)
+          )
+        )
+      ) {
+        tests.push(testFile);
+        break;
+      }
+    }
+  }
+  if (!tests.length) {
+    console.error("no tests found");
+    process.exit(1);
+  }
+}
 
 // fs.rmSync(testDir, { recursive: true, force: true });
 if (tests.length) {

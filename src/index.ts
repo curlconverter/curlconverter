@@ -45,6 +45,14 @@ export {
 export { toPhp, toPhpWarn } from "./generators/php/php.js";
 export { toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 export { toPhpRequests, toPhpRequestsWarn } from "./generators/php/requests.js";
+export {
+  toPowershellRestMethod,
+  toPowershellRestMethodWarn,
+} from "./generators/powershell.js";
+export {
+  toPowershellWebRequest,
+  toPowershellWebRequestWarn,
+} from "./generators/powershell.js";
 export { toPython, toPythonWarn } from "./generators/python.js";
 export { toR, toRWarn } from "./generators/r.js";
 export { toRuby, toRubyWarn } from "./generators/ruby.js";

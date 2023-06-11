@@ -67,6 +67,14 @@ import {
   _toPhpRequests,
   toPhpRequestsWarn,
 } from "./generators/php/requests.js";
+import {
+  _toPowershellRestMethod,
+  toPowershellRestMethodWarn,
+} from "./generators/powershell.js";
+import {
+  _toPowershellWebRequest,
+  toPowershellWebRequestWarn,
+} from "./generators/powershell.js";
 import { _toPython, toPythonWarn } from "./generators/python.js";
 import { _toR, toRWarn } from "./generators/r.js";
 import { _toRuby, toRubyWarn } from "./generators/ruby.js";
@@ -142,6 +150,15 @@ const translate: {
   "php-curl": [_toPhp, toPhpWarn], // undocumented alias
   "php-guzzle": [_toPhpGuzzle, toPhpGuzzleWarn],
   "php-requests": [_toPhpRequests, toPhpRequestsWarn],
+  powershell: [_toPowershellRestMethod, toPowershellRestMethodWarn],
+  "powershell-restmethod": [
+    _toPowershellRestMethod,
+    toPowershellRestMethodWarn,
+  ], // undocumented alias
+  "powershell-webrequest": [
+    _toPowershellWebRequest,
+    toPowershellWebRequestWarn,
+  ],
   python: [_toPython, toPythonWarn],
   r: [_toR, toRWarn],
   ruby: [_toRuby, toRubyWarn],
@@ -180,6 +197,8 @@ language: the language to convert the curl command to. The choices are
   php
   php-guzzle
   php-requests
+  powershell
+  powershell-webrequest
   python (the default)
   r
   ruby
