@@ -183,7 +183,10 @@ function escapeQueryValue(value: Word): Word {
   return value;
 }
 function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
-  const [queryList] = parseQueryString(data);
+  let queryList;
+  try {
+    [queryList] = parseQueryString(data);
+  } catch {}
   if (!queryList) {
     flags.push("--raw " + (repr(data) || "''"));
     return;

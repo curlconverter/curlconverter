@@ -58,7 +58,7 @@ export interface RequestUrl {
   // .queryList           === undefined
   urlWithoutQueryList: Word;
   queryList?: QueryList;
-  // When all repeated keys in queryList happen one after the other
+  // When all (if any) repeated keys in queryList happen one after the other
   // ?a=1&a=1&b=2 (okay)
   // ?a=1&b=2&a=1 (doesn't work, queryList is defined but queryDict isn't)
   queryDict?: QueryDict;
@@ -136,6 +136,8 @@ export interface Request {
   timeout?: Word;
   connectTimeout?: Word;
   limitRate?: Word;
+
+  keepAlive?: boolean;
 
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
@@ -829,6 +831,10 @@ function buildRequest(
   }
   if (config["limit-rate"]) {
     request.limitRate = config["limit-rate"];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, "keepalive")) {
+    request.keepAlive = config.keepalive;
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "location")) {
