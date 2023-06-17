@@ -241,17 +241,18 @@ var $ = jQueryInit(window);
         "/tmp/curlconverter/swift/main.swift",
         contents
           .replace(
-            "import Foundation",
-            "import Foundation\nlet group = DispatchGroup()\ngroup.enter()\n"
+            "import Foundation\n",
+            "import Foundation\n\n// testing\nlet group = DispatchGroup()\ngroup.enter()\n"
           )
           .replace(
-            'print("Received data:\\n\\(str ?? "")")\n    }',
-            'print("Received data:\\n\\(str ?? "")")\n    }\n    group.leave()'
+            'print(str ?? "")\n    }\n',
+            'print(str ?? "")\n    }\n\n    // testing\n    group.leave()\n'
           ) +
-          `group.notify(queue: .main) {
-    exit(EXIT_SUCCESS) // Exit program when done
+          `
+// testing
+group.notify(queue: .main) {
+  exit(EXIT_SUCCESS) // Exit program when done
 }
-
 dispatchMain()\n`,
 
         "utf8"

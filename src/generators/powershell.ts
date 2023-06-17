@@ -260,7 +260,7 @@ function requestToPowershell(
         if (methodStr === "POST" && request.data.includes("=")) {
           warnings.push([
             "post-string",
-            "all text after the first '=' will be escaped",
+            "all -Body text after the first '=' will be escaped",
           ]);
         }
       }
@@ -271,7 +271,7 @@ function requestToPowershell(
       if (methodStr === "POST" && request.data.includes("=")) {
         warnings.push([
           "post-string",
-          "all text after the first '=' will be escaped",
+          "all -Body text after the first '=' will be escaped",
         ]);
       }
     }
