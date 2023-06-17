@@ -257,20 +257,21 @@ function requestToPowershell(
         args.push(["-Body", "$body"]);
       } else {
         args.push(["-Body", repr(request.data)]);
-        if (methodStr === "POST") {
+        if (methodStr === "POST" && request.data.includes("=")) {
           warnings.push([
             "post-string",
-            "all text after the first '=' will be escaped",
+            "all -Body text after the first '=' will be escaped",
           ]);
         }
       }
     } else {
       // TODO: values require escaping
       args.push(["-Body", repr(request.data)]);
-      if (methodStr === "POST") {
+
+      if (methodStr === "POST" && request.data.includes("=")) {
         warnings.push([
           "post-string",
-          "all text after the first '=' will be escaped",
+          "all -Body text after the first '=' will be escaped",
         ]);
       }
     }

@@ -1,8 +1,8 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion ML, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, PHP, Python, R, Ruby, Rust, Wget, Ansible, HAR, HTTP or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, PHP, PowerShell, Python, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
 
-Try it on [curlconverter.com](https://curlconverter.com) or from the command line as a drop-in replacement for `curl`:
+Try it on [curlconverter.com](https://curlconverter.com) or as a drop-in `curl` replacement:
 
 ```shell
 $ curlconverter --data "hello=world" example.com
@@ -17,12 +17,12 @@ response = requests.post('http://example.com', data=data)
 
 Features:
 
-- Knows about all 250 of curl's arguments, as well as the deleted ones, but most are ignored
 - Implements a lot of curl's argument parsing logic
+  - Knows about all 254 curl arguments but most are ignored
   - Supports shortening `-O -v -X POST` to `-OvXPOST`
   - `--data @filename` generates code that reads that file and `@-` reads stdin
 - Understands Bash syntax
-  - [ANSI-C quoted strings](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting), which "Copy as cURL" [can output](https://github.com/ChromeDevTools/devtools-frontend/blob/2ad2f0713a0bb5f025facd064d4e0bebc3afd33c/front_end/panels/network/NetworkLogView.ts#L2150)
+  - [ANSI-C quoted](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) strings
   - Stdin redirects and [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents)
   - Generates code that gets environment variables and runs subcommands
   - Ignores comments
@@ -35,9 +35,9 @@ Limitations:
 - Only HTTP is supported
 - Code generators for other languages are less thorough than the Python generator
 - curl doesn't follow redirects or decompress gzip-compressed responses by default, but the generated code will do whatever the default is for that runtime, to keep it shorter. For example Python's Requests library [follows redirects by default](https://requests.readthedocs.io/en/latest/user/quickstart/#redirection-and-history), so unless you explicitly set the redirect policy with `-L`/`--location`/`--no-location`, the generated code will not handle redirects the same way as the curl command
-- Shell variables can arbitrarily change how the command would be parsed at runtime. For example, in a command like `curl example.com?foo=bar&baz=$VAR`, if `$VAR` contains `=` or `&` characters or percent encoded characters, that could make the generated code wrong. curlconverter assumes that environment variables don't contain characters that would affect parsing
+- Shell variables can arbitrarily change how the command would be parsed at runtime. The command `curl $VAR` can do anything, depending on what's in `$VAR`. curlconverter assumes that environment variables don't contain characters that would affect parsing
 - Only simple subcommands such as `curl $(echo example.com)` work, more complicated subcommands (such as nested commands or subcommands that redirect the output) won't generate valid code
-- The Bash parser isn't the real Bash's parser
+- The Bash parser doesn't support all Bash syntax
 - and much more
 
 ## Install
@@ -97,10 +97,12 @@ Choose the output language by passing `--language <language>`. The options are
 - `matlab`
 - `node`, `node-http`, `node-axios`, `node-got`, `node-request`, `node-superagent`
 - `php`, `php-guzzle`, `php-requests`
+- `powershell`, `powershell-webrequest`
 - `python` (the default)
 - `r`
 - `ruby`
 - `rust`
+- `swift`
 - `wget`
 
 `--verbose` enables printing of conversion warnings and error tracebacks.
@@ -117,7 +119,7 @@ curlconverter.toPython(['curl', 'example.com']);
 // "import requests\n\nresponse = requests.get('http://example.com')\n"
 ```
 
-**Note**: add `"type": "module"` to your package.json for the `import` statement above to work.
+**Note**: add `"type": "module",` to your package.json for the `import` statement above to work.
 
 There's a corresponding set of functions that also return an array of warnings if there are any issues with the conversion:
 
