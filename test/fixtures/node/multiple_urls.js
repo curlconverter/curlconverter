@@ -9,7 +9,7 @@ fetch('http://localhost:28139/myfile.jpg?params=perurltoo', {
   body: fileFromSync('myfile.jpg')
 });
 fetch('http://localhost:28139', {
-  method: 'PUT',
+  method: 'POST',
   body: new URLSearchParams({
     'fooo': 'blah'
   })

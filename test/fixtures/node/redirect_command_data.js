@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import fs from 'fs';
+import * as fs from 'fs';
 import execSync from 'node:child_process';
 
 fetch('http://localhost:28139', {

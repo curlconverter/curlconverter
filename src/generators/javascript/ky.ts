@@ -121,14 +121,13 @@ export function getData(
       }
       // TODO: use the filetype
       if (eq(filename, "-")) {
-        addImport(imports, "fs", "fs");
         parts.push("fs.readFileSync(0" + encoding + ")");
       } else {
-        addImport(imports, "fs", "fs");
         parts.push(
           "fs.readFileSync(" + repr(filename, imports) + encoding + ")"
         );
       }
+      addImport(imports, "* as fs", "fs");
     }
   }
 

@@ -212,7 +212,11 @@ export function addImport(imports: JSImports, name: string, from: string) {
 export function reprImports(imports: JSImports): string {
   let ret = "";
   for (const [name, from] of imports.sort(bySecondElem)) {
-    ret += `import { ${name} } from ${reprStr(from)};\n`;
+    if (name.startsWith("* as")) {
+      ret += `import ${name} from ${reprStr(from)};\n`;
+    } else {
+      ret += `import { ${name} } from ${reprStr(from)};\n`;
+    }
   }
   return ret;
 }
@@ -381,7 +385,7 @@ export function toFormData(
     if ("contentFile" in m) {
       if (isNode) {
         if (eq(m.contentFile, "-")) {
-          addImport(imports, "fs", "fs");
+          addImport(imports, "* as fs", "fs");
           code += "fs.readFileSync(0).toString()";
           if (m.filename) {
             code += ", " + reprFetch(m.filename, isNode, imports);
@@ -501,7 +505,7 @@ export function getData(
       // TODO: use the filetype
       if (eq(filename, "-")) {
         if (isNode) {
-          addImport(imports, "fs", "fs");
+          addImport(imports, "* as fs", "fs");
           parts.push("fs.readFileSync(0" + encoding + ")");
         } else {
           // TODO: something else
@@ -510,7 +514,7 @@ export function getData(
         }
       } else {
         if (isNode) {
-          addImport(imports, "fs", "fs");
+          addImport(imports, "* as fs", "fs");
           parts.push(
             "fs.readFileSync(" +
               reprFetch(filename, isNode, imports) +
@@ -630,9 +634,7 @@ function requestToJavaScriptOrNode(
       // const methods = []
       // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
       optionsCode +=
-        "  method: " +
-        reprFetch(request.urls[0].method, isNode, imports) +
-        ",\n";
+        "  method: " + reprFetch(urlObj.method, isNode, imports) + ",\n";
     }
     if (
       request.headers.length ||

@@ -150,7 +150,7 @@ export function getFormString(
     code += "form.append(" + repr(m.name, imports) + ", ";
     if ("contentFile" in m) {
       // TODO: no fs in browser
-      addImport(imports, "fs", "fs");
+      addImport(imports, "* as fs", "fs");
       if (eq(m.contentFile, "-")) {
         code += "fs.readFileSync(0).toString()";
       } else {

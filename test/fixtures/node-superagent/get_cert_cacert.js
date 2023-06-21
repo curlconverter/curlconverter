@@ -1,5 +1,5 @@
 import request from 'superagent';
-import { fs } from 'fs';
+import * as fs from 'fs';
 
 request
   .get('http://localhost:28139/')
