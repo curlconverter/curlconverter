@@ -7,10 +7,9 @@ import {
   repr,
   reprObj,
   asParseFloatTimes1000,
+  toURLSearchParams,
   type JSImports,
   reprImports,
-  reprAsStringToStringDict,
-  reprAsStringTuples,
 } from "./javascript.js";
 
 import { dedent, getFormString } from "./jquery.js";
@@ -42,19 +41,15 @@ function _getDataString(
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(data);
-    if (queryList) {
+    const query = parseQueryString(data);
+    if (query[0]) {
       // if (
       //   eq(exactContentType, "application/x-www-form-urlencoded; charset=utf-8")
       // ) {
       //   exactContentType = null;
       // }
-      const queryObj =
-        queryDict && queryDict.every((q) => !Array.isArray(q[1]))
-          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
-          : reprAsStringTuples(queryList, 1, imports);
       // TODO: check roundtrip, add a comment
-      return ["new URLSearchParams(" + queryObj + ").toString()", null];
+      return [toURLSearchParams(query, imports) + ".toString()", null];
     }
   }
   return [originalStringRepr, null];

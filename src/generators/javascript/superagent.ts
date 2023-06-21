@@ -8,6 +8,7 @@ import type { FormParam } from "../../curl/form.js";
 import {
   repr,
   reprObj,
+  asParseInt,
   asParseFloatTimes1000,
   type JSImports,
   addImport,
@@ -26,6 +27,8 @@ const supportedArgs = new Set([
 
   "location", // --no-location only has an effect
   "max-redirs",
+
+  "retry",
 
   "insecure",
   "cert",
@@ -313,10 +316,9 @@ export function _toNodeSuperAgent(
     code += "  .redirects(" + repr(request.maxRedirects, imports) + ")\n";
   }
 
-  // TODO
-  // if (request.retry) {
-  //   code += "  .retry(" + request.retry.toString() + ")\n";
-  // }
+  if (request.retry) {
+    code += "  .retry(" + asParseInt(request.retry, imports) + ")\n";
+  }
 
   if (request.insecure) {
     code += "  .disableTLSCerts()\n";

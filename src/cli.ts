@@ -53,6 +53,7 @@ import {
 } from "./generators/javascript/axios.js";
 import { _toNodeGot, toNodeGotWarn } from "./generators/javascript/got.js";
 import { _toNodeHttp, toNodeHttpWarn } from "./generators/javascript/http.js";
+import { _toNodeKy, toNodeKyWarn } from "./generators/javascript/ky.js";
 import {
   _toNodeRequest,
   toNodeRequestWarn,
@@ -122,6 +123,7 @@ const translate: {
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn], // undocumented alias
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn], // undocumented alias
   "javascript-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
+  "javascript-ky": [_toNodeKy, toNodeKyWarn], // undocumented alias
   "javascript-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn],
   "javascript-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   "javascript-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
@@ -134,6 +136,7 @@ const translate: {
   "node-fetch": [_toNode, toNodeWarn], // undocumented alias
   "node-got": [_toNodeGot, toNodeGotWarn],
   "node-http": [_toNodeHttp, toNodeHttpWarn], // undocumented alias
+  "node-ky": [_toNodeKy, toNodeKyWarn],
   "node-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn], // undocumented alias
   "node-request": [_toNodeRequest, toNodeRequestWarn],
   "node-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn],
@@ -143,6 +146,7 @@ const translate: {
   "nodejs-fetch": [_toNode, toNodeWarn], // undocumented alias
   "nodejs-got": [_toNodeGot, toNodeGotWarn], // undocumented alias
   "nodejs-http": [_toNodeHttp, toNodeHttpWarn], // undocumented alias
+  "nodejs-ky": [_toNodeKy, toNodeKyWarn], // undocumented alias
   "nodejs-jquery": [_toJavaScriptJquery, toJavaScriptJqueryWarn], // undocumented alias
   "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   "nodejs-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
@@ -194,6 +198,8 @@ language: the language to convert the curl command to. The choices are
   node
   node-axios
   node-http
+  node-got
+  node-ky
   node-request
   node-superagent
   php

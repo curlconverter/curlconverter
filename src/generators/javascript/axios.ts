@@ -7,10 +7,9 @@ import { parseQueryString } from "../../Query.js";
 import {
   reprStr,
   repr,
-  reprAsStringToStringDict,
   reprStringToStringList,
-  reprAsStringTuples,
   reprObj,
+  toURLSearchParams,
   asParseFloatTimes1000,
   type JSImports,
   addImport,
@@ -68,13 +67,8 @@ function _getDataString(
       if (eq(exactContentType, "application/x-www-form-urlencoded")) {
         request.headers.delete("content-type");
       }
-
-      const queryObj =
-        queryDict && queryDict.every((q) => !Array.isArray(q[1]))
-          ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
-          : reprAsStringTuples(queryList, 1, imports);
       // TODO: check roundtrip, add a comment
-      return ["new URLSearchParams(" + queryObj + ")", null];
+      return [toURLSearchParams([queryList, queryDict], imports), null];
     } else {
       return [originalStringRepr, null];
     }

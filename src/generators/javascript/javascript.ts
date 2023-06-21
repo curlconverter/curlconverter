@@ -3,6 +3,8 @@ import { Word, eq, joinWords } from "../../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
+import type { QueryList, QueryDict } from "../../Query.js";
+import type { FormParam } from "../../curl/form.js";
 
 import jsescObj from "jsesc";
 
@@ -14,6 +16,9 @@ const javaScriptSupportedArgs = new Set([
   "digest",
   "no-digest",
   "next",
+
+  // --no-compressed (the default) is unsupported though
+  "compressed",
 ]);
 
 const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
@@ -310,7 +315,7 @@ export function asParseFloatTimes1000(w: Word, imports: JSImports): string {
 export function asParseInt(w: Word, imports: JSImports): string {
   if (w.isString()) {
     const originalValue = w.toString();
-    // TODO: reimplement curl's float parsing instead of parseInt()
+    // TODO: reimplement curl's int parsing instead of parseInt()
     const asInt = parseInt(originalValue);
     if (!isNaN(asInt)) {
       return originalValue;
@@ -321,6 +326,90 @@ export function asParseInt(w: Word, imports: JSImports): string {
 
 export function bySecondElem(a: [string, string], b: [string, string]): number {
   return a[1].localeCompare(b[1]);
+}
+
+export function toURLSearchParams(
+  query: [QueryList, QueryDict | null | undefined],
+  imports: JSImports,
+  indent = 1
+): string {
+  const [queryList, queryDict] = query;
+  const queryObj =
+    queryDict && queryDict.every((q) => !Array.isArray(q[1]))
+      ? reprAsStringToStringDict(queryDict as [Word, Word][], indent, imports)
+      : reprAsStringTuples(queryList, indent, imports);
+  // TODO: check roundtrip, add a comment
+  // TODO: this isn't a dict anymore
+  return "new URLSearchParams(" + queryObj + ")";
+}
+
+export function toDictOrURLSearchParams(
+  query: [QueryList, QueryDict | null | undefined],
+  imports: JSImports,
+  indent = 1
+): string {
+  const [queryList, queryDict] = query;
+
+  if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
+    return reprAsStringToStringDict(
+      queryDict as [Word, Word][],
+      indent,
+      imports
+    );
+  }
+
+  // TODO: check roundtrip, add a comment
+  // TODO: this isn't a dict anymore
+  return (
+    "new URLSearchParams(" +
+    reprAsStringTuples(queryList, indent, imports) +
+    ")"
+  );
+}
+
+export function toFormData(
+  multipartUploads: FormParam[],
+  imports: JSImports,
+  fetchImports: Set<string>,
+  warnings: Warnings,
+  isNode = true
+): string {
+  let code = "new FormData();\n";
+  for (const m of multipartUploads) {
+    // TODO: use .set() if all names are unique?
+    code += "form.append(" + reprFetch(m.name, isNode, imports) + ", ";
+    if ("contentFile" in m) {
+      if (isNode) {
+        if (eq(m.contentFile, "-")) {
+          addImport(imports, "fs", "fs");
+          code += "fs.readFileSync(0).toString()";
+          if (m.filename) {
+            code += ", " + reprFetch(m.filename, isNode, imports);
+          }
+        } else {
+          fetchImports.add("fileFromSync");
+          // TODO: do this in a way that doesn't set filename="" if we don't have filename
+          code +=
+            "fileFromSync(" + reprFetch(m.contentFile, isNode, imports) + ")";
+        }
+      } else {
+        // TODO: does the second argument get sent as filename="" ?
+        code +=
+          "File(['<data goes here>'], " +
+          reprFetch(m.contentFile, isNode, imports) +
+          ")";
+        // TODO: (massive todo) we could read the file if we're running in the command line
+        warnings.push([
+          "--form",
+          "you can't read a file for --form/-F in the browser",
+        ]);
+      }
+    } else {
+      code += reprFetch(m.content, isNode, imports);
+    }
+    code += ");\n";
+  }
+  return code;
 }
 
 function getDataString(
@@ -364,14 +453,9 @@ function getDataString(
         ) {
           request.headers.delete("content-type");
         }
-
-        const queryObj =
-          queryDict && queryDict.every((q) => !Array.isArray(q[1]))
-            ? reprAsStringToStringDict(queryDict as [Word, Word][], 1, imports)
-            : reprAsStringTuples(queryList, 1, imports);
         // TODO: check roundtrip, add a comment
         // TODO: this isn't a dict anymore
-        return ["new URLSearchParams(" + queryObj + ")", null];
+        return [toURLSearchParams([queryList, queryDict], imports), null];
       }
       return [originalStringRepr, null];
     } catch {
@@ -381,7 +465,7 @@ function getDataString(
   return [originalStringRepr, null];
 }
 
-function getData(
+export function getData(
   request: Request,
   isNode: boolean,
   imports: JSImports
@@ -484,41 +568,15 @@ function requestToJavaScriptOrNode(
       // TODO: remove once Node 16 is EOL'd on 2023-09-11
       fetchImports.add("FormData");
     }
-    code += "const form = new FormData();\n";
-    for (const m of request.multipartUploads) {
-      // TODO: use .set() if all names are unique?
-      code += "form.append(" + reprFetch(m.name, isNode, imports) + ", ";
-      if ("contentFile" in m) {
-        if (isNode) {
-          if (eq(m.contentFile, "-")) {
-            addImport(imports, "fs", "fs");
-            code += "fs.readFileSync(0).toString()";
-            if (m.filename) {
-              code += ", " + reprFetch(m.filename, isNode, imports);
-            }
-          } else {
-            fetchImports.add("fileFromSync");
-            // TODO: do this in a way that doesn't set filename="" if we don't have filename
-            code +=
-              "fileFromSync(" + reprFetch(m.contentFile, isNode, imports) + ")";
-          }
-        } else {
-          // TODO: does the second argument get sent as filename="" ?
-          code +=
-            "File(['<data goes here>'], " +
-            reprFetch(m.contentFile, isNode, imports) +
-            ")";
-          // TODO: (massive todo) we could read the file if we're running in the command line
-          warnings.push([
-            "--form",
-            "you can't read a file for --form/-F in the browser",
-          ]);
-        }
-      } else {
-        code += reprFetch(m.content, isNode, imports);
-      }
-      code += ");\n";
-    }
+    code +=
+      "const form = " +
+      toFormData(
+        request.multipartUploads,
+        imports,
+        fetchImports,
+        warnings,
+        isNode
+      );
     code += "\n";
   }
 
@@ -529,6 +587,7 @@ function requestToJavaScriptOrNode(
     imports
   );
 
+  let fn = "fetch";
   if (request.urls[0].auth && request.authType === "digest") {
     // TODO: if 'Authorization:' header is specified, don't set this
     const [user, password] = request.urls[0].auth;
@@ -539,11 +598,11 @@ function requestToJavaScriptOrNode(
       ", " +
       reprFetch(password, isNode, imports) +
       ");\n";
-    code += "client.";
+    fn = "client.fetch";
   }
 
   for (const urlObj of request.urls) {
-    code += "fetch(" + reprFetch(urlObj.url, isNode, imports);
+    code += fn + "(" + reprFetch(urlObj.url, isNode, imports);
     if (urlObj.queryReadsFile) {
       warnings.push([
         "unsafe-query",
@@ -565,142 +624,135 @@ function requestToJavaScriptOrNode(
       ]);
     }
 
+    let optionsCode = "";
+    if (!eq(method, "get")) {
+      // TODO: If you pass a weird method to fetch() it won't uppercase it
+      // const methods = []
+      // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
+      optionsCode +=
+        "  method: " +
+        reprFetch(request.urls[0].method, isNode, imports) +
+        ",\n";
+    }
     if (
-      !eq(method, "get") ||
       request.headers.length ||
-      // TODO: should authType be per-url too?
-      (urlObj.auth && request.authType === "basic") ||
-      request.data ||
-      request.multipartUploads ||
-      (isNode && request.proxy)
+      (urlObj.auth && request.authType === "basic")
     ) {
-      code += ", {\n";
-
-      if (!eq(method, "get")) {
-        // TODO: If you pass a weird method to fetch() it won't uppercase it
-        // const methods = []
-        // const method = methods.includes(request.method.toLowerCase()) ? request.method.toUpperCase() : request.method
-        code +=
-          "  method: " +
-          reprFetch(request.urls[0].method, isNode, imports) +
+      optionsCode += "  headers: {\n";
+      for (const [headerName, headerValue] of request.headers) {
+        optionsCode +=
+          "    " +
+          reprFetch(headerName, isNode, imports) +
+          ": " +
+          reprFetch(headerValue || new Word(), isNode, imports) +
           ",\n";
+        if (
+          !isNode &&
+          headerName.isString() &&
+          FORBIDDEN_HEADERS.includes(headerName.toString().toLowerCase())
+        ) {
+          warnings.push([
+            "forbidden-header",
+            "the header " +
+              JSON.stringify(headerName.toString()) +
+              " is not allowed in fetch()",
+          ]);
+        }
+      }
+      if (urlObj.auth && request.authType === "basic") {
+        // TODO: if -H 'Authorization:' is passed, don't set this
+        optionsCode +=
+          "    'Authorization': 'Basic ' + btoa(" +
+          reprFetch(joinWords(urlObj.auth, ":"), isNode, imports) +
+          "),\n";
+      }
+
+      if (optionsCode.endsWith(",\n")) {
+        optionsCode = optionsCode.slice(0, -2);
+        optionsCode += "\n";
+      }
+      optionsCode += "  },\n";
+    }
+
+    if (urlObj.uploadFile) {
+      if (isNode) {
+        fetchImports.add("fileFromSync");
+        optionsCode +=
+          "  body: fileFromSync(" +
+          reprFetch(urlObj.uploadFile, isNode, imports) +
+          "),\n";
+      } else {
+        optionsCode +=
+          "  body: File(['<data goes here>'], " +
+          reprFetch(urlObj.uploadFile, isNode, imports) +
+          "),\n";
+        warnings.push([
+          "--form",
+          "you can't read a file for --upload-file/-F in the browser",
+        ]);
+      }
+    } else if (request.data) {
+      if (commentedOutDataString) {
+        optionsCode += "  // body: " + commentedOutDataString + ",\n";
+      }
+      optionsCode += "  body: " + dataString + ",\n";
+    } else if (request.multipartUploads) {
+      optionsCode += "  body: form,\n";
+    }
+
+    if (isNode && request.proxy) {
+      // TODO: do this parsing in utils.ts
+      const proxy = request.proxy.includes("://")
+        ? request.proxy
+        : request.proxy.prepend("http://");
+      // TODO: could be more accurate
+      let [protocol] = proxy.split("://", 2);
+      protocol = protocol.toLowerCase();
+
+      if (!protocol.toBool()) {
+        protocol = new Word("http");
+      }
+      if (eq(protocol, "socks")) {
+        protocol = new Word("socks4");
+        proxy.replace(/^socks/, "socks4");
       }
 
       if (
-        request.headers.length ||
-        (urlObj.auth && request.authType === "basic")
+        eq(protocol, "socks4") ||
+        eq(protocol, "socks5") ||
+        eq(protocol, "socks5h") ||
+        eq(protocol, "socks4a")
       ) {
-        code += "  headers: {\n";
-        for (const [headerName, headerValue] of request.headers) {
-          code +=
-            "    " +
-            reprFetch(headerName, isNode, imports) +
-            ": " +
-            reprFetch(headerValue || new Word(), isNode, imports) +
-            ",\n";
-          if (
-            !isNode &&
-            headerName.isString() &&
-            FORBIDDEN_HEADERS.includes(headerName.toString().toLowerCase())
-          ) {
-            warnings.push([
-              "forbidden-header",
-              "the header " +
-                JSON.stringify(headerName.toString()) +
-                " is not allowed in fetch()",
-            ]);
-          }
-        }
-        if (urlObj.auth && request.authType === "basic") {
-          // TODO: if -H 'Authorization:' is passed, don't set this
-          code +=
-            "    'Authorization': 'Basic ' + btoa(" +
-            reprFetch(joinWords(urlObj.auth, ":"), isNode, imports) +
-            "),\n";
-        }
-
-        if (code.endsWith(",\n")) {
-          code = code.slice(0, -2);
-          code += "\n";
-        }
-        code += "  },\n";
+        addImport(imports, "{ SocksProxyAgent }", "socks-proxy-agent");
+        optionsCode +=
+          "  agent: new SocksProxyAgent(" +
+          reprFetch(proxy, isNode, imports) +
+          "),\n";
+      } else if (eq(protocol, "http") || eq(protocol, "https")) {
+        addImport(imports, "HttpsProxyAgent", "https-proxy-agent");
+        optionsCode +=
+          "  agent: new HttpsProxyAgent(" +
+          reprFetch(proxy, isNode, imports) +
+          "),\n";
+      } else {
+        warnings.push([
+          "--proxy",
+          "failed to parse --proxy/-x or unknown protocol: " + protocol,
+        ]);
+        // or this?
+        //   throw new CCError('Unsupported proxy scheme for ' + reprFetch(request.proxy))
       }
+    }
 
-      if (urlObj.uploadFile) {
-        if (isNode) {
-          fetchImports.add("fileFromSync");
-          code +=
-            "  body: fileFromSync(" +
-            reprFetch(urlObj.uploadFile, isNode, imports) +
-            "),\n";
-        } else {
-          code +=
-            "  body: File(['<data goes here>'], " +
-            reprFetch(urlObj.uploadFile, isNode, imports) +
-            "),\n";
-          warnings.push([
-            "--form",
-            "you can't read a file for --upload-file/-F in the browser",
-          ]);
-        }
-      } else if (request.data) {
-        if (commentedOutDataString) {
-          code += "  // body: " + commentedOutDataString + ",\n";
-        }
-        code += "  body: " + dataString + ",\n";
-      } else if (request.multipartUploads) {
-        code += "  body: form,\n";
+    if (optionsCode) {
+      if (optionsCode.endsWith(",\n")) {
+        optionsCode = optionsCode.slice(0, -2);
       }
-
-      if (isNode && request.proxy) {
-        // TODO: do this parsing in utils.ts
-        const proxy = request.proxy.includes("://")
-          ? request.proxy
-          : request.proxy.prepend("http://");
-        // TODO: could be more accurate
-        let [protocol] = proxy.split("://", 2);
-        protocol = protocol.toLowerCase();
-
-        if (!protocol.toBool()) {
-          protocol = new Word("http");
-        }
-        if (eq(protocol, "socks")) {
-          protocol = new Word("socks4");
-          proxy.replace(/^socks/, "socks4");
-        }
-
-        if (
-          eq(protocol, "socks4") ||
-          eq(protocol, "socks5") ||
-          eq(protocol, "socks5h") ||
-          eq(protocol, "socks4a")
-        ) {
-          addImport(imports, "{ SocksProxyAgent }", "socks-proxy-agent");
-          code +=
-            "  agent: new SocksProxyAgent(" +
-            reprFetch(proxy, isNode, imports) +
-            "),\n";
-        } else if (eq(protocol, "http") || eq(protocol, "https")) {
-          addImport(imports, "HttpsProxyAgent", "https-proxy-agent");
-          code +=
-            "  agent: new HttpsProxyAgent(" +
-            reprFetch(proxy, isNode, imports) +
-            "),\n";
-        } else {
-          warnings.push([
-            "--proxy",
-            "failed to parse --proxy/-x or unknown protocol: " + protocol,
-          ]);
-          // or this?
-          //   throw new CCError('Unsupported proxy scheme for ' + reprFetch(request.proxy))
-        }
-      }
-
-      if (code.endsWith(",\n")) {
-        code = code.slice(0, -2);
-      }
+      code += ", {\n";
+      code += optionsCode;
       code += "\n}";
     }
+
     code += ");\n";
   }
 

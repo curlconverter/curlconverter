@@ -34,6 +34,7 @@ export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 export { toNodeAxios, toNodeAxiosWarn } from "./generators/javascript/axios.js";
 export { toNodeGot, toNodeGotWarn } from "./generators/javascript/got.js";
 export { toNodeHttp, toNodeHttpWarn } from "./generators/javascript/http.js";
+export { toNodeKy, toNodeKyWarn } from "./generators/javascript/ky.js";
 export {
   toNodeSuperAgent,
   toNodeSuperAgentWarn,
