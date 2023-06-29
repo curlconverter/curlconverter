@@ -36,7 +36,7 @@ $headers = @{
     "Referer" = "http://www.wikipedia.org/"
     "Connection" = "keep-alive"
 }
-$response = Invoke-RestMethod -Uri "http://localhost:28139/" `
+$response = Invoke-WebRequest -Uri "http://localhost:28139/" `
     -WebSession $session `
     -Headers $headers `
     -UserAgent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"

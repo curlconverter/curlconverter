@@ -1,1 +1,1 @@
-$response = Invoke-RestMethod -Uri "http://localhost:28139" -MaximumRedirection 20
+$response = Invoke-WebRequest -Uri "http://localhost:28139" -MaximumRedirection 20

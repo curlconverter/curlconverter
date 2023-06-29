@@ -397,7 +397,7 @@ export function _toPowershellWebRequest(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  return toPowershell(requests, true, warnings);
+  return toPowershell(requests, false, warnings);
 }
 
 export function toPowershellWebRequestWarn(
@@ -416,7 +416,7 @@ export function _toPowershellRestMethod(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  return toPowershell(requests, false, warnings);
+  return toPowershell(requests, true, warnings);
 }
 
 export function toPowershellRestMethodWarn(
