@@ -342,8 +342,6 @@ export function toURLSearchParams(
     queryDict && queryDict.every((q) => !Array.isArray(q[1]))
       ? reprAsStringToStringDict(queryDict as [Word, Word][], indent, imports)
       : reprAsStringTuples(queryList, indent, imports);
-  // TODO: check roundtrip, add a comment
-  // TODO: this isn't a dict anymore
   return "new URLSearchParams(" + queryObj + ")";
 }
 
@@ -362,8 +360,6 @@ export function toDictOrURLSearchParams(
     );
   }
 
-  // TODO: check roundtrip, add a comment
-  // TODO: this isn't a dict anymore
   return (
     "new URLSearchParams(" +
     reprAsStringTuples(queryList, indent, imports) +
@@ -787,6 +783,7 @@ export function _toJavaScriptOrNode(
   }
   if (imports.length) {
     for (const [varName, imp] of Array.from(imports).sort(bySecondElem)) {
+      // TODO: check this
       importCode += "import " + varName + " from " + reprStr(imp) + ";\n";
     }
   }
