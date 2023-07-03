@@ -381,8 +381,8 @@ const unsupportedArgs = [
 // https://www.unicode.org/reports/tr44/#GC_Values_Table
 // https://unicode.org/Public/UNIDATA/UnicodeData.txt
 // https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
-const regexSingleEscape = /'|\\|\p{C}|\p{Z}/gu;
-const regexDoubleEscape = /"|\\|\p{C}|\p{Z}/gu;
+const regexSingleEscape = /'|\\|\p{C}|[^ \P{Z}]/gu;
+const regexDoubleEscape = /"|\\|\p{C}|[^ \P{Z}]/gu;
 
 // Also used for Go and R
 export function reprStr(s: string, quote?: '"' | "'"): string {
@@ -398,8 +398,6 @@ export function reprStr(s: string, quote?: '"' | "'"): string {
     quote +
     s.replace(regex, (c: string): string => {
       switch (c) {
-        case " ":
-          return " ";
         case "\x07":
           return "\\a";
         case "\b":

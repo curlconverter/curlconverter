@@ -70,10 +70,8 @@ const supportedArgs = new Set([
 // TODO: check this
 // https://www.gnu.org/software/bash/manual/html_node/Quoting.html
 const regexDoubleEscape = /\$|`|"|\\|!/gu;
-// Use negative lookahead because " " is a Z but we don't want to escape it
-// Wrap \p{C}|\p{Z} in brakets so that splitting keeps the characters to escape
-const unprintableChars = /(?! )(\p{C}|\p{Z})/gu; // TODO: there's probably more
-const regexAnsiCEscape = /\p{C}|\p{Z}|\\|'/gu;
+const unprintableChars = /\p{C}|[^ \P{Z}]/gu; // TODO: there's probably more
+const regexAnsiCEscape = /\p{C}|[^ \P{Z}]|\\|'/gu;
 // https://unix.stackexchange.com/questions/270977/
 const shellChars = /[\002-\011\013-\032\\#?`(){}[\]^*<=>~|; "!$&'\202-\377]/;
 export function reprStr(s: string, mustQuote = false): string {
@@ -83,8 +81,6 @@ export function reprStr(s: string, mustQuote = false): string {
       "$'" +
       s.replace(regexAnsiCEscape, (c: string) => {
         switch (c) {
-          case " ":
-            return " ";
           case "\x07":
             return "\\a";
           case "\b":

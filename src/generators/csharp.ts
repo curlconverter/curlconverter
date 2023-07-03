@@ -23,14 +23,12 @@ const supportedArgs = new Set([
 ]);
 
 // https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/
-const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
+const regexEscape = /"|\\|\p{C}|[^ \P{Z}]/gu;
 export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
       switch (c) {
-        case " ":
-          return " ";
         case "\x00":
           return "\\0";
         case "\x07":

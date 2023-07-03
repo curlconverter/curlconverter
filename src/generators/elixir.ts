@@ -13,15 +13,13 @@ const supportedArgs = new Set([
   "next",
 ]);
 
-const regexEscape = /"|\\|\p{C}|\p{Z}|#\{/gu;
+const regexEscape = /"|\\|\p{C}|[^ \P{Z}]|#\{/gu;
 
 export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
       switch (c[0]) {
-        case " ":
-          return " ";
         case "\x00":
           return "\\0";
         case "\x07":

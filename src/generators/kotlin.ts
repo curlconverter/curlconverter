@@ -18,15 +18,13 @@ const supportedArgs = new Set([
 // https://kotlinlang.org/docs/java-to-kotlin-idioms-strings.html#concatenate-strings
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.3
-const regexEscape = /\$|"|\\|\p{C}|\p{Z}/gu;
+const regexEscape = /\$|"|\\|\p{C}|[^ \P{Z}]/gu;
 const regexDigit = /[0-9]/; // it's 0-7 actually but that would generate confusing code
 export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string, index: number, string: string) => {
       switch (c) {
-        case " ":
-          return " ";
         case "$":
           return "\\$";
         case "\\":

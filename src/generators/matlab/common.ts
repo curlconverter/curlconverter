@@ -2,9 +2,8 @@ import { CCError } from "../../utils.js";
 import { Word } from "../../shell/Word.js";
 import type { Request } from "../../parse.js";
 
-// Use negative lookahead because " " is a Z but we don't want to escape it
-// Wrap \p{C}|\p{Z} in brakets so that splitting keeps the characters to escape
-const regexEscape = /(?! )(\p{C}|\p{Z})/gu;
+// Wrap in brakets so that splitting keeps the characters to escape
+const regexEscape = /(\p{C}|[^ \P{Z}])/gu;
 // TODO: do we need to consider that some strings could be used
 // with sprintf() and have to have more stuff escaped?
 function strToParts(s: string): string[] {

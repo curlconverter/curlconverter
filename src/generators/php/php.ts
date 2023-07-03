@@ -27,7 +27,7 @@ const supportedArgs = new Set([
 // https://unicode.org/Public/UNIDATA/UnicodeData.txt
 // https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview
 const regexSingleEscape = /'|\\/gu;
-const regexDoubleEscape = /"|\$|\\|\p{C}|\p{Z}/gu;
+const regexDoubleEscape = /"|\$|\\|\p{C}|[^ \P{Z}]/gu;
 export function reprStr(s: string): string {
   let [quote, regex] = ["'", regexSingleEscape];
   if ((s.includes("'") && !s.includes('"')) || /[^\x20-\x7E]/.test(s)) {
@@ -39,8 +39,6 @@ export function reprStr(s: string): string {
     s.replace(regex, (c: string) => {
       switch (c) {
         // https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.double
-        case " ":
-          return " ";
         case "$":
           return quote === "'" ? "$" : "\\$";
         case "\\":

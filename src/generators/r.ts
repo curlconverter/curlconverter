@@ -14,7 +14,7 @@ const supportedArgs = new Set([
   "no-insecure",
 ]);
 
-const regexBacktickEscape = /`|\\|\p{C}|\p{Z}/gu;
+const regexBacktickEscape = /`|\\|\p{C}|[^ \P{Z}]/gu;
 function reprBacktick(s: Word): string {
   if (!s.isString()) {
     // TODO: warn
@@ -24,8 +24,6 @@ function reprBacktick(s: Word): string {
     "`" +
     s.toString().replace(regexBacktickEscape, (c: string): string => {
       switch (c) {
-        case " ":
-          return " ";
         case "\x07":
           return "\\a";
         case "\b":

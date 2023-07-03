@@ -7,14 +7,12 @@ import { parseQueryString } from "../Query.js";
 // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_quoting_rules
 // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_special_characters
 // https://learn.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-string-substitutions
-const unprintableChars = /(?! )(\p{C}|\p{Z})/gu;
-const regexDoubleEscape = /\$|`|"|\p{C}|\p{Z}/gu;
+const unprintableChars = /\p{C}|[^ \P{Z}]/gu;
+const regexDoubleEscape = /\$|`|"|\p{C}|[^ \P{Z}]/gu;
 export function escapeStr(s: string, quote: '"' | "'"): string {
   if (quote === '"') {
     return s.replace(regexDoubleEscape, (c: string) => {
       switch (c) {
-        case " ":
-          return " ";
         case "\x00":
           return "`0";
         case "\x07":

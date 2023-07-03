@@ -19,14 +19,12 @@ function indent(line: string, level = 1): string {
 }
 
 // https://doc.rust-lang.org/reference/tokens.html
-const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
+const regexEscape = /"|\\|\p{C}|[^ \P{Z}]/gu;
 export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
       switch (c) {
-        case " ":
-          return " ";
         case "\n":
           return "\\n";
         case "\r":

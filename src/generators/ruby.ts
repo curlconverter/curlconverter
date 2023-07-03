@@ -29,16 +29,13 @@ const supportedArgs = new Set([
 
 // https://docs.ruby-lang.org/en/3.1/syntax/literals_rdoc.html#label-Strings
 const regexSingleEscape = /'|\\/gu;
-const regexDoubleEscape = /"|\\|\p{C}|\p{Z}|#[{@$]/gu;
-const regexCurlyEscape = /\}|\\|\p{C}|\p{Z}|#[{@$]/gu; // TODO: escape { ?
+const regexDoubleEscape = /"|\\|\p{C}|[^ \P{Z}]|#[{@$]/gu;
+const regexCurlyEscape = /\}|\\|\p{C}|[^ \P{Z}]|#[{@$]/gu; // TODO: escape { ?
 const regexDigit = /[0-9]/;
 export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
   if (quote === undefined) {
     quote = "'";
-    if (
-      [...s.matchAll(/\p{C}|\p{Z}/gu)].some((m) => m[0] !== " ") ||
-      (s.includes("'") && !s.includes('"'))
-    ) {
+    if (s.match(/\p{C}|[^ \P{Z}]/gu) || (s.includes("'") && !s.includes('"'))) {
       quote = '"';
     }
   }
@@ -56,8 +53,6 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
     startQuote +
     s.replace(regexEscape, (c: string, index: number, string: string) => {
       switch (c[0]) {
-        case " ":
-          return " ";
         case "\x07":
           return "\\a";
         case "\b":

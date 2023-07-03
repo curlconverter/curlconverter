@@ -136,14 +136,12 @@ export function reprStringToStringList(
 }
 
 // Backtick quotes are not supported
-const regexEscape = /'|"|\\|\p{C}|\p{Z}/gu;
+const regexEscape = /'|"|\\|\p{C}|[^ \P{Z}]/gu;
 const regexDigit = /[0-9]/;
 export function esc(s: string, quote: "'" | '"' = "'"): string {
   return s.replace(regexEscape, (c: string, index: number, string: string) => {
     switch (c[0]) {
       // https://mathiasbynens.be/notes/javascript-escapes#single
-      case " ":
-        return " ";
       case "\\":
         return "\\\\";
       case "\b":

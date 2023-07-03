@@ -5,14 +5,12 @@ import type { Request, Warnings } from "../parse.js";
 const supportedArgs = new Set([...COMMON_SUPPORTED_ARGS, "max-time"]);
 
 // https://docs.swift.org/swift-book/documentation/the-swift-programming-language/stringsandcharacters/
-const regexEscape = /"|\\|\p{C}|\p{Z}/gu;
+const regexEscape = /"|\\|\p{C}|[^ \P{Z}]/gu;
 export function reprStr(s: string): string {
   return (
     '"' +
     s.replace(regexEscape, (c: string): string => {
       switch (c) {
-        case " ":
-          return " ";
         case "\x00":
           return "\\0";
         case "\\":
