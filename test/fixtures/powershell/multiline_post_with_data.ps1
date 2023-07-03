@@ -5,7 +5,7 @@ $body = @{
     "msg1" = "value1"
     "msg2" = "value2"
 }
-$response = Invoke-RestMethod -Uri "http://localhost:28139/echo/html/" `
+$response = Invoke-WebRequest -Uri "http://localhost:28139/echo/html/" `
     -Headers $headers `
     -ContentType "application/x-www-form-urlencoded" `
     -Body $body

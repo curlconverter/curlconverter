@@ -7,7 +7,7 @@ $form = @{
     "subject" = "Hello"
     "text" = "Testing the converter!"
 }
-$response = Invoke-RestMethod -Uri "http://localhost:28139/v3" `
+$response = Invoke-WebRequest -Uri "http://localhost:28139/v3" `
     -Method Post `
     -Credential $credential `
     -Authentication Basic `

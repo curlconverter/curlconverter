@@ -11,7 +11,7 @@ $body = @{
     "msg1" = "wow"
     "msg2" = "such"
 }
-$response = Invoke-RestMethod -Uri "http://localhost:28139/echo/html/" `
+$response = Invoke-WebRequest -Uri "http://localhost:28139/echo/html/" `
     -Method Post `
     -Headers $headers `
     -UserAgent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" `
