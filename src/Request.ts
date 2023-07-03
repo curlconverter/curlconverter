@@ -132,16 +132,17 @@ export interface Request {
   proxyAuth?: Word;
   noproxy?: Word; // a list of hosts or "*"
 
-  // seconds, can have decimal
-  timeout?: Word;
-  connectTimeout?: Word;
-  limitRate?: Word;
+  timeout?: Word; // a decimal, seconds
+  connectTimeout?: Word; // a decimal, seconds
+  limitRate?: Word; // an integer with an optional unit
+
+  retry?: Word; // an integer
 
   keepAlive?: boolean;
 
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
-  maxRedirects?: Word;
+  maxRedirects?: Word; // an integer
 
   http2?: boolean;
   http3?: boolean;
@@ -855,6 +856,10 @@ function buildRequest(
           JSON.stringify(config["max-redirs"].toString()),
       ]);
     }
+  }
+
+  if (config.retry) {
+    request.retry = config.retry;
   }
 
   const http2 = config.http2 || config["http2-prior-knowledge"];

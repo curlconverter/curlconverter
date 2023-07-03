@@ -156,6 +156,11 @@ const converters = {
     extension: ".js",
     converter: curlconverter.toNodeHttp,
   },
+  "node-ky": {
+    name: "Node + Ky",
+    extension: ".js",
+    converter: curlconverter.toNodeKy,
+  },
   "node-request": {
     name: "Node + request",
     extension: ".js",

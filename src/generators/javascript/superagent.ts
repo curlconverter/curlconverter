@@ -8,6 +8,7 @@ import type { FormParam } from "../../curl/form.js";
 import {
   repr,
   reprObj,
+  asParseInt,
   asParseFloatTimes1000,
   type JSImports,
   addImport,
@@ -26,6 +27,8 @@ const supportedArgs = new Set([
 
   "location", // --no-location only has an effect
   "max-redirs",
+
+  "retry",
 
   "insecure",
   "cert",
@@ -313,10 +316,9 @@ export function _toNodeSuperAgent(
     code += "  .redirects(" + repr(request.maxRedirects, imports) + ")\n";
   }
 
-  // TODO
-  // if (request.retry) {
-  //   code += "  .retry(" + request.retry.toString() + ")\n";
-  // }
+  if (request.retry) {
+    code += "  .retry(" + asParseInt(request.retry, imports) + ")\n";
+  }
 
   if (request.insecure) {
     code += "  .disableTLSCerts()\n";
@@ -324,7 +326,7 @@ export function _toNodeSuperAgent(
   if (request.cert) {
     const [cert, password] = request.cert;
     code += "  .cert(fs.readFileSync(" + repr(cert, imports) + "))\n";
-    addImport(imports, "fs", "fs");
+    addImport(imports, "* as fs", "fs");
     if (password) {
       warnings.push([
         "cert-password",
@@ -335,12 +337,12 @@ export function _toNodeSuperAgent(
   }
   if (request.key) {
     code += "  .key(fs.readFileSync(" + repr(request.key, imports) + "))\n";
-    addImport(imports, "fs", "fs");
+    addImport(imports, "* as fs", "fs");
   }
   // TODO: is this correct?
   if (request.cacert) {
     code += "  .ca(fs.readFileSync(" + repr(request.cacert, imports) + "))\n";
-    addImport(imports, "fs", "fs");
+    addImport(imports, "* as fs", "fs");
   }
 
   if (request.http2) {

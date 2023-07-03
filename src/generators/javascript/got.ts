@@ -10,6 +10,7 @@ import {
   reprObj,
   asParseFloatTimes1000,
   asParseInt,
+  toURLSearchParams,
   type JSImports,
   addImport,
   bySecondElem,
@@ -41,7 +42,6 @@ const supportedArgs = new Set([
   // "cookie-jar", // and cookie files
   // TODO: tls using https: and agent:
   // TODO: proxy stuff using agent:
-  // TODO: retry:
   // TODO: methodRewriting: true to match curl?
 ]);
 
@@ -92,16 +92,12 @@ function getBodyString(
         ];
       }
       if (queryList) {
-        let paramsCode = "body: new URLSearchParams([\n";
-        for (const [key, val] of queryList) {
-          paramsCode += `    [${repr(key, imports)}, ${repr(val, imports)}],\n`;
-        }
-        if (paramsCode.endsWith(",\n")) {
-          paramsCode = paramsCode.slice(0, -2);
-          paramsCode += "\n";
-        }
-        paramsCode += "  ]).toString()";
-        return [paramsCode, null];
+        return [
+          "body: " +
+            toURLSearchParams([queryList, null], imports) +
+            ".toString()",
+          null,
+        ];
       }
     }
   } catch {}
@@ -137,15 +133,10 @@ function buildOptionsObject(
       ) +
       ",\n";
   } else if (request.urls[0].queryList) {
-    code += "  searchParams: new URLSearchParams([\n";
-    for (const [key, val] of request.urls[0].queryList) {
-      code += `    [${repr(key, imports)}, ${repr(val, imports)}],\n`;
-    }
-    if (code.endsWith(",\n")) {
-      code = code.slice(0, -2);
-      code += "\n";
-    }
-    code += "  ]),\n";
+    code +=
+      "  searchParams: " +
+      toURLSearchParams([request.urls[0].queryList, null], imports) +
+      ",\n";
   }
 
   const [bodyString, commentedOutBodyString] = getBodyString(request, imports); // can delete headers

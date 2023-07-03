@@ -1,4 +1,4 @@
-import { fs } from 'fs';
+import * as fs from 'fs';
 
 const form = new FormData();
 form.append('attributes', '{"name":"tigers.jpeg", "parent":{"id":"11446498"}}');
