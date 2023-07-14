@@ -182,7 +182,7 @@ function requestToKy(
 
     const url = urlObj.queryList ? urlObj.urlWithoutQueryList : urlObj.url;
 
-    if (method.isString() && methodStr in methods) {
+    if (method.isString() && methods.includes(methodStr)) {
       const fn = methodStr.toLowerCase().toString();
       code += "ky." + fn + "(" + repr(url, imports);
     } else {
