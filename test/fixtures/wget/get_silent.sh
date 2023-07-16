@@ -1,1 +1,1 @@
-wget --output-document - http://localhost:28139
+wget --output-document - --quiet http://localhost:28139

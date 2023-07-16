@@ -37,6 +37,9 @@ const supportedArgs = new Set([
   "globoff",
   "no-globoff",
 
+  "netrc",
+  "netrc-optional",
+
   "timeout",
   "connect-timeout",
   "limit-rate",
@@ -63,6 +66,15 @@ const supportedArgs = new Set([
 
   "output",
   "upload-file",
+
+  "continue-at",
+  "clobber",
+  "remote-time",
+
+  "keep-alive",
+
+  "silent",
+  "verbose",
 
   "next",
 ]);
@@ -234,11 +246,19 @@ function requestToWget(request: Request, warnings: Warnings): string {
     }
   }
 
-  if (request.cookieFiles) {
-    // TODO: just take the last one
-    // TODO: does this work?
+  if (request.cookieFiles && request.cookieFiles.length) {
     for (const cookieFile of request.cookieFiles) {
       args.push("--load-cookies=" + repr(cookieFile));
+    }
+
+    if (request.cookieFiles.length > 1) {
+      const lastCookieFile =
+        request.cookieFiles[request.cookieFiles.length - 1];
+      warnings.push([
+        "multiple-cookie-files",
+        "Wget only supports reading cookies from one file, only the last one will be sent: " +
+          lastCookieFile.toString(),
+      ]);
     }
   }
   if (request.cookieJar) {
@@ -387,6 +407,10 @@ function requestToWget(request: Request, warnings: Warnings): string {
   }
   // TODO: --secure-protocol
 
+  if (request.netrc === "ignored") {
+    args.push("--no-netrc");
+  }
+
   if (request.noproxy) {
     if (eq(request.noproxy, "*")) {
       args.push("--no-proxy");
@@ -426,11 +450,31 @@ function requestToWget(request: Request, warnings: Warnings): string {
     args.push("--limit-rate=" + repr(request.limitRate));
   }
 
+  // TODO: this doesn't match up. Warn if multiple, etc.
   if (request.urls[0].output) {
-    // TODO: --no-clobber ?
     args.push("--output-document=" + repr(request.urls[0].output));
   } else {
     args.push("--output-document -");
+  }
+  if (request.clobber === false) {
+    args.push("--no-clobber");
+  }
+  // TODO: --create-dirs
+
+  if (request.remoteTime === false) {
+    args.push("--no-use-server-timestamps");
+  }
+
+  if (request.continueAt) {
+    if (eq(request.continueAt, "-")) {
+      args.push("--continue");
+    } else {
+      args.push("--start-pos=" + repr(request.continueAt));
+    }
+  }
+
+  if (request.keepAlive === false) {
+    args.push("--no-http-keep-alive");
   }
 
   // This is used only for FTP by Wget, we might as well add it even
@@ -439,6 +483,21 @@ function requestToWget(request: Request, warnings: Warnings): string {
     // TODO: this isn't great, it has different meanings from curl to Wget
     // TODO: don't remove \[ and \] from original URL?
     args.push("--no-glob");
+  }
+
+  // TODO:
+  // curl:
+  // --silent, --verbose, --no-verbose (the default)
+  // --progress-meter (the default), --no-progress-meter, --progress-bar
+  // --trace-ascii, --trace
+  // wget:
+  // --quiet, --verbose (the default), --no-verbose
+  // --progress=bar (the default), --progress=dot
+  // --debug
+  if (request.silent) {
+    args.push("--quiet");
+  } else if (request.verbose === false) {
+    args.push("--no-verbose");
   }
 
   for (const url of request.urls) {
