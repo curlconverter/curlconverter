@@ -649,9 +649,8 @@ function requestToJavaScriptOrNode(
         ) {
           warnings.push([
             "forbidden-header",
-            "the header " +
-              JSON.stringify(headerName.toString()) +
-              " is not allowed in fetch()",
+            JSON.stringify(headerName.toString()) +
+              " header is forbidden in fetch()",
           ]);
         }
       }

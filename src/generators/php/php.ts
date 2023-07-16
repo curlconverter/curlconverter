@@ -19,6 +19,7 @@ const supportedArgs = new Set([
   "form-string",
   "proxy",
   "proxy-user",
+  "unix-socket",
 ]);
 
 // https://www.php.net/manual/en/language.types.string.php
@@ -87,7 +88,8 @@ export function repr(w: Word): string {
 }
 
 export function _toPhp(requests: Request[], warnings: Warnings = []): string {
-  const request = getFirst(requests, warnings);
+  // TODO: only reading one file is supported
+  const request = getFirst(requests, warnings, { dataReadsFile: true });
 
   let cookieString;
   if (request.headers.has("cookie")) {
@@ -158,7 +160,7 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
       }
       requestDataCode += "]";
     } else if (request.isDataBinary && request.data!.charAt(0) === "@") {
-      // TODO: check, used to be substring(1)
+      // TODO: do this properly with .dataArray
       requestDataCode =
         "file_get_contents(" + repr(request.data!.slice(1)) + ")";
     } else {
@@ -183,6 +185,13 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
     phpCode +=
       "curl_setopt($ch, CURLOPT_TIMEOUT, " +
       (parseInt(request.timeout.toString(), 10) || 0) +
+      ");\n";
+  }
+
+  if (request.unixSocket) {
+    phpCode +=
+      "curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, " +
+      repr(request.unixSocket) +
       ");\n";
   }
 
