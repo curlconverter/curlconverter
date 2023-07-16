@@ -136,6 +136,12 @@ export interface Request {
   connectTimeout?: Word; // a decimal, seconds
   limitRate?: Word; // an integer with an optional unit
 
+  continueAt?: Word; // an integer or "-"
+
+  remoteTime?: boolean;
+
+  clobber?: boolean;
+
   retry?: Word; // an integer
 
   keepAlive?: boolean;
@@ -862,6 +868,7 @@ function buildRequest(
     request.retry = config.retry;
   }
 
+  // TODO: this should write to the same "httpVersion" variable
   const http2 = config.http2 || config["http2-prior-knowledge"];
   if (http2) {
     request.http2 = http2;
@@ -874,20 +881,32 @@ function buildRequest(
     request.unixSocket = config["unix-socket"];
   }
 
-  if (config["netrc-optional"]) {
+  if (config["netrc-optional"] || config["netrc-file"]) {
     request.netrc = "optional";
-  } else if (config.netrc || config["netrc-file"]) {
+  } else if (config.netrc) {
     request.netrc = "required";
   } else if (config.netrc === false) {
     // TODO || config["netrc-optional"] === false ?
     request.netrc = "ignored";
   }
 
-  if (global.verbose) {
-    request.verbose = true;
+  if (config["continue-at"]) {
+    request.continueAt = config["continue-at"];
   }
-  if (global.silent) {
-    request.silent = true;
+
+  if (Object.prototype.hasOwnProperty.call(config, "clobber")) {
+    request.clobber = config.clobber;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "remote-time")) {
+    request.remoteTime = config["remote-time"];
+  }
+
+  // Global options
+  if (Object.prototype.hasOwnProperty.call(global, "verbose")) {
+    request.verbose = global.verbose;
+  }
+  if (Object.prototype.hasOwnProperty.call(global, "silent")) {
+    request.silent = global.silent;
   }
 
   return request;
