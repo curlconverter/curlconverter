@@ -62,6 +62,7 @@ import {
   _toNodeSuperAgent,
   toNodeSuperAgentWarn,
 } from "./generators/javascript/superagent.js";
+import { _toOCaml, toOCamlWarn } from "./generators/ocaml.js";
 import { _toPhp, toPhpWarn } from "./generators/php/php.js";
 import { _toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 import {
@@ -151,6 +152,7 @@ const translate: {
   "nodejs-request": [_toNodeRequest, toNodeRequestWarn], // undocumented alias
   "nodejs-superagent": [_toNodeSuperAgent, toNodeSuperAgentWarn], // undocumented alias
   "nodejs-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn], // undocumented alias
+  ocaml: [_toOCaml, toOCamlWarn],
   php: [_toPhp, toPhpWarn],
   "php-curl": [_toPhp, toPhpWarn], // undocumented alias
   "php-guzzle": [_toPhpGuzzle, toPhpGuzzleWarn],
@@ -202,6 +204,7 @@ language: the language to convert the curl command to. The choices are
   node-ky
   node-request
   node-superagent
+  ocaml
   php
   php-guzzle
   php-requests
