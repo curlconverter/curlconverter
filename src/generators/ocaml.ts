@@ -79,8 +79,8 @@ export function _toOCaml(requests: Request[], warnings: Warnings = []): string {
   // https://github.com/mirage/ocaml-cohttp/blob/b0104b407e631b5a1e51c626a75af17cc6f33369/cohttp-lwt/src/s.ml#L220
   const methodFns = ["HEAD", "GET", "DELETE", "POST", "PUT", "PATCH"];
   const bodyMethods = ["POST", "PUT", "PATCH"];
-  // TODO: post_form
 
+  // TODO: Client.post_form
   code += "let uri = Uri.of_string " + repr(request.urls[0].url) + " in\n";
 
   if (!method.isString() || !methodConstants.includes(methodStr)) {
@@ -123,7 +123,10 @@ export function _toOCaml(requests: Request[], warnings: Warnings = []): string {
     code +=
       "let body = Cohttp_lwt.Body.of_string " + repr(request.data) + " in\n";
   }
+  // TODO: --upload-file
+  // TODO: request.multipartUploads
 
+  let fn = "Client.call";
   const args = [];
   if (request.headers.length || request.urls[0].auth) {
     args.push("~headers");
@@ -131,8 +134,6 @@ export function _toOCaml(requests: Request[], warnings: Warnings = []): string {
   if (hasBody) {
     args.push("~body");
   }
-
-  let fn = "Client.call";
   if (!method.isString() || !methodConstants.includes(methodStr)) {
     args.push("meth");
   } else {
