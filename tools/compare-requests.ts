@@ -206,6 +206,10 @@ var $ = jQueryInit(window);
     copy: "cp <file> /tmp/curlconverter/node-superagent/main.js",
     exec: "cd /tmp/curlconverter/node-superagent && node main.js",
   },
+  ocaml: {
+    copy: "cp <file> /tmp/curlconverter/ocaml/main.ml",
+    exec: "cd /tmp/curlconverter/ocaml && eval `opam config env` && ocamlbuild -use-ocamlfind -tag thread -pkg cohttp-lwt-unix main.native && ./main.native",
+  },
   php: {
     exec: "php <file>",
   },

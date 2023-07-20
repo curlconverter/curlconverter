@@ -171,6 +171,11 @@ const converters = {
     extension: ".js",
     converter: curlconverter.toNodeSuperAgent,
   },
+  ocaml: {
+    name: "OCaml",
+    extension: ".ml",
+    converter: curlconverter.toOCaml,
+  },
   php: {
     name: "PHP",
     extension: ".php",
