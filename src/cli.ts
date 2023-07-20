@@ -87,7 +87,7 @@ import { _toWget, toWgetWarn } from "./generators/wget.js";
 import fs from "fs";
 
 // This line is updated by extract_curl_args.py
-const VERSION = "4.8.1 (curl 8.1.2)";
+const VERSION = "4.8.0 (curl 8.2.0)";
 
 // sets a default in case --language isn't passed
 const defaultLanguage = "python";
@@ -97,7 +97,7 @@ const defaultLanguage = "python";
 const translate: {
   [key: string]: [
     (request: Request[], warnings?: Warnings) => string,
-    (curlCommand: string | string[], warnings?: Warnings) => [string, Warnings]
+    (curlCommand: string | string[], warnings?: Warnings) => [string, Warnings],
   ];
 } = {
   ansible: [_toAnsible, toAnsibleWarn],

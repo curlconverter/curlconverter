@@ -207,7 +207,26 @@ var $ = jQueryInit(window);
     exec: "cd /tmp/curlconverter/node-superagent && node main.js",
   },
   ocaml: {
-    copy: "cp <file> /tmp/curlconverter/ocaml/main.ml",
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/ocaml/main.ml",
+        contents
+          .replace(
+            "\nlet uri = Uri.of_string ",
+            "let body =\nlet uri = Uri.of_string "
+          )
+          .replace(
+            "  (* Do stuff with the result *)\n",
+            "  body |> Cohttp_lwt.Body.to_string\n" +
+              "\n" +
+              "" +
+              "let () =\n" +
+              "  let body = Lwt_main.run body in\n" +
+              "  print_endline body\n"
+          ),
+        "utf8"
+      );
+    },
     exec: "cd /tmp/curlconverter/ocaml && eval `opam config env` && ocamlbuild -use-ocamlfind -tag thread -pkg cohttp-lwt-unix main.native && ./main.native",
   },
   php: {

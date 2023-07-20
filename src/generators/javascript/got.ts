@@ -144,7 +144,7 @@ function buildOptionsObject(
   if (request.headers.length) {
     const headers = request.headers.headers.filter((h) => h[1] !== null) as [
       Word,
-      Word
+      Word,
     ][];
     if (headers.length) {
       code +=

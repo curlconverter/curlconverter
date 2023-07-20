@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "4.8.1",
+  "version": "4.8.0",
   "description": "convert curl commands to Python, JavaScript, Go, PHP and more",
   "homepage": "https://curlconverter.com",
   "author": {
@@ -26,7 +26,7 @@
   "dependencies": {
     "@curlconverter/tree-sitter-bash": "^0.0.3",
     "jsesc": "^3.0.2",
-    "lossless-json": "^2.0.9",
+    "lossless-json": "^2.0.11",
     "tree-sitter": "^0.20.5",
     "web-tree-sitter": "^0.20.8",
     "yamljs": "^0.3.0"
@@ -40,18 +40,18 @@
     "@types/tape": "^5.6.0",
     "@types/yamljs": "^0.2.31",
     "@types/yargs": "^17.0.24",
-    "@typescript-eslint/eslint-plugin": "^5.61.0",
-    "@typescript-eslint/parser": "^5.61.0",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
     "c8": "^8.0.0",
     "colors": "^1.4.0",
     "diff": "^5.1.0",
-    "eslint": "^8.44.0",
+    "eslint": "^8.45.0",
     "eslint-config-prettier": "^8.8.0",
-    "glob": "^10.3.1",
+    "glob": "^10.3.3",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",
-    "prettier": "^2.8.8",
-    "tape": "^5.6.4",
+    "prettier": "^3.0.0",
+    "tape": "^5.6.6",
     "tree-sitter-cli": "^0.20.8",
     "typescript": "^5.1.6",
     "yargs": "^17.7.2"
