@@ -171,6 +171,11 @@ const converters = {
     extension: ".js",
     converter: curlconverter.toNodeSuperAgent,
   },
+  objectivec: {
+    name: "Objective-C",
+    extension: ".m",
+    converter: curlconverter.toObjectiveC,
+  },
   ocaml: {
     name: "OCaml",
     extension: ".ml",

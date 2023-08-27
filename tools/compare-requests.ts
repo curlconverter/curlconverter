@@ -206,6 +206,16 @@ var $ = jQueryInit(window);
     copy: "cp <file> /tmp/curlconverter/node-superagent/main.js",
     exec: "cd /tmp/curlconverter/node-superagent && node main.js",
   },
+  objectivec: {
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/objectivec/main.m",
+        contents,
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/objectivec && clang -framework Foundation main.m -o main && ./main",
+  },
   ocaml: {
     copy: function (contents: string) {
       fs.writeFileSync(

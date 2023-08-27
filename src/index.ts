@@ -43,6 +43,7 @@ export {
   toNodeRequest,
   toNodeRequestWarn,
 } from "./generators/javascript/request.js";
+export { toObjectiveC, toObjectiveCWarn } from "./generators/objectivec.js";
 export { toOCaml, toOCamlWarn } from "./generators/ocaml.js";
 export { toPhp, toPhpWarn } from "./generators/php/php.js";
 export { toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
