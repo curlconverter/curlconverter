@@ -1,6 +1,6 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, OCaml, PHP, PowerShell, Python, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, Objective-C, OCaml, PHP, PowerShell, Python, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
 
 Try it on [curlconverter.com](https://curlconverter.com) or as a drop-in `curl` replacement:
 
@@ -18,7 +18,7 @@ response = requests.post('http://example.com', data=data)
 Features:
 
 - Implements a lot of curl's argument parsing logic
-  - Knows about all 254 curl arguments but most are ignored
+  - Knows about all 255 curl arguments but most are ignored
   - Supports shortening `-O -v -X POST` to `-OvXPOST`
   - `--data @filename` generates code that reads that file and `@-` reads stdin
 - Understands Bash syntax
@@ -96,6 +96,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `kotlin`
 - `matlab`
 - `node`, `node-http`, `node-axios`, `node-got`, `node-ky`, `node-request`, `node-superagent`
+- `objc`
 - `ocaml`
 - `php`, `php-guzzle`, `php-requests`
 - `powershell`, `powershell-webrequest`

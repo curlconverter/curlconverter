@@ -206,6 +206,37 @@ var $ = jQueryInit(window);
     copy: "cp <file> /tmp/curlconverter/node-superagent/main.js",
     exec: "cd /tmp/curlconverter/node-superagent && node main.js",
   },
+  objectivec: {
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/objectivec/main.m",
+        contents
+          .replace(
+            "#import <Foundation/Foundation.h>\n",
+            "#import <Foundation/Foundation.h>\n" +
+              "\n" +
+              "int main(int argc, const char * argv[]) {\n" +
+              "    @autoreleasepool {\n"
+          )
+          .replace(
+            "NSURLSession *session = ",
+            "\ndispatch_semaphore_t semaphore = dispatch_semaphore_create(0);\nNSURLSession *session = "
+          )
+          .replace(
+            '        NSLog(@"%@", httpResponse);\n' + "    }\n",
+            '        NSLog(@"%@", httpResponse);\n' +
+              "    }\n" +
+              "dispatch_semaphore_signal(semaphore);\n"
+          ) +
+          "dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);\n" +
+          "    }\n" +
+          "    return 0;\n" +
+          "}\n",
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/objectivec && clang -framework Foundation main.m -o main && ./main",
+  },
   ocaml: {
     copy: function (contents: string) {
       fs.writeFileSync(
