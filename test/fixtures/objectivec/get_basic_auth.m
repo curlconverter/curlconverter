@@ -1,8 +1,12 @@
 #import <Foundation/Foundation.h>
 
 NSURL *url = [NSURL URLWithString:@"http://localhost:28139/"];
+
+NSString *credentials = [NSString stringWithFormat:@"%@:%@", @"some_username", @"some_password"];
+NSData *credentialsData = [credentials dataUsingEncoding:NSUTF8StringEncoding];
+NSString *base64Credentials = [credentialsData base64EncodedStringWithOptions:0];
 NSDictionary *headers = @{
-    @"Authorization": @"Basic c29tZV91c2VybmFtZTpzb21lX3Bhc3N3b3Jk"
+    @"Authorization": [NSString stringWithFormat:@"Basic %@", base64Credentials]
 };
 
 NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];

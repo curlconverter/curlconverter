@@ -103,21 +103,21 @@ export function _toObjectiveC(
 
   if (request.urls[0].auth) {
     const [user, password] = request.urls[0].auth;
-    const auth = mergeWords([user, ":", password]);
-    if (!auth.isString()) {
-      warnings.push([
-        "auth-not-string",
-        "Authorization header contains environment variable",
-      ]);
-    }
 
-    request.headers.setIfMissing(
-      "Authorization",
-      "Basic " + btoa(auth.toString())
-    );
+    code += "\n";
+    code +=
+      'NSString *credentials = [NSString stringWithFormat:@"%@:%@", ' +
+      repr(user) +
+      ", " +
+      repr(password) +
+      "];\n";
+    code +=
+      "NSData *credentialsData = [credentials dataUsingEncoding:NSUTF8StringEncoding];\n";
+    code +=
+      "NSString *base64Credentials = [credentialsData base64EncodedStringWithOptions:0];\n";
   }
 
-  if (request.headers.length) {
+  if (request.headers.length || request.urls[0].auth) {
     const headerLines = [];
     for (const [key, value] of request.headers) {
       if (value === null) {
@@ -133,6 +133,12 @@ export function _toObjectiveC(
         ]);
       }
       headerLines.push("    " + repr(key) + ": " + repr(value));
+    }
+    if (request.urls[0].auth) {
+      warnings.push(["reserved-header", "Authorization is a reserved header"]);
+      headerLines.push(
+        '    @"Authorization": [NSString stringWithFormat:@"Basic %@", base64Credentials]'
+      );
     }
     if (headerLines.length) {
       code += "NSDictionary *headers = @{\n";
@@ -234,7 +240,7 @@ export function _toObjectiveC(
   if (!eq(request.urls[0].method, "GET")) {
     code += "[request setHTTPMethod:" + repr(request.urls[0].method) + "];\n";
   }
-  if (request.headers.length) {
+  if (request.headers.length || request.urls[0].auth) {
     code += "[request setAllHTTPHeaderFields:headers];\n";
   }
   if (hasData) {
