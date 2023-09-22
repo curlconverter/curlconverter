@@ -210,7 +210,28 @@ var $ = jQueryInit(window);
     copy: function (contents: string) {
       fs.writeFileSync(
         "/tmp/curlconverter/objectivec/main.m",
-        contents,
+        contents
+          .replace(
+            "#import <Foundation/Foundation.h>\n",
+            "#import <Foundation/Foundation.h>\n" +
+              "\n" +
+              "int main(int argc, const char * argv[]) {\n" +
+              "    @autoreleasepool {\n"
+          )
+          .replace(
+            "NSURLSession *session = ",
+            "\ndispatch_semaphore_t semaphore = dispatch_semaphore_create(0);\nNSURLSession *session = "
+          )
+          .replace(
+            '        NSLog(@"%@", httpResponse);\n' + "    }\n",
+            '        NSLog(@"%@", httpResponse);\n' +
+              "    }\n" +
+              "dispatch_semaphore_signal(semaphore);\n"
+          ) +
+          "dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);\n" +
+          "    }\n" +
+          "    return 0;\n" +
+          "}\n",
         "utf8"
       );
     },

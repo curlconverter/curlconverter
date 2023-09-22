@@ -1,9 +1,14 @@
-import { CCError } from "../utils.js";
-import { Word, eq } from "../shell/Word.js";
+import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-const supportedArgs = new Set([...COMMON_SUPPORTED_ARGS]);
+const supportedArgs = new Set([
+  ...COMMON_SUPPORTED_ARGS,
+  // TODO
+  // "form",
+  // "form-string",
+  "max-time",
+]);
 
 // Presumably the same as C strings
 // https://en.wikipedia.org/wiki/Escape_sequences_in_C#Table_of_escape_sequences
@@ -51,9 +56,9 @@ export function repr(w: Word): string {
     if (typeof t === "string") {
       args.push(reprStr(t));
     } else if (t.type === "variable") {
-      // TODO: does this error if variable doesn't exist?
+      // TODO: turns into "(null)" if variable doesn't exist
       args.push(
-        "[[[NSProcessInfo processInfo] environment] objectForKey:@" +
+        "[[[NSProcessInfo processInfo] environment] objectForKey:" +
           reprStr(t.value) +
           "]"
       );
@@ -65,7 +70,14 @@ export function repr(w: Word): string {
   if (args.length === 1) {
     return args[0];
   }
-  return args.join(" + ");
+  // This is how you concatenate strings in Objective-C.
+  return (
+    '[NSString stringWithFormat:@"' +
+    "%@".repeat(args.length) +
+    '", ' +
+    args.join(", ") +
+    "]"
+  );
 }
 
 const reservedHeaders = [
@@ -82,12 +94,28 @@ export function _toObjectiveC(
   requests: Request[],
   warnings: Warnings = []
 ): string {
-  const request = getFirst(requests, warnings);
+  const request = getFirst(requests, warnings, { dataReadsFile: true });
   let code = "";
   code += "#import <Foundation/Foundation.h>\n";
   code += "\n";
   code +=
     "NSURL *url = [NSURL URLWithString:" + repr(request.urls[0].url) + "];\n";
+
+  if (request.urls[0].auth) {
+    const [user, password] = request.urls[0].auth;
+    const auth = mergeWords([user, ":", password]);
+    if (!auth.isString()) {
+      warnings.push([
+        "auth-not-string",
+        "Authorization header contains environment variable",
+      ]);
+    }
+
+    request.headers.setIfMissing(
+      "Authorization",
+      "Basic " + btoa(auth.toString())
+    );
+  }
 
   if (request.headers.length) {
     const headerLines = [];
@@ -123,7 +151,7 @@ export function _toObjectiveC(
       repr(request.urls[0].uploadFile) +
       "];";
     hasDataStream = true;
-  } else if (request.dataArray) {
+  } else if (request.dataArray && request.dataArray.length >= 1) {
     if (
       request.dataArray.length === 1 &&
       !(request.dataArray[0] instanceof Word) &&
@@ -136,8 +164,53 @@ export function _toObjectiveC(
         "];";
       hasDataStream = true;
     } else {
+      const parts = [];
+      if (
+        request.dataArray.length === 1 &&
+        request.dataArray[0] instanceof Word
+      ) {
+        const entries = request.dataArray[0].split("&");
+        for (const [i, entry] of entries.entries()) {
+          const newEntry = i === 0 ? entry : entry.prepend("&");
+          parts.push(repr(newEntry));
+        }
+      } else {
+        // TODO: this can be better
+        for (const d of request.dataArray) {
+          if (d instanceof Word) {
+            parts.push(repr(d));
+          } else {
+            let part = "";
+            if (d.name) {
+              // TODO: merge with previous part if it's a string
+              part += repr(d.name.append("=")) + " + ";
+            }
+            // TODO: handle file type
+            part +=
+              "[NSString stringWithContentsOfFile:" +
+              repr(d.filename) +
+              " encoding:NSUTF8StringEncoding error:nil];";
+            parts.push(part);
+          }
+        }
+      }
+
+      const [firstPart, ...restParts] = parts;
+      code +=
+        "NSMutableData *data = [[NSMutableData alloc] initWithData:[" +
+        firstPart +
+        " dataUsingEncoding:NSUTF8StringEncoding]];\n";
+      for (const part of restParts) {
+        code +=
+          "[data appendData:[" +
+          part +
+          " dataUsingEncoding:NSUTF8StringEncoding]];\n";
+      }
+      code += "\n";
+      hasData = true;
     }
   } else if (request.multipartUploads) {
+    // TODO
   }
   if (
     request.timeout &&
@@ -145,9 +218,9 @@ export function _toObjectiveC(
     !eq(request.timeout, "60.0")
   ) {
     code +=
-      "NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url\n";
+      "NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url\n";
     code +=
-      "                                                          cachePolicy:NSURLRequest.CachePolicy.useProtocolCachePolicy\n";
+      "                                                          cachePolicy:NSURLRequestUseProtocolCachePolicy\n";
     code +=
       "                                                      timeoutInterval:" +
       // TODO: verify/escape or parse
@@ -155,31 +228,28 @@ export function _toObjectiveC(
       "];\n";
   } else {
     code +=
-      "NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url];\n";
+      "NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];\n";
   }
 
   if (!eq(request.urls[0].method, "GET")) {
-    code +=
-      "[urlRequest setHTTPMethod:" + repr(request.urls[0].method) + "];\n";
+    code += "[request setHTTPMethod:" + repr(request.urls[0].method) + "];\n";
   }
   if (request.headers.length) {
-    code += "[urlRequest setAllHTTPHeaderFields:headers];\n";
+    code += "[request setAllHTTPHeaderFields:headers];\n";
   }
   if (hasData) {
-    code += "[urlRequest setHttpBody:data];\n";
+    code += "[request setHTTPBody:data];\n";
   } else if (hasDataStream) {
     // TODO: does this work?
-    code += "[urlRequest setHttpBodyStream:dataStream];\n";
+    code += "[request setHTTPBodyStream:dataStream];\n";
   }
 
   code += "\n";
   // TODO: TLSMinimumSupportedProtocolVersion
-  // TODO: timeoutIntervalForRequest?
-  // TODO: timeoutIntervalForResource?
   code +=
     "NSURLSessionConfiguration *defaultSessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];\n";
   code +=
-    "NSURLSession *defaultSession = [NSURLSession sessionWithConfiguration:defaultSessionConfiguration];\n";
+    "NSURLSession *session = [NSURLSession sessionWithConfiguration:defaultSessionConfiguration];\n";
   code +=
     "NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {\n";
   code += "    if (error) {\n";
@@ -190,7 +260,6 @@ export function _toObjectiveC(
   code += '        NSLog(@"%@", httpResponse);\n';
   code += "    }\n";
   code += "}];\n";
-  code += "\n";
   code += "[dataTask resume];\n";
 
   return code;

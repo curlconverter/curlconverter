@@ -155,6 +155,7 @@ const translate: {
   "nodejs-xhr": [_toJavaScriptXHR, toJavaScriptXHRWarn], // undocumented alias
   objc: [_toObjectiveC, toObjectiveCWarn],
   objectivec: [_toObjectiveC, toObjectiveCWarn], // undocumented alias
+  "objective-c": [_toObjectiveC, toObjectiveCWarn], // undocumented alias
   ocaml: [_toOCaml, toOCamlWarn],
   php: [_toPhp, toPhpWarn],
   "php-curl": [_toPhp, toPhpWarn], // undocumented alias
