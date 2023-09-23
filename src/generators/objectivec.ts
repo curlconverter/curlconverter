@@ -1,6 +1,7 @@
 import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
+import type { DataParam } from "../Request.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -182,21 +183,33 @@ export function _toObjectiveC(
         }
       } else {
         // TODO: this can be better
+        const entries: DataParam[] = [];
         for (const d of request.dataArray) {
           if (d instanceof Word) {
-            parts.push(repr(d));
+            entries.push(d);
           } else {
-            let part = "";
             if (d.name) {
-              // TODO: merge with previous part if it's a string
-              part += repr(d.name.append("=")) + " + ";
+              const name = d.name.append("=");
+              const lastEntry = entries[entries.length - 1];
+              if (entries.length && lastEntry instanceof Word) {
+                entries[entries.length - 1] = mergeWords([lastEntry, name]);
+              } else {
+                entries.push(name);
+              }
             }
+            entries.push(d);
+          }
+        }
+        for (const entry of entries) {
+          if (entry instanceof Word) {
+            parts.push(repr(entry));
+          } else {
             // TODO: handle file type
-            part +=
+            parts.push(
               "[NSString stringWithContentsOfFile:" +
-              repr(d.filename) +
-              " encoding:NSUTF8StringEncoding error:nil];";
-            parts.push(part);
+                repr(entry.filename) +
+                " encoding:NSUTF8StringEncoding error:nil];"
+            );
           }
         }
       }
