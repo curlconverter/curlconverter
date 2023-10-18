@@ -5,6 +5,7 @@ import { wordDecodeURIComponent, parseQueryString } from "../Query.js";
 import type { QueryList } from "../Query.js";
 
 import { reprStr as pyrepr } from "./python.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -175,7 +176,10 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
       const filePath = request.data.slice(1);
       dataString = "data = upload_file(" + repr(filePath) + ")";
     } else {
-      const [parsedQueryString] = parseQueryString(request.data);
+      const [parsedQueryString] = parseQueryString(
+        request.data,
+        fileURLToPath(import.meta.url)
+      );
       // repeat to satisfy type checker
       dataIsList = parsedQueryString && parsedQueryString.length;
       if (dataIsList) {

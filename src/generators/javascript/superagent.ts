@@ -16,6 +16,7 @@ import {
 } from "./javascript.js";
 
 import { indent } from "./jquery.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -112,7 +113,10 @@ function _getDataString(
     ];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(
+      request.data,
+      fileURLToPath(import.meta.url)
+    );
     if (queryList) {
       exactContentType = null;
       const queryCode =

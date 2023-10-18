@@ -4,6 +4,7 @@ import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
 
 import { repr } from "./java.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -107,7 +108,10 @@ export function _toJavaOkHttp(
   } else if (request.data) {
     const contentType = request.headers.getContentType();
     if (contentType === "application/x-www-form-urlencoded") {
-      const [queryList] = parseQueryString(request.data);
+      const [queryList] = parseQueryString(
+        request.data,
+        fileURLToPath(import.meta.url)
+      );
       if (!queryList) {
         methodCallArgs.push("requestBody");
         javaCode +=

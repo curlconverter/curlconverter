@@ -18,6 +18,7 @@ import {
 } from "./javascript.js";
 
 import { getFormString } from "./jquery.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -58,7 +59,10 @@ function getDataString(
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const [queryList, queryDict] = parseQueryString(data);
+      const [queryList, queryDict] = parseQueryString(
+        data,
+        fileURLToPath(import.meta.url)
+      );
       if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8

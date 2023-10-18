@@ -1,5 +1,6 @@
 import { Word, eq } from "./shell/Word.js";
 import { UTF8encoder } from "./utils.js";
+import path from "path";
 
 export type QueryList = Array<[Word, Word]>;
 export type QueryDict = Array<[Word, Word | Array<Word>]>;
@@ -34,6 +35,51 @@ function _percentEncode(s: string): string {
     .join("");
 }
 
+// If the query string doesn't round-trip, we cannot properly convert it.
+// TODO: this is a bit Python-specific, ideally we would check how each runtime/library
+// percent-encodes query strings. For example, a %27 character in the input query
+// string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
+function _roundTripSupported(
+  key: Word,
+  val: Word,
+  decodedKey: Word,
+  decodedVal: Word
+): boolean {
+  const roundTripKey = percentEncode(decodedKey);
+  const roundTripVal = percentEncode(decodedVal);
+  // If the original data used %20 instead of + (what requests will send), that's close enough
+  return !(
+    (!eq(roundTripKey, key) && !eq(roundTripKey.replace(/%20/g, "+"), key)) ||
+    (!eq(roundTripVal, val) && !eq(roundTripVal.replace(/%20/g, "+"), val))
+  );
+}
+
+function _getGeneratorName(generatorPath: string | null): string | null {
+  if (!generatorPath) {
+    return null;
+  }
+  return path.parse(generatorPath).name;
+}
+
+function getConversion(
+  generatorName: string | null,
+  key: Word,
+  val: Word
+): [Word, Word] | null {
+  if (generatorName === null) {
+    return null;
+  }
+  type GeneratorMap = { [key: string]: [Word, Word] };
+  const generatorMap: GeneratorMap = {
+    json: [key, val],
+  };
+
+  if (generatorMap[generatorName] == null) {
+    return null;
+  }
+  return generatorMap[generatorName];
+}
+
 export function percentEncode(s: Word): Word {
   const newTokens = [];
   for (const token of s.tokens) {
@@ -45,6 +91,7 @@ export function percentEncode(s: Word): Word {
   }
   return new Word(newTokens);
 }
+
 export function percentEncodePlus(s: Word): Word {
   const newTokens = [];
   for (const token of s.tokens) {
@@ -72,12 +119,15 @@ export function wordDecodeURIComponent(s: Word): Word {
 
 // if url is 'example.com?' the s is ''
 // if url is 'example.com'  the s is null
-export function parseQueryString(s: Word | null): Query {
+export function parseQueryString(
+  s: Word | null,
+  generatorPath: string | null
+): Query {
   if (!s || s.isEmpty()) {
     return [null, null];
   }
-
   const asList: QueryList = [];
+  const generatorName = _getGeneratorName(generatorPath);
   for (const param of s.split("&")) {
     // Most software libraries don't let you distinguish between a=&b= and a&b,
     // so if we get an `a&b`-type query string, don't bother.
@@ -101,20 +151,14 @@ export function parseQueryString(s: Word | null): Query {
       }
       throw e;
     }
-    // If the query string doesn't round-trip, we cannot properly convert it.
-    // TODO: this is a bit Python-specific, ideally we would check how each runtime/library
-    // percent-encodes query strings. For example, a %27 character in the input query
-    // string will be decoded to a ' but won't be re-encoded into a %27 by encodeURIComponent
-    const roundTripKey = percentEncode(decodedKey);
-    const roundTripVal = percentEncode(decodedVal);
-    // If the original data used %20 instead of + (what requests will send), that's close enough
-    if (
-      (!eq(roundTripKey, key) && !eq(roundTripKey.replace(/%20/g, "+"), key)) ||
-      (!eq(roundTripVal, val) && !eq(roundTripVal.replace(/%20/g, "+"), val))
-    ) {
+    const foundConversion = getConversion(generatorName, key, val);
+    if (foundConversion !== null) {
+      asList.push(foundConversion);
+    } else if (!_roundTripSupported(key, val, decodedKey, decodedVal)) {
       return [null, null];
+    } else {
+      asList.push([decodedKey, decodedVal]);
     }
-    asList.push([decodedKey, decodedVal]);
   }
 
   // Group keys

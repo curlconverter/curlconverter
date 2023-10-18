@@ -3,6 +3,7 @@ import { Word, joinWords } from "../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -231,7 +232,10 @@ function getDataString(request: Request): string {
     }
   }
 
-  const [parsedQuery] = parseQueryString(request.data);
+  const [parsedQuery] = parseQueryString(
+    request.data,
+    fileURLToPath(import.meta.url)
+  );
   if (parsedQuery && parsedQuery.length) {
     const data = parsedQuery.map((p) => {
       const [key, value] = p;

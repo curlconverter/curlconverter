@@ -13,6 +13,7 @@ import {
 } from "./javascript.js";
 
 import { dedent, getFormString } from "./jquery.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -40,7 +41,10 @@ function _getDataString(
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(data);
+    const [queryList, queryDict] = parseQueryString(
+      data,
+      fileURLToPath(import.meta.url)
+    );
     if (queryList) {
       // TODO: check roundtrip, add a comment
       return [toURLSearchParams([queryList, queryDict], imports), null];

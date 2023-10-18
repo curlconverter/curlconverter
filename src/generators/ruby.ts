@@ -4,6 +4,7 @@ import { Word, eq } from "../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryDict } from "../Query.js";
+import { fileURLToPath } from "url";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
@@ -255,7 +256,10 @@ function getDataString(request: Request): [string, boolean] {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, queryAsDict] = parseQueryString(request.data);
+  const [_, queryAsDict] = parseQueryString(
+    request.data,
+    fileURLToPath(import.meta.url)
+  );
   if (!request.isDataBinary && queryAsDict) {
     // If the original request contained %20, Ruby will encode them as "+"
     return ["req.set_form_data(" + queryToRubyDict(queryAsDict) + ")\n", false];

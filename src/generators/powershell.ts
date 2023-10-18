@@ -3,6 +3,7 @@ import { warnIfPartsIgnored } from "../Warnings.js";
 import { Word, eq } from "../shell/Word.js";
 import type { Request, RequestUrl, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
+import { fileURLToPath } from "url";
 
 // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_quoting_rules
 // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_special_characters
@@ -238,7 +239,10 @@ function requestToPowershell(
     if (contentType === "application/x-www-form-urlencoded") {
       let queryList, queryDict;
       try {
-        [queryList, queryDict] = parseQueryString(request.data);
+        [queryList, queryDict] = parseQueryString(
+          request.data,
+          fileURLToPath(import.meta.url)
+        );
       } catch {}
       if (
         queryList &&

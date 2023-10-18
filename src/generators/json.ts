@@ -2,6 +2,7 @@ import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import type { AuthType } from "../Request.js";
 import { parseQueryString } from "../Query.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -79,7 +80,10 @@ function getDataString(request: Request): {
     } catch (e) {}
   }
 
-  const [parsedQuery, parsedQueryDict] = parseQueryString(request.data);
+  const [parsedQuery, parsedQueryDict] = parseQueryString(
+    request.data,
+    fileURLToPath(import.meta.url)
+  );
   if (!parsedQuery || !parsedQuery.length) {
     // TODO: this is not a good API
     return {

@@ -13,6 +13,7 @@ import {
   addImport,
   reprImports,
 } from "./javascript.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -105,7 +106,10 @@ function _getDataString(
     ];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(data);
+    const [queryList, queryDict] = parseQueryString(
+      data,
+      fileURLToPath(import.meta.url)
+    );
     if (queryList) {
       if (
         eq(exactContentType, "application/x-www-form-urlencoded; charset=utf-8")

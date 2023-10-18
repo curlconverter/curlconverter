@@ -13,6 +13,7 @@ import {
 } from "./javascript.js";
 
 import { dedent, getFormString } from "./jquery.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -41,7 +42,7 @@ function _getDataString(
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const query = parseQueryString(data);
+    const query = parseQueryString(data, fileURLToPath(import.meta.url));
     if (query[0]) {
       // if (
       //   eq(exactContentType, "application/x-www-form-urlencoded; charset=utf-8")

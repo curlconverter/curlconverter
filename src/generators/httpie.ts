@@ -7,6 +7,7 @@ import { Headers } from "../Headers.js";
 import { parseQueryString } from "../Query.js";
 
 import { repr, reprStr } from "./wget.js";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -185,7 +186,7 @@ function escapeQueryValue(value: Word): Word {
 function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
   let queryList;
   try {
-    [queryList] = parseQueryString(data);
+    [queryList] = parseQueryString(data, fileURLToPath(import.meta.url));
   } catch {}
   if (!queryList) {
     flags.push("--raw " + (repr(data) || "''"));

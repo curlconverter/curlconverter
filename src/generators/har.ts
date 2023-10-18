@@ -4,6 +4,7 @@ import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, RequestUrl, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
 import type { Request as HARRequest, PostData as PostData } from "har-format";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -31,7 +32,10 @@ function getDataString(request: Request): PostData | null {
   const mimeType = request.headers.getContentType() || "";
   try {
     // TODO: look at dataArray and generate fileName:
-    const [parsedQuery] = parseQueryString(request.data);
+    const [parsedQuery] = parseQueryString(
+      request.data,
+      fileURLToPath(import.meta.url)
+    );
     if (parsedQuery && parsedQuery.length) {
       return {
         mimeType,

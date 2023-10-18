@@ -4,6 +4,7 @@ import type { Request, Warnings } from "../parse.js";
 import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
 
 import yaml from "yamljs";
+import { fileURLToPath } from "url";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -142,7 +143,10 @@ function getDataString(
       }
       return [filename, "src"];
     }
-    const [queryList, queryDict] = parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(
+      request.data,
+      fileURLToPath(import.meta.url)
+    );
     if (queryDict) {
       return [
         Object.fromEntries(

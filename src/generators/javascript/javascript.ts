@@ -7,6 +7,7 @@ import type { QueryList, QueryDict } from "../../Query.js";
 import type { FormParam } from "../../curl/form.js";
 
 import jsescObj from "jsesc";
+import { fileURLToPath } from "url";
 
 const javaScriptSupportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -438,7 +439,10 @@ function getDataString(
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const [queryList, queryDict] = parseQueryString(data);
+      const [queryList, queryDict] = parseQueryString(
+        data,
+        fileURLToPath(import.meta.url)
+      );
       if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8
