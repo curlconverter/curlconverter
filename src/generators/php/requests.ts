@@ -4,6 +4,7 @@ import { parseQueryString } from "../../Query.js";
 
 import { repr } from "./php.js";
 
+const generatorName = "requests";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   // "form",
@@ -48,7 +49,7 @@ export function _toPhpRequests(
 
   let dataString;
   if (request.data) {
-    const [parsedQueryString] = parseQueryString(request.data);
+    const [parsedQueryString] = parseQueryString(request.data, generatorName);
     dataString = "$data = array(\n";
     if (!parsedQueryString || !parsedQueryString.length) {
       dataString = "$data = " + repr(request.data) + ";";

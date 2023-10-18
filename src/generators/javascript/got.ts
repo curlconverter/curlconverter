@@ -15,7 +15,9 @@ import {
   addImport,
   bySecondElem,
 } from "./javascript.js";
+import { fileURLToPath, URL } from "url";
 
+const generatorName = "got";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
@@ -80,7 +82,10 @@ function getBodyString(
       return [jsonAsJavaScript, roundtrips ? null : simpleString];
     }
     if (contentType === "application/x-www-form-urlencoded") {
-      const [queryList, queryDict] = parseQueryString(request.data);
+      const [queryList, queryDict] = parseQueryString(
+        request.data,
+        generatorName
+      );
       if (queryDict && queryDict.every((v) => !Array.isArray(v[1]))) {
         if (eq(exactContentType, "application/x-www-form-urlencoded")) {
           request.headers.delete("content-type");

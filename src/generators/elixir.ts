@@ -4,6 +4,7 @@ import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
 
+const generatorName = "elixir";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -231,7 +232,7 @@ function getDataString(request: Request): string {
     }
   }
 
-  const [parsedQuery] = parseQueryString(request.data);
+  const [parsedQuery] = parseQueryString(request.data, generatorName);
   if (parsedQuery && parsedQuery.length) {
     const data = parsedQuery.map((p) => {
       const [key, value] = p;

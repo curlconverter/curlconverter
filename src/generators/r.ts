@@ -6,6 +6,7 @@ import type { QueryList } from "../Query.js";
 
 import { reprStr as pyrepr } from "./python.js";
 
+const generatorName = "r";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -175,7 +176,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
       const filePath = request.data.slice(1);
       dataString = "data = upload_file(" + repr(filePath) + ")";
     } else {
-      const [parsedQueryString] = parseQueryString(request.data);
+      const [parsedQueryString] = parseQueryString(request.data, generatorName);
       // repeat to satisfy type checker
       dataIsList = parsedQueryString && parsedQueryString.length;
       if (dataIsList) {

@@ -8,6 +8,7 @@ import type { FormParam } from "../../curl/form.js";
 
 import jsescObj from "jsesc";
 
+const generatorName = "javascript";
 const javaScriptSupportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "upload-file",
@@ -438,7 +439,7 @@ function getDataString(
   }
   if (contentType === "application/x-www-form-urlencoded") {
     try {
-      const [queryList, queryDict] = parseQueryString(data);
+      const [queryList, queryDict] = parseQueryString(data, generatorName);
       if (queryList) {
         // Technically node-fetch sends
         // application/x-www-form-urlencoded;charset=utf-8

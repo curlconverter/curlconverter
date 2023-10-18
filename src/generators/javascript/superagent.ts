@@ -17,6 +17,7 @@ import {
 
 import { indent } from "./jquery.js";
 
+const generatorName = "superagent";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -112,7 +113,10 @@ function _getDataString(
     ];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(
+      request.data,
+      generatorName
+    );
     if (queryList) {
       exactContentType = null;
       const queryCode =

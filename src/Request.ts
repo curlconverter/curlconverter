@@ -287,7 +287,8 @@ function buildURL(
   let urlWithoutQueryList = url;
   // TODO: parseQueryString() doesn't accept leading '?'
   let [queryList, queryDict] = parseQueryString(
-    u.query.toBool() ? u.query.slice(1) : new Word()
+    u.query.toBool() ? u.query.slice(1) : new Word(),
+    null
   );
   if (queryList && queryList.length) {
     // TODO: remove the fragment too?

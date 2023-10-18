@@ -5,6 +5,7 @@ import { parseQueryString } from "../Query.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 
+const generatorName = "dart";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "compressed",
@@ -120,7 +121,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
 
   const hasData = request.data;
   if (request.data) {
-    const [parsedQuery] = parseQueryString(request.data);
+    const [parsedQuery] = parseQueryString(request.data, generatorName);
     if (parsedQuery && parsedQuery.length) {
       s += "  final data = {\n";
       for (const param of parsedQuery) {

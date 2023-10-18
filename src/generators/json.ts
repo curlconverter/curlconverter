@@ -3,6 +3,7 @@ import type { Request, Warnings } from "../parse.js";
 import type { AuthType } from "../Request.js";
 import { parseQueryString } from "../Query.js";
 
+const generatorName = "json";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
@@ -65,13 +66,18 @@ type JSONOutput = {
 };
 
 function getDataString(request: Request): {
-  data?: { [key: string]: string | string[] };
+  data?: { [key: string]: string | string[] } | string;
 } {
   if (!request.data) {
     return {};
   }
 
   const contentType = request.headers.getContentType();
+  if (contentType === "text/plain") {
+    try {
+      return { data: request.data.toString() };
+    } catch (e) {}
+  }
   if (contentType === "application/json") {
     try {
       const json = JSON.parse(request.data.toString());
@@ -79,7 +85,10 @@ function getDataString(request: Request): {
     } catch (e) {}
   }
 
-  const [parsedQuery, parsedQueryDict] = parseQueryString(request.data);
+  const [parsedQuery, parsedQueryDict] = parseQueryString(
+    request.data,
+    generatorName
+  );
   if (!parsedQuery || !parsedQuery.length) {
     // TODO: this is not a good API
     return {

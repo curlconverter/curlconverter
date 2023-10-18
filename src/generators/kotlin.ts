@@ -3,6 +3,7 @@ import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
 
+const generatorName = "kotlin";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "max-time",
@@ -187,7 +188,7 @@ export function _toKotlin(
     imports.add("java.io.File");
   } else if (request.data) {
     if (contentType === "application/x-www-form-urlencoded") {
-      const [queryList] = parseQueryString(request.data);
+      const [queryList] = parseQueryString(request.data, generatorName);
       if (!queryList) {
         if (exactContentType) {
           kotlinCode +=

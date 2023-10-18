@@ -5,6 +5,7 @@ import { parseQueryString } from "../../Query.js";
 
 import { repr } from "./java.js";
 
+const generatorName = "okhttp";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "max-time",
@@ -107,7 +108,7 @@ export function _toJavaOkHttp(
   } else if (request.data) {
     const contentType = request.headers.getContentType();
     if (contentType === "application/x-www-form-urlencoded") {
-      const [queryList] = parseQueryString(request.data);
+      const [queryList] = parseQueryString(request.data, generatorName);
       if (!queryList) {
         methodCallArgs.push("requestBody");
         javaCode +=

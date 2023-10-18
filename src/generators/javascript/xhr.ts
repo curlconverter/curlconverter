@@ -14,6 +14,7 @@ import {
 
 import { dedent, getFormString } from "./jquery.js";
 
+const generatorName = "xhr";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -40,7 +41,7 @@ function _getDataString(
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(data);
+    const [queryList, queryDict] = parseQueryString(data, generatorName);
     if (queryList) {
       // TODO: check roundtrip, add a comment
       return [toURLSearchParams([queryList, queryDict], imports), null];

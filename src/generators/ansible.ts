@@ -5,6 +5,7 @@ import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
 
 import yaml from "yamljs";
 
+const generatorName = "ansible";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "compressed",
@@ -142,7 +143,10 @@ function getDataString(
       }
       return [filename, "src"];
     }
-    const [queryList, queryDict] = parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(
+      request.data,
+      generatorName
+    );
     if (queryDict) {
       return [
         Object.fromEntries(

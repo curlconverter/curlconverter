@@ -16,6 +16,7 @@ import {
   reprImports,
 } from "./javascript.js";
 
+const generatorName = "axios";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "max-time",
@@ -60,7 +61,10 @@ function _getDataString(
     return [jsonAsJavaScript, roundtrips ? null : originalStringRepr];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(request.data);
+    const [queryList, queryDict] = parseQueryString(
+      request.data,
+      generatorName
+    );
     if (queryList) {
       // Technically axios sends
       // application/x-www-form-urlencoded;charset=utf-8

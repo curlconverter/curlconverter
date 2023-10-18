@@ -14,6 +14,7 @@ import {
   reprImports,
 } from "./javascript.js";
 
+const generatorName = "jquery";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -105,7 +106,7 @@ function _getDataString(
     ];
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(data);
+    const [queryList, queryDict] = parseQueryString(data, generatorName);
     if (queryList) {
       if (
         eq(exactContentType, "application/x-www-form-urlencoded; charset=utf-8")

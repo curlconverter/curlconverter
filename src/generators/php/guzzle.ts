@@ -5,6 +5,7 @@ import { parseQueryString } from "../../Query.js";
 
 import { reprStr, repr } from "./php.js";
 
+const generatorName = "guzzle";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -234,7 +235,7 @@ export function _toPhpGuzzle(
     const contentType = request.headers.getContentType();
     if (contentType === "application/x-www-form-urlencoded") {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_, queryAsDict] = parseQueryString(request.data);
+      const [_, queryAsDict] = parseQueryString(request.data, generatorName);
       if (queryAsDict) {
         options += "    'form_params' => [\n";
         for (const [name, value] of queryAsDict) {

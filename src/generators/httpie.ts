@@ -8,6 +8,7 @@ import { parseQueryString } from "../Query.js";
 
 import { repr, reprStr } from "./wget.js";
 
+const generatorName = "httpie";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -185,7 +186,7 @@ function escapeQueryValue(value: Word): Word {
 function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
   let queryList;
   try {
-    [queryList] = parseQueryString(data);
+    [queryList] = parseQueryString(data, generatorName);
   } catch {}
   if (!queryList) {
     flags.push("--raw " + (repr(data) || "''"));

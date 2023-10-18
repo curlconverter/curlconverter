@@ -12,6 +12,7 @@ import { parseQueryString } from "../Query.js";
 // https://clojure.org/reference/data_structures#Strings
 import { reprStr } from "./java/java.js";
 
+const generatorName = "clojure";
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
@@ -241,7 +242,7 @@ function addDataString(
   }
 
   if (contentType === "application/x-www-form-urlencoded") {
-    const [queryList, queryDict] = parseQueryString(data);
+    const [queryList, queryDict] = parseQueryString(data, generatorName);
     const formParams = rerpQuery(queryList, queryDict, importLines);
     if (formParams !== null) {
       if (eq(exactContentType, "application/x-www-form-urlencoded")) {
