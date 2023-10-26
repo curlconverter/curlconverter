@@ -1,4 +1,4 @@
-import { Word, joinWords } from "../../shell/Word.js";
+import { Word, eq, joinWords } from "../../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 
@@ -146,17 +146,33 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
     if (request.multipartUploads) {
       requestDataCode = "[\n";
       for (const m of request.multipartUploads) {
+        requestDataCode += "    " + repr(m.name) + " => ";
         if ("contentFile" in m) {
-          requestDataCode +=
-            "    " +
-            repr(m.name) +
-            " => new CURLFile(" +
-            repr(m.contentFile) +
-            "),\n";
+          requestDataCode += "new CURLFile(" + repr(m.contentFile);
+          if (m.contentType) {
+            requestDataCode += ", " + repr(m.contentType);
+          }
+          if (m.filename && !eq(m.filename, m.contentFile)) {
+            if (!m.contentType) {
+              // This actually sets it to the default, application/octet-stream
+              requestDataCode += ", null";
+            }
+            requestDataCode += ", " + repr(m.filename);
+          }
+          requestDataCode += ")";
         } else {
-          requestDataCode +=
-            "    " + repr(m.name) + " => " + repr(m.content) + ",\n";
+          if ("filename" in m && m.filename) {
+            requestDataCode += "new CURLStringFile(" + repr(m.content);
+            requestDataCode += ", " + repr(m.filename);
+            if (m.contentType) {
+              requestDataCode += ", " + repr(m.contentType);
+            }
+            requestDataCode += ")";
+          } else {
+            requestDataCode += repr(m.content);
+          }
         }
+        requestDataCode += ",\n";
       }
       requestDataCode += "]";
     } else if (request.isDataBinary && request.data!.charAt(0) === "@") {
