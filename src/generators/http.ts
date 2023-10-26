@@ -152,20 +152,22 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   } else if (request.multipartUploads) {
     for (const f of request.multipartUploads) {
       s += "--" + boundary + "\n";
+
       s += "Content-Disposition: form-data";
       s += '; name="' + f.name.toString() + '"';
+      if (f.filename) {
+        s += '; filename="' + f.filename.toString() + '"';
+      }
+      if (f.contentType) {
+        s += '\nContent-Type: "' + f.contentType.toString() + '"';
+      }
+      // TODO: ; headers=
+
+      s += "\n\n";
       if ("content" in f) {
-        s += "\n\n";
-        const content = f.content.toString();
-        if (content) {
-          s += content + "\n";
-        }
+        s += f.content.toString();
       } else {
-        if (f.filename) {
-          s += '; filename="' + f.filename.toString() + '"';
-        }
-        // TODO: set content type from file extension
-        s += "\n\n" + f.contentFile.toString() + "\n";
+        s += f.contentFile.toString();
       }
       s += "\n";
     }

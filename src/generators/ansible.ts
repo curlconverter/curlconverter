@@ -227,6 +227,9 @@ export function _toAnsible(
           ]);
         }
       }
+      if ("contentType" in m && m.contentType) {
+        form[name].mime_type = m.contentType.toString();
+      }
     }
     r.body = form;
     r.body_format = "form-multipart";
