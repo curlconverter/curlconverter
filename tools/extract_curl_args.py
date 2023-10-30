@@ -19,9 +19,10 @@
 # ARG_BOOL arguments get a --no-<lname> counterpart. ARG_NONE arguments do not.
 #
 # Options can have the same `letter` when an option was renamed but
-# the old name was also kept for backwards compatibility. 
+# the old name was also kept for backwards compatibility.
 # We add a "name" property with the newest name to these options.
 
+import argparse
 import json
 import subprocess
 import sys
@@ -29,7 +30,6 @@ from collections import Counter
 from pathlib import Path
 
 # Git repo of curl's source code to extract the args from
-# TODO: make this an optional command line arg
 CURL_REPO = Path(__file__).parent.parent / "curl"
 
 OLD_INPUT_FILE = CURL_REPO / "src" / "main.c"
@@ -85,7 +85,21 @@ for value in list(DUPES.values()):
     DUPES[value] = value
 
 
-def is_git_repo(git_dir=CURL_REPO):
+parser = argparse.ArgumentParser(
+    prog="extract_curl_args",
+    description="extract a list of curl's arguments from its source code into a JavaScript file",
+)
+parser.add_argument("repo_dir", nargs="?", default=CURL_REPO, type=Path)
+parser.add_argument(
+    "-w",
+    "--write",
+    action="store_true",
+    help="write changes to " + str(OUTPUT_FILE) + " and " + str(CLI_FILE),
+)
+args = parser.parse_args()
+
+
+def is_git_repo(git_dir=args.repo_dir):
     result = subprocess.run(
         ["git", "rev-parse", "--is-inside-work-tree"],
         cwd=git_dir,
@@ -99,19 +113,31 @@ if not OUTPUT_FILE.is_file():
     sys.exit(
         f"{OUTPUT_FILE} doesn't exist. You should run this script from curlconverter/"
     )
-if not CURL_REPO.is_dir():
+if not args.repo_dir.is_dir():
     sys.exit(
-        f"{CURL_REPO} needs to be a git repo with curl's source code. "
+        f"{args.repo_dir} needs to be a git repo with curl's source code. "
         "You can clone it with\n\n"
         "git clone https://github.com/curl/curl ../curl"
-        # or modify the CURL_REPO variable above
+        # or modify the args.repo_dir variable above
     )
-# TODO: check that repo is up to date
-if not is_git_repo(CURL_REPO):
-    sys.exit(f"{CURL_REPO} is not a git repo")
+if not is_git_repo(args.repo_dir):
+    sys.exit(f"{args.repo_dir} is not a git repo")
 
 
-def git_branch(git_dir=CURL_REPO):
+def git_pull(git_dir=args.repo_dir):
+    return subprocess.run(
+        ["git", "pull"],
+        cwd=git_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+
+
+git_pull()
+
+
+def git_branch(git_dir=args.repo_dir):
     branch = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         cwd=git_dir,
@@ -284,7 +310,7 @@ def parse_tag(tag):
     return int(major), int(minor), int(patch)
 
 
-def curl_tags(git_dir=CURL_REPO):
+def curl_tags(git_dir=args.repo_dir):
     tags = (
         subprocess.run(
             ["git", "tag"],
@@ -301,7 +327,7 @@ def curl_tags(git_dir=CURL_REPO):
             yield tag
 
 
-def file_at_commit(filename, commit_hash, git_dir=CURL_REPO):
+def file_at_commit(filename, commit_hash, git_dir=args.repo_dir):
     contents = subprocess.run(
         ["git", "cat-file", "-p", f"{commit_hash}:{filename}"],
         cwd=git_dir,
@@ -317,10 +343,10 @@ def file_at_commit(filename, commit_hash, git_dir=CURL_REPO):
 
 if __name__ == "__main__":
     # TODO: check that repo is up to date
-    if not is_git_repo(CURL_REPO):
-        sys.exit(f"{CURL_REPO} is not a git repo")
+    if not is_git_repo(args.repo_dir):
+        sys.exit(f"{args.repo_dir} is not a git repo")
 
-    tags = sorted(curl_tags(CURL_REPO), key=parse_tag)
+    tags = sorted(curl_tags(args.repo_dir), key=parse_tag)
 
     aliases = {}
     short_aliases = {}
@@ -446,9 +472,7 @@ if __name__ == "__main__":
             else:
                 raise ValueError(f"{'// ' + end!r} not in {OUTPUT_FILE}")
 
-        add_between(
-            f, new_lines, js_params_lines, JS_PARAMS_START, JS_PARAMS_END
-        )
+        add_between(f, new_lines, js_params_lines, JS_PARAMS_START, JS_PARAMS_END)
         add_between(
             f,
             new_lines,
@@ -480,7 +504,8 @@ if __name__ == "__main__":
         for line in f:
             new_cli_lines.append(line)
 
-    # with open(OUTPUT_FILE, "w", newline="\n") as f:
-    #     f.write("".join(new_lines))
-    # with open(CLI_FILE, "w", newline="\n") as f:
-    #     f.write("".join(new_cli_lines))
+    if args.write:
+        with open(OUTPUT_FILE, "w", newline="\n") as f:
+            f.write("".join(new_lines))
+        with open(CLI_FILE, "w", newline="\n") as f:
+            f.write("".join(new_cli_lines))
