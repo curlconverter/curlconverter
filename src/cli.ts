@@ -78,7 +78,8 @@ import {
   _toPowershellWebRequest,
   toPowershellWebRequestWarn,
 } from "./generators/powershell.js";
-import { _toPython, toPythonWarn } from "./generators/python.js";
+import { _toPython, toPythonWarn } from "./generators/python/python.js";
+import { _toPythonHttp, toPythonHttpWarn } from "./generators/python/http.js";
 import { _toR, toRWarn } from "./generators/r.js";
 import { _toRuby, toRubyWarn } from "./generators/ruby.js";
 import { _toRust, toRustWarn } from "./generators/rust.js";
@@ -171,6 +172,8 @@ const translate: {
     toPowershellWebRequestWarn,
   ],
   python: [_toPython, toPythonWarn],
+  "python-http": [_toPythonHttp, toPythonHttpWarn],
+  "python-httpclient": [_toPythonHttp, toPythonHttpWarn], // undocumented alias
   r: [_toR, toRWarn],
   ruby: [_toRuby, toRubyWarn],
   rust: [_toRust, toRustWarn],

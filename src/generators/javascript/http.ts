@@ -169,7 +169,7 @@ export function _toNodeHttp(
         "Parsing the port out of the hostname is not supported. If you get an ENOTFOUND error, you'll need to do it manually",
       ]);
     }
-    const path = mergeWords([urlObj.path, urlObj.query]);
+    const path = mergeWords(urlObj.path, urlObj.query);
     if (path.toBool()) {
       code += "  path: " + repr(path, imports) + ",\n";
     }

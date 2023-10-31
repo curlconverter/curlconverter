@@ -269,7 +269,7 @@ function requestToWget(request: Request, warnings: Warnings): string {
   if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       args.push(
-        "--header=" + repr(mergeWords([headerName, ": ", headerValue ?? ""]))
+        "--header=" + repr(mergeWords(headerName, ": ", headerValue ?? ""))
       );
       // TODO: there's also --referer, --user-agent and --content-disposition
     }

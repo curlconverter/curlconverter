@@ -1,9 +1,10 @@
-import { CCError, has, UTF8encoder } from "../utils.js";
-import { Word, eq } from "../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { wordDecodeURIComponent, percentEncode } from "../Query.js";
-import { DataParam } from "../Request.js";
+import { CCError, has, UTF8encoder } from "../../utils.js";
+import { Word, eq } from "../../shell/Word.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { Headers } from "../../Headers.js";
+import { wordDecodeURIComponent, percentEncode } from "../../Query.js";
+import { DataParam } from "../../Request.js";
 
 import {
   parse as jsonParseLossless,
@@ -496,13 +497,16 @@ export function reprStrBinary(s: string): string {
   return sEsc + ".encode()";
 }
 
-type OSVars = { [key: string]: string };
+export type OSVars = { [key: string]: string };
 export function repr(
   word: Word,
   osVars: OSVars,
   imports: Set<string>,
   binary = false,
-  errorOk = false // so we do open(None) and error instead of open('') if we don't have the env var
+  // os.getenv('MYVAR') returns None if MYVAR is not set
+  // os.getenv('MYVAR', '') returns '' if MYVAR is not set but it's a bit more verbose,
+  // so setting errorOk to true will use the shorter version
+  errorOk = false
 ): string {
   const reprFn = binary ? reprStrBinary : reprStr;
   const reprs = [];
@@ -557,6 +561,30 @@ export function repr(
 
 function reprb(word: Word, osVars: OSVars, imports: Set<string>): string {
   return repr(word, osVars, imports, true);
+}
+
+export function asFloat(
+  word: Word,
+  osVars: OSVars,
+  imports: Set<string>
+): string {
+  if (word.isString()) {
+    // TODO: check it's actually a valid float
+    return word.toString();
+  }
+  return "float(" + repr(word, osVars, imports, false, true) + ")";
+}
+
+export function asInt(
+  word: Word,
+  osVars: OSVars,
+  imports: Set<string>
+): string {
+  if (word.isString()) {
+    // TODO: check it's actually a valid int
+    return word.toString();
+  }
+  return "int(" + repr(word, osVars, imports, false, true) + ")";
 }
 
 // Port of Python's json.dumps() with its default options, which is what Requests uses
@@ -771,6 +799,40 @@ function objToPython(
         "unexpected object type that shouldn't appear in JSON: " + typeof obj
       );
   }
+}
+
+export function formatHeaders(
+  headers: Headers,
+  commentedOutHeaders: { [key: string]: string },
+  osVars: OSVars,
+  imports: Set<string>
+): string {
+  // TODO: what if there are repeat headers
+  let headerDict = "headers = {\n";
+  for (const [headerName, headerValue] of headers) {
+    if (headerValue === null) {
+      continue;
+    }
+
+    let lineStart;
+    const headerNameLower = headerName.toLowerCase().toString();
+    if (has(commentedOutHeaders, headerNameLower)) {
+      if (commentedOutHeaders[headerNameLower]) {
+        headerDict += "    # " + commentedOutHeaders[headerNameLower] + "\n";
+      }
+      lineStart = "    # ";
+    } else {
+      lineStart = "    ";
+    }
+    headerDict +=
+      lineStart +
+      repr(headerName, osVars, imports) +
+      ": " +
+      repr(headerValue, osVars, imports) +
+      ",\n";
+  }
+  headerDict += "}\n";
+  return headerDict;
 }
 
 function decodePercentEncoding(s: Word): Word | null {
@@ -1129,7 +1191,7 @@ function formatDataAsStr(
   return [lines.join("\n") + "\n", encode];
 }
 
-function formatDataAsJson(
+export function formatDataAsJson(
   d: DataParam,
   imports: Set<string>,
   osVars: OSVars
@@ -1617,31 +1679,12 @@ function requestToPython(
 
   let headerDict;
   if (request.headers.length) {
-    // TODO: what if there are repeat headers
-    headerDict = "headers = {\n";
-    for (const [headerName, headerValue] of request.headers) {
-      if (headerValue === null) {
-        continue;
-      }
-
-      let lineStart;
-      const headerNameLower = headerName.toLowerCase().toString();
-      if (has(commentedOutHeaders, headerNameLower)) {
-        if (commentedOutHeaders[headerNameLower]) {
-          headerDict += "    # " + commentedOutHeaders[headerNameLower] + "\n";
-        }
-        lineStart = "    # ";
-      } else {
-        lineStart = "    ";
-      }
-      headerDict +=
-        lineStart +
-        repr(headerName, osVars, imports) +
-        ": " +
-        repr(headerValue, osVars, imports) +
-        ",\n";
-    }
-    headerDict += "}\n";
+    headerDict = formatHeaders(
+      request.headers,
+      commentedOutHeaders,
+      osVars,
+      imports
+    );
   }
 
   let pythonCode = "";
@@ -1678,11 +1721,7 @@ function requestToPython(
   let followRedirects = request.followRedirects;
   let maxRedirects = undefined;
   if (request.maxRedirects !== undefined) {
-    if (request.maxRedirects.isString()) {
-      maxRedirects = request.maxRedirects.toString();
-    } else {
-      maxRedirects = "int(" + repr(request.maxRedirects, osVars, imports) + ")";
-    }
+    maxRedirects = asInt(request.maxRedirects, osVars, imports);
   }
   if (followRedirects === undefined) {
     followRedirects = true;
@@ -1910,14 +1949,7 @@ function requestToPython(
     if (request.timeout || request.connectTimeout) {
       let connectTimeout = null;
       if (request.connectTimeout) {
-        if (request.connectTimeout.isString()) {
-          connectTimeout = request.connectTimeout.toString();
-        } else {
-          connectTimeout =
-            "float(" +
-            repr(request.connectTimeout, osVars, imports, false, true) +
-            ")";
-        }
+        connectTimeout = asFloat(request.connectTimeout, osVars, imports);
       }
       let timeout = null;
       if (request.timeout) {
@@ -2089,7 +2121,7 @@ function requestToPython(
   return variableCode + pythonCode;
 }
 
-function printImports(imps: Set<string>): string {
+export function printImports(imps: Set<string>): string {
   let s = "";
   for (const imp of Array.from(imps).sort()) {
     if (imp.includes(".")) {

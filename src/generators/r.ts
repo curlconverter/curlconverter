@@ -4,7 +4,7 @@ import type { Request, Warnings } from "../parse.js";
 import { wordDecodeURIComponent, parseQueryString } from "../Query.js";
 import type { QueryList } from "../Query.js";
 
-import { reprStr as pyrepr } from "./python.js";
+import { reprStr as pyrepr } from "./python/python.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

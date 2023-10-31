@@ -192,7 +192,7 @@ export function _toObjectiveC(
               const name = d.name.append("=");
               const lastEntry = entries[entries.length - 1];
               if (entries.length && lastEntry instanceof Word) {
-                entries[entries.length - 1] = mergeWords([lastEntry, name]);
+                entries[entries.length - 1] = mergeWords(lastEntry, name);
               } else {
                 entries.push(name);
               }
