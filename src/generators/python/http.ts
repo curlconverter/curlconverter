@@ -54,6 +54,16 @@ export function _toPythonHttp(
   }
   code += joinedClassArgs + ")\n";
 
+  if (request.urls[0].auth) {
+    const [user, password] = request.urls[0].auth;
+    if (request.authType === "basic") {
+      // TODO: generate Python code that does the encoding
+      const authHeader =
+        "Basic " + btoa(`${user.toString()}:${password.toString()}`);
+      request.headers.setIfMissing("Authorization", authHeader);
+      imports.add("");
+    }
+  }
   if (request.headers.length) {
     // TODO: commentedOutHeaders
     // TODO: inconsistent trailing comma
@@ -123,7 +133,11 @@ export function _toPythonHttp(
     args.push(repr(request.data, osVars, imports));
   }
   if (request.headers.length) {
-    args.push("headers=headers");
+    if (args.length === 2) {
+      args.push("headers=headers");
+    } else {
+      args.push("headers");
+    }
   }
 
   let joinedArgs = args.join(", ");
