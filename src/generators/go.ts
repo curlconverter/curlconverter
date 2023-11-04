@@ -3,7 +3,7 @@ import { Word } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-import { reprStr as pyreprStr } from "./python.js";
+import { reprStr as pyreprStr } from "./python/python.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

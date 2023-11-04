@@ -106,7 +106,7 @@ function formatData(request: Request, data: Word): [string, string] {
     for (const part of rest) {
       code +=
         "data.append(" +
-        repr(mergeWords(["&", part])) +
+        repr(mergeWords("&", part)) +
         ".data(using: .utf8)!)\n";
     }
     return [code, "request.httpBody = data as Data\n"];

@@ -195,7 +195,7 @@ function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
   flags.push("--form");
   for (const [name, value] of queryList) {
     items.push(
-      repr(mergeWords([escapeQueryName(name), "=", escapeQueryValue(value)]))
+      repr(mergeWords(escapeQueryName(name), "=", escapeQueryValue(value)))
     );
   }
 }
@@ -243,17 +243,17 @@ function requestToHttpie(
   if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       if (headerValue === null) {
-        items.push(repr(mergeWords([escapeHeader(headerName), ":"])));
+        items.push(repr(mergeWords(escapeHeader(headerName), ":")));
       } else if (!headerValue.toBool()) {
-        items.push(repr(mergeWords([escapeHeader(headerName), ";"])));
+        items.push(repr(mergeWords(escapeHeader(headerName), ";")));
       } else {
         items.push(
           repr(
-            mergeWords([
+            mergeWords(
               escapeHeader(headerName),
               ":",
-              escapeHeaderValue(headerValue),
-            ])
+              escapeHeaderValue(headerValue)
+            )
           )
         );
       }
@@ -291,14 +291,14 @@ function requestToHttpie(
     }
     // TODO: -A bearer -a token
 
-    flags.push("-a " + repr(mergeWords([user, ":", password])));
+    flags.push("-a " + repr(mergeWords(user, ":", password)));
   }
 
   if (url.queryList) {
     urlArg = url.urlWithoutQueryList;
     for (const [name, value] of url.queryList) {
       items.push(
-        repr(mergeWords([escapeQueryName(name), "==", escapeQueryValue(value)]))
+        repr(mergeWords(escapeQueryName(name), "==", escapeQueryValue(value)))
       );
     }
   }

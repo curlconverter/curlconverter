@@ -508,7 +508,7 @@ export function firstShellToken(word: string | Word): ShellToken | null {
   }
   return word.firstShellToken();
 }
-export function mergeWords(words: (Word | string)[]): Word {
+export function mergeWords(...words: (Word | string)[]): Word {
   const ret: Token[] = [];
   for (const w of words) {
     if (w instanceof Word) {

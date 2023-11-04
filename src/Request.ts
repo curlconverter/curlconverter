@@ -194,14 +194,14 @@ function buildURL(
     }
   }
 
-  const urlWithOriginalQuery = mergeWords([
+  const urlWithOriginalQuery = mergeWords(
     u.scheme,
     "://",
     u.host,
     u.path,
     u.query,
-    u.fragment,
-  ]);
+    u.fragment
+  );
 
   // curl example.com example.com?foo=bar --url-query isshared=t
   // will make requests for
@@ -276,14 +276,14 @@ function buildURL(
       u.query = queryStr.prepend("?");
     }
   }
-  const urlWithoutQueryArray = mergeWords([
+  const urlWithoutQueryArray = mergeWords(
     u.scheme,
     "://",
     u.host,
     u.path,
-    u.fragment,
-  ]);
-  url = mergeWords([u.scheme, "://", u.host, u.path, u.query, u.fragment]);
+    u.fragment
+  );
+  url = mergeWords(u.scheme, "://", u.host, u.path, u.query, u.fragment);
   let urlWithoutQueryList = url;
   // TODO: parseQueryString() doesn't accept leading '?'
   let [queryList, queryDict] = parseQueryString(
@@ -291,13 +291,13 @@ function buildURL(
   );
   if (queryList && queryList.length) {
     // TODO: remove the fragment too?
-    urlWithoutQueryList = mergeWords([
+    urlWithoutQueryList = mergeWords(
       u.scheme,
       "://",
       u.host,
       u.path,
-      u.fragment,
-    ]);
+      u.fragment
+    );
   } else {
     queryList = null;
     queryDict = null;
@@ -446,10 +446,10 @@ function buildData(
               value = stdin;
               break;
             case "urlencode":
-              value = mergeWords([
+              value = mergeWords(
                 name && name.length ? name.append("=") : new Word(),
-                percentEncodePlus(stdin),
-              ]);
+                percentEncodePlus(stdin)
+              );
               break;
             default:
               value = stdin.replace(/[\n\r]/g, "");
@@ -489,11 +489,11 @@ function buildData(
 
   let dataStrReadsFile: string | null = null;
   const dataStr = mergeWords(
-    data.map((d) => {
+    ...data.map((d) => {
       if (!(d instanceof Word)) {
         dataStrReadsFile ||= d.filename.toString(); // report first file
         if (d.name) {
-          return mergeWords([d.name, "=@", d.filename]);
+          return mergeWords(d.name, "=@", d.filename);
         }
         return d.filename.prepend("@");
       }
