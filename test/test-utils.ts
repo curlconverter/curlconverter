@@ -126,6 +126,11 @@ const converters = {
     extension: ".json",
     converter: curlconverter.toJsonString,
   },
+  julia: {
+    name: "Julia",
+    extension: ".jl",
+    converter: curlconverter.toJulia,
+  },
   kotlin: {
     name: "Kotlin",
     extension: ".kt",
@@ -180,6 +185,11 @@ const converters = {
     name: "OCaml",
     extension: ".ml",
     converter: curlconverter.toOCaml,
+  },
+  perl: {
+    name: "Perl",
+    extension: ".pl",
+    converter: curlconverter.toPerl,
   },
   php: {
     name: "PHP",
