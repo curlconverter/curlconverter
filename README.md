@@ -24,7 +24,7 @@ Features:
 - Understands Bash syntax
   - [ANSI-C quoted](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting) strings
   - stdin redirects and [heredocs](https://www.gnu.org/software/bash/manual/bash.html#Here-Documents)
-  - Generates code that gets environment variables and runs subcommands
+  - Generated code reads environment variables and runs subcommands
   - Ignores comments
   - Reports syntax errors
 - Converts JSON data to native objects

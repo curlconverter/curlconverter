@@ -339,7 +339,7 @@ export function _toKotlin(
     preambleCode += "\n";
   }
 
-  return preambleCode + kotlinCode + "\n";
+  return preambleCode + kotlinCode;
 }
 export function toKotlinWarn(
   curlCommand: string | string[],
