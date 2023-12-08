@@ -56,7 +56,6 @@ export function reprStr(s: string): string {
       if (hex.length <= 2) {
         return "\\x" + hex.padStart(2, "0");
       }
-      // TODO: does this work for 5-6 hex digits?
       return "\\x{" + hex + "}";
     }) +
     '"'
