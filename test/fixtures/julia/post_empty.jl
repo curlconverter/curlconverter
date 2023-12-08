@@ -6,8 +6,4 @@ headers = Dict(
 
 body = ""
 
-resp = HTTP.post(
-    "http://localhost:28139",
-    headers,
-    body
-)
+resp = HTTP.post("http://localhost:28139", headers, body)

@@ -44,7 +44,4 @@ query = [
     "stopover" => ""
 ]
 
-resp = HTTP.get(
-    "http://localhost:28139/house-sitting/",
-    query=query
-)
+resp = HTTP.get("http://localhost:28139/house-sitting/", query=query)

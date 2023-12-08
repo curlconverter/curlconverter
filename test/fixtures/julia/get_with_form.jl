@@ -10,8 +10,4 @@ form = HTTP.Form(    "from" => "test@tester.com",
     "text" => "Testing the converter!"
 )
 
-resp = HTTP.post(
-    "http://localhost:28139/v3",
-    headers,
-    form
-)
+resp = HTTP.post("http://localhost:28139/v3", headers, form)

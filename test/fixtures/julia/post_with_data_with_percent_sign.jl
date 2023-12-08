@@ -6,8 +6,4 @@ headers = Dict(
 
 body = "secret=*%5*!"
 
-resp = HTTP.post(
-    "http://localhost:28139/post",
-    headers,
-    body
-)
+resp = HTTP.post("http://localhost:28139/post", headers, body)

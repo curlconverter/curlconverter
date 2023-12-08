@@ -7,8 +7,4 @@ headers = Dict(
 
 body = "18233982904"
 
-resp = HTTP.post(
-    "http://localhost:28139/CurlToNode",
-    headers,
-    body
-)
+resp = HTTP.post("http://localhost:28139/CurlToNode", headers, body)

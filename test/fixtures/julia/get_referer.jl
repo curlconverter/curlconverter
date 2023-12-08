@@ -6,7 +6,4 @@ headers = Dict(
     "Referer" => "https://website.com"
 )
 
-resp = HTTP.get(
-    "http://localhost:28139",
-    headers
-)
+resp = HTTP.get("http://localhost:28139", headers)

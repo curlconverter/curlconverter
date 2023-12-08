@@ -10,7 +10,4 @@ headers = Dict(
     "Connection" => "keep-alive"
 )
 
-resp = HTTP.get(
-    "http://localhost:28139/",
-    headers
-)
+resp = HTTP.get("http://localhost:28139/", headers)

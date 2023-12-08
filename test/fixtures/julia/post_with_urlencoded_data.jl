@@ -14,8 +14,4 @@ headers = Dict(
 
 body = "msg1=wow&msg2=such"
 
-resp = HTTP.post(
-    "http://localhost:28139/echo/html/",
-    headers,
-    body
-)
+resp = HTTP.post("http://localhost:28139/echo/html/", headers, body)

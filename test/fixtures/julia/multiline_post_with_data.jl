@@ -7,8 +7,4 @@ headers = Dict(
 
 body = "msg1=value1&msg2=value2"
 
-resp = HTTP.get(
-    "http://localhost:28139/echo/html/",
-    headers,
-    body
-)
+resp = HTTP.get("http://localhost:28139/echo/html/", headers, body)

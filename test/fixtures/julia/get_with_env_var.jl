@@ -9,8 +9,4 @@ headers = Dict(
     "Authorization" => "Bearer " * ENV["DO_API_TOKEN"]
 )
 
-resp = HTTP.get(
-    "http://localhost:28139/v2/images",
-    headers,
-    query=query
-)
+resp = HTTP.get("http://localhost:28139/v2/images", headers, query=query)

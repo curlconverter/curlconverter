@@ -1,9 +1,6 @@
-import { CCError } from "../utils.js";
-import { Word, eq, mergeWords } from "../shell/Word.js";
+import { Word, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
-
-import { reprStr } from "./kotlin.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -11,7 +8,58 @@ const supportedArgs = new Set([
   "insecure",
   "no-insecure",
   // "upload-file",
+  "max-redirs",
+  "max-time",
 ]);
+
+// http://www.dispersiondesign.com/articles/perl/perl_escape_characters
+// https://perldoc.perl.org/perlrebackslash
+const needsEscaping = /\p{C}|[^ \P{Z}]/gu;
+const regexEscape = /\$|@|"|\\|\p{C}|[^ \P{Z}]/gu;
+export function reprStr(s: string): string {
+  if (!needsEscaping.test(s)) {
+    return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'";
+  }
+  return (
+    '"' +
+    s.replace(regexEscape, (c: string) => {
+      switch (c) {
+        case "$":
+          return "\\$";
+        case "@":
+          return "\\@";
+        // Escaping backslashes is optional (unless it's the last character)
+        case "\\":
+          return "\\\\";
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        // New in perl 5.10.0
+        // case "\v":
+        //   return "\\v";
+        case '"':
+          return '\\"';
+      }
+
+      const hex = (c.codePointAt(0) as number).toString(16);
+      if (hex.length <= 2) {
+        return "\\x" + hex.padStart(2, "0");
+      }
+      // TODO: does this work for 5-6 hex digits?
+      return "\\x{" + hex + "}";
+    }) +
+    '"'
+  );
+}
 
 export function repr(w: Word): string {
   const args: string[] = [];
@@ -23,11 +71,23 @@ export function repr(w: Word): string {
       // TODO: put in string?
       args.push("$ENV{" + t.value + "}");
     } else {
-      // TODO: use `
+      // TODO: escape
       args.push("`" + t.value + "`");
     }
   }
-  return args.join(" + ");
+  return args.join(" . ");
+}
+
+const hashKeySafe = /^[a-zA-Z]+$/u;
+export function reprHashKey(w: Word): string {
+  if (
+    w.tokens.length === 1 &&
+    typeof w.tokens[0] === "string" &&
+    hashKeySafe.test(w.tokens[0])
+  ) {
+    return w.tokens[0];
+  }
+  return repr(w);
 }
 
 export function _toPerl(requests: Request[], warnings: Warnings = []): string {
@@ -38,7 +98,12 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
   if (
     method.isString() &&
     ["GET", "HEAD"].includes(methodStr) &&
-    !request.data
+    !request.headers.length &&
+    !request.urls[0].auth &&
+    !request.data &&
+    !request.insecure &&
+    !request.timeout &&
+    !request.maxRedirects
     // TODO: more checks
   ) {
     let code = "use LWP::Simple;\n";
@@ -55,6 +120,9 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
   const helperFunction = method.isString() && methods.includes(methodStr);
 
   let code = "use LWP::UserAgent;\n";
+  if (request.urls[0].auth) {
+    code += "use MIME::Base64;\n";
+  }
   if (!helperFunction) {
     code += "require HTTP::Request;\n";
   }
@@ -66,10 +134,10 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
     uaArgs.push("ssl_opts => { verify_hostname => 0 }");
   }
   if (request.timeout) {
-    uaArgs.push("timeout => " + request.timeout);
+    uaArgs.push("timeout => " + request.timeout.toString());
   }
   if (request.maxRedirects) {
-    uaArgs.push("max_redirect => " + request.maxRedirects);
+    uaArgs.push("max_redirect => " + request.maxRedirects.toString());
   }
   if (uaArgs.length > 1) {
     code += "\n    " + uaArgs.join(",\n    ") + "\n";
@@ -77,7 +145,6 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
     code += uaArgs.join(", ");
   }
   code += ");\n";
-  // code += "$ua->env_proxy;\n\n";
 
   const args = [];
   if (!helperFunction) {
@@ -87,12 +154,22 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
   } else {
     code += "$response = $ua->" + methodStr.toLowerCase() + "(";
     args.push(repr(request.urls[0].url));
-    if (request.headers.length) {
+    if (request.headers.length || request.urls[0].auth) {
       for (const [k, v] of request.headers) {
         if (v === null) {
           continue;
         }
-        args.push(repr(k) + " => " + repr(v));
+        args.push(reprHashKey(k) + " => " + repr(v));
+      }
+      console.log();
+      if (request.urls[0].auth) {
+        args.push(
+          'Authorization => "Basic " . MIME::Base64::encode(' +
+            repr(
+              mergeWords(request.urls[0].auth[0], ":", request.urls[0].auth[1])
+            ) +
+            ")"
+        );
       }
     }
     if (request.data) {
@@ -104,7 +181,7 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
     (!helperFunction && args.length > 2) ||
     (helperFunction && args.length > 1)
   ) {
-    code += "    " + args.join(",\n    ") + "\n";
+    code += "\n    " + args.join(",\n    ") + "\n";
   } else {
     code += args.join(", ");
   }

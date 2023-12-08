@@ -1,9 +1,6 @@
-import { CCError } from "../utils.js";
 import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
-
-import { reprStr } from "./kotlin.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -22,20 +19,66 @@ const supportedArgs = new Set([
   "form-string",
 ]);
 
+// https://docs.julialang.org/en/v1/manual/strings/
+// https://en.wikipedia.org/wiki/C_syntax#Backslash_escapes
+const regexEscape = /\$|"|\\|\p{C}|[^ \P{Z}]/gu;
+const regexHexDigit = /[0-9a-fA-F]/;
+export function reprStr(s: string): string {
+  return (
+    '"' +
+    s.replace(regexEscape, (c: string, index: number, string: string) => {
+      switch (c) {
+        case "$":
+          return "\\$";
+        case "\\":
+          return "\\\\";
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\t":
+          return "\\t";
+        case "\v":
+          return "\\v";
+        case '"':
+          return '\\"';
+      }
+
+      const hex = (c.codePointAt(0) as number).toString(16);
+      if (hex.length <= 2) {
+        return "\\x" + hex.padStart(2, "0");
+      }
+      if (hex.length <= 4) {
+        return "\\u" + hex.padStart(4, "0");
+      }
+      if (regexHexDigit.test(string.charAt(index + 1))) {
+        return "\\U" + hex.padStart(8, "0");
+      }
+      return "\\U" + hex;
+    }) +
+    '"'
+  );
+}
+
 export function repr(w: Word): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
-      // TODO: dedicated fn
       args.push(reprStr(t));
     } else if (t.type === "variable") {
       args.push("ENV[" + reprStr(t.value) + "]");
     } else {
-      // TODO: use `
-      args.push("read(" + reprStr(t.value) + ", String)");
+      // TODO: more complicated
+      args.push("read(`" + t.value.toString() + "`, String)");
     }
   }
-  return args.join(" * "); // crazy
+  return args.join(" * ");
 }
 
 export function _toJulia(requests: Request[], warnings: Warnings = []): string {
@@ -189,14 +232,16 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
   }
 
   code += "resp = " + fn + "(";
+  const oneLineArgs = args.join(", ");
   if (
-    (fn === "HTTP.request" && args.length > 2) ||
-    (fn !== "HTTP.request" && args.length > 1)
+    ((fn === "HTTP.request" && args.length > 2) ||
+      (fn !== "HTTP.request" && args.length > 1)) &&
+    oneLineArgs.length > 70
   ) {
     code += "\n    " + args.join(",\n    ");
     code += "\n)\n";
   } else {
-    code += args.join(", ") + ")\n";
+    code += oneLineArgs + ")\n";
   }
 
   let importCode = "";
