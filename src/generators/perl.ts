@@ -7,7 +7,7 @@ const supportedArgs = new Set([
   "max-time",
   "insecure",
   "no-insecure",
-  // "upload-file",
+  "upload-file",
   "max-redirs",
   "max-time",
   "form",
@@ -127,6 +127,9 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
   if (!helperFunction) {
     code += "require HTTP::Request;\n";
   }
+  if (request.urls[0].uploadFile) {
+    code += "use File::Slurp;\n";
+  }
   code += "\n";
 
   code += "$ua = LWP::UserAgent->new(";
@@ -173,7 +176,11 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
         );
       }
     }
-    if (request.data) {
+    if (request.urls[0].uploadFile) {
+      args.push(
+        "Content => read_file(" + repr(request.urls[0].uploadFile) + ")"
+      );
+    } else if (request.data) {
       // TODO: parseQueryString
       args.push("Content => " + repr(request.data));
     } else if (request.multipartUploads) {
