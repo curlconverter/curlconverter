@@ -163,6 +163,9 @@ var $ = jQueryInit(window);
     },
     exec: "cd /tmp/curlconverter/javascript-xhr && node main.js",
   },
+  julia: {
+    exec: "julia <file>",
+  },
   kotlin: {
     copy: function (contents: string) {
       fs.writeFileSync(
@@ -259,6 +262,9 @@ var $ = jQueryInit(window);
       );
     },
     exec: "cd /tmp/curlconverter/ocaml && eval `opam config env` && ocamlbuild -use-ocamlfind -tag thread -pkg cohttp-lwt-unix main.native && ./main.native",
+  },
+  perl: {
+    exec: "perl <file>",
   },
   php: {
     exec: "php <file>",
