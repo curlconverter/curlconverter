@@ -29,9 +29,8 @@ If you add a new generator, you'll need to
 
 1. add it to [README.md](./README.md) to the first sentence and to the CLI documentation
 2. export it in [index.ts](src/index.ts)
-3. add it to [cli.ts](src/cli.ts) to the list of args and to the --help message
+3. add it to [cli.ts](src/cli.ts) to the imports, the list of args and to the `--help` message
 4. add it to [test-utils.ts](test/test-utils.ts) (to make it part of the testing)
-   - create a directory in [test/fixtures](test/fixtures/)
    - generate tests with `npm run gen-test -- --all --language <language>`
    - add it to [tools/compare-requests.ts](tools/compare-requests.ts), if possible
 

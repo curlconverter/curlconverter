@@ -43,6 +43,14 @@ const argv = await yargs(hideBin(process.argv))
 const languages: Converter[] = Array.isArray(argv.language)
   ? argv.language
   : [argv.language];
+for (const language of languages) {
+  // Create the directory if it doesn't exist
+  const outDir = path.resolve(curlCommandDir, "..", language);
+  if (!fs.existsSync(outDir)) {
+    console.error("creating directory " + outDir);
+    fs.mkdirSync(outDir);
+  }
+}
 
 if (argv.all && argv._.length) {
   console.error("--all passed, ignoring names of test files");

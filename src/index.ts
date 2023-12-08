@@ -28,6 +28,7 @@ export {
   toJavaScriptXHRWarn,
 } from "./generators/javascript/xhr.js";
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
+export { toJulia, toJuliaWarn } from "./generators/julia.js";
 export { toKotlin, toKotlinWarn } from "./generators/kotlin.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
@@ -45,6 +46,7 @@ export {
 } from "./generators/javascript/request.js";
 export { toObjectiveC, toObjectiveCWarn } from "./generators/objectivec.js";
 export { toOCaml, toOCamlWarn } from "./generators/ocaml.js";
+export { toPerl, toPerlWarn } from "./generators/perl.js";
 export { toPhp, toPhpWarn } from "./generators/php/php.js";
 export { toPhpGuzzle, toPhpGuzzleWarn } from "./generators/php/guzzle.js";
 export { toPhpRequests, toPhpRequestsWarn } from "./generators/php/requests.js";

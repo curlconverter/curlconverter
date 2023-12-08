@@ -14,7 +14,7 @@ const supportedArgs = new Set([
   "form-string",
 ]);
 
-// The only difference is that in Kotlin the $ needs to be escaped
+// The only difference from Java is that in Kotlin the $ needs to be escaped
 // https://kotlinlang.org/docs/java-to-kotlin-idioms-strings.html#concatenate-strings
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10.6
 // https://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.3

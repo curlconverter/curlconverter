@@ -1,6 +1,6 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Kotlin, MATLAB, Objective-C, OCaml, PHP, PowerShell, Python, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Julia, Kotlin, MATLAB, Objective-C, OCaml, Perl, PHP, PowerShell, Python, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
 
 Try it on [curlconverter.com](https://curlconverter.com) or as a drop-in `curl` replacement:
 
@@ -93,11 +93,13 @@ Choose the output language by passing `--language <language>`. The options are
 - `java`, `java-httpurlconnection`, `java-jsoup`, `java-okhttp`
 - `javascript`, `javascript-jquery`, `javascript-xhr`
 - `json`
+- `julia`
 - `kotlin`
 - `matlab`
 - `node`, `node-http`, `node-axios`, `node-got`, `node-ky`, `node-request`, `node-superagent`
 - `objc`
 - `ocaml`
+- `perl`
 - `php`, `php-guzzle`, `php-requests`
 - `powershell`, `powershell-webrequest`
 - `python` (the default), `python-http`
@@ -121,7 +123,7 @@ curlconverter.toPython(['curl', 'example.com']);
 // "import requests\n\nresponse = requests.get('http://example.com')\n"
 ```
 
-**Note**: add `"type": "module",` to your package.json for the `import` statement above to work.
+**Note**: add `"type": "module",` to your package.json for the `import` statement above to work. curlconverter must be imported as an ES module with `import` this way and not with `require()` because it uses [top-level `await`](https://v8.dev/features/top-level-await).
 
 There's a corresponding set of functions that also return an array of warnings if there are any issues with the conversion:
 
