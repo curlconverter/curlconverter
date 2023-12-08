@@ -21,7 +21,7 @@ const supportedArgs = new Set([
 
 // https://docs.julialang.org/en/v1/manual/strings/
 // https://en.wikipedia.org/wiki/C_syntax#Backslash_escapes
-const regexEscape = /\$|"|\\|\p{C}|[^ \P{Z}]/gu;
+const regexEscape = /\$|\\|"|\p{C}|[^ \P{Z}]/gu;
 const regexHexDigit = /[0-9a-fA-F]/;
 export function reprStr(s: string): string {
   return (
@@ -74,7 +74,7 @@ export function repr(w: Word): string {
     } else if (t.type === "variable") {
       args.push("ENV[" + reprStr(t.value) + "]");
     } else {
-      // TODO: more complicated
+      // TODO: escape
       args.push("read(`" + t.value.toString() + "`, String)");
     }
   }
@@ -82,7 +82,7 @@ export function repr(w: Word): string {
 }
 
 export function _toJulia(requests: Request[], warnings: Warnings = []): string {
-  const request = getFirst(requests, warnings);
+  const request = getFirst(requests, warnings, { dataReadsFile: true });
   let code = "";
 
   const imports = new Set<string>(["HTTP"]);
@@ -145,34 +145,44 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
     if (eq(request.urls[0].uploadFile, "-")) {
       bodyArg = "stdin";
     } else {
-      // TODO: check
-      code +=
-        "body = open(read, " + repr(request.urls[0].uploadFile) + ', "b")\n\n';
+      code += "body = open(" + repr(request.urls[0].uploadFile) + ', "r")\n\n';
       bodyArg = "body";
     }
-  } else if (request.data) {
+  } else if (request.dataArray && request.dataArray.length) {
     // TODO: parseQueryString
     // TODO: JSON
-    code += "body = " + repr(request.data) + "\n\n";
-    bodyArg = "body";
-    if (request.dataReadsFile) {
-      warnings.push([
-        "data-reads-file",
-        "the body= is wrong, @ means reading from a file",
-      ]);
+    const formattedItems = [];
+    for (const item of request.dataArray) {
+      if (item instanceof Word) {
+        formattedItems.push(repr(item));
+      } else {
+        let formattedItem = "";
+        if (item.name) {
+          formattedItem += repr(mergeWords(item.name, "=")) + " * ";
+        }
+        const filename = eq(item.filename, "-") ? "stdin" : repr(item.filename);
+        formattedItem += "read(" + filename + ", String)";
+        formattedItems.push(formattedItem);
+      }
     }
+    code += "body = " + formattedItems.join(" * \n    ") + "\n\n";
+    bodyArg = "body";
   } else if (request.multipartUploads) {
-    code += "form = HTTP.Form(";
+    code += "form = HTTP.Form(\n";
+    code += "    Dict(\n";
     for (const f of request.multipartUploads) {
-      code += "    " + repr(f.name) + " => ";
+      code += "        " + repr(f.name) + " => ";
       if ("content" in f) {
         code += repr(f.content) + ",\n";
       } else {
         if (!f.contentType && f.filename && eq(f.contentFile, f.filename)) {
           code += "open(" + repr(f.contentFile) + "),\n";
+        } else if (!f.filename) {
+          // There's no way to change Content-Type without sending a filename
+          code += "read(" + repr(f.contentFile) + ", String),\n";
         } else {
           code += "HTTP.Multipart(";
-          if (f.filename && eq(f.contentFile, f.filename)) {
+          if (eq(f.contentFile, f.filename)) {
             code += repr(f.filename);
           } else {
             code += repr(f.contentFile);
@@ -188,6 +198,7 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
     if (code.endsWith(",\n")) {
       code = code.slice(0, -2) + "\n";
     }
+    code += "    )\n";
     code += ")\n\n";
     bodyArg = "form";
   }
@@ -224,8 +235,6 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
   if (request.insecure) {
     args.push("require_ssl_verification=false");
   }
-
-  // TODO: cookiejar?
 
   if (request.verbose) {
     args.push("verbose=1");

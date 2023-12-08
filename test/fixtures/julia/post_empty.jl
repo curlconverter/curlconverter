@@ -4,6 +4,4 @@ headers = Dict(
     "Content-Type" => "application/x-www-form-urlencoded"
 )
 
-body = ""
-
-resp = HTTP.post("http://localhost:28139", headers, body)
+resp = HTTP.post("http://localhost:28139", headers)
