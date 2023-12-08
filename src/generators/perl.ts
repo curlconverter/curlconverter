@@ -1,4 +1,4 @@
-import { Word, mergeWords } from "../shell/Word.js";
+import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
@@ -10,6 +10,8 @@ const supportedArgs = new Set([
   // "upload-file",
   "max-redirs",
   "max-time",
+  "form",
+  "form-string",
 ]);
 
 // http://www.dispersiondesign.com/articles/perl/perl_escape_characters
@@ -44,8 +46,8 @@ export function reprStr(s: string): string {
         case "\t":
           return "\\t";
         // New in perl 5.10.0
-        // case "\v":
-        //   return "\\v";
+        case "\v":
+          return "\\v";
         case '"':
           return '\\"';
       }
@@ -65,7 +67,6 @@ export function repr(w: Word): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
-      // TODO: dedicated fn
       args.push(reprStr(t));
     } else if (t.type === "variable") {
       // TODO: put in string?
@@ -101,10 +102,10 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
     !request.headers.length &&
     !request.urls[0].auth &&
     !request.data &&
+    !request.multipartUploads &&
     !request.insecure &&
     !request.timeout &&
     !request.maxRedirects
-    // TODO: more checks
   ) {
     let code = "use LWP::Simple;\n";
     code +=
@@ -173,7 +174,31 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
       }
     }
     if (request.data) {
+      // TODO: parseQueryString
       args.push("Content => " + repr(request.data));
+    } else if (request.multipartUploads) {
+      args.push("Content_Type => 'form-data'");
+      const lines = [];
+      for (const m of request.multipartUploads) {
+        if ("content" in m) {
+          lines.push(reprHashKey(m.name) + " => " + repr(m.content));
+        } else if (!("filename" in m)) {
+          // TODO: use File::Slurp;
+          lines.push(
+            reprHashKey(m.name) + " => read_file(" + repr(m.contentFile) + ")"
+          );
+        } else {
+          let line = reprHashKey(m.name) + " => [" + repr(m.contentFile);
+          if (m.filename && !eq(m.filename, m.contentFile)) {
+            line += ", " + repr(m.filename);
+          }
+          lines.push(line + "]");
+        }
+      }
+
+      args.push(
+        "Content => [\n        " + lines.join(",\n        ") + "\n    ]"
+      );
     }
   }
 
