@@ -12,6 +12,9 @@ headers = Dict(
     "Connection" => "keep-alive"
 )
 
-body = "msg1=wow&msg2=such"
+body = Dict(
+    "msg1" => "wow",
+    "msg2" => "such"
+)
 
 resp = HTTP.post("http://localhost:28139/echo/html/", headers, body)

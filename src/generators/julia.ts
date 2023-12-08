@@ -1,6 +1,7 @@
 import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
+import { parseQueryString } from "../Query.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -81,6 +82,64 @@ export function repr(w: Word): string {
   return args.join(" * ");
 }
 
+function formatData(request: Request): string {
+  if (!request.dataArray) {
+    return ""; // placate type-checker
+  }
+
+  const contentType = request.headers.getContentType();
+  // TODO: delete Content-Type header when it's what Julia will send anyway
+  if (
+    request.dataArray &&
+    request.dataArray.length === 1 &&
+    request.dataArray[0] instanceof Word &&
+    request.dataArray[0].isString()
+  ) {
+    if (contentType === "application/json") {
+      try {
+        // TODO
+      } catch {}
+    } else if (contentType === "application/x-www-form-urlencoded") {
+      const [queryList] = parseQueryString(request.dataArray[0]);
+      if (queryList) {
+        let code = "Dict(\n";
+        for (const [k, v] of queryList) {
+          if (v === null) {
+            continue;
+          }
+          code += "    " + repr(k) + " => " + repr(v) + ",\n";
+        }
+        if (code.endsWith(",\n")) {
+          code = code.slice(0, -2) + "\n";
+        }
+        code += ")";
+        return code;
+      }
+    }
+  }
+
+  const formattedItems = [];
+  for (const item of request.dataArray) {
+    if (item instanceof Word) {
+      formattedItems.push(repr(item));
+    } else {
+      let formattedItem = "";
+      if (item.name) {
+        formattedItem += repr(mergeWords(item.name, "=")) + " * ";
+      }
+      const filename = eq(item.filename, "-") ? "stdin" : repr(item.filename);
+      if (item.filetype === "data") {
+        formattedItem += "replace(read(" + filename + ', String), "\\n" => "")';
+      } else {
+        // TODO: binary files shouldn't be read as string
+        formattedItem += "read(" + filename + ", String)";
+      }
+      formattedItems.push(formattedItem);
+    }
+  }
+  return formattedItems.join(" * \n    ");
+}
+
 export function _toJulia(requests: Request[], warnings: Warnings = []): string {
   const request = getFirst(requests, warnings, { dataReadsFile: true });
   let code = "";
@@ -151,21 +210,7 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
   } else if (request.dataArray && request.dataArray.length) {
     // TODO: parseQueryString
     // TODO: JSON
-    const formattedItems = [];
-    for (const item of request.dataArray) {
-      if (item instanceof Word) {
-        formattedItems.push(repr(item));
-      } else {
-        let formattedItem = "";
-        if (item.name) {
-          formattedItem += repr(mergeWords(item.name, "=")) + " * ";
-        }
-        const filename = eq(item.filename, "-") ? "stdin" : repr(item.filename);
-        formattedItem += "read(" + filename + ", String)";
-        formattedItems.push(formattedItem);
-      }
-    }
-    code += "body = " + formattedItems.join(" * \n    ") + "\n\n";
+    code += "body = " + formatData(request) + "\n\n";
     bodyArg = "body";
   } else if (request.multipartUploads) {
     code += "form = HTTP.Form(\n";
