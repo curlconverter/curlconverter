@@ -1,7 +1,14 @@
+import { CCError } from "../utils.js";
 import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
+
+import {
+  parse as jsonParseLossless,
+  stringify as jsonStringifyLossless,
+  isLosslessNumber,
+} from "lossless-json";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -82,9 +89,77 @@ export function repr(w: Word): string {
   return args.join(" * ");
 }
 
-function formatData(request: Request): string {
+function jsonAsJulia(
+  obj: string | number | boolean | object | null,
+  indent = 0
+): string {
+  if (isLosslessNumber(obj)) {
+    // TODO: why is it undefined
+    const numAsStr = jsonStringifyLossless(obj) as string;
+    return numAsStr;
+  }
+
+  switch (typeof obj) {
+    case "string":
+      return reprStr(obj);
+    case "number":
+      // If the number in the JSON file is very large, it'll turn into Infinity
+      if (!isFinite(obj)) {
+        throw new CCError("found Infitiny in JSON");
+      }
+      return obj.toString();
+    case "boolean":
+      return obj.toString();
+    case "object":
+      if (obj === null) {
+        return "nothing";
+      }
+      if (Array.isArray(obj)) {
+        if (obj.length === 0) {
+          return "[]";
+        }
+        let s = "[\n";
+        for (const item of obj) {
+          s += " ".repeat(indent + 4) + jsonAsJulia(item, indent + 4) + ",\n";
+        }
+        if (s.endsWith(",\n")) {
+          s = s.slice(0, -2) + "\n";
+        }
+        s += " ".repeat(indent) + "]";
+        return s;
+      }
+
+      if (Object.keys(obj).length === 0) {
+        return "Dict()";
+      }
+      {
+        // TODO: this causes keys to be sent out of order
+        let s = "Dict(\n";
+        for (const [k, v] of Object.entries(obj)) {
+          // repr() because JSON keys must be strings.
+          s +=
+            " ".repeat(indent + 4) +
+            reprStr(k) +
+            " => " +
+            jsonAsJulia(v, indent + 4) +
+            ",\n";
+        }
+        if (s.endsWith(",\n")) {
+          s = s.slice(0, -2) + "\n";
+        }
+        s += " ".repeat(indent) + ")";
+        return s;
+      }
+    default:
+      throw new CCError(
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+      );
+  }
+}
+
+function formatData(request: Request, imports: Set<string>): [string, string] {
   if (!request.dataArray) {
-    return ""; // placate type-checker
+    return ["", ""]; // placate type-checker
   }
 
   const contentType = request.headers.getContentType();
@@ -97,7 +172,12 @@ function formatData(request: Request): string {
   ) {
     if (contentType === "application/json") {
       try {
-        // TODO
+        const jsonData = jsonParseLossless(
+          request.dataArray[0].toString()
+        ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const result = jsonAsJulia(jsonData);
+        imports.add("JSON");
+        return [result, "JSON.json(body)"];
       } catch {}
     } else if (contentType === "application/x-www-form-urlencoded") {
       const [queryList] = parseQueryString(request.dataArray[0]);
@@ -113,7 +193,7 @@ function formatData(request: Request): string {
           code = code.slice(0, -2) + "\n";
         }
         code += ")";
-        return code;
+        return [code, "body"];
       }
     }
   }
@@ -137,7 +217,7 @@ function formatData(request: Request): string {
       formattedItems.push(formattedItem);
     }
   }
-  return formattedItems.join(" * \n    ");
+  return [formattedItems.join(" * \n    "), "body"];
 }
 
 export function _toJulia(requests: Request[], warnings: Warnings = []): string {
@@ -208,10 +288,9 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
       bodyArg = "body";
     }
   } else if (request.dataArray && request.dataArray.length) {
-    // TODO: parseQueryString
-    // TODO: JSON
-    code += "body = " + formatData(request) + "\n\n";
-    bodyArg = "body";
+    let bodyCode;
+    [bodyCode, bodyArg] = formatData(request, imports);
+    code += "body = " + bodyCode + "\n\n";
   } else if (request.multipartUploads) {
     code += "form = HTTP.Form(\n";
     code += "    Dict(\n";
