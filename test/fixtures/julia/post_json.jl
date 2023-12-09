@@ -5,6 +5,8 @@ headers = Dict(
     "Accept" => "application/json"
 )
 
-body = Dict()
+body = Dict(
+    "drink" => "coffe"
+)
 
 resp = HTTP.post("http://localhost:28139", headers, JSON.json(body))
