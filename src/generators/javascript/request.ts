@@ -1,5 +1,5 @@
 import { warnIfPartsIgnored } from "../../Warnings.js";
-import { Word, eq } from "../../shell/Word.js";
+import { Word, eq, mergeWords } from "../../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 
@@ -11,6 +11,9 @@ const supportedArgs = new Set([
   // "form-string",
   "next",
 ]);
+
+// https://github.com/nodejs/node/blob/135948d584ab6864b217b504f3eddf426d533bd4/lib/_http_client.js#L106
+const INVALID_PATH_REGEX = /[^\u0021-\u00ff]/;
 
 function requestToNodeRequest(
   request: Request,
@@ -47,7 +50,20 @@ function requestToNodeRequest(
   }
 
   nodeRequestCode += defVar(definedVariables, "options", "{\n");
-  nodeRequestCode += "    url: " + repr(request.urls[0].url, imports);
+  const path = mergeWords(
+    request.urls[0].urlObj.path,
+    request.urls[0].urlObj.query
+  );
+  if (path.toBool() && INVALID_PATH_REGEX.test(path.toString())) {
+    warnings.push([
+      "invalid-path-characters",
+      "encodeURI() is needed because request path contains unescaped characters",
+    ]);
+    nodeRequestCode +=
+      "    url: encodeURI(" + repr(request.urls[0].url, imports) + ")";
+  } else {
+    nodeRequestCode += "    url: " + repr(request.urls[0].url, imports);
+  }
   if (!eq(request.urls[0].method.toUpperCase(), "GET")) {
     nodeRequestCode +=
       ",\n    method: " + repr(request.urls[0].method.toUpperCase(), imports);
