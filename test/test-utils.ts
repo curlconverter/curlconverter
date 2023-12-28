@@ -136,6 +136,11 @@ const converters = {
     extension: ".kt",
     converter: curlconverter.toKotlin,
   },
+  lua: {
+    name: "Lua",
+    extension: ".lua",
+    converter: curlconverter.toLua,
+  },
   matlab: {
     name: "MATLAB",
     extension: ".m",

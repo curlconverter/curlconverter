@@ -176,6 +176,9 @@ var $ = jQueryInit(window);
     },
     exec: "cd /tmp/curlconverter/kotlin && kotlin script.main.kts",
   },
+  lua: {
+    exec: "lua <file>",
+  },
   node: {
     setup:
       "cd /tmp && mkdir -p curlconverter/node && cd curlconverter/node && npm init -y es6 && npm install node-fetch",
