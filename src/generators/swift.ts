@@ -48,7 +48,6 @@ export function repr(w: Word): string {
   return args.join(" + ");
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function reprJson(data: any, indent = 0): string {
   if (typeof data === "string") {
     return reprStr(data);

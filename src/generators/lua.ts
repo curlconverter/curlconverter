@@ -35,6 +35,73 @@ function repr(w: Word): string {
   return args.join(" .. ");
 }
 
+// http://lua-users.org/wiki/TablesTutorial
+const VALID_KEY = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+function reprKey(key: Word | string): string {
+  if (key instanceof Word) {
+    if (key.isString() && VALID_KEY.test(key.toString())) {
+      return key.toString();
+    }
+    return "[" + repr(key) + "]";
+  }
+  if (VALID_KEY.test(key)) {
+    return key;
+  }
+  return "[" + reprStr(key) + "]";
+}
+
+function jsonToLua(data: any, indent = 0): string {
+  if (typeof data === "string") {
+    return reprStr(data);
+  }
+  if (typeof data === "number") {
+    return data.toString();
+  }
+  if (typeof data === "boolean") {
+    return data ? "true" : "false";
+  }
+  if (data === null) {
+    return "nil";
+  }
+  if (Array.isArray(data)) {
+    if (data.length === 0) {
+      return "{}";
+    }
+    let code = "{\n";
+    for (const item of data) {
+      code += "\t".repeat(indent + 1) + jsonToLua(item, indent + 1) + ",\n";
+    }
+    if (code.endsWith(",\n")) {
+      code = code.slice(0, -2) + "\n";
+    }
+    code += "\t".repeat(indent) + "}";
+    return code;
+  }
+  if (typeof data === "object") {
+    const entries = Object.entries(data);
+    if (entries.length === 0) {
+      // TODO: not correct https://github.com/rxi/json.lua/issues/23
+      return "{}";
+    }
+    let code = "{\n";
+    for (const [key, value] of entries) {
+      code +=
+        "\t".repeat(indent + 1) +
+        reprKey(key) +
+        " = " +
+        jsonToLua(value, indent + 1) +
+        ",\n";
+    }
+    if (code.endsWith(",\n")) {
+      code = code.slice(0, -2) + "\n";
+    }
+    code += "\t".repeat(indent) + "}";
+    return code;
+  } else {
+    throw new Error("Unsupported JSON type: " + typeof data);
+  }
+}
+
 export function _toLua(requests: Request[], warnings: Warnings = []): string {
   const request = getFirst(requests, warnings);
 
@@ -70,7 +137,24 @@ export function _toLua(requests: Request[], warnings: Warnings = []): string {
     code += "\turl = " + repr(request.urls[0].originalUrl) + ",\n";
 
     if (request.data) {
-      code += "\tsource = ltn12.source.string(" + repr(request.data) + "),\n";
+      code += "\tsource = ltn12.source.string(";
+      if (
+        request.headers.getContentType() === "application/json" &&
+        request.data.isString()
+      ) {
+        try {
+          code +=
+            "json.encode(" +
+            jsonToLua(JSON.parse(request.data.toString()), 1) +
+            ")";
+          imports.add("json");
+        } catch (e) {
+          code += repr(request.data);
+        }
+      } else {
+        code += repr(request.data);
+      }
+      code += "),\n";
       imports.add("ltn12");
     }
 
@@ -80,11 +164,7 @@ export function _toLua(requests: Request[], warnings: Warnings = []): string {
         if (value === null) {
           continue;
         }
-        if (name.isString() && /^[a-zA-Z]+$/.test(name.toString())) {
-          code += "\t\t" + name.toString() + " = " + repr(value) + ",\n";
-        } else {
-          code += "\t\t[" + repr(name) + "] = " + repr(value) + ",\n";
-        }
+        code += "\t\t" + reprKey(name) + " = " + repr(value) + ",\n";
       }
       if (request.urls[0].auth) {
         code +=
@@ -97,6 +177,9 @@ export function _toLua(requests: Request[], warnings: Warnings = []): string {
         code = code.slice(0, -2) + "\n";
       }
       code += "\t},\n";
+    }
+    if (code.endsWith(",\n")) {
+      code = code.slice(0, -2) + "\n";
     }
 
     // code += "\tsink = ltn12.sink.table(respbody)\n";
