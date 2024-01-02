@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const fixturesDir = path.resolve(__dirname, "../../test/fixtures");
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stringifyWords(o: any): any {
   if (o instanceof Word) {
     return o.toString();
@@ -135,6 +134,11 @@ const converters = {
     name: "Kotlin",
     extension: ".kt",
     converter: curlconverter.toKotlin,
+  },
+  lua: {
+    name: "Lua",
+    extension: ".lua",
+    converter: curlconverter.toLua,
   },
   matlab: {
     name: "MATLAB",

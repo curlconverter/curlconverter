@@ -30,6 +30,7 @@ export {
 export { toJsonString, toJsonStringWarn } from "./generators/json.js";
 export { toJulia, toJuliaWarn } from "./generators/julia.js";
 export { toKotlin, toKotlinWarn } from "./generators/kotlin.js";
+export { toLua, toLuaWarn } from "./generators/lua.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 export { toNodeAxios, toNodeAxiosWarn } from "./generators/javascript/axios.js";

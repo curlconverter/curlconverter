@@ -46,6 +46,7 @@ import {
 import { _toJsonString, toJsonStringWarn } from "./generators/json.js";
 import { _toJulia, toJuliaWarn } from "./generators/julia.js";
 import { _toKotlin, toKotlinWarn } from "./generators/kotlin.js";
+import { _toLua, toLuaWarn } from "./generators/lua.js";
 import { _toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 import { _toNode, toNodeWarn } from "./generators/javascript/javascript.js";
 import {
@@ -136,6 +137,7 @@ const translate: {
   json: [_toJsonString, toJsonStringWarn],
   julia: [_toJulia, toJuliaWarn],
   kotlin: [_toKotlin, toKotlinWarn],
+  lua: [_toLua, toLuaWarn],
   matlab: [_toMATLAB, toMATLABWarn],
   node: [_toNode, toNodeWarn],
   "node-axios": [_toNodeAxios, toNodeAxiosWarn],
@@ -208,6 +210,7 @@ language: the language to convert the curl command to. The choices are
   json
   julia
   kotlin
+  lua
   matlab
   node
   node-axios

@@ -114,7 +114,6 @@ function escapeJsonStr(value: string): string {
   }
   return value;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toJson(obj: any, key = ""): string[] {
   if (obj === null) {
     return [reprStr(key) + ":=null"];

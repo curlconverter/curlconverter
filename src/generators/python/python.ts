@@ -904,7 +904,6 @@ export function formatDataAsJson(
     try {
       // TODO: types
       // https://github.com/josdejong/lossless-json/issues/245
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       dataAsJson = jsonParseLossless(d.toString()) as any;
     } catch {
       try {
