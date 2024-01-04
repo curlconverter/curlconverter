@@ -46,7 +46,7 @@ type JSONOutput = {
   headers?: { [key: string]: string | null };
   queries?: { [key: string]: string | string[] };
   // `| any` because of JSON
-  data?: { [key: string]: string } | any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  data?: { [key: string]: string } | string | any;
   // raw_data?: string[],
   files?: { [key: string]: string };
   // raw_files: string[],
@@ -64,9 +64,9 @@ type JSONOutput = {
   connect_timeout?: number;
 };
 
-function getDataString(request: Request): {
-  data?: { [key: string]: string | string[] };
-} {
+function getDataString(
+  request: Request
+): { [key: string]: string | string[] } | string {
   if (!request.data) {
     return {};
   }
@@ -74,38 +74,32 @@ function getDataString(request: Request): {
   const contentType = request.headers.getContentType();
   if (contentType === "application/json") {
     try {
-      const json = JSON.parse(request.data.toString());
-      return { data: json };
+      return JSON.parse(request.data.toString());
     } catch (e) {}
   }
 
-  const [parsedQuery, parsedQueryDict] = parseQueryString(request.data);
-  if (!parsedQuery || !parsedQuery.length) {
-    // TODO: this is not a good API
-    return {
-      data: {
-        [request.data.toString()]: "",
-      },
-    };
-  }
-  if (parsedQueryDict) {
-    const data = Object.fromEntries(
-      parsedQueryDict.map((param) => [
-        param[0].toString(),
-        Array.isArray(param[1])
-          ? param[1].map((v) => v.toString())
-          : param[1].toString(),
-      ])
-    );
-    return { data };
-  } else {
-    return {
+  if (contentType === "application/x-www-form-urlencoded") {
+    const [parsedQuery, parsedQueryDict] = parseQueryString(request.data);
+    if (parsedQueryDict) {
+      return Object.fromEntries(
+        parsedQueryDict.map((param) => [
+          param[0].toString(),
+          Array.isArray(param[1])
+            ? param[1].map((v) => v.toString())
+            : param[1].toString(),
+        ])
+      );
+    }
+    if (parsedQuery) {
       // .fromEntries() means we lose data when there are repeated keys
-      data: Object.fromEntries(
+      return Object.fromEntries(
         parsedQuery.map((param) => [param[0].toString(), param[1].toString()])
-      ),
-    };
+      );
+    }
   }
+
+  // TODO: this leads to ambiguity with JSON strings
+  return request.data.toString();
 }
 
 function getFilesString(
@@ -190,10 +184,10 @@ export function _toJsonString(
     );
   }
 
-  // TODO: not Object.assign, doesn't work with type system
   if (request.data) {
-    Object.assign(requestJson, getDataString(request));
+    requestJson.data = getDataString(request);
   } else if (request.multipartUploads) {
+    // TODO: not Object.assign, doesn't work with type system
     Object.assign(requestJson, getFilesString(request));
   }
 
@@ -201,6 +195,7 @@ export function _toJsonString(
     requestJson.compressed = true;
   }
   if (request.insecure) {
+    // TODO: rename to verify? insecure=false doesn't make sense
     requestJson.insecure = false;
   }
 

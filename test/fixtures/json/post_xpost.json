@@ -5,7 +5,5 @@
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"
     },
-    "data": {
-        "{\"keywords\":\"php\",\"page\":1,\"searchMode\":1}": ""
-    }
+    "data": "{\"keywords\":\"php\",\"page\":1,\"searchMode\":1}"
 }

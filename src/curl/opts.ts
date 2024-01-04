@@ -901,7 +901,7 @@ export interface OperationConfig {
   // TODO: remove any.
   // This is difficult because we have curl's arguments but also a couple
   // curlconverter-specific arguments that are handled by the same code.
-  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 // type Satisfies<T, U extends T> = void;
 // type AssertSubsetKeys = Satisfies<

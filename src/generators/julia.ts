@@ -174,7 +174,7 @@ function formatData(request: Request, imports: Set<string>): [string, string] {
       try {
         const jsonData = jsonParseLossless(
           request.dataArray[0].toString()
-        ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        ) as any;
         const result = jsonAsJulia(jsonData);
         imports.add("JSON");
         return [result, "JSON.json(body)"];
