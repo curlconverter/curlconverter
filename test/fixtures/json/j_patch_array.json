@@ -5,7 +5,5 @@
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"
     },
-    "data": {
-        "item[]=1&item[]=2&item[]=3": ""
-    }
+    "data": "item[]=1&item[]=2&item[]=3"
 }

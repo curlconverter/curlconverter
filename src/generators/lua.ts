@@ -6,11 +6,6 @@ import { reprStr as pyreprStr } from "./python/python.js";
 
 const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
-  // "insecure",
-  // "no-insecure",
-  // "compressed",
-  // "no-compressed",
-  // "max-time",
   // "form",
   // "form-string",
 ]);

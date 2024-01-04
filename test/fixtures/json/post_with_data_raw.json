@@ -5,7 +5,5 @@
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"
     },
-    "data": {
-        "msg1=wow&msg2=such&msg3=@rawmsg": ""
-    }
+    "data": "msg1=wow&msg2=such&msg3=@rawmsg"
 }

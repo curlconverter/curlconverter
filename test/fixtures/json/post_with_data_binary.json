@@ -5,7 +5,5 @@
     "headers": {
         "Content-Type": "application/x-www-form-urlencoded"
     },
-    "data": {
-        "{\"title\":\"china1\"}": ""
-    }
+    "data": "{\"title\":\"china1\"}"
 }
