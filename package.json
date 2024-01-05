@@ -1,6 +1,6 @@
 {
   "name": "curlconverter",
-  "version": "4.8.1",
+  "version": "4.9.0",
   "description": "convert curl commands to Python, JavaScript, Go, PHP and more",
   "homepage": "https://curlconverter.com",
   "author": {
