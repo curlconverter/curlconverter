@@ -18,7 +18,7 @@ const supportedArgs = new Set([
 
 export function _toJavaOkHttp(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const url = request.urls[0];
@@ -36,7 +36,9 @@ export function _toJavaOkHttp(
   const clientLines = [];
   if (request.timeout) {
     clientLines.push(
-      "    .callTimeout(" + request.timeout.toString() + ", TimeUnit.SECONDS)\n"
+      "    .callTimeout(" +
+        request.timeout.toString() +
+        ", TimeUnit.SECONDS)\n",
     );
     imports.add("java.util.concurrent.TimeUnit");
   }
@@ -44,7 +46,7 @@ export function _toJavaOkHttp(
     clientLines.push(
       "    .connectTimeout(" +
         request.connectTimeout.toString() +
-        ", TimeUnit.SECONDS)\n"
+        ", TimeUnit.SECONDS)\n",
     );
     imports.add("java.util.concurrent.TimeUnit");
   }
@@ -150,7 +152,7 @@ export function _toJavaOkHttp(
               '"", ' + // TODO: this is the media type
               "new File(" +
               repr(m.contentFile, imports) +
-              "))"
+              "))",
           );
           imports.add("java.io.File");
         } else {
@@ -243,7 +245,7 @@ export function _toJavaOkHttp(
 }
 export function toJavaOkHttpWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const java = _toJavaOkHttp(requests, warnings);

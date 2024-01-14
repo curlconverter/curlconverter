@@ -91,7 +91,7 @@ export function repr(w: Word): string {
 
 function jsonAsJulia(
   obj: string | number | boolean | object | null,
-  indent = 0
+  indent = 0,
 ): string {
   if (isLosslessNumber(obj)) {
     // TODO: why is it undefined
@@ -152,7 +152,7 @@ function jsonAsJulia(
       }
     default:
       throw new CCError(
-        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj,
       );
   }
 }
@@ -173,7 +173,7 @@ function formatData(request: Request, imports: Set<string>): [string, string] {
     if (contentType === "application/json") {
       try {
         const jsonData = jsonParseLossless(
-          request.dataArray[0].toString()
+          request.dataArray[0].toString(),
         ) as any;
         const result = jsonAsJulia(jsonData);
         imports.add("JSON");
@@ -267,7 +267,7 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
       code +=
         '    "Authorization" => "Basic " * base64encode(' +
         repr(
-          mergeWords(request.urls[0].auth[0], ":", request.urls[0].auth[1])
+          mergeWords(request.urls[0].auth[0], ":", request.urls[0].auth[1]),
         ) +
         "),\n";
       imports.add("Base64");
@@ -387,7 +387,7 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
 
 export function toJuliaWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toJulia(requests, warnings);

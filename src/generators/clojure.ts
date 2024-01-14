@@ -93,7 +93,7 @@ function reprQueryDict(query: QueryDict, importLines: Set<string>): string {
         const key = q[0].toString();
         if (!q[0].isString() || !safeAsKeyword(key)) {
           throw new CCError(
-            "can't use query key as Clojure keyword: " + JSON.stringify(key)
+            "can't use query key as Clojure keyword: " + JSON.stringify(key),
           );
         }
         return (
@@ -117,7 +117,7 @@ function reprQueryList(query: QueryList, importLines: Set<string>): string {
     query
       .map(
         (q) =>
-          "[" + repr(q[0], importLines) + " " + repr(q[1], importLines) + "]"
+          "[" + repr(q[0], importLines) + " " + repr(q[1], importLines) + "]",
       )
       .join("\n ") +
     "]"
@@ -127,7 +127,7 @@ function reprQueryList(query: QueryList, importLines: Set<string>): string {
 function rerpQuery(
   queryList: QueryList | null | undefined,
   queryDict: QueryDict | null | undefined,
-  importLines: Set<string>
+  importLines: Set<string>,
 ): string | null {
   if (queryDict) {
     try {
@@ -148,7 +148,7 @@ function reprHeaders(headers: Headers, importLines: Set<string>): string {
     .map(
       // TODO: convert to keywords and lowercase known headers
       // TODO: :content-type is a top-level key and changes how the body is interpreted
-      (h) => repr(h[0], importLines) + " " + repr(h[1] as Word, importLines)
+      (h) => repr(h[0], importLines) + " " + repr(h[1] as Word, importLines),
     );
   return "{" + lines.join(",\n ") + "}";
 }
@@ -160,7 +160,7 @@ function indent(s: string, indent: number): string {
 
 function reprJson(
   obj: Word | Word[] | string | number | boolean | object | null,
-  importLines?: Set<string>
+  importLines?: Set<string>,
 ): string {
   if (importLines && obj instanceof Word) {
     return repr(obj, importLines);
@@ -187,7 +187,7 @@ function reprJson(
         const objReprs = Object.entries(obj).map(([k, v]) => {
           if (!safeAsKeyword(k)) {
             throw new CCError(
-              "can't use JSON key as Clojure keyword: " + JSON.stringify(k)
+              "can't use JSON key as Clojure keyword: " + JSON.stringify(k),
             );
           }
           // TODO: indent logic is wrong?
@@ -208,7 +208,7 @@ function addDataString(
   params: Params,
   request: Request,
   data: Word,
-  importLines: Set<string>
+  importLines: Set<string>,
 ) {
   const contentType = request.headers.getContentType();
   const exactContentType = request.headers.get("content-type");
@@ -260,7 +260,7 @@ function addData(
   params: Params,
   request: Request,
   data: DataParam[],
-  importLines: Set<string>
+  importLines: Set<string>,
 ) {
   if (data.length === 1 && data[0] instanceof Word && data[0].isString()) {
     try {
@@ -283,7 +283,7 @@ function addData(
         parts.push("(slurp *in*)");
       } else {
         parts.push(
-          "(clojure.java.io/file " + repr(filename, importLines) + ")"
+          "(clojure.java.io/file " + repr(filename, importLines) + ")",
         );
       }
     }
@@ -300,7 +300,7 @@ function addData(
 function reprMultipart(
   form: FormParam[],
   importLines: Set<string>,
-  warnings: Warnings
+  warnings: Warnings,
 ): string {
   const parts = [];
   for (const f of form) {
@@ -330,7 +330,7 @@ function reprMultipart(
 type Params = { [key: string]: string };
 export function _toClojure(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings, { dataReadsFile: true });
 
@@ -370,7 +370,7 @@ export function _toClojure(
     const queryParams = rerpQuery(
       request.urls[0].queryList,
       request.urls[0].queryDict,
-      importLines
+      importLines,
     );
 
     if (queryParams) {
@@ -416,7 +416,7 @@ export function _toClojure(
     params["multipart"] = reprMultipart(
       request.multipartUploads,
       importLines,
-      warnings
+      warnings,
     );
     // TODO: above warning probably also applies here
   }
@@ -466,7 +466,7 @@ export function _toClojure(
   if (request.connectTimeout) {
     params["connection-timeout"] = times1000(
       request.connectTimeout,
-      importLines
+      importLines,
     );
   }
 
@@ -510,7 +510,7 @@ export function _toClojure(
 
 export function toClojureWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const clojure = _toClojure(requests, warnings);

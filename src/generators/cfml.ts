@@ -143,7 +143,7 @@ export function _toCFML(requests: Request[], warnings: Warnings = []): string {
 
 export function toCFMLWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const cfml = _toCFML(requests, warnings);

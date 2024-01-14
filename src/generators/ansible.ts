@@ -105,7 +105,7 @@ type AnsibleURI = {
 
 function getDataString(
   request: Request,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Body, BodyFormat] | [string, "src"] | undefined {
   if (!request.data || !request.data.isString()) {
     return;
@@ -151,7 +151,7 @@ function getDataString(
             Array.isArray(q[1])
               ? q[1].map((qv) => qv.toString())
               : q[1].toString(),
-          ])
+          ]),
         ),
         "form-urlencoded",
       ];
@@ -168,7 +168,7 @@ function getDataString(
 
 export function _toAnsible(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   // Only supported if there's one file and nothing else
   const request = getFirst(requests, warnings, { dataReadsFile: true });
@@ -348,12 +348,12 @@ export function _toAnsible(
       },
     ],
     100,
-    2
+    2,
   );
 }
 export function toAnsibleWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const ansible = _toAnsible(requests, warnings);

@@ -98,7 +98,7 @@ function warnAboutGlobs(global: GlobalConfig, url: string) {
 export function parseurl(
   global: GlobalConfig,
   config: OperationConfig,
-  url: Word
+  url: Word,
 ): Curl_URL {
   // This is curl's parseurl()
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L1144

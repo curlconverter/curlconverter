@@ -65,7 +65,7 @@ type JSONOutput = {
 };
 
 function getDataString(
-  request: Request
+  request: Request,
 ): { [key: string]: string | string[] } | string {
   if (!request.data) {
     return {};
@@ -87,13 +87,13 @@ function getDataString(
           Array.isArray(param[1])
             ? param[1].map((v) => v.toString())
             : param[1].toString(),
-        ])
+        ]),
       );
     }
     if (parsedQuery) {
       // .fromEntries() means we lose data when there are repeated keys
       return Object.fromEntries(
-        parsedQuery.map((param) => [param[0].toString(), param[1].toString()])
+        parsedQuery.map((param) => [param[0].toString(), param[1].toString()]),
       );
     }
   }
@@ -103,7 +103,7 @@ function getDataString(
 }
 
 function getFilesString(
-  request: Request
+  request: Request,
 ):
   | { files?: { [key: string]: string }; data?: { [key: string]: string } }
   | undefined {
@@ -135,7 +135,7 @@ function getFilesString(
 
 export function _toJsonString(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -158,7 +158,7 @@ export function _toJsonString(
   if (request.cookies) {
     // TODO: repeated cookies
     requestJson.cookies = Object.fromEntries(
-      request.cookies.map((c) => [c[0].toString(), c[1].toString()])
+      request.cookies.map((c) => [c[0].toString(), c[1].toString()]),
     );
     // Normally when a generator uses .cookies, it should delete it from
     // headers, but users of the JSON output would expect to have all the
@@ -180,7 +180,7 @@ export function _toJsonString(
       request.urls[0].queryDict.map((q) => [
         q[0].toString(),
         Array.isArray(q[1]) ? q[1].map((qq) => qq.toString()) : q[1].toString(),
-      ])
+      ]),
     );
   }
 
@@ -231,13 +231,13 @@ export function _toJsonString(
     JSON.stringify(
       Object.keys(requestJson).length ? requestJson : "{}",
       null,
-      4
+      4,
     ) + "\n"
   );
 }
 export function toJsonStringWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const json = _toJsonString(requests, warnings);

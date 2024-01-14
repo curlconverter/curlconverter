@@ -83,7 +83,7 @@ export function repr(w: Word, imports: Set<string>): string {
 
 export function _toKotlin(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const url = request.urls[0];
@@ -101,7 +101,7 @@ export function _toKotlin(
   if (request.timeout) {
     // TODO: floats don't work here
     clientLines.push(
-      "  .callTimeout(" + request.timeout.toString() + ", TimeUnit.SECONDS)\n"
+      "  .callTimeout(" + request.timeout.toString() + ", TimeUnit.SECONDS)\n",
     );
     imports.add("java.util.concurrent.TimeUnit");
   }
@@ -109,7 +109,7 @@ export function _toKotlin(
     clientLines.push(
       "  .connectTimeout(" +
         request.connectTimeout.toString() +
-        ", TimeUnit.SECONDS)\n"
+        ", TimeUnit.SECONDS)\n",
     );
     imports.add("java.util.concurrent.TimeUnit");
   }
@@ -238,7 +238,7 @@ export function _toKotlin(
         if ("filename" in m && m.filename) {
           args.push(repr(m.filename, imports));
           args.push(
-            "File(" + repr(m.contentFile, imports) + ").asRequestBody()" // TODO: content type here
+            "File(" + repr(m.contentFile, imports) + ").asRequestBody()", // TODO: content type here
           );
           imports.add("java.io.File");
           imports.add("okhttp3.RequestBody.Companion.asRequestBody");
@@ -343,7 +343,7 @@ export function _toKotlin(
 }
 export function toKotlinWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const kotlin = _toKotlin(requests, warnings);

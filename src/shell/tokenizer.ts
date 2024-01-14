@@ -63,7 +63,7 @@ function removeAnsiCBackslashes(str: string): string {
           throw new CCError(
             'non-ASCII control character in ANSI-C quoted string: "\\u{' +
               m.codePointAt(2)!.toString(16) +
-              '}"'
+              '}"',
           );
         }
         // If this produces a 0x00 (null) character, it will cause bash to
@@ -72,7 +72,7 @@ function removeAnsiCBackslashes(str: string): string {
         return m[2] === "?"
           ? "\x7F"
           : String.fromCodePoint(
-              m[2].toUpperCase().codePointAt(0)! & 0b00011111
+              m[2].toUpperCase().codePointAt(0)! & 0b00011111,
             );
       case "x":
       case "u":
@@ -93,7 +93,7 @@ function removeAnsiCBackslashes(str: string): string {
       default:
         // There must be a mis-match between ANSI_BACKSLASHES and the switch statement
         throw new CCError(
-          "unhandled character in ANSI-C escape code: " + JSON.stringify(m)
+          "unhandled character in ANSI-C escape code: " + JSON.stringify(m),
         );
     }
   }
@@ -104,7 +104,7 @@ function removeAnsiCBackslashes(str: string): string {
 function toTokens(
   node: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): Token[] {
   let vals: Token[] = [];
   switch (node.type) {
@@ -123,7 +123,7 @@ function toTokens(
       let res = "";
       for (const child of node.namedChildren) {
         res += removeDoubleQuoteBackslashes(
-          node.text.slice(prevEnd, child.startIndex - node.startIndex)
+          node.text.slice(prevEnd, child.startIndex - node.startIndex),
         );
         // expansion, simple_expansion or command_substitution (or concat?)
         const subVal = toTokens(child, curlCommand, warnings);
@@ -242,7 +242,7 @@ function toTokens(
         "unexpected argument type " +
           JSON.stringify(node.type) +
           '. Must be one of "word", "string", "raw_string", "ansi_c_string", "expansion", "simple_expansion", "translated_string" or "concatenation"\n' +
-          underlineNode(node, curlCommand)
+          underlineNode(node, curlCommand),
       );
   }
 }
@@ -250,7 +250,7 @@ function toTokens(
 function toWord(
   node: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): Word {
   return new Word(toTokens(node, curlCommand, warnings));
 }
@@ -258,7 +258,7 @@ function toWord(
 function warnAboutErrorNodes(
   ast: Parser.Tree,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ) {
   // TODO: get only named children?
   const cursor = ast.walk();
@@ -286,7 +286,7 @@ function warnAboutErrorNodes(
 function warnAboutUselessBackslash(
   n: Parser.SyntaxNode,
   curlCommandLines: string[],
-  warnings: Warnings
+  warnings: Warnings,
 ) {
   const lastCommandLine = curlCommandLines[n.endPosition.row];
   const impromperBackslash = lastCommandLine.match(/\\\s+$/);
@@ -312,7 +312,7 @@ function warnAboutUselessBackslash(
 function extractRedirect(
   node: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Parser.SyntaxNode, Word?, Word?] {
   if (!node.childCount) {
     throw new CCError('got empty "redirected_statement" AST node');
@@ -325,12 +325,12 @@ function extractRedirect(
       'got "redirected_statement" AST node whose first child is not a "command", got ' +
         command.type +
         " instead\n" +
-        underlineNode(command, curlCommand)
+        underlineNode(command, curlCommand),
     );
   }
   if (node.childCount < 2) {
     throw new CCError(
-      'got "redirected_statement" AST node with only one child - no redirect'
+      'got "redirected_statement" AST node with only one child - no redirect',
     );
   }
   if (redirects.length > 1) {
@@ -351,14 +351,14 @@ function extractRedirect(
     // https://github.com/tree-sitter/tree-sitter-bash/issues/118
     if (redirect.namedChildCount < 1) {
       throw new CCError(
-        'got "redirected_statement" AST node with heredoc but no heredoc start'
+        'got "redirected_statement" AST node with heredoc but no heredoc start',
       );
     }
     const heredocStart = redirect.namedChildren[0].text;
     const heredocBody = node.nextNamedSibling;
     if (!heredocBody) {
       throw new CCError(
-        'got "redirected_statement" AST node with no heredoc body'
+        'got "redirected_statement" AST node with no heredoc body',
       );
     }
     // TODO: herestrings and heredocs are different
@@ -366,7 +366,7 @@ function extractRedirect(
       throw new CCError(
         'got "redirected_statement" AST node with heredoc but no heredoc body, got ' +
           heredocBody.type +
-          " instead"
+          " instead",
       );
     }
     // TODO: heredocs can do variable expansion and stuff
@@ -379,7 +379,7 @@ function extractRedirect(
   } else if (redirect.type === "herestring_redirect") {
     if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
       throw new CCError(
-        'got "redirected_statement" AST node with empty herestring'
+        'got "redirected_statement" AST node with empty herestring',
       );
     }
     // TODO: this just converts bash code to text
@@ -388,7 +388,7 @@ function extractRedirect(
     throw new CCError(
       'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
         command.type +
-        " instead"
+        " instead",
     );
   }
   return [command, stdin, stdinFile];
@@ -397,7 +397,7 @@ function extractRedirect(
 function _findCurlInPipeline(
   node: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Parser.SyntaxNode?, Word?, Word?] {
   let command, stdin, stdinFile;
   for (const child of node.namedChildren) {
@@ -408,7 +408,7 @@ function _findCurlInPipeline(
           'got "command" AST node whose first child is not a "command_name", got ' +
             commandName.type +
             " instead\n" +
-            underlineNode(commandName, curlCommand)
+            underlineNode(commandName, curlCommand),
         );
       }
       const commandNameWord = commandName.namedChildren[0];
@@ -417,7 +417,7 @@ function _findCurlInPipeline(
           'got "command_name" AST node whose first child is not a "word", got ' +
             commandNameWord.type +
             " instead\n" +
-            underlineNode(commandNameWord, curlCommand)
+            underlineNode(commandNameWord, curlCommand),
         );
       }
       if (commandNameWord.text === "curl") {
@@ -435,7 +435,7 @@ function _findCurlInPipeline(
       const [redirCommand, redirStdin, redirStdinFile] = extractRedirect(
         child,
         curlCommand,
-        warnings
+        warnings,
       );
       if (redirCommand.namedChildren[0].text === "curl") {
         if (!command) {
@@ -458,7 +458,7 @@ function _findCurlInPipeline(
       const [nestedCommand, nestedStdin, nestedStdinFile] = _findCurlInPipeline(
         child,
         curlCommand,
-        warnings
+        warnings,
       );
       if (!nestedCommand) {
         continue;
@@ -488,17 +488,17 @@ function _findCurlInPipeline(
 function findCurlInPipeline(
   node: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Parser.SyntaxNode, Word?, Word?] {
   const [command, stdin, stdinFile] = _findCurlInPipeline(
     node,
     curlCommand,
-    warnings
+    warnings,
   );
   if (!command) {
     throw new CCError(
       "could not find curl command in pipeline\n" +
-        underlineNode(node, curlCommand)
+        underlineNode(node, curlCommand),
     );
   }
   return [command, stdin, stdinFile];
@@ -509,7 +509,7 @@ function findCurlInPipeline(
 function extractCommandNodes(
   ast: Parser.Tree,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Parser.SyntaxNode, Word?, Word?][] {
   // https://github.com/tree-sitter/tree-sitter-bash/blob/master/grammar.js
   // The AST must be in a nice format, i.e.
@@ -538,7 +538,7 @@ function extractCommandNodes(
       // TODO: expand "AST" acronym the first time it appears in an error message
       'expected a "program" top-level AST node, got ' +
         ast.rootNode.type +
-        " instead"
+        " instead",
     );
   }
 
@@ -573,7 +573,7 @@ function extractCommandNodes(
       case "ERROR":
         throw new CCError(
           `Bash parsing error on line ${n.startPosition.row + 1}:\n` +
-            underlineNode(n, curlCommand)
+            underlineNode(n, curlCommand),
         );
       default:
         // TODO: better error message.
@@ -581,7 +581,7 @@ function extractCommandNodes(
           "found " +
             JSON.stringify(n.type) +
             ' AST node, only "command", "pipeline" or "redirected_statement" are supported\n' +
-            underlineNode(n, curlCommand)
+            underlineNode(n, curlCommand),
         );
     }
   }
@@ -590,7 +590,7 @@ function extractCommandNodes(
     // We would probably need to keep track of the node types we've seen.
     throw new CCError(
       'expected a "command" or "redirected_statement" AST node' +
-        (sawComment ? ', only found "comment" nodes' : "")
+        (sawComment ? ', only found "comment" nodes' : ""),
     );
   }
 
@@ -600,12 +600,12 @@ function extractCommandNodes(
 function toNameAndArgv(
   command: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Parser.SyntaxNode, Parser.SyntaxNode[]] {
   if (command.childCount < 1) {
     // TODO: better error message.
     throw new CCError(
-      'empty "command" node\n' + underlineNode(command, curlCommand)
+      'empty "command" node\n' + underlineNode(command, curlCommand),
     );
   }
 
@@ -630,7 +630,7 @@ function toNameAndArgv(
           'expected "command_name", "variable_assignment" or "file_redirect" AST node, found ' +
             n.type +
             " instead\n" +
-            underlineNode(n, curlCommand)
+            underlineNode(n, curlCommand),
         );
       }
       break;
@@ -643,7 +643,7 @@ function toNameAndArgv(
   if (name === undefined) {
     throw new CCError(
       'found "command" AST node with no "command_name" child\n' +
-        underlineNode(command, curlCommand)
+        underlineNode(command, curlCommand),
     );
   }
 
@@ -654,11 +654,12 @@ function toNameAndArgv(
 function nameToWord(
   name: Parser.SyntaxNode,
   curlCommand: string,
-  warnings: Warnings
+  warnings: Warnings,
 ): Word {
   if (name.childCount < 1 || !name.firstChild) {
     throw new CCError(
-      'found empty "command_name" AST node\n' + underlineNode(name, curlCommand)
+      'found empty "command_name" AST node\n' +
+        underlineNode(name, curlCommand),
     );
   } else if (name.childCount > 1) {
     warnings.push([
@@ -682,7 +683,7 @@ function nameToWord(
         "expected command name to be a simple value but found a " +
           cmdNameShellToken.type +
           "\n" +
-          underlineNode(cmdNameShellToken.syntaxNode, curlCommand)
+          underlineNode(cmdNameShellToken.syntaxNode, curlCommand),
       );
     }
   } else if (nameWordStr.trim() !== "curl") {
@@ -690,14 +691,14 @@ function nameToWord(
     if (!c) {
       throw new CCError(
         "found command without a command_name\n" +
-          underlineNode(nameNode, curlCommand)
+          underlineNode(nameNode, curlCommand),
       );
     }
     throw new CCError(
       'command should begin with "curl" but instead begins with ' +
         JSON.stringify(clip(c)) +
         "\n" +
-        underlineNode(nameNode, curlCommand)
+        underlineNode(nameNode, curlCommand),
     );
   }
   return nameWord;
@@ -705,7 +706,7 @@ function nameToWord(
 
 export function tokenize(
   curlCommand: string,
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [Word[], Word?, Word?][] {
   const ast = parser.parse(curlCommand);
   warnAboutErrorNodes(ast, curlCommand, warnings);

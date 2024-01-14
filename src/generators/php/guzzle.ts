@@ -110,7 +110,7 @@ function jsonStrToPhp(obj: string, indent = 0): [string, boolean] {
 
 export function _toPhpGuzzle(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const url = request.urls[0].queryDict
@@ -211,7 +211,7 @@ export function _toPhpGuzzle(
           options += `            'filename' => ${repr(m.filename)},\n`;
         }
         options += `            'contents' => Psr7\\Utils::tryFopen(${repr(
-          m.contentFile
+          m.contentFile,
         )}, 'r'),\n`;
         imports.add("GuzzleHttp\\Psr7");
         // TODO: set content type from file extension
@@ -226,7 +226,7 @@ export function _toPhpGuzzle(
     // TODO: remove some headers?
   } else if (request.urls[0].uploadFile) {
     options += `    'body' => Psr7\\Utils::tryFopen(${repr(
-      request.urls[0].uploadFile
+      request.urls[0].uploadFile,
     )}, 'r')\n`;
     imports.add("GuzzleHttp\\Psr7");
   } else if (request.data) {
@@ -356,7 +356,7 @@ export function _toPhpGuzzle(
 
 export function toPhpGuzzleWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const guzzle = _toPhpGuzzle(requests, warnings);

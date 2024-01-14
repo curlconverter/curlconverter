@@ -89,9 +89,9 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
           indent(
             `headers.insert(${name}, ${repr(
               headerValue,
-              imports
-            )}.parse().unwrap());`
-          )
+              imports,
+            )}.parse().unwrap());`,
+          ),
         );
       }
     }
@@ -104,12 +104,12 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
       if ("contentFile" in m) {
         return indent(
           `.file(${repr(m.name, imports)}, ${repr(m.contentFile, imports)})?`,
-          2
+          2,
         );
       }
       return indent(
         `.text(${repr(m.name, imports)}, ${repr(m.content, imports)})`,
-        2
+        2,
       );
     });
     parts[parts.length - 1] += ";";
@@ -130,8 +130,8 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
       lines.push(
         indent(
           ".redirect(reqwest::redirect::Policy::custom(|attempt| { attempt.follow() }))",
-          2
-        )
+          2,
+        ),
       );
     } else {
       // Insert the --max-redirs value as-is, hoping it's a valid integer
@@ -140,8 +140,8 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
           ".redirect(reqwest::redirect::Policy::limited(" +
             request.maxRedirects.trim().toString() +
             "))",
-          2
-        )
+          2,
+        ),
       );
     }
     lines.push(indent(".build()", 2));
@@ -154,18 +154,18 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
       indent(
         `let res = client.${request.urls[0].method.toLowerCase()}(${repr(
           request.urls[0].url,
-          imports
-        )})`
-      )
+          imports,
+        )})`,
+      ),
     );
   } else {
     lines.push(
       indent(
         `let res = client.request(${repr(
           request.urls[0].method,
-          imports
-        )}, ${repr(request.urls[0].url, imports)})`
-      )
+          imports,
+        )}, ${repr(request.urls[0].url, imports)})`,
+      ),
     );
   }
 
@@ -174,8 +174,8 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
     lines.push(
       indent(
         `.basic_auth(${repr(user, imports)}, Some(${repr(password, imports)}))`,
-        2
-      )
+        2,
+      ),
     );
   }
 
@@ -194,7 +194,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
         indent('.body(r#"', 2),
         request.data.toString(), // TODO: this is wrong
         '"#',
-        indent(")", 2)
+        indent(")", 2),
       );
     } else {
       lines.push(indent(`.body(${repr(request.data, imports)})`, 2));
@@ -207,7 +207,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
     indent('println!("{}", res);'),
     "",
     indent("Ok(())"),
-    "}"
+    "}",
   );
 
   const preambleLines = ["extern crate reqwest;"];
@@ -234,7 +234,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
 }
 export function toRustWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const rust = _toRust(requests, warnings);

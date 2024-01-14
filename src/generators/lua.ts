@@ -198,7 +198,7 @@ export function _toLua(requests: Request[], warnings: Warnings = []): string {
 
 export function toLuaWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const lua = _toLua(requests, warnings);

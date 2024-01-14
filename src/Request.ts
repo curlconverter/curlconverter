@@ -171,7 +171,7 @@ function buildURL(
   uploadFile?: Word,
   outputFile?: Word,
   stdin?: Word,
-  stdinFile?: Word
+  stdinFile?: Word,
 ): RequestUrl {
   const originalUrl = url;
   const u = parseurl(global, config, url);
@@ -200,7 +200,7 @@ function buildURL(
     u.host,
     u.path,
     u.query,
-    u.fragment
+    u.fragment,
   );
 
   // curl example.com example.com?foo=bar --url-query isshared=t
@@ -252,7 +252,7 @@ function buildURL(
       [queryArray, queryStr, queryStrReadsFile] = buildData(
         queryParts,
         stdin,
-        stdinFile
+        stdinFile,
       );
       urlQueryArray = queryArray;
     }
@@ -261,7 +261,7 @@ function buildURL(
       [queryArray, queryStr, queryStrReadsFile] = buildData(
         queryParts,
         stdin,
-        stdinFile
+        stdinFile,
       );
     }
 
@@ -281,13 +281,13 @@ function buildURL(
     "://",
     u.host,
     u.path,
-    u.fragment
+    u.fragment,
   );
   url = mergeWords(u.scheme, "://", u.host, u.path, u.query, u.fragment);
   let urlWithoutQueryList = url;
   // TODO: parseQueryString() doesn't accept leading '?'
   let [queryList, queryDict] = parseQueryString(
-    u.query.toBool() ? u.query.slice(1) : new Word()
+    u.query.toBool() ? u.query.slice(1) : new Word(),
   );
   if (queryList && queryList.length) {
     // TODO: remove the fragment too?
@@ -296,7 +296,7 @@ function buildURL(
       "://",
       u.host,
       u.path,
-      u.fragment
+      u.fragment,
     );
   } else {
     queryList = null;
@@ -399,7 +399,7 @@ function buildURL(
 function buildData(
   configData: SrcDataParam[],
   stdin?: Word,
-  stdinFile?: Word
+  stdinFile?: Word,
 ): [DataParam[], Word, string | null] {
   const data: DataParam[] = [];
   let dataStrState = new Word();
@@ -448,7 +448,7 @@ function buildData(
             case "urlencode":
               value = mergeWords(
                 name && name.length ? name.append("=") : new Word(),
-                percentEncodePlus(stdin)
+                percentEncodePlus(stdin),
               );
               break;
             default:
@@ -498,7 +498,7 @@ function buildData(
         return d.filename.prepend("@");
       }
       return d;
-    })
+    }),
   );
 
   return [data, dataStr, dataStrReadsFile];
@@ -508,7 +508,7 @@ function buildRequest(
   global: GlobalConfig,
   config: OperationConfig,
   stdin?: Word,
-  stdinFile?: Word
+  stdinFile?: Word,
 ): Request {
   if (!config.url || !config.url.length) {
     // TODO: better error message (could be parsing fail)
@@ -600,7 +600,7 @@ function buildRequest(
       [data, dataStr, dataStrReadsFile] = buildData(
         config.data,
         stdin,
-        stdinFile
+        stdinFile,
       );
     }
   }
@@ -620,8 +620,8 @@ function buildRequest(
         uploadFiles[i],
         outputFiles[i],
         stdin,
-        stdinFile
-      )
+        stdinFile,
+      ),
     );
   }
   // --get moves --data into the URL's query string
@@ -716,7 +716,7 @@ function buildRequest(
     // TODO: remove these
     request.isDataRaw = false;
     request.isDataBinary = (data || []).some(
-      (d) => !(d instanceof Word) && d.filetype === "binary"
+      (d) => !(d instanceof Word) && d.filetype === "binary",
     );
   }
   if (queryArray) {
@@ -916,21 +916,21 @@ function buildRequest(
 export function buildRequests(
   global: GlobalConfig,
   stdin?: Word,
-  stdinFile?: Word
+  stdinFile?: Word,
 ): Request[] {
   if (!global.configs.length) {
     // shouldn't happen
     warnf(global, ["no-configs", "got empty config object"]);
   }
   return global.configs.map((config) =>
-    buildRequest(global, config, stdin, stdinFile)
+    buildRequest(global, config, stdin, stdinFile),
   );
 }
 
 export function getFirst(
   requests: Request[],
   warnings: Warnings,
-  support?: Support
+  support?: Support,
 ): Request {
   if (requests.length > 1) {
     warnings.push([

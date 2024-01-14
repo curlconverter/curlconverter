@@ -99,14 +99,14 @@ function escapeJsonStr(value: string): string {
     throw new CCError(
       "Unrepresentable JSON string: " +
         JSON.stringify(value) +
-        ' (starts with "\\=")'
+        ' (starts with "\\=")',
     );
   }
   if (value.startsWith("\\@")) {
     throw new CCError(
       "Unrepresentable JSON string: " +
         JSON.stringify(value) +
-        ' (starts with "\\@")'
+        ' (starts with "\\@")',
     );
   }
   if (value.startsWith("=") || value.startsWith("@")) {
@@ -138,8 +138,8 @@ function toJson(obj: any, key = ""): string[] {
           value,
           key
             ? key + "[" + escapeJsonName(name) + "]"
-            : escapeJsonName(name, true)
-        )
+            : escapeJsonName(name, true),
+        ),
       )
       .flat();
   }
@@ -194,7 +194,7 @@ function urlencodedAsHttpie(flags: string[], items: string[], data: Word) {
   flags.push("--form");
   for (const [name, value] of queryList) {
     items.push(
-      repr(mergeWords(escapeQueryName(name), "=", escapeQueryValue(value)))
+      repr(mergeWords(escapeQueryName(name), "=", escapeQueryValue(value))),
     );
   }
 }
@@ -203,7 +203,7 @@ function formatData(
   flags: string[],
   items: string[],
   data: Word,
-  headers: Headers
+  headers: Headers,
 ) {
   const contentType = headers.getContentType();
   if (contentType === "application/json" && data.isString()) {
@@ -223,7 +223,7 @@ function escapeFormName(name: Word): Word {
 function requestToHttpie(
   request: Request,
   url: RequestUrl,
-  warnings: Warnings
+  warnings: Warnings,
 ): string {
   const flags: string[] = [];
   let method: string | null = null;
@@ -251,9 +251,9 @@ function requestToHttpie(
             mergeWords(
               escapeHeader(headerName),
               ":",
-              escapeHeaderValue(headerValue)
-            )
-          )
+              escapeHeaderValue(headerValue),
+            ),
+          ),
         );
       }
     }
@@ -297,7 +297,7 @@ function requestToHttpie(
     urlArg = url.urlWithoutQueryList;
     for (const [name, value] of url.queryList) {
       items.push(
-        repr(mergeWords(escapeQueryName(name), "==", escapeQueryValue(value)))
+        repr(mergeWords(escapeQueryName(name), "==", escapeQueryValue(value))),
       );
     }
   }
@@ -457,7 +457,7 @@ function requestToHttpie(
 
 export function _toHttpie(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const commands = [];
 
@@ -494,7 +494,7 @@ export function _toHttpie(
 
 export function toHttpieWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const httpie = _toHttpie(requests, warnings);

@@ -24,7 +24,7 @@ const supportedArgs = new Set([
 function _getDataString(
   data: Word,
   contentType: string | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   const originalStringRepr = repr(data, imports);
 
@@ -52,7 +52,7 @@ function _getDataString(
 export function getDataString(
   data: Word,
   contentType: string | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   let dataString: string | null = null;
   let commentedOutDataString: string | null = null;
@@ -60,7 +60,7 @@ export function getDataString(
     [dataString, commentedOutDataString] = _getDataString(
       data,
       contentType,
-      imports
+      imports,
     );
   } catch {}
   if (!dataString) {
@@ -71,7 +71,7 @@ export function getDataString(
 
 export function _toJavaScriptXHR(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const imports: JSImports = [];
@@ -101,7 +101,7 @@ export function _toJavaScriptXHR(
     const [dataString, commentedOutDataString] = getDataString(
       request.data,
       contentType,
-      imports
+      imports,
     );
     if (commentedOutDataString) {
       code += "// const data = " + commentedOutDataString + ";\n";
@@ -181,7 +181,7 @@ export function _toJavaScriptXHR(
 
 export function toJavaScriptXHRWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toJavaScriptXHR(requests, warnings);

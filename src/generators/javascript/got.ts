@@ -47,7 +47,7 @@ const supportedArgs = new Set([
 
 function getBodyString(
   request: Request,
-  imports: JSImports
+  imports: JSImports,
 ): [string | null, string | null] {
   const contentType = request.headers.getContentType();
   // can have things like ; charset=utf-8 which we want to preserve
@@ -112,7 +112,7 @@ function buildOptionsObject(
   methods: string[],
   nonDataMethods: string[],
   warnings: Warnings,
-  imports: JSImports
+  imports: JSImports,
 ): string {
   let code = "{\n";
 
@@ -129,7 +129,7 @@ function buildOptionsObject(
       reprAsStringToStringDict(
         request.urls[0].queryDict as [Word, Word][],
         1,
-        imports
+        imports,
       ) +
       ",\n";
   } else if (request.urls[0].queryList) {
@@ -250,7 +250,7 @@ function buildOptionsObject(
 
 export function _toNodeGot(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -336,7 +336,7 @@ export function _toNodeGot(
       methods,
       nonDataMethods,
       warnings,
-      imports
+      imports,
     );
   }
 
@@ -351,7 +351,7 @@ export function _toNodeGot(
 }
 export function toNodeGotWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const nodeGot = _toNodeGot(requests, warnings);

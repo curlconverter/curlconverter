@@ -28,7 +28,7 @@ const supportedArgs = new Set([
 // TODO: @
 function _getDataString(
   request: Request,
-  imports: JSImports
+  imports: JSImports,
 ): [string | null, string | null] {
   if (!request.data) {
     return [null, null];
@@ -77,7 +77,7 @@ function _getDataString(
 }
 function getDataString(
   request: Request,
-  imports: JSImports
+  imports: JSImports,
 ): [string | null, string | null] {
   if (!request.data) {
     return [null, null];
@@ -102,7 +102,7 @@ function buildConfigObject(
   methods: string[],
   dataMethods: string[],
   hasSearchParams: boolean,
-  imports: JSImports
+  imports: JSImports,
 ): string {
   let code = "{\n";
 
@@ -231,7 +231,7 @@ function buildConfigObject(
 
 export function _toNodeAxios(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -361,7 +361,7 @@ export function _toNodeAxios(
       methods,
       dataMethods,
       !!hasSearchParams,
-      imports
+      imports,
     );
     if (needsData) {
       code += ",\n";
@@ -384,7 +384,7 @@ export function _toNodeAxios(
 }
 export function toNodeAxiosWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const nodeAxios = _toNodeAxios(requests, warnings);

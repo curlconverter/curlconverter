@@ -169,15 +169,15 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
         args.push(
           'Authorization => "Basic " . MIME::Base64::encode(' +
             repr(
-              mergeWords(request.urls[0].auth[0], ":", request.urls[0].auth[1])
+              mergeWords(request.urls[0].auth[0], ":", request.urls[0].auth[1]),
             ) +
-            ")"
+            ")",
         );
       }
     }
     if (request.urls[0].uploadFile) {
       args.push(
-        "Content => read_file(" + repr(request.urls[0].uploadFile) + ")"
+        "Content => read_file(" + repr(request.urls[0].uploadFile) + ")",
       );
     } else if (request.data) {
       // TODO: parseQueryString
@@ -191,7 +191,7 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
         } else if (!("filename" in m)) {
           // TODO: use File::Slurp;
           lines.push(
-            reprHashKey(m.name) + " => read_file(" + repr(m.contentFile) + ")"
+            reprHashKey(m.name) + " => read_file(" + repr(m.contentFile) + ")",
           );
         } else {
           let line = reprHashKey(m.name) + " => [" + repr(m.contentFile);
@@ -203,7 +203,7 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
       }
 
       args.push(
-        "Content => [\n        " + lines.join(",\n        ") + "\n    ]"
+        "Content => [\n        " + lines.join(",\n        ") + "\n    ]",
       );
     }
   }
@@ -227,7 +227,7 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
 
 export function toPerlWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toPerl(requests, warnings);

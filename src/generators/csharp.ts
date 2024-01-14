@@ -92,7 +92,7 @@ export function repr(w: Word, imports: Set<string>): string {
 
 export function _toCSharp(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -194,10 +194,10 @@ export function _toCSharp(
     "last-modified": "LastModified",
   };
   const reqHeaders = request.headers.headers.filter(
-    (h) => !Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
+    (h) => !Object.keys(contentHeaders).includes(h[0].toLowerCase().toString()),
   );
   const reqContentHeaders = request.headers.headers.filter((h) =>
-    Object.keys(contentHeaders).includes(h[0].toLowerCase().toString())
+    Object.keys(contentHeaders).includes(h[0].toLowerCase().toString()),
   );
 
   if (
@@ -372,7 +372,7 @@ export function _toCSharp(
 }
 export function toCSharpWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const cSharp = _toCSharp(requests, warnings);

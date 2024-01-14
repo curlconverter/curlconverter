@@ -80,7 +80,7 @@ function repr(w: Word | null) {
 function setVariableValue(
   outputVariable: string | null,
   value: string,
-  termination?: string
+  termination?: string,
 ): string {
   let result = "";
 
@@ -100,7 +100,7 @@ function callFunction(
   outputVariable: string | null,
   functionName: string,
   params: string | string[] | string[][],
-  termination?: string
+  termination?: string,
 ) {
   let functionCall = functionName + "(";
   if (Array.isArray(params)) {
@@ -136,7 +136,7 @@ function addCellArray(
   mapping: ([Word, Word] | [string, Word | string])[],
   keysNotToQuote?: string[],
   indentLevel = 1,
-  pairs?: boolean
+  pairs?: boolean,
 ) {
   if (mapping.length === 0) return ""; // shouldn't happen
 
@@ -187,7 +187,7 @@ function addCellArray(
 
 function structify(
   obj: number[] | string[] | { [key: string]: string } | string | number | null,
-  indentLevel?: number
+  indentLevel?: number,
 ) {
   let response = "";
   indentLevel = !indentLevel ? 1 : ++indentLevel;
@@ -219,7 +219,7 @@ function structify(
       if (Object.prototype.hasOwnProperty.call(obj, k)) {
         if (!k[0].match(/[a-z]/i)) {
           throw new CCError(
-            "MATLAB structs do not support keys starting with non-alphabet symbols"
+            "MATLAB structs do not support keys starting with non-alphabet symbols",
           );
         }
         // recursive call to scan property

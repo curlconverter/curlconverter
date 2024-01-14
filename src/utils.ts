@@ -6,7 +6,7 @@ export const UTF8encoder = new TextEncoder();
 // TODO: replace with Object.hasOwn() once Node 16 is EOL'd on 2023-09-11
 export function has<T, K extends PropertyKey>(
   obj: T,
-  prop: K
+  prop: K,
 ): obj is T & Record<K, unknown> {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }

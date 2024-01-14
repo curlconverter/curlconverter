@@ -47,10 +47,10 @@ const COMMA_SEPARATED = new Set(
     "Upgrade",
     "Via",
     "Warning",
-  ].map((h) => h.toLowerCase())
+  ].map((h) => h.toLowerCase()),
 );
 const SEMICOLON_SEPARATED = new Set(
-  ["Content-Type", "Cookie", "Prefer"].map((h) => h.toLowerCase())
+  ["Content-Type", "Cookie", "Prefer"].map((h) => h.toLowerCase()),
 );
 
 export class Headers implements Iterable<[Word, Word | null]> {
@@ -152,7 +152,7 @@ export class Headers implements Iterable<[Word, Word | null]> {
       if (mergeChar) {
         const merged = joinWords(
           nonEmptyHeaders.map((h) => h[1]) as Word[],
-          mergeChar
+          mergeChar,
         );
         warnings.push([
           "repeated-header",

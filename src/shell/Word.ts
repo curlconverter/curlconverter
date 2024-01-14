@@ -331,13 +331,13 @@ export class Word implements Iterable<Token> {
 
   toLowerCase(): Word {
     return new Word(
-      this.tokens.map((t) => (typeof t === "string" ? t.toLowerCase() : t))
+      this.tokens.map((t) => (typeof t === "string" ? t.toLowerCase() : t)),
     );
   }
 
   toUpperCase(): Word {
     return new Word(
-      this.tokens.map((t) => (typeof t === "string" ? t.toUpperCase() : t))
+      this.tokens.map((t) => (typeof t === "string" ? t.toUpperCase() : t)),
     );
   }
 
@@ -472,7 +472,7 @@ export class Word implements Iterable<Token> {
 
 export function eq(
   it: Word | undefined | null,
-  other: string | Word | undefined | null
+  other: string | Word | undefined | null,
 ): boolean {
   if (
     it === undefined ||

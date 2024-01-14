@@ -25,7 +25,7 @@ const supportedArgs = new Set([
 function _getDataString(
   data: Word,
   contentType: string | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   const originalStringRepr = repr(data, imports);
 
@@ -58,7 +58,7 @@ function _getDataString(
 export function getDataString(
   data: Word,
   contentType: string | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   let dataString: string | null = null;
   let commentedOutDataString: string | null = null;
@@ -66,7 +66,7 @@ export function getDataString(
     [dataString, commentedOutDataString] = _getDataString(
       data,
       contentType,
-      imports
+      imports,
     );
   } catch {}
   if (!dataString) {
@@ -77,7 +77,7 @@ export function getDataString(
 
 export function _toNodeHttp(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const imports: JSImports = [];
@@ -108,7 +108,7 @@ export function _toNodeHttp(
     [dataString, commentedOutDataString] = getDataString(
       request.data,
       contentType,
-      imports
+      imports,
     );
   } else if (request.multipartUploads) {
     formString = getFormString(request.multipartUploads, imports);
@@ -221,7 +221,7 @@ export function _toNodeHttp(
 
 export function toNodeHttpWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toNodeHttp(requests, warnings);

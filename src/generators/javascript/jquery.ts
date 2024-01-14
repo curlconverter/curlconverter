@@ -35,7 +35,7 @@ export function commentOut(s: string, indent = 0): string {
 
 export function serializeQuery(
   query: Query,
-  imports: JSImports
+  imports: JSImports,
 ): [string, boolean] {
   const [queryList, queryDict] = query;
   let code = "";
@@ -83,7 +83,7 @@ function _getDataString(
   data: Word,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [Word | null | undefined, string, string | null, boolean] {
   let traditional = false;
   const originalStringRepr = repr(data, imports);
@@ -126,7 +126,7 @@ export function getDataString(
   data: Word,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [Word | null | undefined, string, string | null, boolean] {
   let dataString: string | null = null;
   let commentedOutDataString: string | null = null;
@@ -143,7 +143,7 @@ export function getDataString(
 
 export function getFormString(
   multipartUploads: FormParam[],
-  imports: JSImports
+  imports: JSImports,
 ): string {
   let code = "const form = new FormData();\n";
   for (const m of multipartUploads) {
@@ -170,7 +170,7 @@ export function getFormString(
 
 export function _toJavaScriptJquery(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const imports: JSImports = [];
@@ -235,7 +235,7 @@ export function _toJavaScriptJquery(
 
       [dataString, traditional] = serializeQuery(
         [request.urls[0].queryList, request.urls[0].queryDict ?? null],
-        imports
+        imports,
       );
       dataString = indent(dataString);
       url = request.urls[0].urlWithoutQueryList;
@@ -349,7 +349,7 @@ export function _toJavaScriptJquery(
 
 export function toJavaScriptJqueryWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const jquery = _toJavaScriptJquery(requests, warnings);

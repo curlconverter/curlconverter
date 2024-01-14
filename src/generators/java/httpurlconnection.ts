@@ -13,7 +13,7 @@ const supportedArgs = new Set([
 
 export function _toJavaHttpUrlConnection(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -137,7 +137,7 @@ export function _toJavaHttpUrlConnection(
 }
 export function toJavaHttpUrlConnectionWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const java = _toJavaHttpUrlConnection(requests, warnings);
@@ -145,7 +145,7 @@ export function toJavaHttpUrlConnectionWarn(
 }
 
 export function toJavaHttpUrlConnection(
-  curlCommand: string | string[]
+  curlCommand: string | string[],
 ): string {
   return toJavaHttpUrlConnectionWarn(curlCommand)[0];
 }

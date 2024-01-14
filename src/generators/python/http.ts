@@ -21,7 +21,7 @@ const supportedArgs = new Set([
 
 export function _toPythonHttp(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -80,7 +80,7 @@ export function _toPythonHttp(
     [dataAsJson, jsonRoundtrips] = formatDataAsJson(
       request.dataArray[0],
       imports,
-      osVars
+      osVars,
     );
   }
   if (dataAsJson) {
@@ -93,7 +93,7 @@ export function _toPythonHttp(
     repr(
       mergeWords(request.urls[0].urlObj.path, request.urls[0].urlObj.query),
       osVars,
-      imports
+      imports,
     ),
   ];
   if (dataAsJson) {
@@ -114,7 +114,7 @@ export function _toPythonHttp(
       args.push(
         "open(" +
           repr(request.urls[0].uploadFile, osVars, imports, false, true) +
-          ", 'rb')"
+          ", 'rb')",
       );
     }
   } else if (
@@ -126,7 +126,7 @@ export function _toPythonHttp(
     args.push(
       "open(" +
         repr(request.dataArray[0].filename, osVars, imports, false, true) +
-        ", 'rb')"
+        ", 'rb')",
     );
   } else if (request.data) {
     args.push(repr(request.data, osVars, imports));
@@ -156,7 +156,7 @@ export function _toPythonHttp(
 
 export function toPythonHttpWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toPythonHttp(requests, warnings);

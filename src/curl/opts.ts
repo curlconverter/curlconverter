@@ -472,7 +472,7 @@ for (const [opt, val] of Object.entries(curlLongOpts)) {
       if (
         !Object.prototype.hasOwnProperty.call(
           curlLongOptsShortened,
-          shortenedOpt
+          shortenedOpt,
         )
       ) {
         if (!Object.prototype.hasOwnProperty.call(curlLongOpts, shortenedOpt)) {
@@ -966,7 +966,7 @@ function checkSupported(
   global: GlobalConfig,
   lookup: string,
   longArg: LongShort,
-  supportedOpts?: Set<string>
+  supportedOpts?: Set<string>,
 ) {
   if (supportedOpts && !supportedOpts.has(longArg.name)) {
     // TODO: better message. include generator name?
@@ -982,7 +982,7 @@ function checkSupported(
 export function pushProp<Type>(
   obj: { [key: string]: Type[] },
   prop: string,
-  value: Type
+  value: Type,
 ) {
   if (!Object.prototype.hasOwnProperty.call(obj, prop)) {
     obj[prop] = [];
@@ -995,7 +995,7 @@ function pushArgValue(
   global: GlobalConfig,
   config: OperationConfig,
   argName: string,
-  value: Word
+  value: Word,
 ) {
   // Note: cli.ts assumes that the property names on OperationConfig
   // are the same as the passed in argument in an error message, so
@@ -1075,7 +1075,7 @@ function setArgValue(
   global: GlobalConfig,
   config: OperationConfig,
   argName: string,
-  toggle: boolean
+  toggle: boolean,
 ): OperationConfig {
   switch (argName) {
     case "digest":
@@ -1172,7 +1172,7 @@ export function parseArgs(
   shortenedLongOpts: LongOpts = curlLongOptsShortened,
   shortOpts: ShortOpts = curlShortOpts,
   supportedOpts?: Set<string>,
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): GlobalConfig {
   let config: OperationConfig = { authtype: CURLAUTH_BASIC };
   const global: GlobalConfig = { configs: [config], warnings };
@@ -1195,7 +1195,7 @@ export function parseArgs(
               " could " +
               (shellToken.type === "command" ? "return" : "be") +
               " anything\n" +
-              underlineNode(shellToken.syntaxNode)
+              underlineNode(shellToken.syntaxNode),
           );
         }
         const argStr = arg.toString();
@@ -1225,7 +1225,7 @@ export function parseArgs(
             global,
             config,
             longArg.name,
-            toBoolean(argStr.slice(2))
+            toBoolean(argStr.slice(2)),
           ); // TODO: all shortened args work correctly?
         }
 
@@ -1253,7 +1253,7 @@ export function parseArgs(
               global,
               config,
               longArg.name,
-              toBoolean(shortFor)
+              toBoolean(shortFor),
             );
           } else {
             throw new CCError("option -: is unknown");
@@ -1270,13 +1270,13 @@ export function parseArgs(
                 " could " +
                 (jthChar.type === "command" ? "return" : "be") +
                 " anything\n" +
-                underlineNode(jthChar.syntaxNode)
+                underlineNode(jthChar.syntaxNode),
             );
           }
           if (!has(shortOpts, jthChar)) {
             if (has(changedShortOpts, jthChar)) {
               throw new CCError(
-                "option " + arg + ": " + changedShortOpts[jthChar]
+                "option " + arg + ": " + changedShortOpts[jthChar],
               );
             }
             // TODO: there are a few deleted short options we could report
@@ -1300,7 +1300,7 @@ export function parseArgs(
               val = args[i];
             } else {
               throw new CCError(
-                "option " + arg.toString() + ": requires parameter"
+                "option " + arg.toString() + ": requires parameter",
               );
             }
             pushArgValue(global, config, longArg.name, val);
@@ -1311,7 +1311,7 @@ export function parseArgs(
               global,
               config,
               longArg.name,
-              toBoolean(shortFor)
+              toBoolean(shortFor),
             );
           }
           if (lookup) {

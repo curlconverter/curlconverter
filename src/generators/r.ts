@@ -203,7 +203,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   // TODO: GET() and HEAD() don't support sending data, detect and use VERB() instead
   if (
     ["GET", "HEAD", "PATCH", "PUT", "DELETE", "POST"].includes(
-      request.urls[0].method.toString()
+      request.urls[0].method.toString(),
     )
   ) {
     requestLine += request.urls[0].method.toString() + "(";
@@ -271,7 +271,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
 }
 export function toRWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const rHttr = _toR(requests, warnings);

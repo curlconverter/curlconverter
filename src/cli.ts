@@ -295,7 +295,7 @@ try {
     // TODO: warn about unsupported arguments once we know
     // which language we're converting to
     undefined,
-    warnings
+    warnings,
   );
 } catch (e) {
   exitWithError(e);
@@ -319,9 +319,9 @@ if (!has(translate, language)) {
         JSON.stringify(language) +
         "\n" +
         "must be one of: " +
-        Object.keys(translate).sort().join(", ")
+        Object.keys(translate).sort().join(", "),
     ),
-    verbose
+    verbose,
   );
 }
 
@@ -357,9 +357,9 @@ if (commandFromStdin) {
     // they aren't stuck with what looks like a hung terminal.
     exitWithError(
       new CCError(
-        "if you pass --stdin or -, you can't also pass " + extraArgsStr
+        "if you pass --stdin or -, you can't also pass " + extraArgsStr,
       ),
-      verbose
+      verbose,
     );
   }
   const input = fs.readFileSync(0, "utf8");

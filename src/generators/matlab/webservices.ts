@@ -18,7 +18,7 @@ import {
 function isSupportedByWebServices(request: Request): boolean {
   return (
     ["get", "post", "put", "delete", "patch"].includes(
-      request.urls[0].method.toLowerCase().toString()
+      request.urls[0].method.toLowerCase().toString(),
     ) &&
     !request.multipartUploads &&
     !request.insecure
@@ -41,7 +41,7 @@ function setHeader(
   headers: [Word, Word][],
   header: Word,
   value: Word,
-  lowercase: boolean
+  lowercase: boolean,
 ) {
   headers.push([lowercase ? header.toLowerCase() : header, value]);
 }
@@ -65,13 +65,13 @@ function parseWebOptions(request: Request): Options {
       options.Password = password;
     } else {
       const authHeader = `['Basic ' matlab.net.base64encode(${repr(
-        joinWords(request.urls[0].auth, ":")
+        joinWords(request.urls[0].auth, ":"),
       )})]`;
       setHeader(
         headers,
         new Word("Authorization"),
         new Word(authHeader),
-        request.headers.lowercase
+        request.headers.lowercase,
       );
       preformattedHeaders.push("authorization");
     }
@@ -96,7 +96,7 @@ function parseWebOptions(request: Request): Options {
               headers,
               new Word("Cookie"),
               new Word(cookieString),
-              request.headers.lowercase
+              request.headers.lowercase,
             );
             preformattedHeaders.push("cookie");
           } else {
@@ -149,7 +149,7 @@ function parseWebOptions(request: Request): Options {
     options.HeaderFields = addCellArray(
       headers,
       preformattedHeaders,
-      indentLevel
+      indentLevel,
     );
   }
 
@@ -165,7 +165,7 @@ function prepareOptions(request: Request, options: Options): string[] {
     Object.entries(options),
     ["headerfields"],
     1,
-    true
+    true,
   );
   lines.push(callFunction("options", "weboptions", pairValues));
 
@@ -176,7 +176,7 @@ function prepareBasicURI(request: Request): string[] {
   const response: string[] = [];
   if (request.urls[0].queryList) {
     response.push(
-      setVariableValue("baseURI", repr(request.urls[0].urlWithoutQueryList))
+      setVariableValue("baseURI", repr(request.urls[0].urlWithoutQueryList)),
     );
     response.push(setVariableValue("uri", `[baseURI '?' ${paramsString}]`));
   } else {
@@ -195,7 +195,7 @@ function prepareBasicData(request: Request): string | string[] {
   let response: string | string[] = [];
   if (request.data.charAt(0) === "@") {
     response.push(
-      callFunction("body", "fileread", repr(request.data.slice(1)))
+      callFunction("body", "fileread", repr(request.data.slice(1))),
     );
 
     if (!request.isDataBinary) {
@@ -238,7 +238,7 @@ function prepareWebCall(request: Request, options: Options): string[] {
 
 export function toWebServices(
   request: Request,
-  warnings: Warnings
+  warnings: Warnings,
 ): [(string | string[] | null)[], Warnings] {
   let lines: (string | string[] | null)[] = [
     "%% Web Access using Data Import and Export API",

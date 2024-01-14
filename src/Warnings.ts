@@ -10,7 +10,7 @@ export function warnf(global: GlobalConfig, warning: [string, string]) {
 
 export function underlineNode(
   node: Parser.SyntaxNode,
-  curlCommand?: string
+  curlCommand?: string,
 ): string {
   // doesn't include leading whitespace
   const command = node.tree.rootNode;
@@ -49,7 +49,7 @@ export function underlineNode(
 
 export function underlineNodeEnd(
   node: Parser.SyntaxNode,
-  curlCommand?: string
+  curlCommand?: string,
 ): string {
   // doesn't include leading whitespace
   const command = node.tree.rootNode;
@@ -95,7 +95,7 @@ export interface Support {
 export function warnIfPartsIgnored(
   request: Request,
   warnings: Warnings,
-  support?: Support
+  support?: Support,
 ) {
   if (request.urls.length > 1 && !support?.multipleUrls) {
     warnings.push([

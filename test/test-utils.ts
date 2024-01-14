@@ -21,7 +21,7 @@ function stringifyWords(o: any): any {
       Object.entries(o).map((oo) => [
         stringifyWords(oo[0]),
         stringifyWords(oo[1]),
-      ])
+      ]),
     );
   }
   return o;
@@ -251,7 +251,7 @@ type Converter = keyof typeof converters;
 // Check that we have at least one test for every generator
 // https://github.com/curlconverter/curlconverter/pull/299
 const testedConverters = Object.entries(converters).map(
-  (c) => c[1].converter.name
+  (c) => c[1].converter.name,
 );
 const untestedConverters = ["toPhpRequests"];
 const notConverterExports = ["Word"];
@@ -264,17 +264,17 @@ const missing = availableConverters.filter(
     !testedConverters.includes(c) &&
     !untestedConverters.includes(c) &&
     !notConverterExports.includes(c) &&
-    !c.endsWith("Warn")
+    !c.endsWith("Warn"),
 );
 const extra = testedConverters.filter(
-  (c) => !availableConverters.includes(c) && c !== "toParser"
+  (c) => !availableConverters.includes(c) && c !== "toParser",
 );
 if (missing.length) {
   console.error("these converters are not tested: " + missing.join(", "));
 }
 if (extra.length) {
   console.error(
-    "these non-existant converters are being tested: " + extra.join(", ")
+    "these non-existant converters are being tested: " + extra.join(", "),
   );
 }
 for (const [converterName, converter] of Object.entries(converters)) {
@@ -291,12 +291,12 @@ for (const [converterName, converter] of Object.entries(converters)) {
         testDir +
           " doesn't have any files ending with '" +
           converter.extension +
-          "'"
+          "'",
       );
     }
   } else {
     console.error(
-      converterName + " doesn't have a corresponding directory in fixtures/"
+      converterName + " doesn't have a corresponding directory in fixtures/",
     );
   }
 }

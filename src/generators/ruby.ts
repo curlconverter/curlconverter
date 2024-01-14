@@ -43,8 +43,8 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
     quote === "'"
       ? regexSingleEscape
       : quote === '"'
-      ? regexDoubleEscape
-      : regexCurlyEscape;
+        ? regexDoubleEscape
+        : regexCurlyEscape;
 
   const startQuote = quote[0];
   const endQuote = quote === "{}" ? quote[1] : quote[0];
@@ -117,7 +117,7 @@ function repr(w: Word): string {
 
 function objToRuby(
   obj: Word | Word[] | string | number | boolean | object | null,
-  indent = 0
+  indent = 0,
 ): string {
   if (obj instanceof Word) {
     return repr(obj);
@@ -165,7 +165,7 @@ function objToRuby(
       }
     default:
       throw new CCError(
-        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj,
       );
   }
 }
@@ -332,7 +332,7 @@ function getFilesString(request: Request): string {
 function requestToRuby(
   request: Request,
   warnings: Warnings,
-  imports: Set<string>
+  imports: Set<string>,
 ): string {
   warnIfPartsIgnored(request, warnings, { dataReadsFile: true });
   if (
@@ -461,7 +461,7 @@ function requestToRuby(
     for (const [headerName, headerValue] of request.headers) {
       if (
         ["accept-encoding", "content-length"].includes(
-          headerName.toLowerCase().toString()
+          headerName.toLowerCase().toString(),
         )
       ) {
         code += "# ";
@@ -544,7 +544,7 @@ export function _toRuby(requests: Request[], warnings: Warnings = []): string {
 
 export function toRubyWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const ruby = _toRuby(requests, warnings);

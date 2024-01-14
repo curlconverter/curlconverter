@@ -201,7 +201,7 @@ export function repr(
   // os.getenv('MYVAR') returns None if MYVAR is not set
   // os.getenv('MYVAR', '') returns '' if MYVAR is not set but it's a bit more verbose,
   // so setting errorOk to true will use the shorter version
-  errorOk = false
+  errorOk = false,
 ): string {
   const reprFn = binary ? reprStrBinary : reprStr;
   const reprs = [];
@@ -261,7 +261,7 @@ function reprb(word: Word, osVars: OSVars, imports: Set<string>): string {
 export function asFloat(
   word: Word,
   osVars: OSVars,
-  imports: Set<string>
+  imports: Set<string>,
 ): string {
   if (word.isString()) {
     // TODO: check it's actually a valid float
@@ -273,7 +273,7 @@ export function asFloat(
 export function asInt(
   word: Word,
   osVars: OSVars,
-  imports: Set<string>
+  imports: Set<string>,
 ): string {
   if (word.isString()) {
     // TODO: check it's actually a valid int
@@ -423,14 +423,14 @@ function jsonDumps(obj: string | number | boolean | object | null): string {
       );
     default:
       throw new CCError(
-        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj,
       );
   }
 }
 
 function objToPython(
   obj: string | number | boolean | object | null,
-  indent = 0
+  indent = 0,
 ): string {
   if (isLosslessNumber(obj)) {
     const numAsStr = jsonStringifyLossless(obj) as string;
@@ -491,7 +491,7 @@ function objToPython(
       }
     default:
       throw new CCError(
-        "unexpected object type that shouldn't appear in JSON: " + typeof obj
+        "unexpected object type that shouldn't appear in JSON: " + typeof obj,
       );
   }
 }
@@ -500,7 +500,7 @@ export function formatHeaders(
   headers: Headers,
   commentedOutHeaders: { [key: string]: string },
   osVars: OSVars,
-  imports: Set<string>
+  imports: Set<string>,
 ): string {
   // TODO: what if there are repeat headers
   let headerDict = "headers = {\n";
@@ -553,7 +553,7 @@ function decodePercentEncoding(s: Word): Word | null {
 }
 
 function dataEntriesToDict(
-  dataEntries: Array<[string, string]>
+  dataEntries: Array<[string, string]>,
 ): { [key: string]: Array<string> } | null {
   // Group keys
   // TODO: because keys can be code that reads from a file, those should not be considered the
@@ -622,7 +622,7 @@ function formatDataAsEntries(
   dataArray: DataParam[],
   osVars: OSVars,
   imports: Set<string>,
-  variableName: "data" | "params" = "data"
+  variableName: "data" | "params" = "data",
 ): [string, string] | null {
   // This code is more complicated than you might expect because it needs
   // to handle a --data-urlencode that reads from a file followed by --json
@@ -779,7 +779,7 @@ function formatDataAsStr(
   dataArray: DataParam[],
   imports: Set<string>,
   osVars: OSVars,
-  variableName: "data" | "params" = "data"
+  variableName: "data" | "params" = "data",
 ): [string, boolean] {
   // If one of the arguments has to be binary, then they all have to be binary
   // because we can't mix bytes and str.
@@ -787,7 +787,7 @@ function formatDataAsStr(
   // --data-binary @filename
   // otherwise we could generate code that will try to read an image file as text and error.
   const binary = dataArray.some(
-    (d) => !(d instanceof Word) && d.filetype === "binary"
+    (d) => !(d instanceof Word) && d.filetype === "binary",
   );
   const reprFunc = binary ? reprb : repr;
   const prefix = binary ? "b" : "";
@@ -889,7 +889,7 @@ function formatDataAsStr(
 export function formatDataAsJson(
   d: DataParam,
   imports: Set<string>,
-  osVars: OSVars
+  osVars: OSVars,
 ): [string | null, boolean] {
   if (d instanceof Word) {
     if (!d.isString()) {
@@ -942,7 +942,7 @@ export function formatDataAsJson(
 function getDataString(
   request: Request,
   osVars: OSVars,
-  warnings: Warnings
+  warnings: Warnings,
 ): [string | null, boolean | null, string | null, Set<string>] {
   const imports = new Set<string>();
   if (!request.data || !request.dataArray) {
@@ -974,7 +974,7 @@ function getDataString(
     [dataAsJson, jsonRoundtrips] = formatDataAsJson(
       request.dataArray[0],
       imports,
-      osVars
+      osVars,
     );
   }
   if (jsonRoundtrips) {
@@ -992,7 +992,7 @@ function getDataString(
     if (
       eq(
         request.headers.get("content-type"),
-        "application/x-www-form-urlencoded"
+        "application/x-www-form-urlencoded",
       ) &&
       request.headers.length === 1
     ) {
@@ -1013,7 +1013,7 @@ function getDataString(
   const [dataAsString, shouldEncode] = formatDataAsStr(
     request.dataArray,
     imports,
-    osVars
+    osVars,
   );
   return [dataAsString, shouldEncode, dataAsJson, imports];
 }
@@ -1021,7 +1021,7 @@ function getDataString(
 function getFilesString(
   request: Request,
   osVars: OSVars,
-  imports: Set<string>
+  imports: Set<string>,
 ): [string, boolean] {
   let usesStdin = false;
   if (!request.multipartUploads) {
@@ -1070,7 +1070,7 @@ function getFilesString(
         tuple.push(
           "open(" +
             repr(m.contentFile, osVars, imports, false, true) +
-            ", 'rb')"
+            ", 'rb')",
         );
       }
     } else {
@@ -1127,7 +1127,7 @@ function commentOut(s: string) {
 function uniqueWarn(
   seenWarnings: Set<string>,
   warnings: Warnings,
-  warning: [string, string]
+  warning: [string, string],
 ) {
   if (!seenWarnings.has(warning[0])) {
     seenWarnings.add(warning[0]);
@@ -1152,7 +1152,7 @@ function requestToPython(
   request: Request,
   warnings: Warnings = [],
   imports: Set<string>,
-  thirdPartyImports: Set<string>
+  thirdPartyImports: Set<string>,
 ): string {
   const osVars: OSVars = {};
   const commentedOutHeaders: { [key: string]: string } = {
@@ -1285,7 +1285,7 @@ function requestToPython(
       paramArray,
       osVars,
       imports,
-      "params"
+      "params",
     );
     if (queryAsEntries !== null) {
       let percentWarn;
@@ -1304,7 +1304,7 @@ function requestToPython(
         paramArray,
         imports,
         osVars,
-        "params"
+        "params",
       );
     }
   }
@@ -1336,7 +1336,7 @@ function requestToPython(
     [dataString, shouldEncode, jsonDataString, dataImports] = getDataString(
       request,
       osVars,
-      warnings
+      warnings,
     );
     dataImports.forEach(imports.add, imports);
     // Remove "Content-Type" from the headers dict
@@ -1377,7 +1377,7 @@ function requestToPython(
       request.headers,
       commentedOutHeaders,
       osVars,
-      imports
+      imports,
     );
   }
 
@@ -1489,7 +1489,7 @@ function requestToPython(
             urlObj.queryArray,
             osVars,
             imports,
-            "params"
+            "params",
           );
           if (urlQueryAsEntries !== null) {
             let percentWarn;
@@ -1509,7 +1509,7 @@ function requestToPython(
               urlObj.queryArray,
               imports,
               osVars,
-              "params"
+              "params",
             );
             url = urlObj.urlWithoutQueryArray;
           }
@@ -1629,7 +1629,7 @@ function requestToPython(
             "--aws-sigv4",
             "--aws-sigv4 value isn't parsed: " +
               JSON.stringify(
-                request.awsSigV4 ? request.awsSigV4.toString() : ""
+                request.awsSigV4 ? request.awsSigV4.toString() : "",
               ),
           ]);
           break;
@@ -1832,7 +1832,7 @@ export function printImports(imps: Set<string>): string {
 
 export function _toPython(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const code = [];
   let joinTwoLines = false;
@@ -1843,7 +1843,7 @@ export function _toPython(
       request,
       warnings,
       imports,
-      thirdPartyImports
+      thirdPartyImports,
     );
     code.push(requestCode);
 
@@ -1870,7 +1870,7 @@ export function _toPython(
 
 export function toPythonWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const python = _toPython(requests, warnings);

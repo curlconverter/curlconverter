@@ -70,7 +70,7 @@ export function reprPairs(
   indentLevel = 0,
   indent = "  ",
   list = true,
-  imports: JSImports
+  imports: JSImports,
 ): string {
   if (d.length === 0) {
     return list ? "[]" : "{}";
@@ -93,7 +93,7 @@ export function reprAsStringToStringDict(
   d: [Word, Word][],
   indentLevel = 0,
   imports: JSImports,
-  indent = "  "
+  indent = "  ",
 ): string {
   return reprPairs(d, indentLevel, indent, false, imports);
 }
@@ -102,7 +102,7 @@ export function reprAsStringTuples(
   d: [Word, Word][],
   indentLevel = 0,
   imports: JSImports,
-  indent = "  "
+  indent = "  ",
 ): string {
   return reprPairs(d, indentLevel, indent, true, imports);
 }
@@ -112,7 +112,7 @@ export function reprStringToStringList(
   indentLevel = 0,
   imports: JSImports,
   indent = "  ",
-  list = true
+  list = true,
 ): string {
   if (d.length === 0) {
     return list ? "[]" : "{}";
@@ -228,7 +228,7 @@ export function reprImportsRequire(imports: JSImports): string {
   for (const [name, from] of imports.sort(bySecondElem)) {
     if (name.startsWith("* as ")) {
       ret.push(
-        `const ${name.slice("* as ".length)} = require(${reprStr(from)});`
+        `const ${name.slice("* as ".length)} = require(${reprStr(from)});`,
       );
     } else if (name.includes(".")) {
       ret.push(`const ${name} = require(${reprStr(from)}).${name};`);
@@ -282,7 +282,7 @@ export function reprBrowser(w: Word, warnings: [string, string][]): string {
 export function reprFetch(
   w: Word,
   isNode: boolean,
-  imports: JSImports
+  imports: JSImports,
 ): string {
   if (!isNode) {
     // TODO: warn
@@ -333,7 +333,7 @@ export function bySecondElem(a: [string, string], b: [string, string]): number {
 export function toURLSearchParams(
   query: [QueryList, QueryDict | null | undefined],
   imports: JSImports,
-  indent = 1
+  indent = 1,
 ): string {
   const [queryList, queryDict] = query;
   const queryObj =
@@ -346,7 +346,7 @@ export function toURLSearchParams(
 export function toDictOrURLSearchParams(
   query: [QueryList, QueryDict | null | undefined],
   imports: JSImports,
-  indent = 1
+  indent = 1,
 ): string {
   const [queryList, queryDict] = query;
 
@@ -354,7 +354,7 @@ export function toDictOrURLSearchParams(
     return reprAsStringToStringDict(
       queryDict as [Word, Word][],
       indent,
-      imports
+      imports,
     );
   }
 
@@ -370,7 +370,7 @@ export function toFormData(
   imports: JSImports,
   fetchImports: Set<string>,
   warnings: Warnings,
-  isNode = true
+  isNode = true,
 ): string {
   let code = "new FormData();\n";
   for (const m of multipartUploads) {
@@ -414,7 +414,7 @@ function getDataString(
   request: Request,
   data: Word,
   isNode: boolean,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   const originalStringRepr = reprFetch(data, isNode, imports);
 
@@ -446,7 +446,7 @@ function getDataString(
         if (
           eq(
             request.headers.get("content-type"),
-            "application/x-www-form-urlencoded"
+            "application/x-www-form-urlencoded",
           )
         ) {
           request.headers.delete("content-type");
@@ -466,7 +466,7 @@ function getDataString(
 export function getData(
   request: Request,
   isNode: boolean,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   if (!request.dataArray) {
     return ["", null];
@@ -484,7 +484,7 @@ export function getData(
 
   const parts = [];
   const hasBinary = request.dataArray.some(
-    (d) => !(d instanceof Word) && d.filetype === "binary"
+    (d) => !(d instanceof Word) && d.filetype === "binary",
   );
   const encoding = hasBinary ? "" : ", 'utf-8'";
   for (const d of request.dataArray) {
@@ -513,14 +513,14 @@ export function getData(
             "fs.readFileSync(" +
               reprFetch(filename, isNode, imports) +
               encoding +
-              ")"
+              ")",
           );
         } else {
           // TODO: warn that file needs content
           parts.push(
             "new File([/* contents */], " +
               reprFetch(filename, isNode, imports) +
-              ")"
+              ")",
           );
         }
       }
@@ -550,7 +550,7 @@ function requestToJavaScriptOrNode(
   warnings: Warnings,
   fetchImports: Set<string>,
   imports: JSImports,
-  isNode: boolean
+  isNode: boolean,
 ): string {
   warnIfPartsIgnored(request, warnings, {
     multipleUrls: true,
@@ -573,7 +573,7 @@ function requestToJavaScriptOrNode(
         imports,
         fetchImports,
         warnings,
-        isNode
+        isNode,
       );
     code += "\n";
   }
@@ -582,7 +582,7 @@ function requestToJavaScriptOrNode(
   const [dataString, commentedOutDataString] = getData(
     request,
     isNode,
-    imports
+    imports,
   );
 
   let fn = "fetch";
@@ -759,14 +759,14 @@ function requestToJavaScriptOrNode(
 export function _toJavaScriptOrNode(
   requests: Request[],
   warnings: Warnings,
-  isNode: boolean
+  isNode: boolean,
 ): string {
   const fetchImports = new Set<string>();
   const imports: JSImports = [];
 
   const code = requests
     .map((r) =>
-      requestToJavaScriptOrNode(r, warnings, fetchImports, imports, isNode)
+      requestToJavaScriptOrNode(r, warnings, fetchImports, imports, isNode),
     )
     .join("\n");
 
@@ -793,7 +793,7 @@ export function _toJavaScriptOrNode(
 
 export function _toJavaScript(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   return _toJavaScriptOrNode(requests, warnings, false);
 }
@@ -803,7 +803,7 @@ export function _toNode(requests: Request[], warnings: Warnings = []): string {
 
 export function toJavaScriptWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, javaScriptSupportedArgs, warnings);
   return [_toJavaScript(requests, warnings), warnings];
@@ -815,7 +815,7 @@ export function toJavaScript(curlCommand: string | string[]): string {
 
 export function toNodeWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, nodeSupportedArgs, warnings);
   return [_toNode(requests, warnings), warnings];

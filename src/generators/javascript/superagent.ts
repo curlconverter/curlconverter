@@ -41,7 +41,7 @@ const supportedArgs = new Set([
 function serializeQuery(
   fn: "query" | "send",
   query: Query,
-  imports: JSImports
+  imports: JSImports,
 ): string {
   const [queryList, queryDict] = query;
   let code = "";
@@ -85,7 +85,7 @@ function _getDataString(
   request: Request,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [Word | null | undefined, string | null, string | null] {
   if (!request.data) {
     return [exactContentType, null, null];
@@ -129,7 +129,7 @@ export function getDataString(
   request: Request,
   contentType: string | null | undefined,
   exactContentType: Word | null | undefined,
-  imports: JSImports
+  imports: JSImports,
 ): [Word | null | undefined, string | null, string | null] {
   if (!request.data) {
     return [exactContentType, null, null];
@@ -142,7 +142,7 @@ export function getDataString(
       request,
       contentType,
       exactContentType,
-      imports
+      imports,
     );
   } catch {}
   if (!dataString) {
@@ -153,7 +153,7 @@ export function getDataString(
 
 export function getFormString(
   multipartUploads: FormParam[],
-  imports: JSImports
+  imports: JSImports,
 ): string {
   let code = "";
   for (const m of multipartUploads) {
@@ -184,7 +184,7 @@ export function getFormString(
 
 export function _toNodeSuperAgent(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
   const imports: JSImports = [];
@@ -220,7 +220,7 @@ export function _toNodeSuperAgent(
       request,
       contentType,
       exactContentType,
-      imports
+      imports,
     );
   } else if (request.multipartUploads) {
     dataCode = getFormString(request.multipartUploads, imports);
@@ -257,7 +257,7 @@ export function _toNodeSuperAgent(
     code += serializeQuery(
       "query",
       [request.urls[0].queryList, request.urls[0].queryDict ?? null],
-      imports
+      imports,
     );
   }
 
@@ -362,7 +362,7 @@ export function _toNodeSuperAgent(
 
 export function toNodeSuperAgentWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toNodeSuperAgent(requests, warnings);

@@ -109,7 +109,7 @@ function requestToPowershell(
   request: Request,
   url: RequestUrl,
   restMethod: boolean,
-  warnings: Warnings
+  warnings: Warnings,
 ): string {
   let code = "";
   const command = restMethod ? "Invoke-RestMethod" : "Invoke-WebRequest";
@@ -357,7 +357,7 @@ function requestToPowershell(
 function toPowershell(
   requests: Request[],
   restMethod = true,
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const commands = [];
 
@@ -393,14 +393,14 @@ function toPowershell(
 
 export function _toPowershellWebRequest(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   return toPowershell(requests, false, warnings);
 }
 
 export function toPowershellWebRequestWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toPowershellWebRequest(requests, warnings);
@@ -412,14 +412,14 @@ export function toPowershellWebRequest(curlCommand: string | string[]): string {
 
 export function _toPowershellRestMethod(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   return toPowershell(requests, true, warnings);
 }
 
 export function toPowershellRestMethodWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toPowershellRestMethod(requests, warnings);

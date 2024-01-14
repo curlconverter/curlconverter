@@ -15,7 +15,7 @@ const supportedArgs = new Set([
 
 export const _toJavaJsoup = (
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string => {
   const request = getFirst(requests, warnings);
 
@@ -161,7 +161,7 @@ export const _toJavaJsoup = (
 };
 export const toJavaJsoupWarn = (
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] => {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const java = _toJavaJsoup(requests, warnings);

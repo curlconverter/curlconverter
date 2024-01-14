@@ -38,7 +38,7 @@ const supportedArgs = new Set([
 function getDataString(
   request: Request,
   data: Word,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   const originalStringRepr = "body: " + repr(data, imports);
 
@@ -66,7 +66,7 @@ function getDataString(
         if (
           eq(
             request.headers.get("content-type"),
-            "application/x-www-form-urlencoded"
+            "application/x-www-form-urlencoded",
           )
         ) {
           request.headers.delete("content-type");
@@ -89,7 +89,7 @@ function getDataString(
 export function getData(
   request: Request,
   isNode: boolean,
-  imports: JSImports
+  imports: JSImports,
 ): [string, string | null] {
   if (!request.dataArray) {
     return ["", null];
@@ -107,7 +107,7 @@ export function getData(
 
   const parts = [];
   const hasBinary = request.dataArray.some(
-    (d) => !(d instanceof Word) && d.filetype === "binary"
+    (d) => !(d instanceof Word) && d.filetype === "binary",
   );
   const encoding = hasBinary ? "" : ", 'utf-8'";
   for (const d of request.dataArray) {
@@ -124,7 +124,7 @@ export function getData(
         parts.push("fs.readFileSync(0" + encoding + ")");
       } else {
         parts.push(
-          "fs.readFileSync(" + repr(filename, imports) + encoding + ")"
+          "fs.readFileSync(" + repr(filename, imports) + encoding + ")",
         );
       }
       addImport(imports, "* as fs", "fs");
@@ -154,7 +154,7 @@ export function getData(
 function requestToKy(
   request: Request,
   warnings: Warnings,
-  imports: JSImports
+  imports: JSImports,
 ): string {
   warnIfPartsIgnored(request, warnings, {
     multipleUrls: true,
@@ -304,7 +304,7 @@ export function _toNodeKy(requests: Request[], warnings?: Warnings): string {
 
 export function toNodeKyWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toNodeKy(requests, warnings);

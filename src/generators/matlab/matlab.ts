@@ -14,7 +14,7 @@ const supportedArgs = new Set([
 
 export function _toMATLAB(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings);
 
@@ -28,7 +28,7 @@ export function _toMATLAB(
 }
 export function toMATLABWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const matlab = _toMATLAB(requests, warnings);

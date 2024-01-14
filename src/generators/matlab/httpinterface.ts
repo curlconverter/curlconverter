@@ -33,10 +33,10 @@ function prepareHeaders(request: Request): string | null {
           "@(x) Cookie(x{:})",
           callFunction(null, "num2cell", ["cookies", "2"], ""),
         ],
-        ""
+        "",
       );
       headerStrs.push(
-        callFunction(null, "field.CookieField", cookieFieldParams, "")
+        callFunction(null, "field.CookieField", cookieFieldParams, ""),
       );
     } else if (keyStr === "accept") {
       const accepts = value.split(",");
@@ -113,7 +113,7 @@ function prepareMultipartUploads(request: Request): string | null {
       "",
       1,
       true,
-      !readsFile
+      !readsFile,
     );
     params.push([repr(m.name), fileProvider as string]); // TODO: can be a string[]
   }
@@ -138,7 +138,7 @@ function prepareDataProvider(
   termination: string,
   indentLevel: number,
   isDataBinary = true,
-  isDataRaw = false
+  isDataRaw = false,
 ): string | string[] {
   if (!isDataRaw && value.charAt(0) === "@") {
     const filename = value.slice(1);
@@ -194,14 +194,14 @@ function prepareData(request: Request) {
                 null,
                 "JSONProvider",
                 structify(jsonData, 1),
-                ""
+                "",
               );
             }
           } catch (e) {}
         }
 
         return ans;
-      })
+      }),
     );
     return callFunction("body", "FormProvider", data);
   }
@@ -212,7 +212,7 @@ function prepareData(request: Request) {
     ";",
     0,
     !!request.isDataBinary,
-    !!request.isDataRaw
+    !!request.isDataRaw,
   );
   if (!response) {
     response = setVariableValue("body", repr(request.data));
@@ -251,7 +251,7 @@ function prepareRequestMessage(request: Request): string {
       "response",
       "RequestMessage",
       reqMessage,
-      callFunction(null, ".send", params)
+      callFunction(null, ".send", params),
     ),
   ];
 
@@ -260,7 +260,7 @@ function prepareRequestMessage(request: Request): string {
 
 export function toHTTPInterface(
   request: Request,
-  warnings: Warnings
+  warnings: Warnings,
 ): [(string | string[] | null)[], Warnings] {
   return [
     [

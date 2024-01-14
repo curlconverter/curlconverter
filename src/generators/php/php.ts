@@ -228,7 +228,7 @@ export function _toPhp(requests: Request[], warnings: Warnings = []): string {
 
 export function toPhpWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const php = _toPhp(requests, warnings);

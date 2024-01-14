@@ -107,7 +107,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     clientLines.push(
       "    .connectTimeout(Duration.ofSeconds(" +
         request.connectTimeout.toString() +
-        "))\n"
+        "))\n",
     );
     imports.add("java.time.Duration");
   }
@@ -130,7 +130,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
       warnings.push(["upload-stdin", "uploading from stdin isn't supported"]);
     }
     methodCallArgs.push(
-      "BodyPublishers.ofFile(Paths.get(" + repr(url.uploadFile, imports) + "))"
+      "BodyPublishers.ofFile(Paths.get(" + repr(url.uploadFile, imports) + "))",
     );
     imports.add("java.net.http.HttpRequest.BodyPublishers");
     imports.add("java.nio.file.Paths");
@@ -145,13 +145,13 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
     methodCallArgs.push(
       "BodyPublishers.ofFile(Paths.get(" +
         repr(request.dataArray[0].filename, imports) +
-        "))"
+        "))",
     );
     imports.add("java.net.http.HttpRequest.BodyPublishers");
     imports.add("java.nio.file.Paths");
   } else if (request.data) {
     methodCallArgs.push(
-      "BodyPublishers.ofString(" + repr(request.data, imports) + ")"
+      "BodyPublishers.ofString(" + repr(request.data, imports) + ")",
     );
     imports.add("java.net.http.HttpRequest.BodyPublishers");
   }
@@ -268,7 +268,7 @@ export function _toJava(requests: Request[], warnings: Warnings = []): string {
 }
 export function toJavaWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const java = _toJava(requests, warnings);

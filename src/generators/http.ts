@@ -54,7 +54,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
     if (request.authType === "basic") {
       request.headers.prependIfMissing(
         "Authorization",
-        "Basic " + btoa(user.toString() + ":" + pass.toString())
+        "Basic " + btoa(user.toString() + ":" + pass.toString()),
       );
     }
   }
@@ -75,7 +75,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   let boundary =
     "------------------------" +
     Array.from({ length: 16 }, () =>
-      "0123456789abcdef".charAt(Math.floor(Math.random() * 16))
+      "0123456789abcdef".charAt(Math.floor(Math.random() * 16)),
     ).join("");
   // crypto.getRandomValues() only available on Node 19+
   // Array.from(crypto.getRandomValues(new Uint8Array(8)))
@@ -86,14 +86,14 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
     // TODO: we already added Content-Type earlier but curl puts Content-Type after Content-Length
     request.headers.setIfMissing(
       "Content-Length",
-      request.data.toString().length.toString()
+      request.data.toString().length.toString(),
     );
   } else if (request.urls[0].uploadFile) {
     const contentLength =
       "<length of " + request.urls[0].uploadFile.toString() + ">";
     const wasMissing = request.headers.setIfMissing(
       "Content-Length",
-      contentLength
+      contentLength,
     );
     if (wasMissing) {
       warnings.push([
@@ -120,7 +120,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
       // TODO: could existing Content-Type have other stuff that needs to be preserved?
       request.headers.set(
         "Content-Type",
-        "multipart/form-data; boundary=" + boundary
+        "multipart/form-data; boundary=" + boundary,
       );
     }
   }
@@ -179,7 +179,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
 
 export function toHTTPWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const http = _toHTTP(requests, warnings);

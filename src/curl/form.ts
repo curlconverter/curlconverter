@@ -34,7 +34,7 @@ function parseDetails(
   p: Word,
   ptr: number,
   supported: Supported,
-  warnings: Warnings
+  warnings: Warnings,
 ): FormParamPrototype {
   while (ptr < p.length && p.charAt(ptr) === ";") {
     ptr += 1;
@@ -114,7 +114,7 @@ function isSpace(c: Token): boolean {
 function getParamWord(
   p: Word,
   start: number,
-  warnings: Warnings
+  warnings: Warnings,
 ): [Word, number] {
   let ptr = start;
   if (p.charAt(ptr) === '"') {
@@ -163,7 +163,7 @@ function getParamPart(
   p: Word,
   ptr: number,
   supported: Supported,
-  warnings: Warnings
+  warnings: Warnings,
 ): FormParamPrototype {
   while (ptr < p.length && isSpace(p.charAt(ptr))) {
     ptr += 1;
@@ -179,7 +179,7 @@ function getParamPart(
 // -F is a complicated option to parse.
 export function parseForm(
   form: SrcFormParam[],
-  warnings: Warnings
+  warnings: Warnings,
 ): FormParam[] {
   const multipartUploads = [];
   let depth = 0;
@@ -189,7 +189,7 @@ export function parseForm(
     if (!multipartArgument.value.includes("=")) {
       throw new CCError(
         'invalid value for --form/-F, missing "=": ' +
-          JSON.stringify(multipartArgument.value.toString())
+          JSON.stringify(multipartArgument.value.toString()),
       );
     }
     const [name, value] = multipartArgument.value.split("=", 2);
@@ -207,14 +207,14 @@ export function parseForm(
         {
           headers: true,
         },
-        warnings
+        warnings,
       );
     } else if (!isString && name.length === 0 && eq(value, ")")) {
       depth -= 1;
       if (depth < 0) {
         throw new CCError(
           "no multipart to terminate: " +
-            JSON.stringify(multipartArgument.value.toString())
+            JSON.stringify(multipartArgument.value.toString()),
         );
       }
     } else if (!isString && value.charAt(0) === "@") {
@@ -228,7 +228,7 @@ export function parseForm(
           encoder: true,
           headers: true,
         },
-        warnings
+        warnings,
       );
 
       formParam.contentFile = formParam.content;
@@ -251,7 +251,7 @@ export function parseForm(
           encoder: true,
           headers: true,
         },
-        warnings
+        warnings,
       );
       formParam.contentFile = formParam.content;
       delete formParam.content;
@@ -274,7 +274,7 @@ export function parseForm(
             encoder: true,
             headers: true,
           },
-          warnings
+          warnings,
         );
       }
     }

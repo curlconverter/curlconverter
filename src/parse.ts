@@ -25,7 +25,7 @@ export function clip(s: string, maxLength = 30): string {
 
 function findCommands(
   curlCommand: string | string[],
-  warnings: Warnings
+  warnings: Warnings,
 ): [Word[], Word?, Word?][] {
   if (typeof curlCommand === "string") {
     return tokenize(curlCommand, warnings);
@@ -37,7 +37,7 @@ function findCommands(
   if (curlCommand[0].trim() !== "curl") {
     throw new CCError(
       'command should begin with "curl" but instead begins with ' +
-        JSON.stringify(clip(curlCommand[0]))
+        JSON.stringify(clip(curlCommand[0])),
     );
   }
   return [[curlCommand.map((arg) => new Word(arg)), undefined, undefined]];
@@ -52,7 +52,7 @@ function findCommands(
 export function parse(
   command: string | string[],
   supportedArgs?: Set<string>,
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): Request[] {
   let requests: Request[] = [];
   const curlCommands = findCommands(command, warnings);
@@ -63,7 +63,7 @@ export function parse(
       curlLongOptsShortened,
       curlShortOpts,
       supportedArgs,
-      warnings
+      warnings,
     );
 
     requests = requests.concat(buildRequests(globalConfig, stdin, stdinFile));

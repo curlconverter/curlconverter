@@ -157,7 +157,7 @@ export function _toOCaml(requests: Request[], warnings: Warnings = []): string {
 
 export function toOCamlWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toOCaml(requests, warnings);

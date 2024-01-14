@@ -231,7 +231,7 @@ function requestToWget(request: Request, warnings: Warnings): string {
   }
   if (request.urls.length > 1) {
     const uniqueMethods = new Set<string>(
-      request.urls.map((u) => u.method.toString())
+      request.urls.map((u) => u.method.toString()),
     );
 
     // TODO: add tons of checks/warnings that wget doesn't let you set things per-URL
@@ -269,7 +269,7 @@ function requestToWget(request: Request, warnings: Warnings): string {
   if (request.headers.length) {
     for (const [headerName, headerValue] of request.headers) {
       args.push(
-        "--header=" + repr(mergeWords(headerName, ": ", headerValue ?? ""))
+        "--header=" + repr(mergeWords(headerName, ": ", headerValue ?? "")),
       );
       // TODO: there's also --referer, --user-agent and --content-disposition
     }
@@ -307,7 +307,7 @@ function requestToWget(request: Request, warnings: Warnings): string {
 
     if (
       !["none", "basic", "digest", "ntlm", "ntlm-wb", "negotiate"].includes(
-        request.authType
+        request.authType,
       )
     ) {
       warnings.push([
@@ -521,7 +521,7 @@ export function _toWget(requests: Request[], warnings: Warnings = []): string {
 
 export function toWgetWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const wget = _toWget(requests, warnings);

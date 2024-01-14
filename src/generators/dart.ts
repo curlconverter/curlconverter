@@ -34,7 +34,9 @@ function repr(value: Word, imports: Set<string>): string {
       imports.add("dart:io");
     } else {
       ret.push(
-        "(await Process.run(" + reprStr(t.value) + ", runInShell: true)).stdout"
+        "(await Process.run(" +
+          reprStr(t.value) +
+          ", runInShell: true)).stdout",
       );
       imports.add("dart:io");
     }
@@ -281,7 +283,7 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
 
 export function toDartWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const dart = _toDart(requests, warnings);

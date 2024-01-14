@@ -49,7 +49,7 @@ function getDataString(request: Request): PostData | null {
 export function _requestAndUrlToHar(
   request: Request,
   url: RequestUrl,
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): HARRequest {
   const requestHar: HARRequest = {
     method: url.method.toString(),
@@ -57,8 +57,8 @@ export function _requestAndUrlToHar(
     httpVersion: request.http3
       ? "HTTP/3"
       : request.http2
-      ? "HTTP/2"
-      : "HTTP/1.1",
+        ? "HTTP/2"
+        : "HTTP/1.1",
     cookies: [],
     headers: [],
     queryString: [],
@@ -110,7 +110,7 @@ export function _requestAndUrlToHar(
 
 export function _toHarString(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const harRequests = [];
   for (const request of requests) {
@@ -127,14 +127,14 @@ export function _toHarString(
         },
       },
       null,
-      4
+      4,
     ) + "\n"
   );
 }
 
 export function toHarStringWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   requests.map((r) => warnIfPartsIgnored(r, warnings, { multipleUrls: true }));

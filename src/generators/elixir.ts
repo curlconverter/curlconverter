@@ -87,7 +87,7 @@ function getCookies(request: Request): string {
   // TODO: this duplicates work, just get it from request.headers
   const cookies = joinWords(
     request.cookies.map((c) => joinWords(c, "=")),
-    "; "
+    "; ",
   );
   return `cookie: [${repr(cookies)}]`;
 }
@@ -112,7 +112,7 @@ function getOptions(request: Request, params: string): [string, string] {
   let hackneyOptionsString = "";
   if (hackneyOptions.length > 1) {
     hackneyOptionsString = `hackney: [\n    ${hackneyOptions.join(
-      ",\n    "
+      ",\n    ",
     )}\n  ]`;
   } else if (hackneyOptions.length) {
     hackneyOptionsString = `hackney: [${hackneyOptions[0]}]`;
@@ -165,7 +165,7 @@ function getHeadersDict(request: Request): string {
   const dictLines: string[] = [];
   for (const [headerName, headerValue] of request.headers) {
     dictLines.push(
-      `    {${repr(headerName)}, ${repr(headerValue ?? new Word())}}`
+      `    {${repr(headerName)}, ${repr(headerValue ?? new Word())}}`,
     );
   }
   dict += dictLines.join(",\n");
@@ -195,10 +195,10 @@ function getFormDataString(request: Request): string {
     if ("contentFile" in m) {
       formParams.push(
         `    {:file, ${repr(m.contentFile)}, {"form-data", [{:name, ${repr(
-          m.name
+          m.name,
         )}}, {:filename, Path.basename(${repr(
-          m.filename ?? m.contentFile
-        )})}]}, []}`
+          m.filename ?? m.contentFile,
+        )})}]}, []}`,
       );
     } else {
       formParams.push(`    {${repr(m.name)}, ${repr(m.content)}}`);
@@ -331,14 +331,14 @@ response = HTTPoison.request(request)
 
 export function _toElixir(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   return requests.map((r) => requestToElixir(r, warnings)).join("\n");
 }
 
 export function toElixirWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const elixir = _toElixir(requests, warnings);

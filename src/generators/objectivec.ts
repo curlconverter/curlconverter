@@ -61,7 +61,7 @@ export function repr(w: Word): string {
       args.push(
         "[[[NSProcessInfo processInfo] environment] objectForKey:" +
           reprStr(t.value) +
-          "]"
+          "]",
       );
     } else if (t.type === "command") {
       // TODO: doesn't return the output
@@ -93,7 +93,7 @@ const reservedHeaders = [
 
 export function _toObjectiveC(
   requests: Request[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): string {
   const request = getFirst(requests, warnings, { dataReadsFile: true });
   let code = "";
@@ -138,7 +138,7 @@ export function _toObjectiveC(
     if (request.urls[0].auth) {
       warnings.push(["reserved-header", "Authorization is a reserved header"]);
       headerLines.push(
-        '    @"Authorization": [NSString stringWithFormat:@"Basic %@", base64Credentials]'
+        '    @"Authorization": [NSString stringWithFormat:@"Basic %@", base64Credentials]',
       );
     }
     if (headerLines.length) {
@@ -208,7 +208,7 @@ export function _toObjectiveC(
             parts.push(
               "[NSString stringWithContentsOfFile:" +
                 repr(entry.filename) +
-                " encoding:NSUTF8StringEncoding error:nil];"
+                " encoding:NSUTF8StringEncoding error:nil];",
             );
           }
         }
@@ -286,7 +286,7 @@ export function _toObjectiveC(
 
 export function toObjectiveCWarn(
   curlCommand: string | string[],
-  warnings: Warnings = []
+  warnings: Warnings = [],
 ): [string, Warnings] {
   const requests = parse(curlCommand, supportedArgs, warnings);
   const code = _toObjectiveC(requests, warnings);
