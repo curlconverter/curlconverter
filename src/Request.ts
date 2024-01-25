@@ -515,7 +515,7 @@ function buildRequest(
     throw new CCError("no URL specified!");
   }
 
-  const headers = new Headers(config.header);
+  const headers = new Headers(config.header, global.warnings);
 
   let cookies;
   const cookieFiles: Word[] = [];

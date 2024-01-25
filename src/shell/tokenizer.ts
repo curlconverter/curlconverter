@@ -6,7 +6,7 @@ import { clip } from "../parse.js";
 import parser from "./Parser.js";
 import type { Parser } from "./Parser.js";
 
-import { underlineNode, type Warnings } from "../Warnings.js";
+import { underlineNode, underlineCursor, type Warnings } from "../Warnings.js";
 
 const BACKSLASHES = /\\./gs;
 function removeBackslash(m: string) {
@@ -255,31 +255,69 @@ function toWord(
   return new Word(toTokens(node, curlCommand, warnings));
 }
 
-function warnAboutErrorNodes(
+function* traverseLookingForBadNodes(
+  tree: Parser.Tree,
+): Generator<Parser.TreeCursor> {
+  const cursor = tree.walk();
+
+  let reachedRoot = false;
+  while (!reachedRoot) {
+    if (cursor.nodeType === "ERROR" || cursor.nodeIsMissing) {
+      yield cursor;
+    }
+
+    if (cursor.gotoFirstChild()) {
+      continue;
+    }
+
+    if (cursor.gotoNextSibling()) {
+      continue;
+    }
+
+    let retracing = true;
+    while (retracing) {
+      if (!cursor.gotoParent()) {
+        retracing = false;
+        reachedRoot = true;
+      }
+
+      if (cursor.gotoNextSibling()) {
+        retracing = false;
+      }
+    }
+  }
+}
+
+function warnAboutBadNodes(
   ast: Parser.Tree,
   curlCommand: string,
   warnings: Warnings,
 ) {
-  // TODO: get only named children?
-  const cursor = ast.walk();
-  cursor.gotoFirstChild();
-  while (cursor.gotoNextSibling()) {
-    if (cursor.nodeType === "ERROR") {
-      let currentNode = cursor.currentNode;
+  const maxShown = 3;
+  let count = 0;
+  for (const badNode of traverseLookingForBadNodes(ast)) {
+    if (count < maxShown) {
+      let underlinedNode = "";
       try {
-        // TreeCursor.currentNode is a property in Node but a function in the browser
-        // https://github.com/tree-sitter/tree-sitter/issues/2195
-        currentNode = (
-          cursor.currentNode as unknown as () => Parser.SyntaxNode
-        )();
+        underlinedNode = ":\n" + underlineCursor(badNode, curlCommand);
       } catch {}
+      const line = badNode.startPosition.row;
+      const column = badNode.startPosition.column;
       warnings.push([
         "bash",
-        `Bash parsing error on line ${cursor.startPosition.row + 1}:\n` +
-          underlineNode(currentNode, curlCommand),
+        `Bash parsing error on line ${line + 1}` +
+          (column !== 0 ? `, column ${column + 1}` : "") +
+          underlinedNode,
       ]);
-      break;
     }
+    count += 1;
+  }
+  const extra = count - maxShown;
+  if (extra > 0) {
+    warnings.push([
+      "bash",
+      `${extra} more Bash parsing error${extra > 1 ? "s" : ""} omitted`,
+    ]);
   }
 }
 
@@ -709,11 +747,15 @@ export function tokenize(
   warnings: Warnings = [],
 ): [Word[], Word?, Word?][] {
   const ast = parser.parse(curlCommand);
-  warnAboutErrorNodes(ast, curlCommand, warnings);
+  warnAboutBadNodes(ast, curlCommand, warnings);
 
   // TODO: pass syntax nodes for each token downstream and use it to
   // highlight the problematic parts in warnings/errors so that it's clear
   // which command a warning/error is for
+  // TODO: could even go further and pass all start/end indexes of all
+  // values all the way through the conversion so when you mouse over a part of
+  // the generated Python code we could highlight the part of the curl command
+  // that it came from.
   const commandNodes = extractCommandNodes(ast, curlCommand, warnings);
   const commands: [Word[], Word?, Word?][] = [];
   for (const [command, stdin, stdinFile] of commandNodes) {
