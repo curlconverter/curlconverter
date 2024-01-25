@@ -1,5 +1,5 @@
-import { Word, eq, firstShellToken, joinWords } from "./shell/Word.js";
-import { underlineNode, type Warnings } from "./Warnings.js";
+import { Word, eq, joinWords } from "./shell/Word.js";
+import type { Warnings } from "./Warnings.js";
 
 // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Standard_request_fields
 // and then searched for "#" in the RFCs that define each header
@@ -75,27 +75,19 @@ export class Headers implements Iterable<[Word, Word | null]> {
 
         if (header.includes(":")) {
           const [name, value] = header.split(":", 2);
-          const nameToken = firstShellToken(name);
-          if (nameToken) {
-            warnings.push([
-              "header-expression",
-              "ignoring " +
-                nameToken.type +
-                " in header name\n" +
-                underlineNode(nameToken.syntaxNode),
-            ]);
-          }
-          // TODO: whitespace-only headers are treated incosistently.
-          // curl -H 'Hosts: ' example.com sends the header
-          // curl -H 'User-Agent: ' example.com doesn't
-          const hasValue = value && value.trim().toBool();
+          // Passing -H 'Header-Name:' disables sending of that header.
+          // If the colon is followed by just spaces they're ignored
+          // unless it's -H 'Host: '
+          // https://github.com/curl/curl/issues/12782
+          const hasValue =
+            value && (eq(name, "Host") ? value : value.trim()).toBool();
           const headerValue = hasValue ? value.removeFirstChar(" ") : null;
           headers.push([name, headerValue]);
         } else if (header.includes(";")) {
           const [name] = header.split(";", 2);
           headers.push([name, new Word()]);
         } else {
-          // TODO: warn that this header arg is ignored
+          // TODO: warn that this header arg is ignored?
         }
       }
     }
