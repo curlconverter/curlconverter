@@ -1329,26 +1329,6 @@ function requestToPython(
         ", 'rb') as f:\n";
       dataString += "    data = f.read()\n";
     }
-  } else if (request.data && !request.data.isEmpty()) {
-    // !isEmpty() because passing data='' is the same as not passing data=
-    // We need to set the Content-Type header in headers= and not set data=
-    let dataImports: Set<string>;
-    [dataString, shouldEncode, jsonDataString, dataImports] = getDataString(
-      request,
-      osVars,
-      warnings,
-    );
-    dataImports.forEach(imports.add, imports);
-    // Remove "Content-Type" from the headers dict
-    // because Requests adds it automatically when you use json=
-    if (
-      jsonDataString &&
-      !dataString &&
-      contentType &&
-      eq(contentType.trim(), "application/json")
-    ) {
-      commentedOutHeaders["content-type"] = "Already added when you pass json=";
-    }
   } else if (request.multipartUploads) {
     let usesStdin = false;
     [filesString, usesStdin] = getFilesString(request, osVars, imports);
@@ -1368,6 +1348,26 @@ function requestToPython(
       // TODO: better wording
       commentedOutHeaders["content-type"] =
         "requests won't add a boundary if this header is set when you pass files=";
+    }
+  } else if (request.data && !request.data.isEmpty()) {
+    // !isEmpty() because passing data='' is the same as not passing data=
+    // We need to set the Content-Type header in headers= and not set data=
+    let dataImports: Set<string>;
+    [dataString, shouldEncode, jsonDataString, dataImports] = getDataString(
+      request,
+      osVars,
+      warnings,
+    );
+    dataImports.forEach(imports.add, imports);
+    // Remove "Content-Type" from the headers dict
+    // because Requests adds it automatically when you use json=
+    if (
+      jsonDataString &&
+      !dataString &&
+      contentType &&
+      eq(contentType.trim(), "application/json")
+    ) {
+      commentedOutHeaders["content-type"] = "Already added when you pass json=";
     }
   }
 
@@ -1537,14 +1537,14 @@ function requestToPython(
       } else {
         args.push("data=data");
       }
+    } else if (filesString) {
+      args.push("files=files");
     } else if (request.data && !request.data.isEmpty()) {
       if (jsonDataString) {
         args.push("json=json_data");
       } else {
         args.push("data=data" + (shouldEncode ? ".encode()" : ""));
       }
-    } else if (filesString) {
-      args.push("files=files");
     }
     if (proxyDict) {
       args.push("proxies=proxies");
