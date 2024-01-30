@@ -191,22 +191,7 @@ export function _toAnsible(
     url: request.urls[0].url.toString(),
     method: request.urls[0].method.toString(),
   };
-  if (request.data) {
-    const d = getDataString(request, warnings);
-    if (d) {
-      const [body, format] = d;
-      if (format === "src") {
-        r.src = body;
-      } else {
-        r.body = body;
-        if (format !== "raw") {
-          r.body_format = format;
-        }
-      }
-    } else {
-      r.body = request.data.toString();
-    }
-  } else if (request.multipartUploads) {
+  if (request.multipartUploads) {
     const form: AnsibleForm = {};
     for (const m of request.multipartUploads) {
       // TODO: can't have duplicate keys
@@ -233,6 +218,21 @@ export function _toAnsible(
     }
     r.body = form;
     r.body_format = "form-multipart";
+  } else if (request.data) {
+    const d = getDataString(request, warnings);
+    if (d) {
+      const [body, format] = d;
+      if (format === "src") {
+        r.src = body;
+      } else {
+        r.body = body;
+        if (format !== "raw") {
+          r.body_format = format;
+        }
+      }
+    } else {
+      r.body = request.data.toString();
+    }
   } else if (request.urls[0].uploadFile) {
     r.src = request.urls[0].uploadFile.toString();
   }

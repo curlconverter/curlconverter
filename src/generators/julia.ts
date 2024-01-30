@@ -287,10 +287,6 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
       code += "body = open(" + repr(request.urls[0].uploadFile) + ', "r")\n\n';
       bodyArg = "body";
     }
-  } else if (request.dataArray && request.dataArray.length) {
-    let bodyCode;
-    [bodyCode, bodyArg] = formatData(request, imports);
-    code += "body = " + bodyCode + "\n\n";
   } else if (request.multipartUploads) {
     code += "form = HTTP.Form(\n";
     code += "    Dict(\n";
@@ -325,6 +321,10 @@ export function _toJulia(requests: Request[], warnings: Warnings = []): string {
     code += "    )\n";
     code += ")\n\n";
     bodyArg = "form";
+  } else if (request.dataArray && request.dataArray.length) {
+    let bodyCode;
+    [bodyCode, bodyArg] = formatData(request, imports);
+    code += "body = " + bodyCode + "\n\n";
   }
   if (bodyArg) {
     if (!hasHeaders) {

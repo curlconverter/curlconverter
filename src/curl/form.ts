@@ -4,12 +4,15 @@ import { Token, Word, eq } from "../shell/Word.js";
 import { SrcFormParam } from "../curl/opts.js";
 
 // contentFile is the actual file to read from
-// filename is the name of the file to send to the server, if one needs to be sent
 export type Details = {
   contentType?: Word;
+  // name of the filename= to send to the server, if one needs to be sent
   filename?: Word;
+  // binary, 8bit, 7bit, base64, or quoted-printable
   encoder?: Word;
-  headers?: Word;
+  // extra headers or files to read extra headers from
+  headers?: Word[];
+  headerFiles?: Word[];
 };
 
 export type FormParamPrototype = {
@@ -72,11 +75,20 @@ function parseDetails(
         ]);
       }
     } else if (value.startsWith("headers=")) {
-      // TODO: more complicated because of header files
       const [headers, headersEnd] = getParamWord(p, ptr + 8, warnings);
       ptr = headersEnd;
       if (supported.headers) {
-        formParam.headers = headers;
+        if (headers.startsWith("@")) {
+          if (formParam.headerFiles === undefined) {
+            formParam.headerFiles = [];
+          }
+          formParam.headerFiles.push(headers.slice(1));
+        } else {
+          if (formParam.headers === undefined) {
+            formParam.headers = [];
+          }
+          formParam.headers.push(headers);
+        }
       } else {
         warnings.push([
           "unsupported-form-detail",

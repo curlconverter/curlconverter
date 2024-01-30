@@ -198,7 +198,12 @@ export function _toPhpGuzzle(
 
   // TODO: \GuzzleHttp\Cookie\CookieJar::fromArray
 
-  if (request.multipartUploads) {
+  if (request.urls[0].uploadFile) {
+    options += `    'body' => Psr7\\Utils::tryFopen(${repr(
+      request.urls[0].uploadFile,
+    )}, 'r')\n`;
+    imports.add("GuzzleHttp\\Psr7");
+  } else if (request.multipartUploads) {
     options += "    'multipart' => [\n";
     for (const m of request.multipartUploads) {
       options += "        [\n";
@@ -224,11 +229,6 @@ export function _toPhpGuzzle(
     options = removeTrailingComma(options);
     options += "    ],\n";
     // TODO: remove some headers?
-  } else if (request.urls[0].uploadFile) {
-    options += `    'body' => Psr7\\Utils::tryFopen(${repr(
-      request.urls[0].uploadFile,
-    )}, 'r')\n`;
-    imports.add("GuzzleHttp\\Psr7");
   } else if (request.data) {
     const contentType = request.headers.getContentType();
     if (contentType === "application/x-www-form-urlencoded") {

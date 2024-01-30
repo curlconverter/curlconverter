@@ -185,9 +185,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
 
   if (request.multipartUploads) {
     lines.push(indent(".multipart(form)", 2));
-  }
-
-  if (request.data) {
+  } else if (request.data) {
     if (request.data && request.data.indexOf("\n") !== -1) {
       // Use raw strings for multiline content
       lines.push(

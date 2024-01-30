@@ -91,7 +91,7 @@ export function getData(
   isNode: boolean,
   imports: JSImports,
 ): [string, string | null] {
-  if (!request.dataArray) {
+  if (!request.dataArray || request.multipartUploads) {
     return ["", null];
   }
 
@@ -247,13 +247,13 @@ function requestToKy(
       addImport(imports, "* as fs", "fs");
       optionsCode +=
         "  body: fs.readFileSync(" + repr(urlObj.uploadFile, imports) + "),\n";
+    } else if (request.multipartUploads) {
+      optionsCode += "  body: form,\n";
     } else if (request.data) {
       if (commentedOutDataString) {
         optionsCode += "  // " + commentedOutDataString + ",\n";
       }
       optionsCode += "  " + dataString + ",\n";
-    } else if (request.multipartUploads) {
-      optionsCode += "  body: form,\n";
     }
     if (
       method.isString() &&

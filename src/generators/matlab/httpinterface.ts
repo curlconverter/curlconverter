@@ -178,7 +178,7 @@ function prepareDataProvider(
 }
 
 function prepareData(request: Request) {
-  if (!request.data) {
+  if (!request.data || request.multipartUploads) {
     return null;
   }
 

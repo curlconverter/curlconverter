@@ -172,7 +172,7 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
   }
   goCode += "}\n";
 
-  if (request.data) {
+  if (request.data && !request.multipartUploads) {
     goCode +=
       "\tvar data = strings.NewReader(" +
       reprBacktick(request.data, vars, imports) +
@@ -187,7 +187,7 @@ export function _toGo(requests: Request[], warnings: Warnings = []): string {
     repr(request.urls[0].url, vars, imports);
   goCode +=
     ", " +
-    (request.data ? "data" : request.multipartUploads ? "form" : "nil") +
+    (request.multipartUploads ? "form" : request.data ? "data" : "nil") +
     ")\n";
   goCode += IF_ERR;
 

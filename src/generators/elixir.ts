@@ -179,37 +179,36 @@ function getBody(request: Request): string {
 }
 
 function getFormDataString(request: Request): string {
-  if (request.data) {
-    return getDataString(request);
-  }
+  if (request.multipartUploads) {
+    if (!request.multipartUploads.length) {
+      return `{:multipart, []}`;
+    }
 
-  if (!request.multipartUploads) {
-    return "";
-  }
-  if (!request.multipartUploads.length) {
-    return `{:multipart, []}`;
-  }
+    const formParams: string[] = [];
+    for (const m of request.multipartUploads) {
+      if ("contentFile" in m) {
+        formParams.push(
+          `    {:file, ${repr(m.contentFile)}, {"form-data", [{:name, ${repr(
+            m.name,
+          )}}, {:filename, Path.basename(${repr(
+            m.filename ?? m.contentFile,
+          )})}]}, []}`,
+        );
+      } else {
+        formParams.push(`    {${repr(m.name)}, ${repr(m.content)}}`);
+      }
+    }
 
-  const formParams: string[] = [];
-  for (const m of request.multipartUploads) {
-    if ("contentFile" in m) {
-      formParams.push(
-        `    {:file, ${repr(m.contentFile)}, {"form-data", [{:name, ${repr(
-          m.name,
-        )}}, {:filename, Path.basename(${repr(
-          m.filename ?? m.contentFile,
-        )})}]}, []}`,
-      );
-    } else {
-      formParams.push(`    {${repr(m.name)}, ${repr(m.content)}}`);
+    const formStr = formParams.join(",\n");
+    if (formStr) {
+      return `{:multipart, [
+${formStr}
+  ]}`;
     }
   }
 
-  const formStr = formParams.join(",\n");
-  if (formStr) {
-    return `{:multipart, [
-${formStr}
-  ]}`;
+  if (request.data) {
+    return getDataString(request);
   }
 
   return "";

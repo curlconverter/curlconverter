@@ -403,7 +403,14 @@ export function _toClojure(
       "[" + repr(user, importLines) + " " + repr(pass, importLines) + "]";
   }
 
-  if (request.dataArray && request.data) {
+  if (request.multipartUploads) {
+    params["multipart"] = reprMultipart(
+      request.multipartUploads,
+      importLines,
+      warnings,
+    );
+    // TODO: above warning probably also applies here
+  } else if (request.dataArray && request.data) {
     // Can delete headers
     addData(params, request, request.dataArray, importLines);
     if (!dataMethods.has(methodStr)) {
@@ -412,13 +419,6 @@ export function _toClojure(
         "clj-http doesn't send data with " + methodStr + " requests",
       ]);
     }
-  } else if (request.multipartUploads) {
-    params["multipart"] = reprMultipart(
-      request.multipartUploads,
-      importLines,
-      warnings,
-    );
-    // TODO: above warning probably also applies here
   }
 
   if (request.headers.length) {

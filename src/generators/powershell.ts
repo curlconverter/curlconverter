@@ -226,6 +226,24 @@ function requestToPowershell(
       // ]);
     }
     args.push(["-InFile", repr(url.uploadFile)]);
+  } else if (request.multipartUploads) {
+    code += "$form = @{\n";
+    for (const m of request.multipartUploads) {
+      if ("content" in m) {
+        code += "    " + repr(m.name) + " = " + repr(m.content) + "\n";
+      } else {
+        if ("filename" in m && m.filename && !eq(m.filename, m.contentFile)) {
+          warnings.push([
+            "powershell-multipart-fake-filename",
+            "PowerShell doesn't support multipart uploads that read a certain filename but send a different filename",
+          ]);
+        }
+        code +=
+          "    " + repr(m.name) + " = Get-Item " + repr(m.contentFile) + "\n";
+      }
+    }
+    code += "}\n";
+    args.push(["-Form", "$form"]);
   } else if (
     request.dataArray &&
     request.dataArray.length === 1 &&
@@ -279,24 +297,6 @@ function requestToPowershell(
         "the -Body will be sent in the URL as a query string",
       ]);
     }
-  } else if (request.multipartUploads) {
-    code += "$form = @{\n";
-    for (const m of request.multipartUploads) {
-      if ("content" in m) {
-        code += "    " + repr(m.name) + " = " + repr(m.content) + "\n";
-      } else {
-        if ("filename" in m && m.filename && !eq(m.filename, m.contentFile)) {
-          warnings.push([
-            "powershell-multipart-fake-filename",
-            "PowerShell doesn't support multipart uploads that read a certain filename but send a different filename",
-          ]);
-        }
-        code +=
-          "    " + repr(m.name) + " = Get-Item " + repr(m.contentFile) + "\n";
-      }
-    }
-    code += "}\n";
-    args.push(["-Form", "$form"]);
   }
 
   if (request.followRedirects === false) {

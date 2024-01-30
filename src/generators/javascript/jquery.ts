@@ -199,14 +199,7 @@ export function _toJavaScriptJquery(
   let commentedOutDataString: string | null = null;
   let traditional = false;
 
-  if (request.data) {
-    // can delete content-type header by returning null for exactContentType
-    [exactContentType, dataString, commentedOutDataString, traditional] =
-      getDataString(request.data, contentType, exactContentType, imports);
-    if (commentedOutDataString) {
-      commentedOutDataString = "  // data: " + commentedOutDataString + ",\n";
-    }
-  } else if (request.multipartUploads) {
+  if (request.multipartUploads) {
     code += getFormString(request.multipartUploads, imports);
     dataString = "form";
 
@@ -215,6 +208,13 @@ export function _toJavaScriptJquery(
       // TODO: remove this when jQuery supports FormData
       "jQuery doesn't support sending FormData yet",
     ]);
+  } else if (request.data) {
+    // can delete content-type header by returning null for exactContentType
+    [exactContentType, dataString, commentedOutDataString, traditional] =
+      getDataString(request.data, contentType, exactContentType, imports);
+    if (commentedOutDataString) {
+      commentedOutDataString = "  // data: " + commentedOutDataString + ",\n";
+    }
   }
 
   if (nonDataMethods.includes(methodStr)) {

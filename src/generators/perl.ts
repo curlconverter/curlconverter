@@ -179,9 +179,6 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
       args.push(
         "Content => read_file(" + repr(request.urls[0].uploadFile) + ")",
       );
-    } else if (request.data) {
-      // TODO: parseQueryString
-      args.push("Content => " + repr(request.data));
     } else if (request.multipartUploads) {
       args.push("Content_Type => 'form-data'");
       const lines = [];
@@ -205,6 +202,9 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
       args.push(
         "Content => [\n        " + lines.join(",\n        ") + "\n    ]",
       );
+    } else if (request.data) {
+      // TODO: parseQueryString
+      args.push("Content => " + repr(request.data));
     }
   }
 

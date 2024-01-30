@@ -332,6 +332,11 @@ function requestToWget(request: Request, warnings: Warnings): string {
     } else {
       args.push("--body-file=" + repr(request.urls[0].uploadFile));
     }
+  } else if (request.multipartUploads) {
+    warnings.push([
+      "multipart",
+      "Wget does not support sending multipart/form-data",
+    ]);
   } else if (
     request.dataArray &&
     request.dataArray.length === 1 &&
@@ -349,11 +354,6 @@ function requestToWget(request: Request, warnings: Warnings): string {
     } else {
       args.push("--body-data=" + repr(request.data));
     }
-  } else if (request.multipartUploads) {
-    warnings.push([
-      "multipart",
-      "Wget does not support sending multipart/form-data",
-    ]);
   }
 
   // https://www.gnu.org/software/wget/manual/html_node/HTTPS-_0028SSL_002fTLS_0029-Options.html

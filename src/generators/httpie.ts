@@ -311,17 +311,6 @@ function requestToHttpie(
     } else {
       items.push("@" + repr(url.uploadFile));
     }
-  } else if (
-    request.dataArray &&
-    request.dataArray.length === 1 &&
-    !(request.dataArray[0] instanceof Word) &&
-    !request.dataArray[0].name
-  ) {
-    // TODO: surely --upload-file and this can't be identical,
-    // doesn't this ignore url encoding?
-    items.push("@" + repr(request.dataArray[0].filename));
-  } else if (request.data) {
-    formatData(flags, items, request.data, request.headers);
   } else if (request.multipartUploads) {
     flags.push("--multipart");
     for (const m of request.multipartUploads) {
@@ -341,6 +330,17 @@ function requestToHttpie(
         }
       }
     }
+  } else if (
+    request.dataArray &&
+    request.dataArray.length === 1 &&
+    !(request.dataArray[0] instanceof Word) &&
+    !request.dataArray[0].name
+  ) {
+    // TODO: surely --upload-file and this can't be identical,
+    // doesn't this ignore url encoding?
+    items.push("@" + repr(request.dataArray[0].filename));
+  } else if (request.data) {
+    formatData(flags, items, request.data, request.headers);
   }
 
   if (request.followRedirects || request.followRedirectsTrusted) {

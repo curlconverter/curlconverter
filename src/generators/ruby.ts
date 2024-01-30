@@ -438,15 +438,15 @@ function requestToRuby(
       reqBody =
         "req.body = File.read(" + repr(request.urls[0].uploadFile) + ")\n";
     }
+  } else if (request.multipartUploads) {
+    reqBody = getFilesString(request);
+    request.headers.delete("content-type");
   } else if (request.data) {
     let importJson = false;
     [reqBody, importJson] = getDataString(request);
     if (importJson) {
       imports.add("json");
     }
-  } else if (request.multipartUploads) {
-    reqBody = getFilesString(request);
-    request.headers.delete("content-type");
   }
 
   const contentType = request.headers.get("content-type");

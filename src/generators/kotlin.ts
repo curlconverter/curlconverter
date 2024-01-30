@@ -163,6 +163,32 @@ export function _toKotlin(
     kotlinCode += "val file = File(" + repr(url.uploadFile, imports) + ")\n\n";
     imports.add("java.io.File");
     imports.add("okhttp3.RequestBody.Companion.asRequestBody");
+  } else if (request.multipartUploads) {
+    methodCallArgs.push("requestBody");
+    kotlinCode += "val requestBody = MultipartBody.Builder()\n";
+    kotlinCode += "  .setType(MultipartBody.FORM)\n";
+    for (const m of request.multipartUploads) {
+      const args = [repr(m.name, imports)];
+      if ("content" in m) {
+        args.push(repr(m.content, imports));
+      } else {
+        if ("filename" in m && m.filename) {
+          args.push(repr(m.filename, imports));
+          args.push(
+            "File(" + repr(m.contentFile, imports) + ").asRequestBody()", // TODO: content type here
+          );
+          imports.add("java.io.File");
+          imports.add("okhttp3.RequestBody.Companion.asRequestBody");
+        } else {
+          // TODO: import
+          // TODO: probably doesn't work
+          args.push("Files.readAllBytes(" + repr(m.contentFile, imports) + ")");
+        }
+      }
+      kotlinCode += "  .addFormDataPart(" + args.join(", ") + ")\n";
+    }
+    kotlinCode += "  .build()\n\n";
+    imports.add("okhttp3.MultipartBody");
   } else if (
     request.dataArray &&
     request.dataArray.length === 1 &&
@@ -226,32 +252,6 @@ export function _toKotlin(
       kotlinCode += "val requestBody = " + repr(request.data, imports) + "\n\n";
       imports.add("okhttp3.RequestBody.Companion.toRequestBody");
     }
-  } else if (request.multipartUploads) {
-    methodCallArgs.push("requestBody");
-    kotlinCode += "val requestBody = MultipartBody.Builder()\n";
-    kotlinCode += "  .setType(MultipartBody.FORM)\n";
-    for (const m of request.multipartUploads) {
-      const args = [repr(m.name, imports)];
-      if ("content" in m) {
-        args.push(repr(m.content, imports));
-      } else {
-        if ("filename" in m && m.filename) {
-          args.push(repr(m.filename, imports));
-          args.push(
-            "File(" + repr(m.contentFile, imports) + ").asRequestBody()", // TODO: content type here
-          );
-          imports.add("java.io.File");
-          imports.add("okhttp3.RequestBody.Companion.asRequestBody");
-        } else {
-          // TODO: import
-          // TODO: probably doesn't work
-          args.push("Files.readAllBytes(" + repr(m.contentFile, imports) + ")");
-        }
-      }
-      kotlinCode += "  .addFormDataPart(" + args.join(", ") + ")\n";
-    }
-    kotlinCode += "  .build()\n\n";
-    imports.add("okhttp3.MultipartBody");
   }
 
   kotlinCode += "val request = Request.Builder()\n";

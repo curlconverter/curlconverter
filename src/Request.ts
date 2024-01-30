@@ -104,6 +104,10 @@ export interface Request {
   compressed?: boolean;
 
   multipartUploads?: FormParam[];
+  // When multipartUploads comes from parsing a string in --data
+  // this can be set to true to say that sending the original data
+  // as a string would be more correct.
+  multipartUploadsDoesntRoundtrip?: boolean;
 
   dataArray?: DataParam[];
   data?: Word;
@@ -504,6 +508,152 @@ function buildData(
   return [data, dataStr, dataStrReadsFile];
 }
 
+// Parses a Content-Type header into a type and a list of parameters
+function parseContentType(
+  string: string,
+): [string, Array<[string, string]>] | null {
+  if (!string.includes(";")) {
+    return [string, []];
+  }
+  const semi = string.indexOf(";");
+  const type = string.slice(0, semi);
+  const rest = string.slice(semi);
+
+  // See https://www.w3.org/Protocols/rfc1341/4_Content-Type.html
+  // TODO: could be better, like reading to the next semicolon
+  const params = rest.match(
+    /;\s*([^;=]+)=(?:("[^"]*")|([^()<>@,;:\\"/[\]?.=]*))/g,
+  );
+  if (rest.trim() && !params) {
+    return null;
+  }
+  const parsedParams: Array<[string, string]> = [];
+  for (const param of params || []) {
+    const parsedParam = param.match(
+      /;\s*([^;=]+)=(?:("[^"]*")|([^()<>@,;:\\"/[\]?.=]*))/,
+    );
+    if (!parsedParam) {
+      return null;
+    }
+    const name = parsedParam[1];
+    const value = parsedParam[3] || parsedParam[2].slice(1, -1);
+    parsedParams.push([name, value]);
+  }
+  return [type, parsedParams];
+}
+
+// Parses out the boundary= value from a Content-Type header
+function parseBoundary(string: string): string | null {
+  const header = parseContentType(string);
+  if (!header) {
+    return null;
+  }
+  for (const [name, value] of header[1]) {
+    if (name === "boundary") {
+      return value;
+    }
+  }
+  return null;
+}
+
+function parseRawForm(
+  data: string,
+  boundary: string,
+): [FormParam[], boolean] | null {
+  const endBoundary = "\r\n--" + boundary + "--\r\n";
+  if (!data.endsWith(endBoundary)) {
+    return null;
+  }
+  data = data.slice(0, -endBoundary.length);
+
+  // TODO: if empty form should it be completely empty?
+  boundary = "--" + boundary + "\r\n";
+  if (data && !data.startsWith(boundary)) {
+    return null;
+  }
+  data = data.slice(boundary.length);
+  const parts = data.split("\r\n" + boundary);
+  const form: FormParam[] = [];
+  let roundtrips = true;
+  for (const part of parts) {
+    const lines = part.split("\r\n");
+    if (lines.length < 2) {
+      return null;
+    }
+
+    const formParam: FormParam = {
+      name: new Word(),
+      content: new Word(),
+    };
+    let seenContentDisposition = false;
+    const headers: Word[] = [];
+    let i = 0;
+    for (; i < lines.length; i++) {
+      if (lines[i].length === 0) {
+        break;
+      }
+      const [name, value] = lines[i].split(": ", 2);
+      if (!name === undefined || !value === undefined) {
+        return null;
+      }
+      if (name.toLowerCase() === "content-disposition") {
+        if (seenContentDisposition) {
+          // should only have one
+          return null;
+        }
+
+        const contentDisposition = parseContentType(value);
+        if (!contentDisposition) {
+          return null;
+        }
+        const [type, params] = contentDisposition;
+        if (type !== "form-data") {
+          return null;
+        }
+        let extra = 0;
+        for (const [paramName, paramValue] of params) {
+          switch (paramName) {
+            case "name":
+              formParam.name = new Word(paramValue);
+              break;
+            case "filename":
+              formParam.filename = new Word(paramValue);
+              break;
+            default:
+              extra++;
+              break;
+          }
+        }
+        if (extra) {
+          roundtrips = false;
+          // TODO: warn?
+        }
+        seenContentDisposition = true;
+      } else if (name.toLowerCase() === "content-type") {
+        formParam.contentType = new Word(value);
+      } else {
+        headers.push(new Word(lines[i]));
+      }
+    }
+    if (headers.length) {
+      formParam.headers = headers;
+    }
+
+    if (!seenContentDisposition) {
+      return null;
+    }
+    if (i === lines.length) {
+      return null;
+    }
+    if (formParam.name.isEmpty()) {
+      return null;
+    }
+    formParam.content = new Word(lines.slice(i + 1).join("\n"));
+    form.push(formParam);
+  }
+  return [form, roundtrips];
+}
+
 function buildRequest(
   global: GlobalConfig,
   config: OperationConfig,
@@ -688,6 +838,32 @@ function buildRequest(
     // TODO: warn when details (;filename=, etc.) are not supported
     // by each converter.
     request.multipartUploads = parseForm(config.form, global.warnings);
+    //headers.setIfMissing("Content-Type", "multipart/form-data");
+  }
+  const contentType = headers.getContentType();
+  const exactContentType = headers.get("Content-Type");
+  if (
+    config.data &&
+    !dataStrReadsFile &&
+    dataStr &&
+    dataStr.isString() &&
+    !config.form &&
+    !request.multipartUploads &&
+    contentType === "multipart/form-data" &&
+    exactContentType &&
+    exactContentType.isString()
+  ) {
+    const boundary = parseBoundary(exactContentType.toString());
+    if (boundary) {
+      const form = parseRawForm(dataStr.toString(), boundary);
+      if (form) {
+        const [parsedForm, roundtrip] = form;
+        request.multipartUploads = parsedForm;
+        if (!roundtrip) {
+          request.multipartUploadsDoesntRoundtrip = true;
+        }
+      }
+    }
   }
 
   if (config["aws-sigv4"]) {

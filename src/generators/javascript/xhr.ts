@@ -96,7 +96,9 @@ export function _toJavaScriptXHR(
   const url = request.urls[0].url;
 
   const contentType = request.headers.getContentType();
-  if (request.data) {
+  if (request.multipartUploads) {
+    code += getFormString(request.multipartUploads, imports);
+  } else if (request.data) {
     // might delete content-type header
     const [dataString, commentedOutDataString] = getDataString(
       request.data,
@@ -109,8 +111,6 @@ export function _toJavaScriptXHR(
     if (dataString) {
       code += "const data = " + dedent(dataString) + ";\n\n";
     }
-  } else if (request.multipartUploads) {
-    code += getFormString(request.multipartUploads, imports);
   }
   if (nonDataMethods.includes(methodStr) && hasData) {
     warnings.push([
@@ -163,10 +163,10 @@ export function _toJavaScriptXHR(
   code += "};\n";
   code += "\n";
 
-  if (request.data) {
-    code += "xhr.send(data);\n";
-  } else if (request.multipartUploads) {
+  if (request.multipartUploads) {
     code += "xhr.send(form);\n";
+  } else if (request.data) {
+    code += "xhr.send(data);\n";
   } else {
     code += "xhr.send();\n";
   }
