@@ -1034,8 +1034,7 @@ function getFilesString(
     // Requests's multipart syntax looks like this:
     // name/filename: content
     // name: open(filename/contentFile)
-    // name: (filename, open(contentFile))
-    // name: (filename, open(contentFile), contentType, headers))
+    // name: (filename, open(contentFile)[, contentType[, headers]]))
     const name = m.name ? repr(m.name, osVars, imports) : "None";
 
     if (!("contentType" in m) && !("headers" in m) && !("encoder" in m)) {
@@ -1076,11 +1075,48 @@ function getFilesString(
     } else {
       tuple.push(repr(m.content, osVars, imports));
     }
+    let addedContentType = false;
     if ("contentType" in m && m.contentType) {
       tuple.push(repr(m.contentType, osVars, imports));
+      addedContentType = true;
     }
-    if ("headers" in m && m.headers) {
-      // TODO
+    if (
+      ("headers" in m && m.headers) ||
+      ("headerFiles" in m && m.headerFiles)
+    ) {
+      if (!addedContentType) {
+        tuple.push("None");
+      }
+
+      const headerArg = [];
+      if (m.headers) {
+        let headerDict = "{";
+        for (const header of m.headers) {
+          // TODO: can have multiple headers in one headers= argument?
+          const [name, value] = header.split(":", 2);
+          headerDict +=
+            repr(name, osVars, imports) +
+            ": " +
+            repr(value.trimStart() || new Word(), osVars, imports) +
+            ", ";
+        }
+        if (headerDict.endsWith(", ")) {
+          headerDict = headerDict.slice(0, -2);
+        }
+        headerDict += "}";
+        headerArg.push(headerDict);
+      }
+      if (m.headerFiles && m.headerFiles.length) {
+        for (const headerFile of m.headerFiles) {
+          headerArg.push(
+            "read_headerfile(" +
+              repr(headerFile, osVars, imports, false, true) +
+              ")",
+          );
+        }
+        imports.add("read_headerfile");
+      }
+      tuple.push(headerArg.join(" | "));
     }
     return [name, "(" + tuple.join(", ") + ")"];
   });
@@ -1818,6 +1854,9 @@ function requestToPython(
 export function printImports(imps: Set<string>): string {
   let s = "";
   for (const imp of Array.from(imps).sort()) {
+    if (imp === "read_headerfile") {
+      continue;
+    }
     if (imp.includes(".")) {
       const pos = imp.lastIndexOf(".");
       const module = imp.slice(0, pos);
@@ -1864,6 +1903,19 @@ export function _toPython(
   importCode += "import requests\n";
   importCode += printImports(thirdPartyImports);
   importCode += "\n";
+  if (imports.has("read_headerfile")) {
+    importCode += "def read_headerfile(filename):\n";
+    importCode += "    headers = {}\n";
+    importCode += "    with open(filename) as f:\n";
+    importCode += "        for line in f:\n";
+    importCode += "            line = line.split('#', 1)[0].strip()\n";
+    importCode += "            if line:\n";
+    importCode += "                [key, value] = line.split(':', 1)\n";
+    importCode += "                value = value or ''\n";
+    importCode += "                headers[key.strip()] = value.strip()\n";
+    importCode += "    return headers\n";
+    importCode += "\n";
+  }
 
   return importCode + code.join(joinTwoLines ? "\n\n" : "\n");
 }
