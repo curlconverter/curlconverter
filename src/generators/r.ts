@@ -170,7 +170,9 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   let dataString;
   let dataIsList;
   let filesString;
-  if (request.data) {
+  if (request.multipartUploads) {
+    filesString = getFilesString(request);
+  } else if (request.data) {
     if (request.data.startsWith("@") && !request.isDataRaw) {
       const filePath = request.data.slice(1);
       dataString = "data = upload_file(" + repr(filePath) + ")";
@@ -191,8 +193,6 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
         dataString = "data = " + repr(request.data) + "\n";
       }
     }
-  } else if (request.multipartUploads) {
-    filesString = getFilesString(request);
   }
   const url = request.urls[0].queryList
     ? request.urls[0].urlWithoutQueryList
@@ -229,13 +229,13 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   if (cookieDict) {
     requestLineBody += ", httr::set_cookies(.cookies = cookies)";
   }
-  if (request.data) {
+  if (request.multipartUploads) {
+    requestLineBody += ', body = files, encode = "multipart"';
+  } else if (request.data) {
     requestLineBody += ", body = data";
     if (dataIsList) {
       requestLineBody += ', encode = "form"';
     }
-  } else if (request.multipartUploads) {
-    requestLineBody += ', body = files, encode = "multipart"';
   }
   if (request.insecure) {
     requestLineBody += ", config = httr::config(ssl_verifypeer = FALSE)";

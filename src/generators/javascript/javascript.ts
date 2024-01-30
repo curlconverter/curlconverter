@@ -468,7 +468,7 @@ export function getData(
   isNode: boolean,
   imports: JSImports,
 ): [string, string | null] {
-  if (!request.dataArray) {
+  if (!request.dataArray || request.multipartUploads) {
     return ["", null];
   }
 
@@ -686,13 +686,13 @@ function requestToJavaScriptOrNode(
           "you can't read a file for --upload-file/-F in the browser",
         ]);
       }
+    } else if (request.multipartUploads) {
+      optionsCode += "  body: form,\n";
     } else if (request.data) {
       if (commentedOutDataString) {
         optionsCode += "  // body: " + commentedOutDataString + ",\n";
       }
       optionsCode += "  body: " + dataString + ",\n";
-    } else if (request.multipartUploads) {
-      optionsCode += "  body: form,\n";
     }
 
     if (isNode && request.proxy) {

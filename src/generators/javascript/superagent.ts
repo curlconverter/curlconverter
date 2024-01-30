@@ -214,7 +214,10 @@ export function _toNodeSuperAgent(
   let exactContentType = request.headers.get("content-type");
   request.headers.delete("content-type");
   let dataCode, commentedOutDataCode;
-  if (request.data) {
+  if (request.multipartUploads) {
+    dataCode = getFormString(request.multipartUploads, imports);
+    exactContentType = null;
+  } else if (request.data) {
     // might delete content-type header
     [exactContentType, dataCode, commentedOutDataCode] = getDataString(
       request,
@@ -222,9 +225,6 @@ export function _toNodeSuperAgent(
       exactContentType,
       imports,
     );
-  } else if (request.multipartUploads) {
-    dataCode = getFormString(request.multipartUploads, imports);
-    exactContentType = null;
   }
   if (nonDataMethods.includes(methodStr) && hasData) {
     warnings.push([

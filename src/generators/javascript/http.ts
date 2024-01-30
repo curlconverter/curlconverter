@@ -104,17 +104,17 @@ export function _toNodeHttp(
   let dataString, commentedOutDataString;
   let formString;
   const contentType = request.headers.getContentType();
-  if (request.data) {
+  if (request.multipartUploads) {
+    formString = getFormString(request.multipartUploads, imports);
+    code += formString;
+    // Node 18's native FormData doesn't have .pipe() or .getHeaders()
+    importCode += "import FormData from 'form-data';\n";
+  } else if (request.data) {
     [dataString, commentedOutDataString] = getDataString(
       request.data,
       contentType,
       imports,
     );
-  } else if (request.multipartUploads) {
-    formString = getFormString(request.multipartUploads, imports);
-    code += formString;
-    // Node 18's native FormData doesn't have .pipe() or .getHeaders()
-    importCode += "import FormData from 'form-data';\n";
   }
 
   if (request.urls[0].auth) {

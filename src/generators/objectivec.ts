@@ -158,6 +158,8 @@ export function _toObjectiveC(
       repr(request.urls[0].uploadFile) +
       "];";
     hasDataStream = true;
+  } else if (request.multipartUploads) {
+    // TODO
   } else if (request.dataArray && request.dataArray.length >= 1) {
     if (
       request.dataArray.length === 1 &&
@@ -228,8 +230,6 @@ export function _toObjectiveC(
       code += "\n";
       hasData = true;
     }
-  } else if (request.multipartUploads) {
-    // TODO
   }
   if (
     request.timeout &&

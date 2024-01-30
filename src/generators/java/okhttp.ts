@@ -92,6 +92,38 @@ export function _toJavaOkHttp(
     javaCode +=
       "File file = new File(" + repr(url.uploadFile, imports) + ");\n\n";
     imports.add("java.io.File");
+  } else if (request.multipartUploads) {
+    methodCallArgs.push("requestBody");
+    javaCode += "RequestBody requestBody = new MultipartBody.Builder()\n";
+    javaCode += "    .setType(MultipartBody.FORM)\n";
+    for (const m of request.multipartUploads) {
+      const args = [repr(m.name, imports)];
+      if ("content" in m) {
+        args.push(repr(m.content, imports));
+      } else {
+        if ("filename" in m && m.filename) {
+          if (!eq(m.filename, m.contentFile)) {
+            args.push(repr(m.filename, imports));
+          }
+          args.push(
+            "RequestBody.create(" +
+              '"", ' + // TODO: this is the media type
+              "new File(" +
+              repr(m.contentFile, imports) +
+              "))",
+          );
+          imports.add("java.io.File");
+        } else {
+          // TODO: import
+          // TODO: probably doesn't work
+          args.push("Files.readAllBytes(" + repr(m.contentFile, imports) + ")");
+        }
+      }
+      javaCode += "    .addFormDataPart(" + args.join(", ") + ")\n";
+    }
+    javaCode += "    .build();\n\n";
+    imports.add("okhttp3.RequestBody");
+    imports.add("okhttp3.MultipartBody");
   } else if (
     request.dataArray &&
     request.dataArray.length === 1 &&
@@ -134,38 +166,6 @@ export function _toJavaOkHttp(
       javaCode +=
         "String requestBody = " + repr(request.data, imports) + ";\n\n";
     }
-  } else if (request.multipartUploads) {
-    methodCallArgs.push("requestBody");
-    javaCode += "RequestBody requestBody = new MultipartBody.Builder()\n";
-    javaCode += "    .setType(MultipartBody.FORM)\n";
-    for (const m of request.multipartUploads) {
-      const args = [repr(m.name, imports)];
-      if ("content" in m) {
-        args.push(repr(m.content, imports));
-      } else {
-        if ("filename" in m && m.filename) {
-          if (!eq(m.filename, m.contentFile)) {
-            args.push(repr(m.filename, imports));
-          }
-          args.push(
-            "RequestBody.create(" +
-              '"", ' + // TODO: this is the media type
-              "new File(" +
-              repr(m.contentFile, imports) +
-              "))",
-          );
-          imports.add("java.io.File");
-        } else {
-          // TODO: import
-          // TODO: probably doesn't work
-          args.push("Files.readAllBytes(" + repr(m.contentFile, imports) + ")");
-        }
-      }
-      javaCode += "    .addFormDataPart(" + args.join(", ") + ")\n";
-    }
-    javaCode += "    .build();\n\n";
-    imports.add("okhttp3.RequestBody");
-    imports.add("okhttp3.MultipartBody");
   }
 
   javaCode += "Request request = new Request.Builder()\n";

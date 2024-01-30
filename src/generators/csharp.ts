@@ -234,20 +234,6 @@ export function _toCSharp(
       "request.Content = new ByteArrayContent(File.ReadAllBytes(" +
       repr(request.urls[0].uploadFile, imports) +
       "));\n";
-  } else if (request.data) {
-    // TODO: parse
-    if (!request.isDataRaw && request.data.startsWith("@")) {
-      // TODO: stdin
-      s +=
-        "request.Content = new StringContent(File.ReadAllText(" +
-        repr(request.data.slice(1), imports) +
-        ').Replace("\\n", string.Empty).Replace("\\r", string.Empty));\n';
-    } else {
-      s +=
-        "request.Content = new StringContent(" +
-        repr(request.data, imports) +
-        ");\n";
-    }
   } else if (request.multipartUploads) {
     s += "\n";
     // TODO: get boundary from header
@@ -302,6 +288,20 @@ export function _toCSharp(
       }
     }
     s += "request.Content = content;\n";
+  } else if (request.data) {
+    // TODO: parse
+    if (!request.isDataRaw && request.data.startsWith("@")) {
+      // TODO: stdin
+      s +=
+        "request.Content = new StringContent(File.ReadAllText(" +
+        repr(request.data.slice(1), imports) +
+        ').Replace("\\n", string.Empty).Replace("\\r", string.Empty));\n';
+    } else {
+      s +=
+        "request.Content = new StringContent(" +
+        repr(request.data, imports) +
+        ");\n";
+    }
   } else if (request.headers.has("content-type")) {
     // This needs to be at the end.
     // If the request has no content, you can't set the content-type

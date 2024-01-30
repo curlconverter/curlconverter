@@ -120,8 +120,8 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     s += "\n";
   }
 
-  const hasData = request.data;
-  if (request.data) {
+  const hasData = request.data && !request.multipartUploads;
+  if (hasData && request.data) {
     const [parsedQuery] = parseQueryString(request.data);
     if (parsedQuery && parsedQuery.length) {
       s += "  final data = {\n";

@@ -156,13 +156,13 @@ function buildConfigObject(
   }
 
   if (!dataMethods.includes(methodStr)) {
-    if (request.data) {
+    if (request.multipartUploads) {
+      code += "  data: form,\n";
+    } else if (request.data) {
       if (commentedOutDataString) {
         code += "  // data: " + commentedOutDataString + ",\n";
       }
       code += "  data: " + dataString + ",\n";
-    } else if (request.multipartUploads) {
-      code += "  data: form,\n";
     }
   }
 
@@ -317,7 +317,9 @@ export function _toNodeAxios(
   if (needsData) {
     code += "\n";
     code += "  " + repr(url, imports) + ",\n";
-    if (request.data) {
+    if (request.multipartUploads) {
+      code += "  form";
+    } else if (request.data) {
       try {
         [dataString, commentedOutDataString] = getDataString(request, imports);
         if (!dataString) {
@@ -330,8 +332,6 @@ export function _toNodeAxios(
         code += "  // " + commentedOutDataString + ",\n";
       }
       code += "  " + dataString;
-    } else if (request.multipartUploads) {
-      code += "  form";
     } else if (needsConfig) {
       // TODO: this works but maybe undefined would be more correct?
       code += "  ''";

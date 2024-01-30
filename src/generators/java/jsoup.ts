@@ -82,9 +82,6 @@ export const _toJavaJsoup = (
     javaCode += '\t\t\t.header("Authorization", "Basic " + basicAuth)\n';
   }
 
-  if (request.data) {
-    javaCode += "\t\t\t.requestBody(" + repr(request.data, imports) + ")\n";
-  }
   if (request.multipartUploads) {
     javaCode += "\t\t\t.data(";
 
@@ -131,6 +128,8 @@ export const _toJavaJsoup = (
       }
     }
     javaCode += ")))\n";
+  } else if (request.data) {
+    javaCode += "\t\t\t.requestBody(" + repr(request.data, imports) + ")\n";
   }
 
   // TODO: check method const exists
