@@ -724,6 +724,7 @@ export interface OperationConfig {
   append?: boolean;
   basic?: boolean;
   buffer?: boolean;
+  "ca-native"?: boolean;
   "cert-status"?: boolean;
   clobber?: boolean;
   "compressed-ssh"?: boolean;

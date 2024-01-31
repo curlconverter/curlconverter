@@ -40,6 +40,11 @@ const converters = {
     extension: ".yml",
     converter: curlconverter.toAnsible,
   },
+  c: {
+    name: "C",
+    extension: ".c",
+    converter: curlconverter.toC,
+  },
   cfml: {
     name: "ColdFusion",
     extension: ".cfm",

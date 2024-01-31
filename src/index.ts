@@ -1,4 +1,5 @@
 export { toAnsible, toAnsibleWarn } from "./generators/ansible.js";
+export { toC, toCWarn } from "./generators/c.js";
 export { toCFML, toCFMLWarn } from "./generators/cfml.js";
 export { toClojure, toClojureWarn } from "./generators/clojure.js";
 export { toCSharp, toCSharpWarn } from "./generators/csharp.js";

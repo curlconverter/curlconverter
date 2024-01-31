@@ -100,14 +100,17 @@ export interface Request {
   cookies?: Cookies;
   cookieFiles?: Word[];
   cookieJar?: Word;
+  junkSessionCookies?: boolean;
 
   compressed?: boolean;
+  transferEncoding?: boolean;
 
   multipartUploads?: FormParam[];
   // When multipartUploads comes from parsing a string in --data
   // this can be set to true to say that sending the original data
   // as a string would be more correct.
   multipartUploadsDoesntRoundtrip?: boolean;
+  formEscape?: boolean;
 
   dataArray?: DataParam[];
   data?: Word;
@@ -118,13 +121,20 @@ export interface Request {
   ipv4?: boolean;
   ipv6?: boolean;
 
+  ignoreContentLength?: boolean;
+
+  interface?: Word;
+
   ciphers?: Word;
+  curves?: Word;
   insecure?: boolean;
   cert?: [Word, Word | null];
   certType?: Word;
   key?: Word;
   keyType?: Word;
+  pass?: Word;
   cacert?: Word;
+  caNative?: boolean;
   capath?: Word;
   crlfile?: Word;
   pinnedpubkey?: Word;
@@ -132,8 +142,13 @@ export interface Request {
   egdFile?: Word;
   hsts?: Word[]; // a filename
 
+  dohUrl?: Word;
+  dohInsecure?: boolean;
+  dohCertStatus?: boolean;
+
   proxy?: Word;
   proxyAuth?: Word;
+  proxytunnel?: boolean;
   noproxy?: Word; // a list of hosts or "*"
 
   timeout?: Word; // a decimal, seconds
@@ -142,6 +157,8 @@ export interface Request {
 
   continueAt?: Word; // an integer or "-"
 
+  crlf?: boolean;
+
   remoteTime?: boolean;
 
   clobber?: boolean;
@@ -149,6 +166,7 @@ export interface Request {
   retry?: Word; // an integer
 
   keepAlive?: boolean;
+  keepAliveTime?: Word; // an integer, seconds
 
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
@@ -161,7 +179,9 @@ export interface Request {
   stdinFile?: Word;
 
   unixSocket?: Word;
+  abstractUnixSocket?: Word;
   netrc?: "optional" | "required" | "ignored"; // undefined means implicitly "ignored"
+  netrcFile?: Word; // if undefined defaults to ~/.netrc
 
   // Global options
   verbose?: boolean;
@@ -809,7 +829,7 @@ function buildRequest(
     request.stdinFile = stdinFile;
   }
 
-  if (config.globoff !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(config, "globoff")) {
     request.globoff = config.globoff;
   }
 
@@ -824,9 +844,15 @@ function buildRequest(
   if (config["cookie-jar"]) {
     request.cookieJar = config["cookie-jar"];
   }
+  if (Object.prototype.hasOwnProperty.call(config, "junk-session-cookies")) {
+    request.junkSessionCookies = config["junk-session-cookies"];
+  }
 
-  if (config.compressed !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(config, "compressed")) {
     request.compressed = config.compressed;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tr-encoding")) {
+    request.transferEncoding = config["tr-encoding"];
   }
 
   if (config.json) {
@@ -866,6 +892,10 @@ function buildRequest(
     }
   }
 
+  if (Object.prototype.hasOwnProperty.call(config, "form-escape")) {
+    request.formEscape = config["form-escape"];
+  }
+
   if (config["aws-sigv4"]) {
     // https://github.com/curl/curl/blob/curl-7_86_0/lib/setopt.c#L678-L679
     request.authType = "aws-sigv4";
@@ -901,15 +931,26 @@ function buildRequest(
     request.queryArray = queryArray;
   }
 
-  if (config["ipv4"] !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(config, "ipv4")) {
     request["ipv4"] = config["ipv4"];
   }
-  if (config["ipv6"] !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(config, "ipv6")) {
     request["ipv6"] = config["ipv6"];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, "ignore-content-length")) {
+    request.ignoreContentLength = config["ignore-content-length"];
+  }
+
+  if (config.interface) {
+    request.interface = config.interface;
   }
 
   if (config.ciphers) {
     request.ciphers = config.ciphers;
+  }
+  if (config.curves) {
+    request.curves = config.curves;
   }
   if (config.insecure) {
     request.insecure = true;
@@ -953,8 +994,14 @@ function buildRequest(
   if (config["key-type"]) {
     request.keyType = config["key-type"];
   }
+  if (config.pass) {
+    request.pass = config.pass;
+  }
   if (config.cacert) {
     request.cacert = config.cacert;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ca-native")) {
+    request.caNative = config["ca-native"];
   }
   if (config.capath) {
     request.capath = config.capath;
@@ -975,12 +1022,25 @@ function buildRequest(
     request.hsts = config.hsts;
   }
 
+  if (config["doh-url"]) {
+    request.dohUrl = config["doh-url"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "doh-insecure")) {
+    request.dohInsecure = config["doh-insecure"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "doh-cert-status")) {
+    request.dohCertStatus = config["doh-cert-status"];
+  }
+
   if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = config.proxy;
     if (config["proxy-user"]) {
       request.proxyAuth = config["proxy-user"];
     }
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxytunnel")) {
+    request.proxytunnel = config.proxytunnel;
   }
   if (config.noproxy) {
     request.noproxy = config.noproxy;
@@ -1020,6 +1080,9 @@ function buildRequest(
   if (Object.prototype.hasOwnProperty.call(config, "keepalive")) {
     request.keepAlive = config.keepalive;
   }
+  if (config["keepalive-time"]) {
+    request.keepAliveTime = config["keepalive-time"];
+  }
 
   if (Object.prototype.hasOwnProperty.call(config, "location")) {
     request.followRedirects = config.location;
@@ -1057,6 +1120,9 @@ function buildRequest(
   if (config["unix-socket"]) {
     request.unixSocket = config["unix-socket"];
   }
+  if (config["abstract-unix-socket"]) {
+    request.abstractUnixSocket = config["abstract-unix-socket"];
+  }
 
   if (config["netrc-optional"] || config["netrc-file"]) {
     request.netrc = "optional";
@@ -1066,9 +1132,16 @@ function buildRequest(
     // TODO || config["netrc-optional"] === false ?
     request.netrc = "ignored";
   }
+  if (config["netrc-file"]) {
+    request.netrcFile = config["netrc-file"];
+  }
 
   if (config["continue-at"]) {
     request.continueAt = config["continue-at"];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, "crlf")) {
+    request.crlf = config.crlf;
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "clobber")) {
