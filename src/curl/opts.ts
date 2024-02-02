@@ -774,6 +774,7 @@ export interface OperationConfig {
   "ftp-ssl-ccc-mode"?: Word;
   "ftp-ssl-control"?: boolean;
   "happy-eyeballs-timeout-ms"?: Word;
+  "haproxy-clientip"?: Word;
   "haproxy-protocol"?: boolean;
   hostpubmd5?: Word;
   hostpubsha256?: Word;

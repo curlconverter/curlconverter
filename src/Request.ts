@@ -83,6 +83,8 @@ export interface Request {
   // Will have at least one element (otherwise an error is raised)
   urls: RequestUrl[];
   globoff?: boolean;
+  disallowUsernameInUrl?: boolean;
+  pathAsIs?: boolean;
 
   // Just the part that comes from `--get --data` or `--url-query` (not the query in the URL)
   // unless there's only one URL, then it will include both.
@@ -90,10 +92,13 @@ export interface Request {
 
   authType: AuthType;
   awsSigV4?: Word;
+  oauth2Bearer?: Word;
   delegation?: Word;
+  krb?: Word;
 
   // A null header means the command explicitly disabled sending this header
   headers: Headers;
+  refererAuto?: boolean;
 
   // .cookies is a parsed version of the Cookie header, if it can be parsed.
   // Generators that use .cookies need to delete the header from .headers (usually).
@@ -121,6 +126,12 @@ export interface Request {
   ipv4?: boolean;
   ipv6?: boolean;
 
+  proto?: Word;
+  protoRedir?: Word;
+  protoDefault?: Word;
+
+  localPort?: [Word, Word | null];
+
   ignoreContentLength?: boolean;
 
   interface?: Word;
@@ -128,6 +139,7 @@ export interface Request {
   ciphers?: Word;
   curves?: Word;
   insecure?: boolean;
+  certStatus?: boolean;
   cert?: [Word, Word | null];
   certType?: Word;
   key?: Word;
@@ -141,6 +153,7 @@ export interface Request {
   randomFile?: Word;
   egdFile?: Word;
   hsts?: Word[]; // a filename
+  alpn?: boolean;
 
   dohUrl?: Word;
   dohInsecure?: boolean;
@@ -150,10 +163,19 @@ export interface Request {
   proxyAuth?: Word;
   proxytunnel?: boolean;
   noproxy?: Word; // a list of hosts or "*"
+  preproxy?: Word;
+
+  haproxyClientIp?: Word;
+  haproxyProtocol?: boolean;
 
   timeout?: Word; // a decimal, seconds
   connectTimeout?: Word; // a decimal, seconds
+  expect100Timeout?: Word; // a decimal, seconds
+  happyEyeballsTimeoutMs?: Word; // an integer, milliseconds
+  speedLimit?: Word; // an integer
+  speedTime?: Word; // an integer
   limitRate?: Word; // an integer with an optional unit
+  maxFilesize?: Word; // an intger with an optional unit
 
   continueAt?: Word; // an integer or "-"
 
@@ -163,20 +185,30 @@ export interface Request {
 
   clobber?: boolean;
 
+  ftpSkipPasvIp?: boolean;
+
+  fail?: boolean;
   retry?: Word; // an integer
 
   keepAlive?: boolean;
   keepAliveTime?: Word; // an integer, seconds
 
+  altSvc?: Word;
+
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
   maxRedirects?: Word; // an integer
+  post301?: boolean;
+  post302?: boolean;
+  post303?: boolean;
 
   http2?: boolean;
   http3?: boolean;
 
   stdin?: Word;
   stdinFile?: Word;
+
+  connectTo?: Word[]; // a list of host:port:connect-to-host:connect-to-port
 
   unixSocket?: Word;
   abstractUnixSocket?: Word;
@@ -716,10 +748,14 @@ function buildRequest(
     }
   }
 
+  let refererAuto = false;
   if (config["user-agent"]) {
     headers.setIfMissing("User-Agent", config["user-agent"]);
   }
   if (config.referer) {
+    if (config.referer.includes(";auto")) {
+      refererAuto = true;
+    }
     // referer can be ";auto" or followed by ";auto", we ignore that.
     const referer = config.referer.replace(/;auto$/, "");
     if (referer.length) {
@@ -832,6 +868,18 @@ function buildRequest(
   if (Object.prototype.hasOwnProperty.call(config, "globoff")) {
     request.globoff = config.globoff;
   }
+  if (
+    Object.prototype.hasOwnProperty.call(config, "disallow-username-in-url")
+  ) {
+    request.disallowUsernameInUrl = config["disallow-username-in-url"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "path-as-is")) {
+    request.pathAsIs = config["path-as-is"];
+  }
+
+  if (refererAuto) {
+    request.refererAuto = true;
+  }
 
   if (cookies) {
     // generators that use .cookies need to do
@@ -904,9 +952,13 @@ function buildRequest(
   if (request.authType === "bearer" && config["oauth2-bearer"]) {
     const bearer = config["oauth2-bearer"].prepend("Bearer ");
     headers.setIfMissing("Authorization", bearer);
+    request.oauth2Bearer = config["oauth2-bearer"];
   }
   if (config.delegation) {
     request.delegation = config.delegation;
+  }
+  if (config.krb) {
+    request.krb = config.krb;
   }
 
   // TODO: ideally we should generate code that explicitly unsets the header too
@@ -938,6 +990,26 @@ function buildRequest(
     request["ipv6"] = config["ipv6"];
   }
 
+  if (config.proto) {
+    request.proto = config.proto;
+  }
+  if (config["proto-redir"]) {
+    request.protoRedir = config["proto-redir"];
+  }
+  if (config["proto-default"]) {
+    request.protoDefault = config["proto-default"];
+  }
+
+  if (config["local-port"]) {
+    // TODO: check the range
+    const [start, end] = config["local-port"].split("-", 1);
+    if (end && end.toBool()) {
+      request.localPort = [start, end];
+    } else {
+      request.localPort = [config["local-port"], null];
+    }
+  }
+
   if (Object.prototype.hasOwnProperty.call(config, "ignore-content-length")) {
     request.ignoreContentLength = config["ignore-content-length"];
   }
@@ -954,6 +1026,9 @@ function buildRequest(
   }
   if (config.insecure) {
     request.insecure = true;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "cert-status")) {
+    request.certStatus = config["cert-status"];
   }
   // TODO: if the URL doesn't start with https://, curl doesn't verify
   // certificates, etc.
@@ -986,7 +1061,20 @@ function buildRequest(
     }
   }
   if (config["cert-type"]) {
-    request.certType = config["cert-type"];
+    const certType = config["cert-type"];
+    request.certType = certType;
+
+    if (
+      certType.isString() &&
+      !["PEM", "DER", "ENG", "P12"].includes(certType.toString().toUpperCase())
+    ) {
+      warnf(global, [
+        "cert-type-unknown",
+        "not supported file type " +
+          JSON.stringify(certType.toString()) +
+          " for certificate",
+      ]);
+    }
   }
   if (config.key) {
     request.key = config.key;
@@ -1021,6 +1109,9 @@ function buildRequest(
   if (config.hsts) {
     request.hsts = config.hsts;
   }
+  if (Object.prototype.hasOwnProperty.call(config, "alpn")) {
+    request.alpn = config.alpn;
+  }
 
   if (config["doh-url"]) {
     request.dohUrl = config["doh-url"];
@@ -1044,6 +1135,16 @@ function buildRequest(
   }
   if (config.noproxy) {
     request.noproxy = config.noproxy;
+  }
+  if (config.preproxy) {
+    request.preproxy = config.preproxy;
+  }
+
+  if (config["haproxy-clientip"]) {
+    request.haproxyClientIp = config["haproxy-clientip"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "haproxy-protocol")) {
+    request.haproxyProtocol = config["haproxy-protocol"];
   }
 
   if (config["max-time"]) {
@@ -1073,8 +1174,33 @@ function buildRequest(
       ]);
     }
   }
+  if (config["expect100-timeout"]) {
+    request.expect100Timeout = config["expect100-timeout"];
+    if (
+      config["expect100-timeout"].isString() &&
+      isNaN(parseFloat(config["expect100-timeout"].toString()))
+    ) {
+      warnf(global, [
+        "expect100-timeout-not-number",
+        "option --expect100-timeout: expected a proper numerical parameter: " +
+          JSON.stringify(config["expect100-timeout"].toString()),
+      ]);
+    }
+  }
+  if (config["happy-eyeballs-timeout-ms"]) {
+    request.happyEyeballsTimeoutMs = config["happy-eyeballs-timeout-ms"];
+  }
+  if (config["speed-limit"]) {
+    request.speedLimit = config["speed-limit"];
+  }
+  if (config["speed-time"]) {
+    request.speedTime = config["speed-time"];
+  }
   if (config["limit-rate"]) {
     request.limitRate = config["limit-rate"];
+  }
+  if (config["max-filesize"]) {
+    request.maxFilesize = config["max-filesize"];
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "keepalive")) {
@@ -1082,6 +1208,10 @@ function buildRequest(
   }
   if (config["keepalive-time"]) {
     request.keepAliveTime = config["keepalive-time"];
+  }
+
+  if (config["alt-svc"]) {
+    request.altSvc = config["alt-svc"];
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "location")) {
@@ -1103,9 +1233,26 @@ function buildRequest(
       ]);
     }
   }
+  if (Object.prototype.hasOwnProperty.call(config, "post301")) {
+    request.post301 = config.post301;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "post302")) {
+    request.post302 = config.post302;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "post303")) {
+    request.post303 = config.post303;
+  }
+
+  if (config.fail) {
+    request.fail = config.fail;
+  }
 
   if (config.retry) {
     request.retry = config.retry;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, "ftp-skip-pasv-ip")) {
+    request.ftpSkipPasvIp = config["ftp-skip-pasv-ip"];
   }
 
   // TODO: this should write to the same "httpVersion" variable
@@ -1115,6 +1262,10 @@ function buildRequest(
   }
   if (config.http3 || config["http3-only"]) {
     request.http3 = true;
+  }
+
+  if (config["connect-to"]) {
+    request.connectTo = config["connect-to"];
   }
 
   if (config["unix-socket"]) {
