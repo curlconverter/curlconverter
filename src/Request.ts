@@ -79,10 +79,20 @@ export interface RequestUrl {
   // authType?: string;
 }
 
+export type ProxyType =
+  | "http1"
+  | "http2"
+  | "socks4"
+  | "socks4a"
+  | "socks5"
+  | "socks5-hostname";
+
 export interface Request {
   // Will have at least one element (otherwise an error is raised)
   urls: RequestUrl[];
   globoff?: boolean;
+  disallowUsernameInUrl?: boolean;
+  pathAsIs?: boolean;
 
   // Just the part that comes from `--get --data` or `--url-query` (not the query in the URL)
   // unless there's only one URL, then it will include both.
@@ -90,10 +100,16 @@ export interface Request {
 
   authType: AuthType;
   awsSigV4?: Word;
+  oauth2Bearer?: Word;
   delegation?: Word;
+  krb?: Word;
+  saslAuthzid?: Word;
+  saslIr?: boolean;
+  serviceName?: Word;
 
   // A null header means the command explicitly disabled sending this header
   headers: Headers;
+  refererAuto?: boolean;
 
   // .cookies is a parsed version of the Cookie header, if it can be parsed.
   // Generators that use .cookies need to delete the header from .headers (usually).
@@ -121,6 +137,14 @@ export interface Request {
   ipv4?: boolean;
   ipv6?: boolean;
 
+  proto?: Word;
+  protoRedir?: Word;
+  protoDefault?: Word;
+
+  tcpFastopen?: boolean;
+
+  localPort?: [Word, Word | null];
+
   ignoreContentLength?: boolean;
 
   interface?: Word;
@@ -128,6 +152,7 @@ export interface Request {
   ciphers?: Word;
   curves?: Word;
   insecure?: boolean;
+  certStatus?: boolean;
   cert?: [Word, Word | null];
   certType?: Word;
   key?: Word;
@@ -135,48 +160,127 @@ export interface Request {
   pass?: Word;
   cacert?: Word;
   caNative?: boolean;
+  sslAllowBeast?: boolean;
   capath?: Word;
   crlfile?: Word;
   pinnedpubkey?: Word;
   randomFile?: Word;
   egdFile?: Word;
   hsts?: Word[]; // a filename
+  alpn?: boolean;
+
+  tlsMax?: Word;
+  tls13Ciphers?: Word;
+  tlsauthtype?: Word;
+  tlspassword?: Word;
+  tlsuser?: Word;
+  "tlsv1.0"?: boolean;
+  "tlsv1.1"?: boolean;
+  "tlsv1.2"?: boolean;
+  "tlsv1.3"?: boolean;
+  tlsv1?: boolean;
+  sslAutoClientCert?: boolean;
+  sslNoRevoke?: boolean;
+  sslReqd?: boolean;
+  sslRevokeBestEffort?: boolean;
+  ssl?: boolean;
+  sslv2?: boolean;
+  sslv3?: boolean;
 
   dohUrl?: Word;
   dohInsecure?: boolean;
   dohCertStatus?: boolean;
 
   proxy?: Word;
+  proxyType?: ProxyType;
   proxyAuth?: Word;
   proxytunnel?: boolean;
   noproxy?: Word; // a list of hosts or "*"
+  preproxy?: Word;
+  proxyAnyauth?: boolean;
+  proxyBasic?: boolean;
+  proxyCaNative?: boolean;
+  proxyCacert?: Word; // <file>
+  proxyCapath?: Word; // <dir>
+  proxyCertType?: Word; // <type>
+  proxyCert?: Word; // <cert[:passwd]>
+  proxyCiphers?: Word; // <list>
+  proxyCrlfile?: Word; // <file>
+  proxyDigest?: boolean;
+  proxyHeader?: Word[]; // <header/@file>
+  proxyHttp2?: boolean;
+  proxyInsecure?: boolean;
+  proxyKeyType?: Word; // <type>
+  proxyKey?: Word; // <key>
+  proxyNegotiate?: boolean;
+  proxyNtlm?: boolean;
+  proxyPass?: Word; // <phrase>
+  proxyPinnedpubkey?: Word; // <hashes>
+  proxyServiceName?: Word; // <name>
+  proxySslAllowBeast?: boolean;
+  proxySslAutoClientCert?: boolean;
+  proxyTls13Ciphers?: Word; // <ciphersuite list>
+  proxyTlsauthtype?: Word; // <type>
+  proxyTlspassword?: Word; // <string>
+  proxyTlsuser?: Word; // <name>
+  proxyTlsv1?: boolean;
+  proxyUser?: Word; // <user:password>
+  proxy1?: boolean; // <host[:port]>
+
+  socks4?: Word;
+  socks4a?: Word;
+  socks5?: Word;
+  socks5Basic?: boolean;
+  socks5GssapiNec?: boolean;
+  socks5GssapiService?: Word;
+  socks5Gssapi?: boolean;
+  socks5Hostname?: Word;
+
+  haproxyClientIp?: Word;
+  haproxyProtocol?: boolean;
 
   timeout?: Word; // a decimal, seconds
   connectTimeout?: Word; // a decimal, seconds
+  expect100Timeout?: Word; // a decimal, seconds
+  happyEyeballsTimeoutMs?: Word; // an integer, milliseconds
+  speedLimit?: Word; // an integer
+  speedTime?: Word; // an integer
   limitRate?: Word; // an integer with an optional unit
+  maxFilesize?: Word; // an intger with an optional unit
 
   continueAt?: Word; // an integer or "-"
 
   crlf?: boolean;
+  useAscii?: boolean;
 
   remoteTime?: boolean;
 
   clobber?: boolean;
 
+  ftpSkipPasvIp?: boolean;
+
+  fail?: boolean;
   retry?: Word; // an integer
 
   keepAlive?: boolean;
   keepAliveTime?: Word; // an integer, seconds
 
+  altSvc?: Word;
+
   followRedirects?: boolean;
   followRedirectsTrusted?: boolean;
   maxRedirects?: Word; // an integer
+  post301?: boolean;
+  post302?: boolean;
+  post303?: boolean;
 
   http2?: boolean;
   http3?: boolean;
 
   stdin?: Word;
   stdinFile?: Word;
+
+  connectTo?: Word[]; // a list of host:port:connect-to-host:connect-to-port
 
   unixSocket?: Word;
   abstractUnixSocket?: Word;
@@ -716,10 +820,14 @@ function buildRequest(
     }
   }
 
+  let refererAuto = false;
   if (config["user-agent"]) {
     headers.setIfMissing("User-Agent", config["user-agent"]);
   }
   if (config.referer) {
+    if (config.referer.includes(";auto")) {
+      refererAuto = true;
+    }
     // referer can be ";auto" or followed by ";auto", we ignore that.
     const referer = config.referer.replace(/;auto$/, "");
     if (referer.length) {
@@ -832,6 +940,18 @@ function buildRequest(
   if (Object.prototype.hasOwnProperty.call(config, "globoff")) {
     request.globoff = config.globoff;
   }
+  if (
+    Object.prototype.hasOwnProperty.call(config, "disallow-username-in-url")
+  ) {
+    request.disallowUsernameInUrl = config["disallow-username-in-url"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "path-as-is")) {
+    request.pathAsIs = config["path-as-is"];
+  }
+
+  if (refererAuto) {
+    request.refererAuto = true;
+  }
 
   if (cookies) {
     // generators that use .cookies need to do
@@ -904,9 +1024,25 @@ function buildRequest(
   if (request.authType === "bearer" && config["oauth2-bearer"]) {
     const bearer = config["oauth2-bearer"].prepend("Bearer ");
     headers.setIfMissing("Authorization", bearer);
+    request.oauth2Bearer = config["oauth2-bearer"];
   }
   if (config.delegation) {
     request.delegation = config.delegation;
+  }
+  if (config.krb) {
+    request.krb = config.krb;
+  }
+  if (config["sasl-authzid"]) {
+    request.saslAuthzid = config["sasl-authzid"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "sasl-ir")) {
+    request.saslIr = config["sasl-ir"];
+  }
+  if (config.negotiate) {
+    request.authType = "negotiate";
+  }
+  if (config["service-name"]) {
+    request.serviceName = config["service-name"];
   }
 
   // TODO: ideally we should generate code that explicitly unsets the header too
@@ -938,6 +1074,32 @@ function buildRequest(
     request["ipv6"] = config["ipv6"];
   }
 
+  if (config.proto) {
+    // TODO: parse
+    request.proto = config.proto;
+  }
+  if (config["proto-redir"]) {
+    // TODO: parse
+    request.protoRedir = config["proto-redir"];
+  }
+  if (config["proto-default"]) {
+    request.protoDefault = config["proto-default"];
+  }
+
+  if (config["tcp-fastopen"]) {
+    request.tcpFastopen = config["tcp-fastopen"];
+  }
+
+  if (config["local-port"]) {
+    // TODO: check the range
+    const [start, end] = config["local-port"].split("-", 1);
+    if (end && end.toBool()) {
+      request.localPort = [start, end];
+    } else {
+      request.localPort = [config["local-port"], null];
+    }
+  }
+
   if (Object.prototype.hasOwnProperty.call(config, "ignore-content-length")) {
     request.ignoreContentLength = config["ignore-content-length"];
   }
@@ -954,6 +1116,9 @@ function buildRequest(
   }
   if (config.insecure) {
     request.insecure = true;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "cert-status")) {
+    request.certStatus = config["cert-status"];
   }
   // TODO: if the URL doesn't start with https://, curl doesn't verify
   // certificates, etc.
@@ -986,7 +1151,20 @@ function buildRequest(
     }
   }
   if (config["cert-type"]) {
-    request.certType = config["cert-type"];
+    const certType = config["cert-type"];
+    request.certType = certType;
+
+    if (
+      certType.isString() &&
+      !["PEM", "DER", "ENG", "P12"].includes(certType.toString().toUpperCase())
+    ) {
+      warnf(global, [
+        "cert-type-unknown",
+        "not supported file type " +
+          JSON.stringify(certType.toString()) +
+          " for certificate",
+      ]);
+    }
   }
   if (config.key) {
     request.key = config.key;
@@ -1002,6 +1180,9 @@ function buildRequest(
   }
   if (Object.prototype.hasOwnProperty.call(config, "ca-native")) {
     request.caNative = config["ca-native"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-allow-beast")) {
+    request.sslAllowBeast = config["ssl-allow-beast"];
   }
   if (config.capath) {
     request.capath = config.capath;
@@ -1021,6 +1202,64 @@ function buildRequest(
   if (config.hsts) {
     request.hsts = config.hsts;
   }
+  if (Object.prototype.hasOwnProperty.call(config, "alpn")) {
+    request.alpn = config.alpn;
+  }
+
+  if (config["tls-max"]) {
+    request.tlsMax = config["tls-max"];
+  }
+  if (config["tls13-ciphers"]) {
+    request.tls13Ciphers = config["tls13-ciphers"];
+  }
+  if (config["tlsauthtype"]) {
+    request.tlsauthtype = config["tlsauthtype"];
+  }
+  if (config["tlspassword"]) {
+    request.tlspassword = config["tlspassword"];
+  }
+  if (config["tlsuser"]) {
+    request.tlsuser = config["tlsuser"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.0")) {
+    request["tlsv1.0"] = config["tlsv1.0"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.1")) {
+    request["tlsv1.1"] = config["tlsv1.1"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.2")) {
+    request["tlsv1.2"] = config["tlsv1.2"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.3")) {
+    request["tlsv1.3"] = config["tlsv1.3"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1")) {
+    request.tlsv1 = config["tlsv1"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-allow-beast")) {
+    request.sslAllowBeast = config["ssl-allow-beast"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-auto-client-cert")) {
+    request.sslAutoClientCert = config["ssl-auto-client-cert"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-no-revoke")) {
+    request.sslNoRevoke = config["ssl-no-revoke"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-reqd")) {
+    request.sslReqd = config["ssl-reqd"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-revoke-best-effort")) {
+    request.sslRevokeBestEffort = config["ssl-revoke-best-effort"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl")) {
+    request.ssl = config["ssl"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "sslv2")) {
+    request.sslv2 = config["sslv2"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "sslv3")) {
+    request.sslv3 = config["sslv3"];
+  }
 
   if (config["doh-url"]) {
     request.dohUrl = config["doh-url"];
@@ -1035,6 +1274,9 @@ function buildRequest(
   if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = config.proxy;
+    if (request.proxyType && request.proxyType !== "http2") {
+      delete request.proxyType;
+    }
     if (config["proxy-user"]) {
       request.proxyAuth = config["proxy-user"];
     }
@@ -1044,6 +1286,142 @@ function buildRequest(
   }
   if (config.noproxy) {
     request.noproxy = config.noproxy;
+  }
+  if (config.preproxy) {
+    request.preproxy = config.preproxy;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-anyauth")) {
+    request.proxyAnyauth = config["proxy-anyauth"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-basic")) {
+    request.proxyBasic = config["proxy-basic"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-digest")) {
+    request.proxyDigest = config["proxy-digest"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-negotiate")) {
+    request.proxyNegotiate = config["proxy-negotiate"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-ntlm")) {
+    request.proxyNtlm = config["proxy-ntlm"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-ca-native")) {
+    request.proxyCaNative = config["proxy-ca-native"];
+  }
+  if (config["proxy-cacert"]) {
+    request.proxyCacert = config["proxy-cacert"];
+  }
+  if (config["proxy-capath"]) {
+    request.proxyCapath = config["proxy-capath"];
+  }
+  if (config["proxy-cert-type"]) {
+    request.proxyCertType = config["proxy-cert-type"];
+  }
+  if (config["proxy-cert"]) {
+    request.proxyCert = config["proxy-cert"];
+  }
+  if (config["proxy-ciphers"]) {
+    request.proxyCiphers = config["proxy-ciphers"];
+  }
+  if (config["proxy-crlfile"]) {
+    request.proxyCrlfile = config["proxy-crlfile"];
+  }
+  if (config["proxy-header"]) {
+    // TODO: parse
+    request.proxyHeader = config["proxy-header"];
+  }
+  if (config["proxy-http2"]) {
+    request.proxyType = "http2";
+  }
+  if (config["proxy1.0"]) {
+    request.proxy = config["proxy1.0"];
+    request.proxyType = "http1";
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-insecure")) {
+    request.proxyInsecure = config["proxy-insecure"];
+  }
+  if (config["proxy-key"]) {
+    request.proxyKey = config["proxy-key"];
+  }
+  if (config["proxy-key-type"]) {
+    request.proxyKeyType = config["proxy-key-type"];
+  }
+  if (config["proxy-pass"]) {
+    request.proxyPass = config["proxy-pass"];
+  }
+  if (config["proxy-pinnedpubkey"]) {
+    request.proxyPinnedpubkey = config["proxy-pinnedpubkey"];
+  }
+  if (config["proxy-pinnedpubkey"]) {
+    request.proxyPinnedpubkey = config["proxy-pinnedpubkey"];
+  }
+  if (config["proxy-service-name"]) {
+    request.proxyServiceName = config["proxy-service-name"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-ssl-allow-beast")) {
+    request.proxySslAllowBeast = config["proxy-ssl-allow-beast"];
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(config, "proxy-ssl-auto-client-cert")
+  ) {
+    request.proxySslAutoClientCert = config["proxy-ssl-auto-client-cert"];
+  }
+  if (config["proxy-tls13-ciphers"]) {
+    request.proxyTls13Ciphers = config["proxy-tls13-ciphers"];
+  }
+  if (config["proxy-tlsauthtype"]) {
+    request.proxyTlsauthtype = config["proxy-tlsauthtype"];
+  }
+  if (config["proxy-tlspassword"]) {
+    request.proxyTlspassword = config["proxy-tlspassword"];
+  }
+  if (config["proxy-tlsuser"]) {
+    request.proxyTlsuser = config["proxy-tlsuser"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-tlsv1")) {
+    request.proxyTlsv1 = config["proxy-tlsv1"];
+  }
+  if (config["proxy-user"]) {
+    request.proxyUser = config["proxy-user"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxytunnel")) {
+    request.proxytunnel = config["proxytunnel"];
+  }
+
+  if (config["socks4"]) {
+    request.proxy = config["socks4"];
+    request.proxyType = "socks4";
+  }
+  if (config["socks4a"]) {
+    request.proxy = config["socks4a"];
+    request.proxyType = "socks4a";
+  }
+  if (config["socks5"]) {
+    request.proxy = config["socks5"];
+    request.proxyType = "socks5";
+  }
+  if (config["socks5-hostname"]) {
+    request.proxy = config["socks5-hostname"];
+    request.proxyType = "socks5-hostname";
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "socks5-basic")) {
+    request.socks5Basic = config["socks5-basic"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "socks5-gssapi-nec")) {
+    request.socks5GssapiNec = config["socks5-gssapi-nec"];
+  }
+  if (config["socks5-gssapi-service"]) {
+    request.socks5GssapiService = config["socks5-gssapi-service"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "socks5-gssapi")) {
+    request.socks5Gssapi = config["socks5-gssapi"];
+  }
+
+  if (config["haproxy-clientip"]) {
+    request.haproxyClientIp = config["haproxy-clientip"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "haproxy-protocol")) {
+    request.haproxyProtocol = config["haproxy-protocol"];
   }
 
   if (config["max-time"]) {
@@ -1073,8 +1451,33 @@ function buildRequest(
       ]);
     }
   }
+  if (config["expect100-timeout"]) {
+    request.expect100Timeout = config["expect100-timeout"];
+    if (
+      config["expect100-timeout"].isString() &&
+      isNaN(parseFloat(config["expect100-timeout"].toString()))
+    ) {
+      warnf(global, [
+        "expect100-timeout-not-number",
+        "option --expect100-timeout: expected a proper numerical parameter: " +
+          JSON.stringify(config["expect100-timeout"].toString()),
+      ]);
+    }
+  }
+  if (config["happy-eyeballs-timeout-ms"]) {
+    request.happyEyeballsTimeoutMs = config["happy-eyeballs-timeout-ms"];
+  }
+  if (config["speed-limit"]) {
+    request.speedLimit = config["speed-limit"];
+  }
+  if (config["speed-time"]) {
+    request.speedTime = config["speed-time"];
+  }
   if (config["limit-rate"]) {
     request.limitRate = config["limit-rate"];
+  }
+  if (config["max-filesize"]) {
+    request.maxFilesize = config["max-filesize"];
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "keepalive")) {
@@ -1082,6 +1485,10 @@ function buildRequest(
   }
   if (config["keepalive-time"]) {
     request.keepAliveTime = config["keepalive-time"];
+  }
+
+  if (config["alt-svc"]) {
+    request.altSvc = config["alt-svc"];
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "location")) {
@@ -1103,9 +1510,26 @@ function buildRequest(
       ]);
     }
   }
+  if (Object.prototype.hasOwnProperty.call(config, "post301")) {
+    request.post301 = config.post301;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "post302")) {
+    request.post302 = config.post302;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "post303")) {
+    request.post303 = config.post303;
+  }
+
+  if (config.fail) {
+    request.fail = config.fail;
+  }
 
   if (config.retry) {
     request.retry = config.retry;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, "ftp-skip-pasv-ip")) {
+    request.ftpSkipPasvIp = config["ftp-skip-pasv-ip"];
   }
 
   // TODO: this should write to the same "httpVersion" variable
@@ -1117,6 +1541,10 @@ function buildRequest(
     request.http3 = true;
   }
 
+  if (config["connect-to"]) {
+    request.connectTo = config["connect-to"];
+  }
+
   if (config["unix-socket"]) {
     request.unixSocket = config["unix-socket"];
   }
@@ -1124,9 +1552,9 @@ function buildRequest(
     request.abstractUnixSocket = config["abstract-unix-socket"];
   }
 
-  if (config["netrc-optional"] || config["netrc-file"]) {
+  if (config["netrc-optional"]) {
     request.netrc = "optional";
-  } else if (config.netrc) {
+  } else if (config.netrc || config["netrc-file"]) {
     request.netrc = "required";
   } else if (config.netrc === false) {
     // TODO || config["netrc-optional"] === false ?
@@ -1134,6 +1562,10 @@ function buildRequest(
   }
   if (config["netrc-file"]) {
     request.netrcFile = config["netrc-file"];
+  }
+
+  if (config["use-ascii"]) {
+    request.useAscii = config["use-ascii"];
   }
 
   if (config["continue-at"]) {
