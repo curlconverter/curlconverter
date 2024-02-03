@@ -47,14 +47,20 @@ const supportedArgs = new Set([
   "proxy-ssl-allow-beast",
   "proxy-ssl-auto-client-cert",
   "proxy-tls13-ciphers",
-  // "proxy-tlsauthtype",
-  "proxy-tlspassword",
   "proxy-tlsuser",
+  "proxy-tlspassword",
+  "proxy-tlsauthtype",
   "proxy-tlsv1",
   "proxy-user",
   "proxytunnel",
-  // TODO: --socks*
-  // TODO: --ssl and --tls
+  "socks4",
+  "socks4a",
+  "socks5",
+  "socks5-hostname",
+  "socks5-basic",
+  "socks5-gssapi",
+  "socks5-gssapi-nec",
+  "socks5-gssapi-service",
 
   "netrc",
   "netrc-file",
@@ -147,6 +153,25 @@ const supportedArgs = new Set([
   "ca-native",
   "ssl-allow-beast",
   "ciphers",
+  "tls13-ciphers",
+  "tlsuser",
+  "tlspassword",
+  "tlsauthtype",
+  "ssl",
+  "ssl-auto-client-cert",
+  "ssl-no-revoke",
+  "ssl-reqd",
+  "ssl-revoke-best-effort",
+
+  // "sslv2",
+  // "sslv3",
+  // "tlsv1",
+  "tlsv1.0",
+  "tlsv1.1",
+  "tlsv1.2",
+  "tlsv1.3",
+  // TODO
+  // "tls-max",
 
   // "false-start",
   "hsts",
@@ -322,12 +347,24 @@ function requestToC(
     const proxy = repr(request.proxy, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_PROXY, " + proxy + ");\n";
   }
-  if (request.proxyHttp2 || request.proxy1) {
-    if (request.proxyHttp2) {
+  if (request.proxyType) {
+    if (request.proxyType === "http2") {
       code += "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, 3L);\n";
-    } else {
+    } else if (request.proxyType === "http1") {
       code +=
         "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, (long)CURLPROXY_HTTP_1_0);\n";
+    } else if (request.proxyType === "socks4") {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS4);\n";
+    } else if (request.proxyType === "socks4a") {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS4A);\n";
+    } else if (request.proxyType === "socks5") {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5);\n";
+    } else if (request.proxyType === "socks5-hostname") {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5_HOSTNAME);\n";
     }
   }
   if (request.proxyAuth) {
@@ -769,17 +806,60 @@ function requestToC(
   if (request.dohCertStatus) {
     code += "  curl_easy_setopt(hnd, CURLOPT_DOH_SSL_VERIFYSTATUS, 1L);\n";
   }
+
+  if (
+    request["tlsv1.3"] ||
+    request["tlsv1.2"] ||
+    request["tlsv1.1"] ||
+    request["tlsv1.0"] ||
+    request.tlsv1
+  ) {
+    if (request["tlsv1.3"]) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_3);\n";
+    } else if (request["tlsv1.2"]) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_2);\n";
+    } else if (request["tlsv1.1"]) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_1);\n";
+    } else if (request["tlsv1.0"]) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_0);\n";
+    } else if (request.tlsv1) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1);\n";
+    }
+  }
+  // if (request.tlsMax) {
+  //   code += '  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, 393216L);\n';
+  // }
   if (request.proxyTlsv1) {
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLVERSION, (long)CURL_SSLVERSION_TLSv1);\n";
   }
-  if (request.caNative || request.sslAllowBeast) {
+  if (
+    request.sslAllowBeast ||
+    request.sslNoRevoke ||
+    request.sslRevokeBestEffort ||
+    request.caNative ||
+    request.sslAutoClientCert
+  ) {
     const sslOptions = [];
+    if (request.sslAllowBeast) {
+      sslOptions.push("CURLSSLOPT_ALLOW_BEAST");
+    }
+    if (request.sslNoRevoke) {
+      sslOptions.push("CURLSSLOPT_NO_REVOKE");
+    }
+    if (request.sslRevokeBestEffort) {
+      sslOptions.push("CURLSSLOPT_REVOKE_BEST_EFFORT");
+    }
     if (request.caNative) {
       sslOptions.push("CURLSSLOPT_NATIVE_CA");
     }
-    if (request.sslAllowBeast) {
-      sslOptions.push("CURLSSLOPT_ALLOW_BEAST");
+    if (request.sslAutoClientCert) {
+      sslOptions.push("CURLSSLOPT_AUTO_CLIENT_CERT");
     }
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_SSL_OPTIONS, (long)" +
@@ -876,6 +956,11 @@ function requestToC(
       proxyCiphers +
       ");\n";
   }
+  if (request.tls13Ciphers) {
+    const tls13Ciphers = repr(request.tls13Ciphers, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_TLS13_CIPHERS, " + tls13Ciphers + ");\n";
+  }
   if (request.proxyTls13Ciphers) {
     const proxyTls13Ciphers = repr(request.proxyTls13Ciphers, imports);
     code +=
@@ -901,6 +986,36 @@ function requestToC(
     code += "  curl_easy_setopt(hnd, CURLOPT_IPRESOLVE, 2L);\n";
   } else if (request.ipv4) {
     code += "  curl_easy_setopt(hnd, CURLOPT_IPRESOLVE, 1L);\n";
+  }
+
+  if (request.sslReqd || request.ssl) {
+    if (request.sslReqd) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);\n";
+    } else if (request.ssl) {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_USE_SSL, (long)CURLUSESSL_TRY);\n";
+    }
+  }
+
+  if (request.socks5GssapiNec) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_SOCKS5_GSSAPI_NEC, 1L);\n";
+  }
+
+  if (request.socks5Basic) {
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_SOCKS5_AUTH, (long)CURLAUTH_BASIC);\n";
+  } else if (request.socks5Gssapi) {
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_SOCKS5_AUTH, (long)CURLAUTH_GSSNEGOTIATE);\n";
+  }
+
+  if (request.socks5GssapiService) {
+    const socks5GssapiService = repr(request.socks5GssapiService, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SERVICE_NAME, " +
+      socks5GssapiService +
+      ");\n";
   }
 
   if (request.serviceName) {
@@ -951,6 +1066,24 @@ function requestToC(
       ");\n";
   }
 
+  if (request.tlsuser) {
+    const tlsuser = repr(request.tlsuser, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_TLSAUTH_USERNAME, " + tlsuser + ");\n";
+  }
+  if (request.tlspassword) {
+    const tlspassword = repr(request.tlspassword, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_TLSAUTH_PASSWORD, " +
+      tlspassword +
+      ");\n";
+  }
+  if (request.tlsauthtype) {
+    const tlsauthtype = repr(request.tlsauthtype, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_TLSAUTH_TYPE, " + tlsauthtype + ");\n";
+  }
+
   if (request.proxyTlsuser) {
     const proxyTlsuser = repr(request.proxyTlsuser, imports);
     code +=
@@ -963,6 +1096,14 @@ function requestToC(
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_PROXY_TLSAUTH_PASSWORD, " +
       proxyTlspassword +
+      ");\n";
+  }
+  if (request.proxyTlsauthtype) {
+    // TODO: check, not generated by --libcurl
+    const proxyTlsauthtype = repr(request.proxyTlsauthtype, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_TLSAUTH_TYPE, " +
+      proxyTlsauthtype +
       ");\n";
   }
 

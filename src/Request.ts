@@ -79,6 +79,14 @@ export interface RequestUrl {
   // authType?: string;
 }
 
+export type ProxyType =
+  | "http1"
+  | "http2"
+  | "socks4"
+  | "socks4a"
+  | "socks5"
+  | "socks5-hostname";
+
 export interface Request {
   // Will have at least one element (otherwise an error is raised)
   urls: RequestUrl[];
@@ -161,11 +169,30 @@ export interface Request {
   hsts?: Word[]; // a filename
   alpn?: boolean;
 
+  tlsMax?: Word;
+  tls13Ciphers?: Word;
+  tlsauthtype?: Word;
+  tlspassword?: Word;
+  tlsuser?: Word;
+  "tlsv1.0"?: boolean;
+  "tlsv1.1"?: boolean;
+  "tlsv1.2"?: boolean;
+  "tlsv1.3"?: boolean;
+  tlsv1?: boolean;
+  sslAutoClientCert?: boolean;
+  sslNoRevoke?: boolean;
+  sslReqd?: boolean;
+  sslRevokeBestEffort?: boolean;
+  ssl?: boolean;
+  sslv2?: boolean;
+  sslv3?: boolean;
+
   dohUrl?: Word;
   dohInsecure?: boolean;
   dohCertStatus?: boolean;
 
   proxy?: Word;
+  proxyType?: ProxyType;
   proxyAuth?: Word;
   proxytunnel?: boolean;
   noproxy?: Word; // a list of hosts or "*"
@@ -199,6 +226,15 @@ export interface Request {
   proxyTlsv1?: boolean;
   proxyUser?: Word; // <user:password>
   proxy1?: boolean; // <host[:port]>
+
+  socks4?: Word;
+  socks4a?: Word;
+  socks5?: Word;
+  socks5Basic?: boolean;
+  socks5GssapiNec?: boolean;
+  socks5GssapiService?: Word;
+  socks5Gssapi?: boolean;
+  socks5Hostname?: Word;
 
   haproxyClientIp?: Word;
   haproxyProtocol?: boolean;
@@ -1168,6 +1204,61 @@ function buildRequest(
     request.alpn = config.alpn;
   }
 
+  if (config["tls-max"]) {
+    request.tlsMax = config["tls-max"];
+  }
+  if (config["tls13-ciphers"]) {
+    request.tls13Ciphers = config["tls13-ciphers"];
+  }
+  if (config["tlsauthtype"]) {
+    request.tlsauthtype = config["tlsauthtype"];
+  }
+  if (config["tlspassword"]) {
+    request.tlspassword = config["tlspassword"];
+  }
+  if (config["tlsuser"]) {
+    request.tlsuser = config["tlsuser"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.0")) {
+    request["tlsv1.0"] = config["tlsv1.0"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.1")) {
+    request["tlsv1.1"] = config["tlsv1.1"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.2")) {
+    request["tlsv1.2"] = config["tlsv1.2"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.3")) {
+    request["tlsv1.3"] = config["tlsv1.3"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "tlsv1")) {
+    request.tlsv1 = config["tlsv1"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-allow-beast")) {
+    request.sslAllowBeast = config["ssl-allow-beast"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-auto-client-cert")) {
+    request.sslAutoClientCert = config["ssl-auto-client-cert"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-no-revoke")) {
+    request.sslNoRevoke = config["ssl-no-revoke"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-reqd")) {
+    request.sslReqd = config["ssl-reqd"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-revoke-best-effort")) {
+    request.sslRevokeBestEffort = config["ssl-revoke-best-effort"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl")) {
+    request.ssl = config["ssl"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "sslv2")) {
+    request.sslv2 = config["sslv2"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "sslv3")) {
+    request.sslv3 = config["sslv3"];
+  }
+
   if (config["doh-url"]) {
     request.dohUrl = config["doh-url"];
   }
@@ -1181,6 +1272,9 @@ function buildRequest(
   if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = config.proxy;
+    if (request.proxyType) {
+      delete request.proxyType; // TODO: is this right?
+    }
     if (config["proxy-user"]) {
       request.proxyAuth = config["proxy-user"];
     }
@@ -1231,14 +1325,15 @@ function buildRequest(
     request.proxyCrlfile = config["proxy-crlfile"];
   }
   if (config["proxy-header"]) {
+    // TODO: parse
     request.proxyHeader = config["proxy-header"];
   }
-  if (Object.prototype.hasOwnProperty.call(config, "proxy-http2")) {
-    request.proxyHttp2 = config["proxy-http2"];
+  if (config["proxy-http2"]) {
+    request.proxyType = "http2";
   }
   if (config["proxy1.0"]) {
     request.proxy = config["proxy1.0"];
-    request.proxy1 = true; // TODO: --proxy should unset
+    request.proxyType = "http1";
   }
   if (Object.prototype.hasOwnProperty.call(config, "proxy-insecure")) {
     request.proxyInsecure = config["proxy-insecure"];
@@ -1289,6 +1384,35 @@ function buildRequest(
   }
   if (Object.prototype.hasOwnProperty.call(config, "proxytunnel")) {
     request.proxytunnel = config["proxytunnel"];
+  }
+
+  if (config["socks4"]) {
+    request.proxy = config["socks4"];
+    request.proxyType = "socks4";
+  }
+  if (config["socks4a"]) {
+    request.proxy = config["socks4a"];
+    request.proxyType = "socks4a";
+  }
+  if (config["socks5"]) {
+    request.proxy = config["socks5"];
+    request.proxyType = "socks5";
+  }
+  if (config["socks5-hostname"]) {
+    request.proxy = config["socks5-hostname"];
+    request.proxyType = "socks5-hostname";
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "socks5-basic")) {
+    request.socks5Basic = config["socks5-basic"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "socks5-gssapi-nec")) {
+    request.socks5GssapiNec = config["socks5-gssapi-nec"];
+  }
+  if (config["socks5-gssapi-service"]) {
+    request.socks5GssapiService = config["socks5-gssapi-service"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "socks5-gssapi")) {
+    request.socks5Gssapi = config["socks5-gssapi"];
   }
 
   if (config["haproxy-clientip"]) {
