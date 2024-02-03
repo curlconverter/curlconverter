@@ -42,7 +42,6 @@ const supportedArgs = new Set([
   "proxy-key-type",
   "proxy-pass",
   "proxy-pinnedpubkey",
-  "proxy-pinnedpubkey",
   "proxy-service-name",
   "proxy-ssl-allow-beast",
   "proxy-ssl-auto-client-cert",
@@ -51,8 +50,6 @@ const supportedArgs = new Set([
   "proxy-tlspassword",
   "proxy-tlsauthtype",
   "proxy-tlsv1",
-  "proxy-user",
-  "proxytunnel",
   "socks4",
   "socks4a",
   "socks5",
@@ -61,6 +58,11 @@ const supportedArgs = new Set([
   "socks5-gssapi",
   "socks5-gssapi-nec",
   "socks5-gssapi-service",
+
+  "haproxy-clientip",
+  "haproxy-protocol",
+
+  "interface",
 
   "netrc",
   "netrc-file",
@@ -85,6 +87,12 @@ const supportedArgs = new Set([
   "ipv6",
 
   "local-port",
+
+  "ftp-skip-pasv-ip",
+
+  "sasl-authzid",
+  "sasl-ir",
+  "tr-encoding",
 
   "tcp-fastopen",
 
@@ -165,7 +173,7 @@ const supportedArgs = new Set([
 
   // "sslv2",
   // "sslv3",
-  // "tlsv1",
+  "tlsv1",
   "tlsv1.0",
   "tlsv1.1",
   "tlsv1.2",
@@ -199,6 +207,7 @@ const supportedArgs = new Set([
   "max-time",
   "connect-timeout",
   "expect100-timeout",
+  "happy-eyeballs-timeout-ms",
 
   // "connect-to",
   "continue-at",
@@ -279,6 +288,13 @@ export function atof1000(word: Word, imports: Set<string>): string {
   return "(long)(atof(" + repr(word, imports) + ") * 1000)";
 }
 
+export function atoi(word: Word, imports: Set<string>): string {
+  if (word.isString()) {
+    // TODO: check it's actually a valid int
+    return word.toString();
+  }
+  return "atoi(" + repr(word, imports) + ")";
+}
 export function atol(word: Word, imports: Set<string>): string {
   if (word.isString()) {
     // TODO: check it's actually a valid int
@@ -392,9 +408,6 @@ function requestToC(
       "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_NTLM);\n";
   }
 
-  if (request.proxytunnel) {
-    code += "  curl_easy_setopt(hnd, CURLOPT_HTTPPROXYTUNNEL, 1L);\n";
-  }
   if (request.preproxy) {
     const preproxy = repr(request.preproxy, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_PRE_PROXY, " + preproxy + ");\n";
@@ -516,7 +529,7 @@ function requestToC(
   if (request.urls[0].auth) {
     const curlAuth = {
       basic: "CURLAUTH_BASIC",
-      negotiate: "CURLAUTH_NEGOTIATE",
+      negotiate: "CURLAUTH_NEGOTIATE", // technically CURLAUTH_GSSNEGOTIATE
       digest: "CURLAUTH_DIGEST",
       ntlm: "CURLAUTH_NTLM",
       "ntlm-wb": "CURLAUTH_NTLM_WB",
@@ -663,9 +676,9 @@ function requestToC(
 
   if (request.continueAt) {
     if (!eq(request.continueAt, "-")) {
-      const continueAt = atol(request.continueAt, imports);
+      const continueAt = atoi(request.continueAt, imports);
       code +=
-        "  curl_easy_setopt(hnd, CURLOPT_RESUME_FROM_LARGE, " +
+        "  curl_easy_setopt(hnd, CURLOPT_RESUME_FROM_LARGE, (curl_off_t)" +
         continueAt +
         ");\n";
     }
@@ -900,6 +913,14 @@ function requestToC(
     code += "  curl_easy_setopt(hnd, CURLOPT_CRLF, 1L);\n";
   }
 
+  if (request.cookieFiles) {
+    for (const cookieFile of request.cookieFiles) {
+      // TODO: why can curl set this more than once?
+      const cookieFile_ = repr(cookieFile, imports);
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_COOKIEFILE, " + cookieFile_ + ");\n";
+    }
+  }
   if (request.cookieJar) {
     const cookieJar = repr(request.cookieJar, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_COOKIEJAR, " + cookieJar + ");\n";
@@ -1217,7 +1238,7 @@ export function printImports(imps: Set<string>): string {
 export function _toC(requests: Request[], warnings: Warnings = []): string {
   const imports = new Set<string>(["curl/curl.h"]);
 
-  const request = getFirst(requests, warnings);
+  const request = getFirst(requests, warnings, { cookieFiles: true });
   const code = requestToC(request, warnings, imports);
 
   return printImports(imports) + "\n" + code;

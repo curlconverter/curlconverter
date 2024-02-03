@@ -1075,9 +1075,11 @@ function buildRequest(
   }
 
   if (config.proto) {
+    // TODO: parse
     request.proto = config.proto;
   }
   if (config["proto-redir"]) {
+    // TODO: parse
     request.protoRedir = config["proto-redir"];
   }
   if (config["proto-default"]) {
@@ -1272,8 +1274,8 @@ function buildRequest(
   if (config.proxy) {
     // https://github.com/curl/curl/blob/e498a9b1fe5964a18eb2a3a99dc52160d2768261/lib/url.c#L2388-L2390
     request.proxy = config.proxy;
-    if (request.proxyType) {
-      delete request.proxyType; // TODO: is this right?
+    if (request.proxyType && request.proxyType !== "http2") {
+      delete request.proxyType;
     }
     if (config["proxy-user"]) {
       request.proxyAuth = config["proxy-user"];
@@ -1550,9 +1552,9 @@ function buildRequest(
     request.abstractUnixSocket = config["abstract-unix-socket"];
   }
 
-  if (config["netrc-optional"] || config["netrc-file"]) {
+  if (config["netrc-optional"]) {
     request.netrc = "optional";
-  } else if (config.netrc) {
+  } else if (config.netrc || config["netrc-file"]) {
     request.netrc = "required";
   } else if (config.netrc === false) {
     // TODO || config["netrc-optional"] === false ?
