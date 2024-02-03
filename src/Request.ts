@@ -95,6 +95,9 @@ export interface Request {
   oauth2Bearer?: Word;
   delegation?: Word;
   krb?: Word;
+  saslAuthzid?: Word;
+  saslIr?: boolean;
+  serviceName?: Word;
 
   // A null header means the command explicitly disabled sending this header
   headers: Headers;
@@ -130,6 +133,8 @@ export interface Request {
   protoRedir?: Word;
   protoDefault?: Word;
 
+  tcpFastopen?: boolean;
+
   localPort?: [Word, Word | null];
 
   ignoreContentLength?: boolean;
@@ -147,6 +152,7 @@ export interface Request {
   pass?: Word;
   cacert?: Word;
   caNative?: boolean;
+  sslAllowBeast?: boolean;
   capath?: Word;
   crlfile?: Word;
   pinnedpubkey?: Word;
@@ -164,6 +170,35 @@ export interface Request {
   proxytunnel?: boolean;
   noproxy?: Word; // a list of hosts or "*"
   preproxy?: Word;
+  proxyAnyauth?: boolean;
+  proxyBasic?: boolean;
+  proxyCaNative?: boolean;
+  proxyCacert?: Word; // <file>
+  proxyCapath?: Word; // <dir>
+  proxyCertType?: Word; // <type>
+  proxyCert?: Word; // <cert[:passwd]>
+  proxyCiphers?: Word; // <list>
+  proxyCrlfile?: Word; // <file>
+  proxyDigest?: boolean;
+  proxyHeader?: Word[]; // <header/@file>
+  proxyHttp2?: boolean;
+  proxyInsecure?: boolean;
+  proxyKeyType?: Word; // <type>
+  proxyKey?: Word; // <key>
+  proxyNegotiate?: boolean;
+  proxyNtlm?: boolean;
+  proxyPass?: Word; // <phrase>
+  proxyPinnedpubkey?: Word; // <hashes>
+  proxyServiceName?: Word; // <name>
+  proxySslAllowBeast?: boolean;
+  proxySslAutoClientCert?: boolean;
+  proxyTls13Ciphers?: Word; // <ciphersuite list>
+  proxyTlsauthtype?: Word; // <type>
+  proxyTlspassword?: Word; // <string>
+  proxyTlsuser?: Word; // <name>
+  proxyTlsv1?: boolean;
+  proxyUser?: Word; // <user:password>
+  proxy1?: boolean; // <host[:port]>
 
   haproxyClientIp?: Word;
   haproxyProtocol?: boolean;
@@ -180,6 +215,7 @@ export interface Request {
   continueAt?: Word; // an integer or "-"
 
   crlf?: boolean;
+  useAscii?: boolean;
 
   remoteTime?: boolean;
 
@@ -960,6 +996,18 @@ function buildRequest(
   if (config.krb) {
     request.krb = config.krb;
   }
+  if (config["sasl-authzid"]) {
+    request.saslAuthzid = config["sasl-authzid"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "sasl-ir")) {
+    request.saslIr = config["sasl-ir"];
+  }
+  if (config.negotiate) {
+    request.authType = "negotiate";
+  }
+  if (config["service-name"]) {
+    request.serviceName = config["service-name"];
+  }
 
   // TODO: ideally we should generate code that explicitly unsets the header too
   // no HTTP libraries allow that.
@@ -998,6 +1046,10 @@ function buildRequest(
   }
   if (config["proto-default"]) {
     request.protoDefault = config["proto-default"];
+  }
+
+  if (config["tcp-fastopen"]) {
+    request.tcpFastopen = config["tcp-fastopen"];
   }
 
   if (config["local-port"]) {
@@ -1091,6 +1143,9 @@ function buildRequest(
   if (Object.prototype.hasOwnProperty.call(config, "ca-native")) {
     request.caNative = config["ca-native"];
   }
+  if (Object.prototype.hasOwnProperty.call(config, "ssl-allow-beast")) {
+    request.sslAllowBeast = config["ssl-allow-beast"];
+  }
   if (config.capath) {
     request.capath = config.capath;
   }
@@ -1138,6 +1193,102 @@ function buildRequest(
   }
   if (config.preproxy) {
     request.preproxy = config.preproxy;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-anyauth")) {
+    request.proxyAnyauth = config["proxy-anyauth"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-basic")) {
+    request.proxyBasic = config["proxy-basic"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-digest")) {
+    request.proxyDigest = config["proxy-digest"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-negotiate")) {
+    request.proxyNegotiate = config["proxy-negotiate"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-ntlm")) {
+    request.proxyNtlm = config["proxy-ntlm"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-ca-native")) {
+    request.proxyCaNative = config["proxy-ca-native"];
+  }
+  if (config["proxy-cacert"]) {
+    request.proxyCacert = config["proxy-cacert"];
+  }
+  if (config["proxy-capath"]) {
+    request.proxyCapath = config["proxy-capath"];
+  }
+  if (config["proxy-cert-type"]) {
+    request.proxyCertType = config["proxy-cert-type"];
+  }
+  if (config["proxy-cert"]) {
+    request.proxyCert = config["proxy-cert"];
+  }
+  if (config["proxy-ciphers"]) {
+    request.proxyCiphers = config["proxy-ciphers"];
+  }
+  if (config["proxy-crlfile"]) {
+    request.proxyCrlfile = config["proxy-crlfile"];
+  }
+  if (config["proxy-header"]) {
+    request.proxyHeader = config["proxy-header"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-http2")) {
+    request.proxyHttp2 = config["proxy-http2"];
+  }
+  if (config["proxy1.0"]) {
+    request.proxy = config["proxy1.0"];
+    request.proxy1 = true; // TODO: --proxy should unset
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-insecure")) {
+    request.proxyInsecure = config["proxy-insecure"];
+  }
+  if (config["proxy-key"]) {
+    request.proxyKey = config["proxy-key"];
+  }
+  if (config["proxy-key-type"]) {
+    request.proxyKeyType = config["proxy-key-type"];
+  }
+  if (config["proxy-pass"]) {
+    request.proxyPass = config["proxy-pass"];
+  }
+  if (config["proxy-pinnedpubkey"]) {
+    request.proxyPinnedpubkey = config["proxy-pinnedpubkey"];
+  }
+  if (config["proxy-pinnedpubkey"]) {
+    request.proxyPinnedpubkey = config["proxy-pinnedpubkey"];
+  }
+  if (config["proxy-service-name"]) {
+    request.proxyServiceName = config["proxy-service-name"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-ssl-allow-beast")) {
+    request.proxySslAllowBeast = config["proxy-ssl-allow-beast"];
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(config, "proxy-ssl-auto-client-cert")
+  ) {
+    request.proxySslAutoClientCert = config["proxy-ssl-auto-client-cert"];
+  }
+  if (config["proxy-tls13-ciphers"]) {
+    request.proxyTls13Ciphers = config["proxy-tls13-ciphers"];
+  }
+  if (config["proxy-tlsauthtype"]) {
+    request.proxyTlsauthtype = config["proxy-tlsauthtype"];
+  }
+  if (config["proxy-tlspassword"]) {
+    request.proxyTlspassword = config["proxy-tlspassword"];
+  }
+  if (config["proxy-tlsuser"]) {
+    request.proxyTlsuser = config["proxy-tlsuser"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxy-tlsv1")) {
+    request.proxyTlsv1 = config["proxy-tlsv1"];
+  }
+  if (config["proxy-user"]) {
+    request.proxyUser = config["proxy-user"];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, "proxytunnel")) {
+    request.proxytunnel = config["proxytunnel"];
   }
 
   if (config["haproxy-clientip"]) {
@@ -1285,6 +1436,10 @@ function buildRequest(
   }
   if (config["netrc-file"]) {
     request.netrcFile = config["netrc-file"];
+  }
+
+  if (config["use-ascii"]) {
+    request.useAscii = config["use-ascii"];
   }
 
   if (config["continue-at"]) {

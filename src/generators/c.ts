@@ -23,8 +23,37 @@ const supportedArgs = new Set([
   "proxytunnel",
   "noproxy",
   "preproxy",
-  // TODO: all the rest of --proxy-* args
-  // TODO: --socks
+  "proxy-anyauth",
+  "proxy-basic",
+  "proxy-digest",
+  "proxy-negotiate",
+  "proxy-ntlm",
+  "proxy-ca-native",
+  "proxy-cacert",
+  "proxy-capath",
+  "proxy-cert-type",
+  "proxy-cert",
+  "proxy-ciphers",
+  "proxy-crlfile",
+  // "proxy-header",
+  "proxy-http2",
+  "proxy-insecure",
+  "proxy-key",
+  "proxy-key-type",
+  "proxy-pass",
+  "proxy-pinnedpubkey",
+  "proxy-pinnedpubkey",
+  "proxy-service-name",
+  "proxy-ssl-allow-beast",
+  "proxy-ssl-auto-client-cert",
+  "proxy-tls13-ciphers",
+  // "proxy-tlsauthtype",
+  "proxy-tlspassword",
+  "proxy-tlsuser",
+  "proxy-tlsv1",
+  "proxy-user",
+  "proxytunnel",
+  // TODO: --socks*
   // TODO: --ssl and --tls
 
   "netrc",
@@ -37,6 +66,7 @@ const supportedArgs = new Set([
   "no-digest",
   "negotiate",
   "no-negotiate",
+  "service-name",
   "ntlm",
   "no-ntlm",
   "ntlm-wb",
@@ -44,12 +74,13 @@ const supportedArgs = new Set([
   "aws-sigv4",
   "delegation",
   "oauth2-bearer",
-  // "service-name",
 
   "ipv4",
   "ipv6",
 
   "local-port",
+
+  "tcp-fastopen",
 
   // Not parsed properly
   // "proto",
@@ -60,6 +91,7 @@ const supportedArgs = new Set([
   "no-ignore-content-length",
 
   "remote-time",
+  // "time-cond",
 
   // requires that the underlying libcurl was built to support c-ares
   // "dns-interface",
@@ -97,6 +129,9 @@ const supportedArgs = new Set([
 
   "crlf",
   "no-crlf",
+  "use-ascii",
+
+  // "write-out",
 
   "pass",
   "cacert",
@@ -110,6 +145,7 @@ const supportedArgs = new Set([
   "key",
   "key-type",
   "ca-native",
+  "ssl-allow-beast",
   "ciphers",
 
   // "false-start",
@@ -246,6 +282,9 @@ function requestToC(
   cleanup += "  curl_easy_cleanup(hnd);\n";
   cleanup += "  hnd = NULL;\n";
 
+  if (request.tcpFastopen) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_TCP_FASTOPEN, 1L);\n";
+  }
   const bufferSize = request.limitRate
     ? atol(request.limitRate, imports) // TODO: parse
     : "102400L";
@@ -283,11 +322,39 @@ function requestToC(
     const proxy = repr(request.proxy, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_PROXY, " + proxy + ");\n";
   }
+  if (request.proxyHttp2 || request.proxy1) {
+    if (request.proxyHttp2) {
+      code += "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, 3L);\n";
+    } else {
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXYTYPE, (long)CURLPROXY_HTTP_1_0);\n";
+    }
+  }
   if (request.proxyAuth) {
     const proxyUserpwd = repr(request.proxyAuth, imports);
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_PROXYUSERPWD, " + proxyUserpwd + ");\n";
   }
+  if (request.proxytunnel) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_HTTPPROXYTUNNEL, 1L);\n";
+  }
+  // TODO: set correctly
+  if (request.proxyAnyauth) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_ANY);\n";
+  } else if (request.proxyBasic) {
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_BASIC);\n";
+  } else if (request.proxyDigest) {
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_DIGEST);\n";
+  } else if (request.proxyNegotiate) {
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_GSSNEGOTIATE);\n";
+  } else if (request.proxyNtlm) {
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_NTLM);\n";
+  }
+
   if (request.proxytunnel) {
     code += "  curl_easy_setopt(hnd, CURLOPT_HTTPPROXYTUNNEL, 1L);\n";
   }
@@ -313,6 +380,10 @@ function requestToC(
   if (request.netrcFile) {
     const netrcFile = repr(request.netrcFile, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_NETRC_FILE, " + netrcFile + ");\n";
+  }
+
+  if (request.useAscii) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_TRANSFERTEXT, 1L);\n";
   }
 
   if (request.urls[0].auth) {
@@ -476,6 +547,8 @@ function requestToC(
     code += '  curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/8.2.1");\n';
   }
 
+  // TODO: --proxy-header
+
   if (request.followRedirects) {
     code += "  curl_easy_setopt(hnd, CURLOPT_FOLLOWLOCATION, 1L);\n";
     if (request.followRedirectsTrusted) {
@@ -566,20 +639,58 @@ function requestToC(
     // TODO: --cert can also set this
     code += "  curl_easy_setopt(hnd, CURLOPT_KEYPASSWD, " + pass + ");\n";
   }
+  if (request.proxyPass) {
+    // TODO: --proxy-cert can also set this
+    const proxyPass = repr(request.proxyPass, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_KEYPASSWD, " + proxyPass + ");\n";
+  }
+
   if (request.cacert) {
     const cacert = repr(request.cacert, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_CAINFO, " + cacert + ");\n";
   }
-  if (request.capath) {
-    const capath = repr(request.capath, imports);
-    code += "  curl_easy_setopt(hnd, CURLOPT_CAPATH, " + capath + ");\n";
-    code += "  curl_easy_setopt(hnd, CURLOPT_PROXY_CAPATH, " + capath + ");\n";
-  }
-  if (request.crlfile) {
-    const crlfile = repr(request.crlfile, imports);
-    code += "  curl_easy_setopt(hnd, CURLOPT_CRLFILE, " + crlfile + ");\n";
+  if (request.proxyCacert) {
+    const proxyCacert = repr(request.proxyCacert, imports);
     code +=
-      "  curl_easy_setopt(hnd, CURLOPT_PROXY_CRLFILE, " + crlfile + ");\n";
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_CAINFO, " + proxyCacert + ");\n";
+  }
+
+  if (request.capath || request.proxyCapath) {
+    if (request.capath) {
+      const capath = repr(request.capath, imports);
+      code += "  curl_easy_setopt(hnd, CURLOPT_CAPATH, " + capath + ");\n";
+      const proxyCapath = repr(request.proxyCapath || request.capath, imports);
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXY_CAPATH, " + proxyCapath + ");\n";
+    } else if (request.proxyCapath) {
+      // placate type checker
+      const proxyCapath = repr(request.proxyCapath, imports);
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXY_CAPATH, " + proxyCapath + ");\n";
+    }
+  }
+
+  if (request.crlfile || request.proxyCrlfile) {
+    if (request.crlfile) {
+      const crlfile = repr(request.crlfile, imports);
+      code += "  curl_easy_setopt(hnd, CURLOPT_CRLFILE, " + crlfile + ");\n";
+      const proxyCrlfile = repr(
+        request.proxyCrlfile || request.crlfile,
+        imports,
+      );
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXY_CRLFILE, " +
+        proxyCrlfile +
+        ");\n";
+    } else if (request.proxyCrlfile) {
+      // placate type checker
+      const proxyCrlfile = repr(request.proxyCrlfile, imports);
+      code +=
+        "  curl_easy_setopt(hnd, CURLOPT_PROXY_CRLFILE, " +
+        proxyCrlfile +
+        ");\n";
+    }
   }
   if (request.pinnedpubkey) {
     const pinnedpubkey = repr(request.pinnedpubkey, imports);
@@ -588,6 +699,7 @@ function requestToC(
       pinnedpubkey +
       ");\n";
   }
+  // TODO: --proxy-pinnedpubkey ?
   if (request.curves) {
     const curves = repr(request.curves, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_SSL_EC_CURVES, " + curves + ");\n";
@@ -605,22 +717,51 @@ function requestToC(
       repr(cert, imports) +
       ");\n";
   }
+  if (request.proxyCert) {
+    // TODO: split
+    const proxyCert = repr(request.proxyCert, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLCERT, " + proxyCert + ");\n";
+  }
   if (request.certType) {
     const certType = repr(request.certType, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_SSLCERTTYPE, " + certType + ");\n";
+  }
+  if (request.proxyCertType) {
+    const proxyCertType = repr(request.proxyCertType, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLCERTTYPE, " +
+      proxyCertType +
+      ");\n";
   }
   if (request.key) {
     const key = repr(request.key, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_SSLKEY, " + key + ");\n";
   }
+  if (request.proxyKey) {
+    const proxyKey = repr(request.proxyKey, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLKEY, " + proxyKey + ");\n";
+  }
   if (request.keyType) {
     const keyType = repr(request.keyType, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_SSLKEYTYPE, " + keyType + ");\n";
+  }
+  if (request.proxyKeyType) {
+    const proxyKeyType = repr(request.proxyKeyType, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLKEYTYPE, " +
+      proxyKeyType +
+      ");\n";
   }
 
   if (request.insecure) {
     code += "  curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);\n";
     code += "  curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYHOST, 0L);\n";
+  }
+  if (request.proxyInsecure) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSL_VERIFYPEER, 0L);\n";
+    code += "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSL_VERIFYHOST, 0L);\n";
   }
   if (request.certStatus) {
     code += "  curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYSTATUS, 1L);\n";
@@ -628,9 +769,43 @@ function requestToC(
   if (request.dohCertStatus) {
     code += "  curl_easy_setopt(hnd, CURLOPT_DOH_SSL_VERIFYSTATUS, 1L);\n";
   }
-  if (request.caNative) {
+  if (request.proxyTlsv1) {
     code +=
-      "  curl_easy_setopt(hnd, CURLOPT_SSL_OPTIONS, (long)CURLSSLOPT_NATIVE_CA);\n";
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLVERSION, (long)CURL_SSLVERSION_TLSv1);\n";
+  }
+  if (request.caNative || request.sslAllowBeast) {
+    const sslOptions = [];
+    if (request.caNative) {
+      sslOptions.push("CURLSSLOPT_NATIVE_CA");
+    }
+    if (request.sslAllowBeast) {
+      sslOptions.push("CURLSSLOPT_ALLOW_BEAST");
+    }
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_SSL_OPTIONS, (long)" +
+      sslOptions.join(" | (long)") +
+      ");\n";
+  }
+
+  if (
+    request.proxySslAllowBeast ||
+    request.proxyCaNative ||
+    request.proxySslAutoClientCert
+  ) {
+    const sslOptions = [];
+    if (request.proxySslAllowBeast) {
+      sslOptions.push("CURLSSLOPT_ALLOW_BEAST");
+    }
+    if (request.proxyCaNative) {
+      sslOptions.push("CURLSSLOPT_NATIVE_CA");
+    }
+    if (request.proxySslAutoClientCert) {
+      sslOptions.push("CURLSSLOPT_AUTO_CLIENT_CERT");
+    }
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSL_OPTIONS, (long)" +
+      sslOptions.join(" | (long)") +
+      ");\n";
   }
 
   if (request.pathAsIs) {
@@ -694,6 +869,20 @@ function requestToC(
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_SSL_CIPHER_LIST, " + ciphers + ");\n";
   }
+  if (request.proxyCiphers) {
+    const proxyCiphers = repr(request.proxyCiphers, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSL_CIPHER_LIST, " +
+      proxyCiphers +
+      ");\n";
+  }
+  if (request.proxyTls13Ciphers) {
+    const proxyTls13Ciphers = repr(request.proxyTls13Ciphers, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_TLS13_CIPHERS, " +
+      proxyTls13Ciphers +
+      ");\n";
+  }
 
   if (request.verbose) {
     code += "  curl_easy_setopt(hnd, CURLOPT_VERBOSE, 1L);\n";
@@ -712,6 +901,19 @@ function requestToC(
     code += "  curl_easy_setopt(hnd, CURLOPT_IPRESOLVE, 2L);\n";
   } else if (request.ipv4) {
     code += "  curl_easy_setopt(hnd, CURLOPT_IPRESOLVE, 1L);\n";
+  }
+
+  if (request.serviceName) {
+    const serviceName = repr(request.serviceName, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_SERVICE_NAME, " + serviceName + ");\n";
+  }
+  if (request.proxyServiceName) {
+    const proxyServiceName = repr(request.proxyServiceName, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_SERVICE_NAME, " +
+      proxyServiceName +
+      ");\n";
   }
 
   // TODO: check
@@ -749,12 +951,35 @@ function requestToC(
       ");\n";
   }
 
+  if (request.proxyTlsuser) {
+    const proxyTlsuser = repr(request.proxyTlsuser, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_TLSAUTH_USERNAME, " +
+      proxyTlsuser +
+      ");\n";
+  }
+  if (request.proxyTlspassword) {
+    const proxyTlspassword = repr(request.proxyTlspassword, imports);
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_PROXY_TLSAUTH_PASSWORD, " +
+      proxyTlspassword +
+      ");\n";
+  }
+
   if (request.delegation) {
     if (eq(request.delegation, "always")) {
       code += "  curl_easy_setopt(hnd, CURLOPT_GSSAPI_DELEGATION, 2L);\n";
     } else if (eq(request.delegation, "policy")) {
       code += "  curl_easy_setopt(hnd, CURLOPT_GSSAPI_DELEGATION, 1L);\n";
     }
+  }
+
+  if (request.saslAuthzid) {
+    const zid = repr(request.saslAuthzid, imports);
+    code += "  curl_easy_setopt(hnd, CURLOPT_SASL_AUTHZID, " + zid + ");\n";
+  }
+  if (request.saslIr) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_SASL_IR, 1L);\n";
   }
 
   if (request.alpn === false) {
