@@ -1,6 +1,6 @@
 PATCH /go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da HTTP/1.1
 Host: localhost:28139
-User-Agent: curl/8.0.1
+User-Agent: curl/8.2.1
 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
 Accept: application/vnd.go.cd.v4+json
 Content-Type: application/json

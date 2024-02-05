@@ -1,6 +1,6 @@
 GET /echo/html/ HTTP/1.1
 Host: localhost:28139
-User-Agent: curl/8.0.1
+User-Agent: curl/8.2.1
 Accept: */*
 Origin: http://fiddle.jshell.net
 Content-Type: application/x-www-form-urlencoded

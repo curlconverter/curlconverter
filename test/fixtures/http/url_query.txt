@@ -1,6 +1,6 @@
 GET ?foo=bar&baz=qux HTTP/1.1
 Host: localhost:28139
-User-Agent: curl/8.0.1
+User-Agent: curl/8.2.1
 Accept: */*
 
 

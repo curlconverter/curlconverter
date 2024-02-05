@@ -1,6 +1,6 @@
 POST / HTTP/1.1
 Host: localhost:28139
-User-Agent: curl/8.0.1
+User-Agent: curl/8.2.1
 Content-Type: application/json
 Accept: application/json
 Content-Length: 5

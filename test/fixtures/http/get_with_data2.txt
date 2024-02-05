@@ -1,6 +1,6 @@
 PUT /v2/alerts_policy_channels.json?policy_id=policy_id&channel_ids=channel_id HTTP/1.1
 Host: localhost:28139
-User-Agent: curl/8.0.1
+User-Agent: curl/8.2.1
 Accept: */*
 X-Api-Key: {admin_api_key}
 Content-Type: application/json
