@@ -3,7 +3,7 @@ import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "cookie-jar",
 

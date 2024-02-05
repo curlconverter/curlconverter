@@ -5,7 +5,7 @@ import { parseQueryString, type QueryList, type QueryDict } from "../Query.js";
 
 import yaml from "yamljs";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "compressed",
   "no-compressed", // only explicitly disabling compression has an effect

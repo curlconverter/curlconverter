@@ -8,7 +8,7 @@ import { parseQueryString } from "../Query.js";
 
 import { repr, reprStr } from "./wget.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",

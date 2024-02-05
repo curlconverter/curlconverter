@@ -99,6 +99,7 @@ export interface Request {
   queryArray?: DataParam[];
 
   authType: AuthType;
+  proxyAuthType: AuthType;
   awsSigV4?: Word;
   oauth2Bearer?: Word;
   delegation?: Word;
@@ -927,6 +928,7 @@ function buildRequest(
   const request: Request = {
     urls,
     authType: pickAuth(config.authtype),
+    proxyAuthType: pickAuth(config.proxyauthtype),
     headers,
   };
   // TODO: warn about unused stdin?

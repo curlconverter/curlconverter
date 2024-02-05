@@ -4,7 +4,7 @@ import type { Request, Warnings } from "../../parse.js";
 import { toWebServices } from "./webservices.js";
 import { toHTTPInterface } from "./httpinterface.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",

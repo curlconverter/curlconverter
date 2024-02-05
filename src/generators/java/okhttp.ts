@@ -5,7 +5,7 @@ import { parseQueryString } from "../../Query.js";
 
 import { repr } from "./java.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "max-time",
   "connect-timeout",

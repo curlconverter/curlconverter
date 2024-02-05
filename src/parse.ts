@@ -57,7 +57,7 @@ export function parse(
   let requests: Request[] = [];
   const curlCommands = findCommands(command, warnings);
   for (const [argv, stdin, stdinFile] of curlCommands) {
-    const globalConfig = curl.parseArgs(
+    const [globalConfig] = curl.parseArgs(
       argv,
       curlLongOpts,
       curlLongOptsShortened,

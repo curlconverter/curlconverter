@@ -2,7 +2,7 @@ import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
   "disallow-username-in-url",
@@ -303,6 +303,19 @@ export function atol(word: Word, imports: Set<string>): string {
   return "atol(" + repr(word, imports) + ")";
 }
 
+const AUTH_TO_VAR = {
+  basic: "CURLAUTH_BASIC",
+  negotiate: "CURLAUTH_NEGOTIATE",
+  // technically what --libcurl generates but older
+  // negotiate: "CURLAUTH_GSSNEGOTIATE",
+  digest: "CURLAUTH_DIGEST",
+  ntlm: "CURLAUTH_NTLM",
+  "ntlm-wb": "CURLAUTH_NTLM_WB",
+  bearer: "CURLAUTH_BEARER",
+  "aws-sigv4": "CURLAUTH_AWS_SIGV4",
+  none: "CURLAUTH_NONE",
+};
+
 function requestToC(
   request: Request,
   warnings: Warnings = [],
@@ -391,21 +404,10 @@ function requestToC(
   if (request.proxytunnel) {
     code += "  curl_easy_setopt(hnd, CURLOPT_HTTPPROXYTUNNEL, 1L);\n";
   }
-  // TODO: set correctly
-  if (request.proxyAnyauth) {
-    code += "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_ANY);\n";
-  } else if (request.proxyBasic) {
+  if (request.proxyAuth) {
+    const proxyAuth = AUTH_TO_VAR[request.proxyAuthType];
     code +=
-      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_BASIC);\n";
-  } else if (request.proxyDigest) {
-    code +=
-      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_DIGEST);\n";
-  } else if (request.proxyNegotiate) {
-    code +=
-      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_GSSNEGOTIATE);\n";
-  } else if (request.proxyNtlm) {
-    code +=
-      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)CURLAUTH_NTLM);\n";
+      "  curl_easy_setopt(hnd, CURLOPT_PROXYAUTH, (long)" + proxyAuth + ");\n";
   }
 
   if (request.preproxy) {
@@ -527,16 +529,7 @@ function requestToC(
   }
 
   if (request.urls[0].auth) {
-    const curlAuth = {
-      basic: "CURLAUTH_BASIC",
-      negotiate: "CURLAUTH_NEGOTIATE", // technically CURLAUTH_GSSNEGOTIATE
-      digest: "CURLAUTH_DIGEST",
-      ntlm: "CURLAUTH_NTLM",
-      "ntlm-wb": "CURLAUTH_NTLM_WB",
-      bearer: "CURLAUTH_BEARER",
-      "aws-sigv4": "CURLAUTH_AWS_SIGV4",
-      none: "CURLAUTH_NONE",
-    }[request.authType];
+    const curlAuth = AUTH_TO_VAR[request.authType];
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_HTTPAUTH, (long)" + curlAuth + ");\n";
   }

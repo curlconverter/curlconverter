@@ -12,7 +12,7 @@ import { parseQueryString } from "../Query.js";
 // https://clojure.org/reference/data_structures#Strings
 import { reprStr } from "./java/java.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",

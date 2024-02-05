@@ -3,7 +3,7 @@ import type { Request, Warnings } from "../parse.js";
 import type { AuthType } from "../Request.js";
 import { parseQueryString } from "../Query.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
   "insecure",

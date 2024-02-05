@@ -9,7 +9,7 @@ import { parseQueryString, type QueryDict } from "../Query.js";
 // https://github.com/ruby/net-http/tree/master/lib/net
 // https://github.com/augustl/net-http-cheat-sheet
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",

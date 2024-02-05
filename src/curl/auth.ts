@@ -8,15 +8,9 @@ export const CURLAUTH_BEARER = 1 << 6;
 export const CURLAUTH_AWS_SIGV4 = 1 << 7;
 export const CURLAUTH_ANY = ~CURLAUTH_DIGEST_IE;
 
-export type AuthType =
-  | "basic"
-  | "digest"
-  | "ntlm"
-  | "ntlm-wb"
-  | "negotiate"
-  | "bearer"
-  | "aws-sigv4"
-  | "none";
+export type ProxyAuthType = "basic" | "digest" | "ntlm" | "negotiate" | "none";
+
+export type AuthType = ProxyAuthType | "ntlm-wb" | "bearer" | "aws-sigv4";
 
 // This is this function
 // https://github.com/curl/curl/blob/curl-7_86_0/lib/http.c#L455

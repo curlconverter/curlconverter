@@ -5,7 +5,7 @@ import { parseQueryString } from "../Query.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "compressed",
   "form",
