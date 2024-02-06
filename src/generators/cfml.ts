@@ -4,7 +4,7 @@ import type { Request, Warnings } from "../parse.js";
 
 import { esc as jsesc } from "./javascript/javascript.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",

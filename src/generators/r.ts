@@ -6,7 +6,7 @@ import type { QueryList } from "../Query.js";
 
 import { reprStr as pyrepr } from "./python/python.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",

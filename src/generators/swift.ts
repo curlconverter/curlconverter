@@ -2,7 +2,7 @@ import { Word, eq, mergeWords } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-const supportedArgs = new Set([...COMMON_SUPPORTED_ARGS, "max-time"]);
+export const supportedArgs = new Set([...COMMON_SUPPORTED_ARGS, "max-time"]);
 
 // https://docs.swift.org/swift-book/documentation/the-swift-programming-language/stringsandcharacters/
 const regexEscape = /"|\\|\p{C}|[^ \P{Z}]/gu;

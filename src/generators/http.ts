@@ -3,7 +3,7 @@ import { Word } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "form",
   "form-string",
@@ -66,7 +66,7 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   }
   request.headers.prependIfMissing("Accept", "*/*");
   // TODO: update version with extract_curl_args.py
-  request.headers.prependIfMissing("User-Agent", "curl/8.0.1");
+  request.headers.prependIfMissing("User-Agent", "curl/8.2.1");
   request.headers.prependIfMissing("Host", urlObj.host.toString());
 
   // Generate a random boundary, just like curl

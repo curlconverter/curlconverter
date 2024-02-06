@@ -4,7 +4,7 @@ import type { Request, Warnings } from "../../parse.js";
 
 import { repr } from "./java.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
   "form",

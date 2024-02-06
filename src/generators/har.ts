@@ -5,7 +5,7 @@ import type { Request, RequestUrl, Warnings } from "../parse.js";
 import { parseQueryString } from "../Query.js";
 import type { Request as HARRequest, PostData as PostData } from "har-format";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
   //   "form",

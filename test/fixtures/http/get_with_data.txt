@@ -1,6 +1,6 @@
 GET /synthetics/api/v3/monitors?test=2&limit=100&w=4 HTTP/1.1
 Host: localhost:28139
-User-Agent: curl/8.0.1
+User-Agent: curl/8.2.1
 Accept: */*
 X-Api-Key: 123456789
 

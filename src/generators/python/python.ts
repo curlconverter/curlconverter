@@ -15,7 +15,7 @@ import {
 } from "lossless-json";
 
 // TODO: partiallySupportedArgs
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
 
   "compressed",

@@ -19,7 +19,7 @@ import {
 
 import { getFormString } from "./jquery.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "upload-file",
   "form",

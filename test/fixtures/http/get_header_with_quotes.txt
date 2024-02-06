@@ -1,6 +1,6 @@
 GET / HTTP/1.1
 host: localhost:28139
-user-agent: curl/8.0.1
+user-agent: curl/8.2.1
 accept: */*
 accept-encoding: deflate, gzip
 sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="92"

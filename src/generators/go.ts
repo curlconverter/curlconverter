@@ -5,7 +5,7 @@ import type { Request, Warnings } from "../parse.js";
 
 import { reprStr as pyreprStr } from "./python/python.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "insecure",
   "no-insecure",

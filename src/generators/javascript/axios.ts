@@ -16,7 +16,7 @@ import {
   reprImports,
 } from "./javascript.js";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "max-time",
   "form",

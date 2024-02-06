@@ -8,7 +8,7 @@ import type { FormParam } from "../../curl/form.js";
 
 import jsescObj from "jsesc";
 
-const javaScriptSupportedArgs = new Set([
+export const javaScriptSupportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "upload-file",
   "form",
@@ -21,7 +21,7 @@ const javaScriptSupportedArgs = new Set([
   "compressed",
 ]);
 
-const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
+export const nodeSupportedArgs = new Set([...javaScriptSupportedArgs, "proxy"]);
 
 // https://fetch.spec.whatwg.org/#forbidden-method
 export const FORBIDDEN_METHODS = ["CONNECT", "TRACE", "TRACK"];

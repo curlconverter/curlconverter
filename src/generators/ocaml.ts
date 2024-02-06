@@ -2,7 +2,7 @@ import { Word } from "../shell/Word.js";
 import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
 import type { Request, Warnings } from "../parse.js";
 
-const supportedArgs = new Set([...COMMON_SUPPORTED_ARGS]);
+export const supportedArgs = new Set([...COMMON_SUPPORTED_ARGS]);
 
 // https://v2.ocaml.org/manual/lex.html#sss:stringliterals
 const regexEscape = /"|\\|\p{C}|[^ \P{Z}]/gu;

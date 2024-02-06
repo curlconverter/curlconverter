@@ -10,7 +10,7 @@ import {
   isLosslessNumber,
 } from "lossless-json";
 
-const supportedArgs = new Set([
+export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
   "max-time",
   "no-compressed",

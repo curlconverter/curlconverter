@@ -492,11 +492,18 @@ for (const [opt, val] of Object.entries(curlLongOpts)) {
 export const COMMON_SUPPORTED_ARGS: string[] = [
   "url",
   "proto-default",
+  // Controls whether or not backslash-escaped [] {} will have the backslash removed.
+  "globoff",
+  // curl will exit if it finds auth credentials in the URL with this option,
+  // we remove it from the URL and emit a warning instead.
+  "disallow-username-in-url",
+
   // Method
   "request",
   "get",
   "head",
   "no-head",
+
   // Headers
   "header", // TODO: can be a file
   "user-agent",
@@ -505,6 +512,7 @@ export const COMMON_SUPPORTED_ARGS: string[] = [
   "time-cond",
   "cookie", // TODO: can be a file
   "oauth2-bearer",
+
   // Basic Auth
   "user",
   "basic",
@@ -517,13 +525,6 @@ export const COMMON_SUPPORTED_ARGS: string[] = [
   "data-urlencode",
   "json",
   "url-query",
-
-  // Trivial support for globoff means controlling whether or not
-  // backslash-escaped [] {} will have the backslash removed.
-  "globoff",
-  // curl will exit if it finds auth credentials in the URL with this option,
-  // we remove it from the URL and emit a warning instead.
-  "disallow-username-in-url",
 
   // TODO: --compressed is already the default for some runtimes, in
   // which case we might have to only warn that --no-compressed isn't supported.
@@ -634,7 +635,7 @@ export interface OperationConfig {
 
   // Not the same name as the curl options that set it
   authtype: number;
-  authArgs?: [string, boolean][];
+  proxyauthtype: number;
 
   json?: boolean;
 
@@ -907,7 +908,7 @@ export interface OperationConfig {
 }
 // type Satisfies<T, U extends T> = void;
 // type AssertSubsetKeys = Satisfies<
-//   keyof typeof curlLongOpts | "authtype" | "authArgs",
+//   keyof typeof curlLongOpts | "authtype" | "proxyauthtype",
 //   keyof OperationConfig
 // >;
 
@@ -916,8 +917,6 @@ export interface OperationConfig {
 // For all other options, if you specify it more than once
 // curl will use the last one.
 const canBeList = new Set<keyof OperationConfig>([
-  "authArgs", // used for error messages
-
   "connect-to",
   "cookie",
   "data",
@@ -1039,11 +1038,9 @@ function pushArgValue(
       return pushProp(config, "form", { value, type: "string" });
 
     case "aws-sigv4":
-      pushProp(config, "authArgs", [argName, true]); // error reporting
       config.authtype |= CURLAUTH_AWS_SIGV4;
       break;
     case "oauth2-bearer":
-      pushProp(config, "authArgs", [argName, true]); // error reporting
       config.authtype |= CURLAUTH_BEARER;
       break;
 
@@ -1081,31 +1078,48 @@ function setArgValue(
 ): OperationConfig {
   switch (argName) {
     case "digest":
-      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_DIGEST;
       } else {
         config.authtype &= ~CURLAUTH_DIGEST;
       }
       break;
+    case "proxy-digest":
+      if (toggle) {
+        config.proxyauthtype |= CURLAUTH_DIGEST;
+      } else {
+        config.proxyauthtype &= ~CURLAUTH_DIGEST;
+      }
+      break;
     case "negotiate":
-      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_NEGOTIATE;
       } else {
         config.authtype &= ~CURLAUTH_NEGOTIATE;
       }
       break;
+    case "proxy-negotiate":
+      if (toggle) {
+        config.proxyauthtype |= CURLAUTH_NEGOTIATE;
+      } else {
+        config.proxyauthtype &= ~CURLAUTH_NEGOTIATE;
+      }
+      break;
     case "ntlm":
-      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_NTLM;
       } else {
         config.authtype &= ~CURLAUTH_NTLM;
       }
       break;
+    case "proxy-ntlm":
+      if (toggle) {
+        config.proxyauthtype |= CURLAUTH_NTLM;
+      } else {
+        config.proxyauthtype &= ~CURLAUTH_NTLM;
+      }
+      break;
     case "ntlm-wb":
-      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_NTLM_WB;
       } else {
@@ -1113,17 +1127,27 @@ function setArgValue(
       }
       break;
     case "basic":
-      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype |= CURLAUTH_BASIC;
       } else {
         config.authtype &= ~CURLAUTH_BASIC;
       }
       break;
+    case "proxy-basic":
+      if (toggle) {
+        config.proxyauthtype |= CURLAUTH_BASIC;
+      } else {
+        config.proxyauthtype &= ~CURLAUTH_BASIC;
+      }
+      break;
     case "anyauth":
-      pushProp(config, "authArgs", [argName, toggle]); // error reporting
       if (toggle) {
         config.authtype = CURLAUTH_ANY;
+      }
+      break;
+    case "proxy-anyauth":
+      if (toggle) {
+        config.proxyauthtype = CURLAUTH_ANY;
       }
       break;
     case "location":
@@ -1158,7 +1182,7 @@ function setArgValue(
         config.url.length >= (config["upload-file"] || []).length &&
         config.url.length >= (config.output || []).length
       ) {
-        config = { authtype: CURLAUTH_BASIC };
+        config = { authtype: CURLAUTH_BASIC, proxyauthtype: CURLAUTH_BASIC };
         global.configs.push(config);
       }
       break;
@@ -1175,9 +1199,13 @@ export function parseArgs(
   shortOpts: ShortOpts = curlShortOpts,
   supportedOpts?: Set<string>,
   warnings: Warnings = [],
-): GlobalConfig {
-  let config: OperationConfig = { authtype: CURLAUTH_BASIC };
+): [GlobalConfig, [string, string][]] {
+  let config: OperationConfig = {
+    authtype: CURLAUTH_BASIC,
+    proxyauthtype: CURLAUTH_BASIC,
+  };
   const global: GlobalConfig = { configs: [config], warnings };
+  const seen: [string, string][] = [];
 
   for (let i = 1, stillflags = true; i < args.length; i++) {
     const arg: Word = args[i];
@@ -1232,6 +1260,7 @@ export function parseArgs(
         }
 
         checkSupported(global, argStr, longArg, supportedOpts);
+        seen.push([longArg.name, argStr]);
       } else {
         // Short option. These can look like
         // -X POST    -> {request: 'POST'}
@@ -1257,6 +1286,7 @@ export function parseArgs(
               longArg.name,
               toBoolean(shortFor),
             );
+            seen.push([longArg.name, "-"]);
           } else {
             throw new CCError("option -: is unknown");
           }
@@ -1318,6 +1348,7 @@ export function parseArgs(
           }
           if (lookup) {
             checkSupported(global, "-" + lookup, longArg, supportedOpts);
+            seen.push([longArg.name, "-" + lookup]);
           }
         }
       }
@@ -1339,6 +1370,7 @@ export function parseArgs(
         ]);
       }
       pushArgValue(global, config, "url", arg);
+      seen.push(["url", "--url"]);
     }
   }
 
@@ -1349,5 +1381,5 @@ export function parseArgs(
       }
     }
   }
-  return global;
+  return [global, seen];
 }
