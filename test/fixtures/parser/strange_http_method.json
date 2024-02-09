@@ -23,6 +23,10 @@
     "headers": {
       "lowercase": false,
       "headers": []
+    },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
     }
   }
 ]

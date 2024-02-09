@@ -24,6 +24,10 @@
       "lowercase": false,
       "headers": []
     },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
+    },
     "cookieFiles": [
       "cookie.txt"
     ]

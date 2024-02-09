@@ -50,6 +50,10 @@
           "Bearer $DO_API_TOKEN"
         ]
       ]
+    },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
     }
   }
 ]

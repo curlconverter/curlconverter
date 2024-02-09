@@ -53,6 +53,10 @@
         ]
       ]
     },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
+    },
     "cookies": [
       [
         "GeoIP",

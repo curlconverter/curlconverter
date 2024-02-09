@@ -61,6 +61,10 @@
         ]
       ]
     },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
+    },
     "compressed": true,
     "data": "msg1=wow&msg2=such",
     "dataArray": [
