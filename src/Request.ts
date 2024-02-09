@@ -110,6 +110,7 @@ export interface Request {
 
   // A null header means the command explicitly disabled sending this header
   headers: Headers;
+  proxyHeaders: Headers;
   refererAuto?: boolean;
 
   // .cookies is a parsed version of the Cookie header, if it can be parsed.
@@ -208,7 +209,6 @@ export interface Request {
   proxyCiphers?: Word; // <list>
   proxyCrlfile?: Word; // <file>
   proxyDigest?: boolean;
-  proxyHeader?: Word[]; // <header/@file>
   proxyHttp2?: boolean;
   proxyInsecure?: boolean;
   proxyKeyType?: Word; // <type>
@@ -275,12 +275,15 @@ export interface Request {
   post302?: boolean;
   post303?: boolean;
 
+  httpVersion?: "1.0" | "1.1" | "2" | "2-prior-knowledge" | "3" | "3-only";
+  http0_9?: boolean;
   http2?: boolean;
   http3?: boolean;
 
   stdin?: Word;
   stdinFile?: Word;
 
+  resolve?: Word[]; // a list of host:port:address
   connectTo?: Word[]; // a list of host:port:connect-to-host:connect-to-port
 
   unixSocket?: Word;
@@ -791,6 +794,11 @@ function buildRequest(
   }
 
   const headers = new Headers(config.header, global.warnings);
+  const proxyHeaders = new Headers(
+    config["proxy-header"],
+    global.warnings,
+    "--proxy-header",
+  );
 
   let cookies;
   const cookieFiles: Word[] = [];
@@ -930,6 +938,7 @@ function buildRequest(
     authType: pickAuth(config.authtype),
     proxyAuthType: pickAuth(config.proxyauthtype),
     headers,
+    proxyHeaders,
   };
   // TODO: warn about unused stdin?
   if (stdin) {
@@ -1328,10 +1337,6 @@ function buildRequest(
   if (config["proxy-crlfile"]) {
     request.proxyCrlfile = config["proxy-crlfile"];
   }
-  if (config["proxy-header"]) {
-    // TODO: parse
-    request.proxyHeader = config["proxy-header"];
-  }
   if (config["proxy-http2"]) {
     request.proxyType = "http2";
   }
@@ -1373,6 +1378,15 @@ function buildRequest(
   }
   if (config["proxy-tlsauthtype"]) {
     request.proxyTlsauthtype = config["proxy-tlsauthtype"];
+    if (
+      request.proxyTlsauthtype.isString() &&
+      !eq(request.proxyTlsauthtype, "SRP")
+    ) {
+      warnf(global, [
+        "proxy-tlsauthtype",
+        "proxy-tlsauthtype is not supported: " + request.proxyTlsauthtype,
+      ]);
+    }
   }
   if (config["proxy-tlspassword"]) {
     request.proxyTlspassword = config["proxy-tlspassword"];
@@ -1534,16 +1548,26 @@ function buildRequest(
     request.ftpSkipPasvIp = config["ftp-skip-pasv-ip"];
   }
 
-  // TODO: this should write to the same "httpVersion" variable
-  const http2 = config.http2 || config["http2-prior-knowledge"];
-  if (http2) {
-    request.http2 = http2;
+  if (config.httpVersion) {
+    if (
+      config.httpVersion === "2" ||
+      config.httpVersion === "2-prior-knowledge"
+    ) {
+      request.http2 = true;
+    }
+    if (config.httpVersion === "3" || config.httpVersion === "3-only") {
+      request.http3 = true;
+    }
+    request.httpVersion = config.httpVersion;
   }
-  if (config.http3 || config["http3-only"]) {
-    request.http3 = true;
+  if (Object.prototype.hasOwnProperty.call(config, "http0.9")) {
+    request.http0_9 = config["http0.9"];
   }
 
-  if (config["connect-to"]) {
+  if (config.resolve && config.resolve.length) {
+    request.resolve = config.resolve;
+  }
+  if (config["connect-to"] && config["connect-to"].length) {
     request.connectTo = config["connect-to"];
   }
 

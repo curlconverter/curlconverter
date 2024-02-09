@@ -9,7 +9,7 @@ export const supportedArgs = new Set([
   "form-string",
 
   "http0.9",
-  // "http1.0",
+  "http1.0",
   "http1.1",
   "http2",
   "http2-prior-knowledge",
@@ -38,11 +38,15 @@ export function _toHTTP(requests: Request[], warnings: Warnings = []): string {
   }
   s += url + " ";
 
-  // TODO
-  if (request.http3) {
+  if (request.httpVersion === "3" || request.httpVersion === "3-only") {
     s += "HTTP/3";
-  } else if (request.http2) {
+  } else if (
+    request.httpVersion === "2" ||
+    request.httpVersion === "2-prior-knowledge"
+  ) {
     s += "HTTP/2";
+  } else if (request.httpVersion === "1.0") {
+    s += "HTTP/1.0";
   } else {
     s += "HTTP/1.1";
   }

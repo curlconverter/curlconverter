@@ -35,7 +35,7 @@ export const supportedArgs = new Set([
   "proxy-cert",
   "proxy-ciphers",
   "proxy-crlfile",
-  // "proxy-header",
+  "proxy-header",
   "proxy-http2",
   "proxy-insecure",
   "proxy-key",
@@ -126,17 +126,20 @@ export const supportedArgs = new Set([
   // "fail-with-body",
   // "fail-early",
 
+  "continue-at",
+
   "speed-limit",
   "speed-time",
   "limit-rate",
   "max-filesize",
 
-  // TODO
-  // "http1.1",
-  // "http2",
-  // "http2-prior-knowledge",
+  "http0.9",
+  "http1.0",
+  "http1.1",
+  "http2",
+  "http2-prior-knowledge",
   "http3",
-  // "http3-only",
+  "http3-only",
 
   "cookie-jar",
   "junk-session-cookies",
@@ -209,8 +212,8 @@ export const supportedArgs = new Set([
   "expect100-timeout",
   "happy-eyeballs-timeout-ms",
 
-  // "connect-to",
-  "continue-at",
+  "resolve",
+  "connect-to",
 
   "keepalive",
   "no-keepalive",
@@ -542,34 +545,34 @@ function requestToC(
     }
     if (headerValue === null) {
       headerLines.push(
-        "  slist1 = curl_slist_append(slist1, " +
+        "  headers = curl_slist_append(headers, " +
           repr(mergeWords(headerName, ":"), imports) +
           ");\n",
       );
     } else if (eq(headerValue, "")) {
       headerLines.push(
-        "  slist1 = curl_slist_append(slist1, " +
+        "  headers = curl_slist_append(headers, " +
           repr(mergeWords(headerName, ";"), imports) +
           ");\n",
       );
     } else {
       headerLines.push(
-        "  slist1 = curl_slist_append(slist1, " +
+        "  headers = curl_slist_append(headers, " +
           repr(mergeWords(headerName, ": ", headerValue), imports) +
           ");\n",
       );
     }
   }
   if (headerLines.length) {
-    preamble += "  struct curl_slist *slist1;\n";
+    preamble += "  struct curl_slist *headers;\n";
 
-    vars += "  slist1 = NULL;\n";
+    vars += "  headers = NULL;\n";
     vars += headerLines.join("");
 
-    code += "  curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);\n";
+    code += "  curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, headers);\n";
 
-    cleanup += "  curl_slist_free_all(slist1);\n";
-    cleanup += "  slist1 = NULL;\n";
+    cleanup += "  curl_slist_free_all(headers);\n";
+    cleanup += "  headers = NULL;\n";
   }
   const referer = request.headers.get("referer");
   if (referer) {
@@ -590,8 +593,6 @@ function requestToC(
     code += '  curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/8.2.1");\n';
   }
 
-  // TODO: --proxy-header
-
   if (request.followRedirects) {
     code += "  curl_easy_setopt(hnd, CURLOPT_FOLLOWLOCATION, 1L);\n";
     if (request.followRedirectsTrusted) {
@@ -608,34 +609,81 @@ function requestToC(
     code += "  curl_easy_setopt(hnd, CURLOPT_AUTOREFERER, 1L);\n";
   }
 
+  if (request.proxyHeaders.length) {
+    // TODO: camelCase snake_case orjustoneword?
+    preamble += "  struct curl_slist *proxy_headers;\n";
+
+    if (vars) {
+      vars += "\n";
+    }
+    vars += "  proxy_headers = NULL;\n";
+    for (const [headerName, headerValue] of request.proxyHeaders) {
+      if (headerValue === null) {
+        vars +=
+          "  proxy_headers = curl_slist_append(proxy_headers, " +
+          repr(mergeWords(headerName, ":"), imports) +
+          ");\n";
+      } else if (eq(headerValue, "")) {
+        vars +=
+          "  proxy_headers = curl_slist_append(proxy_headers, " +
+          repr(mergeWords(headerName, ";"), imports) +
+          ");\n";
+      } else {
+        vars +=
+          "  proxy_headers = curl_slist_append(proxy_headers, " +
+          repr(mergeWords(headerName, ": ", headerValue), imports) +
+          ");\n";
+      }
+    }
+
+    code += "  curl_easy_setopt(hnd, CURLOPT_PROXYHEADER, proxy_headers);\n";
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_HEADEROPT, (long)CURLHEADER_SEPARATE);\n";
+
+    cleanup += "  curl_slist_free_all(proxy_headers);\n";
+    cleanup += "  proxy_headers = NULL;\n";
+  }
+
   const maxRedirs = request.maxRedirects || new Word("50");
   code +=
     "  curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, " +
     atol(maxRedirs, imports) +
     ");\n";
 
-  // TODO
   let httpVersion = "CURL_HTTP_VERSION_2TLS";
-  if (request.http3) {
-    httpVersion = "CURL_HTTP_VERSION_3";
+  if (request.httpVersion) {
+    httpVersion = {
+      "1.0": "CURL_HTTP_VERSION_1_0",
+      "1.1": "CURL_HTTP_VERSION_1_1",
+      "2": "CURL_HTTP_VERSION_2_0",
+      "2-prior-knowledge": "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE",
+      "3": "CURL_HTTP_VERSION_3",
+      "3-only": "CURL_HTTP_VERSION_3ONLY",
+    }[request.httpVersion];
   }
   code +=
     "  curl_easy_setopt(hnd, CURLOPT_HTTP_VERSION, (long)" +
     httpVersion +
     ");\n";
+  if (request.http0_9) {
+    code += "  curl_easy_setopt(hnd, CURLOPT_HTTP09_ALLOWED, 1L);\n";
+  }
 
   if (request.post301 || request.post302 || request.post303) {
-    let postRedir = 0;
+    const postRedir = [];
     if (request.post301) {
-      postRedir |= 1;
+      postRedir.push("CURL_REDIR_POST_301");
     }
     if (request.post302) {
-      postRedir |= 2;
+      postRedir.push("CURL_REDIR_POST_302");
     }
     if (request.post303) {
-      postRedir |= 4;
+      postRedir.push("CURL_REDIR_POST_303");
     }
-    code += "  curl_easy_setopt(hnd, CURLOPT_POSTREDIR, " + postRedir + "L);\n";
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_POSTREDIR, " +
+      postRedir.join(" | ") +
+      ");\n";
   }
 
   if (request.compressed) {
@@ -1069,15 +1117,57 @@ function requestToC(
   }
 
   if (request.proto) {
+    // TODO: parse
     const proto = repr(request.proto, imports);
     code += "  curl_easy_setopt(hnd, CURLOPT_PROTOCOLS_STR, " + proto + ");\n";
   }
   if (request.protoRedir) {
+    // TODO: parse
     const protoRedir = repr(request.protoRedir, imports);
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_REDIR_PROTOCOLS_STR, " +
       protoRedir +
       ");\n";
+  }
+
+  if (request.resolve) {
+    preamble += "  struct curl_slist *resolve;\n";
+
+    if (vars) {
+      vars += "\n";
+    }
+    vars += "  resolve = NULL;\n";
+    for (const line of request.resolve) {
+      vars +=
+        "  resolve = curl_slist_append(resolve, " +
+        repr(line, imports) +
+        ");\n";
+    }
+
+    code += "  curl_easy_setopt(hnd, CURLOPT_RESOLVE, resolve);\n";
+
+    cleanup += "  curl_slist_free_all(resolve);\n";
+    cleanup += "  resolve = NULL;\n";
+  }
+  if (request.connectTo) {
+    // TODO: camelCase snake_case orjustoneword?
+    preamble += "  struct curl_slist *connect_to;\n";
+
+    if (vars) {
+      vars += "\n";
+    }
+    vars += "  connect_to = NULL;\n";
+    for (const line of request.connectTo) {
+      vars +=
+        "  connect_to = curl_slist_append(connect_to, " +
+        repr(line, imports) +
+        ");\n";
+    }
+
+    code += "  curl_easy_setopt(hnd, CURLOPT_CONNECT_TO, connect_to);\n";
+
+    cleanup += "  curl_slist_free_all(connect_to);\n";
+    cleanup += "  connect_to = NULL;\n";
   }
 
   if (request.tlsuser) {
@@ -1113,7 +1203,6 @@ function requestToC(
       ");\n";
   }
   if (request.proxyTlsauthtype) {
-    // TODO: check, not generated by --libcurl
     const proxyTlsauthtype = repr(request.proxyTlsauthtype, imports);
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_PROXY_TLSAUTH_TYPE, " +

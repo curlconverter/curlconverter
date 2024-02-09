@@ -61,6 +61,10 @@
         ]
       ]
     },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
+    },
     "cookies": [
       [
         "_gat",

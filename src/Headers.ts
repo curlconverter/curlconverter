@@ -59,7 +59,12 @@ export class Headers implements Iterable<[Word, Word | null]> {
   readonly headers: [Word, Word | null][];
   readonly lowercase: boolean;
 
-  constructor(headerArgs?: Word[], warnings: Warnings = []) {
+  constructor(
+    headerArgs?: Word[],
+    warnings: Warnings = [],
+    // Used for warnings
+    argName = "--header/H",
+  ) {
     let headers: [Word, Word | null][] = [];
 
     if (headerArgs) {
@@ -67,7 +72,9 @@ export class Headers implements Iterable<[Word, Word | null]> {
         if (header.startsWith("@")) {
           warnings.push([
             "header-file",
-            "passing a file for --header/-H is not supported: " +
+            "passing a file for " +
+              argName +
+              " is not supported: " +
               JSON.stringify(header.toString()),
           ]);
           continue;

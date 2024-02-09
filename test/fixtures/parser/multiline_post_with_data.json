@@ -33,6 +33,10 @@
         ]
       ]
     },
+    "proxyHeaders": {
+      "lowercase": false,
+      "headers": []
+    },
     "data": "msg1=value1&msg2=value2",
     "dataArray": [
       "msg1=value1&msg2=value2"

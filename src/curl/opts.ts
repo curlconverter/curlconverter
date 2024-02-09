@@ -655,9 +655,7 @@ export interface OperationConfig {
   quote?: Word[];
   "telnet-option"?: Word[];
 
-  http2?: boolean;
-  http3?: boolean;
-  "http3-only"?: boolean;
+  httpVersion?: "1.0" | "1.1" | "2" | "2-prior-knowledge" | "3" | "3-only";
 
   netrc?: boolean;
   "netrc-optional"?: boolean;
@@ -1156,6 +1154,24 @@ function setArgValue(
     case "location-trusted":
       config["location"] = toggle;
       config["location-trusted"] = toggle;
+      break;
+    case "http1.0":
+      config.httpVersion = "1.0";
+      break;
+    case "http1.1":
+      config.httpVersion = "1.1";
+      break;
+    case "http2":
+      config.httpVersion = "2";
+      break;
+    case "http2-prior-knowledge":
+      config.httpVersion = "2-prior-knowledge";
+      break;
+    case "http3":
+      config.httpVersion = "3";
+      break;
+    case "http3-only":
+      config.httpVersion = "3-only";
       break;
     case "verbose":
     case "version":
