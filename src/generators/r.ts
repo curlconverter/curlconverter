@@ -250,7 +250,7 @@ export function _toR(requests: Request[], warnings: Warnings = []): string {
   requestLine += requestLineBody;
 
   let rstatsCode = "";
-  rstatsCode += "require(httr)\n\n";
+  rstatsCode += "library(httr)\n\n";
   if (cookieDict) {
     rstatsCode += cookieDict + "\n";
   }
