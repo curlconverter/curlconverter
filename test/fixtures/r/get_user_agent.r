@@ -1,4 +1,4 @@
-require(httr)
+library(httr)
 
 headers = c(
   `x-msisdn` = "XXXXXXXXXXXXX",

@@ -1,4 +1,4 @@
-require(httr)
+library(httr)
 
 files = list(
   `username` = "davidwalsh",

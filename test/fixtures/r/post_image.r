@@ -1,4 +1,4 @@
-require(httr)
+library(httr)
 
 files = list(
   `image` = upload_file("image.jpg")

@@ -1,4 +1,4 @@
-require(httr)
+library(httr)
 
 cookies = c(
   `GeoIP` = "US:Albuquerque:35.1241:-106.7675:v4",

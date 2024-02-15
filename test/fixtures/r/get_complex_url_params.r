@@ -1,4 +1,4 @@
-require(httr)
+library(httr)
 
 params = list(
   `page` = "1",

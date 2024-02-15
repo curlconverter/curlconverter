@@ -1,4 +1,4 @@
-require(httr)
+library(httr)
 
 headers = c(
   `Origin` = "http://fiddle.jshell.net",
