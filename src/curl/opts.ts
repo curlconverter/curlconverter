@@ -656,6 +656,7 @@ export interface OperationConfig {
   "telnet-option"?: Word[];
 
   httpVersion?: "1.0" | "1.1" | "2" | "2-prior-knowledge" | "3" | "3-only";
+  tlsVersion?: "1" | "1.0" | "1.1" | "1.2" | "1.3";
 
   netrc?: boolean;
   "netrc-optional"?: boolean;
@@ -1172,6 +1173,21 @@ function setArgValue(
       break;
     case "http3-only":
       config.httpVersion = "3-only";
+      break;
+    case "tlsv1":
+      config.tlsVersion = "1";
+      break;
+    case "tlsv1.0":
+      config.tlsVersion = "1.0";
+      break;
+    case "tlsv1.1":
+      config.tlsVersion = "1.1";
+      break;
+    case "tlsv1.2":
+      config.tlsVersion = "1.2";
+      break;
+    case "tlsv1.3":
+      config.tlsVersion = "1.3";
       break;
     case "verbose":
     case "version":
