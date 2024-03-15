@@ -174,15 +174,14 @@ export const supportedArgs = new Set([
   "ssl-reqd",
   "ssl-revoke-best-effort",
 
-  // "sslv2",
-  // "sslv3",
+  // "sslv2",  // ignored
+  // "sslv3",  // ignored
   "tlsv1",
   "tlsv1.0",
   "tlsv1.1",
   "tlsv1.2",
   "tlsv1.3",
-  // TODO
-  // "tls-max",
+  "tls-max",
 
   // "false-start",
   "hsts",
@@ -861,33 +860,61 @@ function requestToC(
     code += "  curl_easy_setopt(hnd, CURLOPT_DOH_SSL_VERIFYSTATUS, 1L);\n";
   }
 
-  if (
-    request["tlsv1.3"] ||
-    request["tlsv1.2"] ||
-    request["tlsv1.1"] ||
-    request["tlsv1.0"] ||
-    request.tlsv1
-  ) {
-    if (request["tlsv1.3"]) {
-      code +=
-        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_3);\n";
-    } else if (request["tlsv1.2"]) {
-      code +=
-        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_2);\n";
-    } else if (request["tlsv1.1"]) {
-      code +=
-        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_1);\n";
-    } else if (request["tlsv1.0"]) {
-      code +=
-        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1_0);\n";
-    } else if (request.tlsv1) {
-      code +=
-        "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)CURL_SSLVERSION_TLSv1);\n";
+  let tlsVersion = null;
+  if (request.tlsVersion) {
+    tlsVersion = {
+      "1": "CURL_SSLVERSION_TLSv1",
+      "1.0": "CURL_SSLVERSION_TLSv1_0",
+      "1.1": "CURL_SSLVERSION_TLSv1_1",
+      "1.2": "CURL_SSLVERSION_TLSv1_2",
+      "1.3": "CURL_SSLVERSION_TLSv1_3",
+    }[request.tlsVersion];
+  }
+  let tlsMax = null;
+  if (request.tlsMax) {
+    if (request.tlsMax.isString()) {
+      const tlsMaxVal = request.tlsMax.toString();
+      switch (tlsMaxVal) {
+        case "1.0":
+          tlsMax = "CURL_SSLVERSION_MAX_TLSv1_0";
+          break;
+        case "1.1":
+          tlsMax = "CURL_SSLVERSION_MAX_TLSv1_1";
+          break;
+        case "1.2":
+          tlsMax = "CURL_SSLVERSION_MAX_TLSv1_2";
+          break;
+        case "1.3":
+          tlsMax = "CURL_SSLVERSION_MAX_TLSv1_3";
+          break;
+        case "default":
+          tlsMax = "CURL_SSLVERSION_MAX_DEFAULT";
+          break;
+        default:
+          warnings.push([
+            "tls-max",
+            "unknown value for --tls-max: " + JSON.stringify(tlsMaxVal),
+          ]);
+      }
+    } else {
+      warnings.push([
+        "tls-max",
+        "unparseable value for --tls-max: " +
+          JSON.stringify(request.tlsMax.toString()),
+      ]);
     }
   }
-  // if (request.tlsMax) {
-  //   code += '  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, 393216L);\n';
-  // }
+  if (tlsVersion || tlsMax) {
+    if (!tlsVersion) {
+      // not really necessary since it's 0
+      tlsVersion = "CURL_SSLVERSION_DEFAULT";
+    }
+    code +=
+      "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)" +
+      tlsVersion +
+      (tlsMax ? " | " + tlsMax : "") +
+      ");\n";
+  }
   if (request.proxyTlsv1) {
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_PROXY_SSLVERSION, (long)CURL_SSLVERSION_TLSv1);\n";

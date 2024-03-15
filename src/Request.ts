@@ -171,16 +171,12 @@ export interface Request {
   hsts?: Word[]; // a filename
   alpn?: boolean;
 
+  tlsVersion?: "1" | "1.0" | "1.1" | "1.2" | "1.3";
   tlsMax?: Word;
   tls13Ciphers?: Word;
   tlsauthtype?: Word;
   tlspassword?: Word;
   tlsuser?: Word;
-  "tlsv1.0"?: boolean;
-  "tlsv1.1"?: boolean;
-  "tlsv1.2"?: boolean;
-  "tlsv1.3"?: boolean;
-  tlsv1?: boolean;
   sslAutoClientCert?: boolean;
   sslNoRevoke?: boolean;
   sslReqd?: boolean;
@@ -1217,6 +1213,9 @@ function buildRequest(
     request.alpn = config.alpn;
   }
 
+  if (config.tlsVersion) {
+    request.tlsVersion = config.tlsVersion;
+  }
   if (config["tls-max"]) {
     request.tlsMax = config["tls-max"];
   }
@@ -1231,21 +1230,6 @@ function buildRequest(
   }
   if (config["tlsuser"]) {
     request.tlsuser = config["tlsuser"];
-  }
-  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.0")) {
-    request["tlsv1.0"] = config["tlsv1.0"];
-  }
-  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.1")) {
-    request["tlsv1.1"] = config["tlsv1.1"];
-  }
-  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.2")) {
-    request["tlsv1.2"] = config["tlsv1.2"];
-  }
-  if (Object.prototype.hasOwnProperty.call(config, "tlsv1.3")) {
-    request["tlsv1.3"] = config["tlsv1.3"];
-  }
-  if (Object.prototype.hasOwnProperty.call(config, "tlsv1")) {
-    request.tlsv1 = config["tlsv1"];
   }
   if (Object.prototype.hasOwnProperty.call(config, "ssl-allow-beast")) {
     request.sslAllowBeast = config["ssl-allow-beast"];
