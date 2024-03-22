@@ -108,7 +108,12 @@ function toTokens(
 ): Token[] {
   let vals: Token[] = [];
   switch (node.type) {
+    case "$":
+      // TODO: https://github.com/tree-sitter/tree-sitter-bash/issues/258
+      return ["$"];
     case "word":
+    case "number":
+      // TODO: number might have a ${variable}
       return [removeBackslashes(node.text)];
     case "raw_string":
       return [node.text.slice(1, -1)];
@@ -118,27 +123,24 @@ function toTokens(
     case "translated_string": {
       // TODO: MISSING quotes, for example
       // curl "example.com
-      let prevEnd = node.type === "string" ? 1 : 2;
-
       let res = "";
       for (const child of node.namedChildren) {
-        res += removeDoubleQuoteBackslashes(
-          node.text.slice(prevEnd, child.startIndex - node.startIndex),
-        );
-        // expansion, simple_expansion or command_substitution (or concat?)
-        const subVal = toTokens(child, curlCommand, warnings);
-        if (typeof subVal === "string") {
-          res += subVal;
+        if (child.type === "string_content") {
+          res += removeDoubleQuoteBackslashes(child.text);
         } else {
-          if (res) {
-            vals.push(res);
-            res = "";
+          // expansion, simple_expansion or command_substitution (or concat?)
+          const subVal = toTokens(child, curlCommand, warnings);
+          if (typeof subVal === "string") {
+            res += subVal;
+          } else {
+            if (res) {
+              vals.push(res);
+              res = "";
+            }
+            vals = vals.concat(subVal);
           }
-          vals = vals.concat(subVal);
         }
-        prevEnd = child.endIndex - node.startIndex;
       }
-      res += removeDoubleQuoteBackslashes(node.text.slice(prevEnd, -1));
       if (res || vals.length === 0) {
         vals.push(res);
       }
@@ -239,9 +241,9 @@ function toTokens(
     }
     default:
       throw new CCError(
-        "unexpected argument type " +
+        "unexpected syntax node type " +
           JSON.stringify(node.type) +
-          '. Must be one of "word", "string", "raw_string", "ansi_c_string", "expansion", "simple_expansion", "translated_string" or "concatenation"\n' +
+          '. Must be one of "word", "number", "string", "raw_string", "ansi_c_string", "expansion", "simple_expansion", "translated_string", "command_substitution" or "concatenation"\n' +
           underlineNode(node, curlCommand),
       );
   }
@@ -352,7 +354,7 @@ function extractRedirect(
   curlCommand: string,
   warnings: Warnings,
 ): [Parser.SyntaxNode, Word?, Word?] {
-  if (!node.childCount) {
+  if (!node.namedChildCount) {
     throw new CCError('got empty "redirected_statement" AST node');
   }
 
@@ -374,7 +376,7 @@ function extractRedirect(
   if (redirects.length > 1) {
     warnings.push([
       "multiple-redirects",
-      // TODO: this is misleading because not all generators use the redirect
+      // TODO: this is misleading because not all generators support redirects
       "found " +
         redirects.length +
         " redirect nodes. Only the first one will be used:\n" +
@@ -383,45 +385,31 @@ function extractRedirect(
   }
   const redirect = redirects[0];
   if (redirect.type === "file_redirect") {
-    stdinFile = toWord(redirect.namedChildren[0], curlCommand, warnings);
-  } else if (redirect.type === "heredoc_redirect") {
-    // heredoc bodies are children of the parent program node
-    // https://github.com/tree-sitter/tree-sitter-bash/issues/118
-    if (redirect.namedChildCount < 1) {
+    const destination = redirect.childForFieldName("destination");
+    if (!destination) {
       throw new CCError(
-        'got "redirected_statement" AST node with heredoc but no heredoc start',
+        'got "file_redirect" AST node with no "destination" child',
       );
     }
-    const heredocStart = redirect.namedChildren[0].text;
-    const heredocBody = node.nextNamedSibling;
+    stdinFile = toWord(destination, curlCommand, warnings);
+  } else if (redirect.type === "heredoc_redirect") {
+    const heredocBody = redirect.descendantsOfType("heredoc_body")[0];
     if (!heredocBody) {
       throw new CCError(
-        'got "redirected_statement" AST node with no heredoc body',
-      );
-    }
-    // TODO: herestrings and heredocs are different
-    if (heredocBody.type !== "heredoc_body") {
-      throw new CCError(
-        'got "redirected_statement" AST node with heredoc but no heredoc body, got ' +
-          heredocBody.type +
-          " instead",
+        'got "redirected_statement" AST node without heredoc_body',
       );
     }
     // TODO: heredocs can do variable expansion and stuff
-    if (heredocStart.length) {
-      stdin = new Word(heredocBody.text.slice(0, -heredocStart.length));
-    } else {
-      // this shouldn't happen
-      stdin = new Word(heredocBody.text);
-    }
+    stdin = new Word(heredocBody.text);
   } else if (redirect.type === "herestring_redirect") {
+    // TODO: herestring_redirect can be in a command node
+    // https://github.com/tree-sitter/tree-sitter-bash/issues/260
     if (redirect.namedChildCount < 1 || !redirect.firstNamedChild) {
       throw new CCError(
         'got "redirected_statement" AST node with empty herestring',
       );
     }
-    // TODO: this just converts bash code to text
-    stdin = new Word(redirect.firstNamedChild.text);
+    stdin = toWord(redirect.firstNamedChild, curlCommand, warnings);
   } else {
     throw new CCError(
       'got "redirected_statement" AST node whose second child is not one of "file_redirect", "heredoc_redirect" or "herestring_redirect", got ' +
@@ -647,38 +635,13 @@ function toNameAndArgv(
     );
   }
 
-  // TODO: add childrenForFieldName to tree-sitter node/web bindings
-  let commandNameLoc = 0;
-  // TODO: parse variable_assignment nodes and replace variables in the command
-  // TODO: support file_redirect
-  for (const n of command.namedChildren) {
-    if (n.type === "variable_assignment" || n.type === "file_redirect") {
-      warnings.push([
-        "command-preamble",
-        "skipping " +
-          JSON.stringify(n.type) +
-          " expression\n" +
-          underlineNode(n, curlCommand),
-      ]);
-      commandNameLoc += 1;
-    } else {
-      // it must be the command name
-      if (n.type !== "command_name") {
-        throw new CCError(
-          'expected "command_name", "variable_assignment" or "file_redirect" AST node, found ' +
-            n.type +
-            " instead\n" +
-            underlineNode(n, curlCommand),
-        );
-      }
-      break;
-    }
-  }
+  // TODO: warn about leading variable_assignment s
+  const name = command.childForFieldName("name");
+  const args = command.childrenForFieldName("argument");
+  // TODO: find if one changes stdin
+  // const redirects = command.childrenForFieldName("redirect");
 
-  const [name, ...args] = command.namedChildren.slice(commandNameLoc);
-
-  // Shouldn't happen
-  if (name === undefined) {
+  if (!name) {
     throw new CCError(
       'found "command" AST node with no "command_name" child\n' +
         underlineNode(command, curlCommand),
