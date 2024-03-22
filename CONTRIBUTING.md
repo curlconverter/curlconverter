@@ -61,7 +61,7 @@ npm test -- --language python
 
 First check which characters the input is made up of with [https://verhovs.ky/text-inspector/](https://verhovs.ky/text-inspector/) or `xxd`. It might [contain non-breaking spaces](https://github.com/curlconverter/curlconverter/issues/331) for example.
 
-Next, check how the Bash is parsed on the [tree-sitter playground](https://tree-sitter.github.io/tree-sitter/playground). Keep in mind that the playground runs the `master` branch of [tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash). curlconverter uses an [internal fork](https://github.com/curlconverter/tree-sitter-bash) that might be a few commits behind.
+Next, check how the Bash is parsed on the [tree-sitter playground](https://tree-sitter.github.io/tree-sitter/playground), but keep in mind that the playground might run a different version of [tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash).
 
 ## How it works
 
