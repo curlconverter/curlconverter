@@ -72,7 +72,9 @@ for (const outputLanguage of Object.keys(converters)) {
 
 for (const fileName of testFileNames) {
   const inputFilePath = path.resolve(curlCommandsDir, fileName);
-  const inputFileContents = fs.readFileSync(inputFilePath, "utf8");
+  const inputFileContents = fs
+    .readFileSync(inputFilePath, "utf8")
+    .replace(/\r\n/g, "\n");
 
   for (const outputLanguage of languages) {
     const converter = converters[outputLanguage];
