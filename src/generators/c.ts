@@ -909,11 +909,13 @@ function requestToC(
       // not really necessary since it's 0
       tlsVersion = "CURL_SSLVERSION_DEFAULT";
     }
-    code +=
-      "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)" +
-      tlsVersion +
-      (tlsMax ? " | " + tlsMax : "") +
-      ");\n";
+    code += "  curl_easy_setopt(hnd, CURLOPT_SSLVERSION, (long)";
+    if (tlsMax) {
+      code += "(" + tlsVersion + " | " + tlsMax + ")";
+    } else {
+      code += tlsVersion;
+    }
+    code += ");\n";
   }
   if (request.proxyTlsv1) {
     code +=
@@ -944,7 +946,9 @@ function requestToC(
     }
     code +=
       "  curl_easy_setopt(hnd, CURLOPT_SSL_OPTIONS, (long)" +
-      sslOptions.join(" | (long)") +
+      (sslOptions.length > 1 ? "(" : "") +
+      sslOptions.join(" | ") +
+      (sslOptions.length > 1 ? ")" : "") +
       ");\n";
   }
 
