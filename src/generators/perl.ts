@@ -164,7 +164,6 @@ export function _toPerl(requests: Request[], warnings: Warnings = []): string {
         }
         args.push(reprHashKey(k) + " => " + repr(v));
       }
-      console.log();
       if (request.urls[0].auth) {
         args.push(
           'Authorization => "Basic " . MIME::Base64::encode(' +
