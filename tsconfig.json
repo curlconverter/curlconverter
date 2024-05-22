@@ -6,7 +6,7 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2018",
-    "lib": ["es2018", "dom"],
+    "lib": ["es2018", "dom", "webworker"],
     "moduleResolution": "node",
     "module": "es2022",
     "esModuleInterop": true,
