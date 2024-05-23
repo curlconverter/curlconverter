@@ -243,7 +243,7 @@ import {
 import fs from "fs";
 
 // This line is updated by extract_curl_args.py
-const VERSION = "4.9.0 (curl 8.2.1)";
+const VERSION = "4.10.0 (curl 8.2.1)";
 
 // sets a default in case --language isn't passed
 const defaultLanguage = "python";
