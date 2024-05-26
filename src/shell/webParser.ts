@@ -5,12 +5,9 @@ import Parser from "web-tree-sitter";
 // NOTE: top-level await requires Safari 15+
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await#browser_compatibility
 await Parser.init({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   locateFile(scriptName: string, scriptDirectory: string) {
-    const url = new URL(scriptDirectory);
-    url.pathname = "/";
-    url.search = "";
-    url.hash = "";
-    return url.href + scriptName;
+    return "/" + scriptName;
   },
 });
 const Bash = await Parser.Language.load("/tree-sitter-bash.wasm");
