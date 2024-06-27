@@ -110,6 +110,11 @@ const converters = {
     extension: ".java",
     converter: curlconverter.toJavaOkHttp,
   },
+  "java-unirest":{
+    name: "Java + Unirest",
+    extension: ".java",
+    converter: curlconverter.toJavaUnirest,
+  },
   javascript: {
     name: "JavaScript",
     extension: ".js",
