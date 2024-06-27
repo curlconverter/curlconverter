@@ -238,7 +238,7 @@ import {
   _toJavaUnirest,
   toJavaUnirestWarn,
   supportedArgs as supportedArgsJavaUnirest,
-} from "./generators/java/unirest";
+} from "./generators/java/unirest.js";
 import {
   _toWget,
   toWgetWarn,
@@ -355,6 +355,7 @@ language: the language to convert the curl command to. The choices are
   java-httpurlconnection
   java-jsoup
   java-okhttp
+  java-unirest
   javascript
   javascript-jquery
   javascript-xhr
