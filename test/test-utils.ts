@@ -225,6 +225,11 @@ const converters = {
     extension: ".r",
     converter: curlconverter.toR,
   },
+  "r-httr2": {
+    name: "R + httr2",
+    extension: ".r",
+    converter: curlconverter.toRHttr2,
+  },
   ruby: {
     name: "Ruby",
     extension: ".rb",

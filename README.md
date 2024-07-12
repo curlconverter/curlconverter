@@ -105,7 +105,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `php`, `php-guzzle`, `php-requests`
 - `powershell`, `powershell-webrequest`
 - `python` (the default), `python-http`
-- `r`
+- `r`, `r-httr2`
 - `ruby`
 - `rust`
 - `swift`

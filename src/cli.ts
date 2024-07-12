@@ -220,6 +220,11 @@ import {
   supportedArgs as supportedArgsR,
 } from "./generators/r/r.js";
 import {
+  _toRHttr2,
+  toRWarnHttr2,
+  supportedArgs as supportedArgsRHttr2,
+} from "./generators/r/r-httr2.js";
+import {
   _toRuby,
   toRubyWarn,
   supportedArgs as supportedArgsRuby,
@@ -326,6 +331,7 @@ const translate: {
   "python-http": [_toPythonHttp, toPythonHttpWarn, supportedArgsPythonHttp],
   "python-httpclient": [_toPythonHttp, toPythonHttpWarn, supportedArgsPythonHttp], // undocumented alias
   r: [_toR, toRWarn, supportedArgsR],
+  "r-httr2": [_toRHttr2, toRWarnHttr2, supportedArgsRHttr2],
   ruby: [_toRuby, toRubyWarn, supportedArgsRuby],
   rust: [_toRust, toRustWarn, supportedArgsRust],
   swift: [_toSwift, toSwiftWarn, supportedArgsSwift],
@@ -375,6 +381,7 @@ language: the language to convert the curl command to. The choices are
   powershell-webrequest
   python (the default)
   r
+  r-httr2
   ruby
   rust
   swift
