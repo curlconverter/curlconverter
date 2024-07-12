@@ -149,8 +149,8 @@ function addCurlStep(
   f: string,
   mainArgs: Array<string>,
   dots: Array<[string, string]> = [],
+  keepIfEmpty = false,
 ) {
-  // TODO add `keep_if_empty`?
   let dotArgs = dots.map((dot) => {
     let [name, value] = dot;
     if (name == "") {
@@ -161,12 +161,12 @@ function addCurlStep(
   });
 
   let args = mainArgs.concat(...dotArgs);
-  if (args.length === 0) {
+  if (args.length === 0 && !keepIfEmpty) {
     return steps;
   }
 
   let newStep: string;
-  if (dots.length === 0) {
+  if (dots.length === 0 || args.length === 1) {
     let argsString = args.join(", ");
     newStep = `${f}(${argsString})`;
   } else {
@@ -278,14 +278,14 @@ export function _toRHttr2(
     steps = addCurlStep(steps, "req_auth_basic", [repr(user), repr(password)]);
   }
 
-  rstatsCode += steps.join(" |> \n  ") + " |> \n  ";
-
+  let performArgs: Array<[string, string]> = [];
   // TODO add test
   if (request.verbose) {
-    rstatsCode += "req_perform(verbosity = 1)";
-  } else {
-    rstatsCode += "req_perform()";
+    performArgs.push(["verbosity", "1"]);
   }
+  steps = addCurlStep(steps, "req_perform", [], performArgs, true);
+
+  rstatsCode += steps.join(" |> \n  ");
 
   return rstatsCode + "\n";
 }

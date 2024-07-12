@@ -10,4 +10,4 @@ cookies = c(
 
 request("http://localhost:28139/page") |> 
   req_headers(!!!cookies) |> 
-  req_perform(verbosity = 1)
+  req_perform(`verbosity` = 1)

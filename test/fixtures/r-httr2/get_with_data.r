@@ -13,4 +13,4 @@ headers = c(
 request("http://localhost:28139/synthetics/api/v3/monitors") |> 
   req_url_query(!!!params) |> 
   req_headers(!!!headers) |> 
-  req_perform(verbosity = 1)
+  req_perform(`verbosity` = 1)
