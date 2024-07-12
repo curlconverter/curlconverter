@@ -1,10 +1,10 @@
-import { Word, eq } from "../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { wordDecodeURIComponent, parseQueryString } from "../Query.js";
-import type { QueryList } from "../Query.js";
+import { Word, eq } from "../../shell/Word.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { wordDecodeURIComponent, parseQueryString } from "../../Query.js";
+import type { QueryList } from "../../Query.js";
 
-import { reprStr as pyrepr } from "./python/python.js";
+import { reprStr as pyrepr } from "../python/python.js";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

@@ -218,7 +218,7 @@ import {
   _toR,
   toRWarn,
   supportedArgs as supportedArgsR,
-} from "./generators/r.js";
+} from "./generators/r/r.js";
 import {
   _toRuby,
   toRubyWarn,
