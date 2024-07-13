@@ -1,10 +1,8 @@
 library(httr2)
 
-params = list(
-  `foo` = "bar",
-  `baz` = "qux"
-)
-
 request("http://localhost:28139") |> 
-  req_url_query(!!!params) |> 
+  req_url_query(
+    `foo` = "bar",
+    `baz` = "qux"
+  ) |> 
   req_perform()

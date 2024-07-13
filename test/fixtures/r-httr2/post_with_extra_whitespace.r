@@ -1,12 +1,8 @@
 library(httr2)
 
-headers = c(
-  `accept` = "application/json"
-)
-
 request("http://localhost:28139/api/library") |> 
   req_method("POST") |> 
-  req_headers(!!!headers) |> 
+  req_headers(`accept` = "application/json") |> 
   req_body_multipart(
     `files` = curl::form_file("47.htz"),
     `name` = "47",

@@ -1,18 +1,16 @@
 library(httr2)
 
-headers = c(
-  `Origin` = "http://www.realtor.ca",
-  `Accept-Encoding` = "gzip, deflate",
-  `Accept-Language` = "en-US,en;q=0.8",
-  `User-Agent` = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
-  `Accept` = "*/*",
-  `Referer` = "http://www.realtor.ca/Residential/Map.aspx",
-  `Connection` = "keep-alive"
-)
-
 request("http://localhost:28139/api/Listing.svc/PropertySearch_Post") |> 
   req_method("POST") |> 
-  req_headers(!!!headers) |> 
+  req_headers(
+    `Origin` = "http://www.realtor.ca",
+    `Accept-Encoding` = "gzip, deflate",
+    `Accept-Language` = "en-US,en;q=0.8",
+    `User-Agent` = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
+    `Accept` = "*/*",
+    `Referer` = "http://www.realtor.ca/Residential/Map.aspx",
+    `Connection` = "keep-alive"
+  ) |> 
   req_body_form(
     `CultureId` = "1",
     `ApplicationId` = "1",

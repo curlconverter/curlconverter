@@ -1,11 +1,10 @@
 library(httr2)
 
-headers = c(
-  `Accept` = "application/json"
-)
-
 request("http://localhost:28139") |> 
   req_method("POST") |> 
-  req_headers(!!!headers) |> 
-  req_body_raw('{ "drink": "coffe" }', "application/json") |> 
+  req_headers(`Accept` = "application/json") |> 
+  req_body_raw(
+    '{ "drink": "coffe" }',
+    `type` = "application/json"
+  ) |> 
   req_perform()
