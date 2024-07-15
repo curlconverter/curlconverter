@@ -248,12 +248,6 @@ export function _toRHttr2(
     steps = addCurlStep(steps, "req_method", [repr(method)]);
   }
 
-  if (request.insecure) {
-    steps = addCurlStep(steps, "req_options", [], [["ssl_verifypeer", "0"]]);
-  }
-
-  let rstatsCode = "";
-  rstatsCode += "library(httr2)\n\n";
   steps = addCurlStep(steps, "req_url_query", [], queryList);
   steps = addCurlStep(steps, "req_headers", [], headerList);
   // TODO use `req_cookie_set()` once it is added
@@ -268,6 +262,26 @@ export function _toRHttr2(
     steps = addCurlStep(steps, "req_auth_basic", [repr(user), repr(password)]);
   }
 
+  if (request.proxy) {
+    const url = request.proxy.toString();
+    addCurlStep(steps, "req_proxy", [url]);
+  }
+
+  const timeout = request.timeout || request.connectTimeout;
+  if (timeout) {
+    // TODO special handling if both are defined
+    steps = addCurlStep(steps, "req_timeout", [timeout.toString()]);
+  }
+
+  const curlOptions: Array<NamedArg> = [];
+  if (request.insecure) {
+    curlOptions.push(["ssl_verifypeer", "0"]);
+  }
+  if (request.maxRedirects !== undefined) {
+    curlOptions.push(["maxredirs", request.maxRedirects]);
+  }
+  steps = addCurlStep(steps, "req_options", [], curlOptions);
+
   const performArgs: Array<[string, string]> = [];
   // TODO add test
   if (request.verbose) {
@@ -275,6 +289,7 @@ export function _toRHttr2(
   }
   steps = addCurlStep(steps, "req_perform", [], performArgs, true);
 
+  let rstatsCode = "library(httr2)\n\n";
   rstatsCode += steps.join(" |> \n  ");
 
   return rstatsCode + "\n";
