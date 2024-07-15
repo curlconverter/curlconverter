@@ -15,14 +15,19 @@ export const supportedArgs = new Set([
 ]);
 
 const regexBacktickEscape = /`|\\|\p{C}|[^ \P{Z}]/gu;
-function reprBacktick(s: Word): string {
-  if (!s.isString()) {
-    // TODO: warn
+export function reprBacktick(s: Word | string): string {
+  if (s instanceof Word) {
+    if (!s.isString()) {
+      // TODO: warn
+    }
+
+    s = s.toString();
   }
+
   // back-tick quote names
   return (
     "`" +
-    s.toString().replace(regexBacktickEscape, (c: string): string => {
+    s.replace(regexBacktickEscape, (c: string): string => {
       switch (c) {
         case "\x07":
           return "\\a";
@@ -57,7 +62,7 @@ function reprBacktick(s: Word): string {
 }
 
 // https://stat.ethz.ch/R-manual/R-devel/doc/manual/R-lang.html#Literal-constants
-function reprStr(s: string): string {
+export function reprStr(s: string): string {
   // R prefers double quotes
   const quote = s.includes('"') && !s.includes("'") ? "'" : '"';
   return pyrepr(s, quote);
@@ -77,7 +82,7 @@ export function repr(w: Word): string {
   if (args.length === 1) {
     return args[0];
   }
-  return "paste(" + args.join(", ") + ', sep = "")';
+  return "paste0(" + args.join(", ") + ")";
 }
 
 function getCookieDict(request: Request): string | null {

@@ -1,92 +1,14 @@
 import { Word, eq } from "../../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import { parse, getFirst } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { wordDecodeURIComponent, parseQueryString } from "../../Query.js";
 
-import { reprStr as pyrepr } from "../python/python.js";
+import { reprBacktick, reprStr, repr, supportedArgs } from "./r.js";
+export { supportedArgs };
 
 type NamedArg = [Word | string, Word | string];
 
-export const supportedArgs = new Set([
-  ...COMMON_SUPPORTED_ARGS,
-  "form",
-  "form-string",
-  "insecure",
-  "no-insecure",
-]);
-
-const regexBacktickEscape = /`|\\|\p{C}|[^ \P{Z}]/gu;
-function reprBacktick(s: Word | string): string {
-  if (s instanceof Word) {
-    if (!s.isString()) {
-      // TODO: warn
-    }
-
-    s = s.toString();
-  }
-
-  // back-tick quote names
-  return (
-    "`" +
-    s.replace(regexBacktickEscape, (c: string): string => {
-      switch (c) {
-        case "\x07":
-          return "\\a";
-        case "\b":
-          return "\\b";
-        case "\f":
-          return "\\f";
-        case "\n":
-          return "\\n";
-        case "\r":
-          return "\\r";
-        case "\t":
-          return "\\t";
-        case "\v":
-          return "\\v";
-        case "\\":
-          return "\\\\";
-        case "`":
-          return "\\`";
-      }
-      const hex = (c.codePointAt(0) as number).toString(16);
-      if (hex.length <= 2) {
-        return "\\x" + hex.padStart(2, "0");
-      }
-      if (hex.length <= 4) {
-        return "\\u" + hex.padStart(4, "0");
-      }
-      return "\\U" + hex.padStart(8, "0");
-    }) +
-    "`"
-  );
-}
-
-// https://stat.ethz.ch/R-manual/R-devel/doc/manual/R-lang.html#Literal-constants
-function reprStr(s: string): string {
-  // R prefers double quotes
-  const quote = s.includes('"') && !s.includes("'") ? "'" : '"';
-  return pyrepr(s, quote);
-}
-
-export function repr(w: Word): string {
-  const args: string[] = [];
-  for (const t of w.tokens) {
-    if (typeof t === "string") {
-      args.push(reprStr(t));
-    } else if (t.type === "variable") {
-      args.push("Sys.getenv(" + reprStr(t.value) + ")");
-    } else {
-      args.push("system(" + reprStr(t.value) + ", intern = TRUE)");
-    }
-  }
-  if (args.length === 1) {
-    return args[0];
-  }
-  return "paste(" + args.join(", ") + ', sep = "")';
-}
-
-function getCookieList(request: Request): Array<NamedArg> {
+function getCookieList(request: Request, warnings: Warnings): Array<NamedArg> {
   if (!request.cookies) {
     return [];
   }
@@ -97,7 +19,10 @@ function getCookieList(request: Request): Array<NamedArg> {
       const decoded = wordDecodeURIComponent(value.replace(/\+/g, " "));
       cookieList.push([key, decoded]);
     } catch {
-      // TODO warn?
+      warnings.push([
+        "cookie-decoding error",
+        "Cookie could not be decoded\n\n" + value.toString(),
+      ]);
     }
   }
 
@@ -222,7 +147,7 @@ export function _toRHttr2(
 ): string {
   const request = getFirst(requests, warnings);
 
-  const cookieList = getCookieList(request);
+  const cookieList = getCookieList(request, warnings);
   const queryList = getQueryList(request);
 
   const contentType = request.headers.getContentType();

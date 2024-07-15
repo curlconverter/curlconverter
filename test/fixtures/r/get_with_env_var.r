@@ -2,7 +2,7 @@ library(httr)
 
 headers = c(
   `Content-Type` = "application/json",
-  `Authorization` = paste("Bearer ", Sys.getenv("DO_API_TOKEN"), sep = "")
+  `Authorization` = paste0("Bearer ", Sys.getenv("DO_API_TOKEN"))
 )
 
 params = list(
