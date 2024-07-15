@@ -331,6 +331,7 @@ const translate: {
   "python-http": [_toPythonHttp, toPythonHttpWarn, supportedArgsPythonHttp],
   "python-httpclient": [_toPythonHttp, toPythonHttpWarn, supportedArgsPythonHttp], // undocumented alias
   r: [_toR, toRWarn, supportedArgsR],
+  "r-httr": [_toR, toRWarn, supportedArgsR], // undocumented alias
   "r-httr2": [_toRHttr2, toRWarnHttr2, supportedArgsRHttr2],
   ruby: [_toRuby, toRubyWarn, supportedArgsRuby],
   rust: [_toRust, toRustWarn, supportedArgsRust],
