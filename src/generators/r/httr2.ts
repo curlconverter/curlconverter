@@ -3,7 +3,7 @@ import { parse, getFirst } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { wordDecodeURIComponent, parseQueryString } from "../../Query.js";
 
-import { reprBacktick, reprStr, repr, supportedArgs } from "./r.js";
+import { reprBacktick, reprStr, repr, supportedArgs } from "./httr.js";
 export { supportedArgs };
 
 type NamedArg = [Word | string, Word | string];

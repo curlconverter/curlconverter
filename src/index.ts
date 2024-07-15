@@ -62,8 +62,8 @@ export {
 } from "./generators/powershell.js";
 export { toPython, toPythonWarn } from "./generators/python/python.js";
 export { toPythonHttp, toPythonHttpWarn } from "./generators/python/http.js";
-export { toR, toRWarn } from "./generators/r/r.js";
-export { toRHttr2, toRWarnHttr2 } from "./generators/r/r-httr2.js";
+export { toR, toRWarn } from "./generators/r/httr.js";
+export { toRHttr2, toRWarnHttr2 } from "./generators/r/httr2.js";
 export { toRuby, toRubyWarn } from "./generators/ruby.js";
 export { toRust, toRustWarn } from "./generators/rust.js";
 export { toSwift, toSwiftWarn } from "./generators/swift.js";

@@ -218,12 +218,12 @@ import {
   _toR,
   toRWarn,
   supportedArgs as supportedArgsR,
-} from "./generators/r/r.js";
+} from "./generators/r/httr.js";
 import {
   _toRHttr2,
   toRWarnHttr2,
   supportedArgs as supportedArgsRHttr2,
-} from "./generators/r/r-httr2.js";
+} from "./generators/r/httr2.js";
 import {
   _toRuby,
   toRubyWarn,
