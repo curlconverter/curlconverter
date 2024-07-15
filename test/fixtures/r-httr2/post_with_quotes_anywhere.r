@@ -4,11 +4,8 @@ request("http://localhost:28139") |>
   req_method("POST") |> 
   req_headers(
     `A` = "''a'",
-    `B` = '"'
-  ) |> 
-  req_headers(
-    `x` = "1'",
-    `y` = '2"'
+    `B` = '"',
+    `Cookie` = "x=1'; y=2\""
   ) |> 
   req_body_raw(
     "a=b&c=\"&d='",

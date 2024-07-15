@@ -6,6 +6,7 @@ request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feed
     `authority` = "sgg.ae",
     `accept` = "application/json, text/javascript, */*; q=0.01",
     `accept-language` = "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    `cookie` = "pll_language=en",
     `origin` = "https://sgg.ae",
     `referer` = "https://sgg.ae/contact-us/",
     `sec-ch-ua` = '"Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"',
@@ -17,7 +18,6 @@ request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feed
     `user-agent` = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36",
     `x-requested-with` = "XMLHttpRequest"
   ) |> 
-  req_headers(`pll_language` = "en") |> 
   req_body_multipart(
     `_wpcf7` = "295",
     `_wpcf7_version` = "5.1.4",

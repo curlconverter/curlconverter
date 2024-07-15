@@ -147,7 +147,7 @@ export function _toRHttr2(
 ): string {
   const request = getFirst(requests, warnings);
 
-  const cookieList = getCookieList(request, warnings);
+  // const cookieList = getCookieList(request, warnings);
   const queryList = getQueryList(request);
 
   const contentType = request.headers.getContentType();
@@ -177,7 +177,7 @@ export function _toRHttr2(
   steps = addCurlStep(steps, "req_headers", [], headerList);
   // TODO use `req_cookie_set()` once it is added
   // https://github.com/r-lib/httr2/issues/369
-  steps = addCurlStep(steps, "req_headers", [], cookieList);
+  // steps = addCurlStep(steps, "req_headers", [], cookieList);
   // TODO support cookies from file?
 
   steps = addBodyStep(steps, request, contentType);
