@@ -8,6 +8,7 @@ export { supportedArgs };
 
 type NamedArg = [Word | string, Word | string];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getCookieList(request: Request, warnings: Warnings): Array<NamedArg> {
   if (!request.cookies) {
     return [];
