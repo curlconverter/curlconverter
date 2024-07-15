@@ -215,7 +215,7 @@ export function _toRHttr2(
   steps = addCurlStep(steps, "req_perform", [], performArgs, true);
 
   let rstatsCode = "library(httr2)\n\n";
-  rstatsCode += steps.join(" |> \n  ");
+  rstatsCode += steps.join(" |>\n  ");
 
   return rstatsCode + "\n";
 }

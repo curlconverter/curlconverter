@@ -1,6 +1,6 @@
 library(httr2)
 
-request("http://localhost:28139/cookies") |> 
+request("http://localhost:28139/cookies") |>
   req_headers(
     `Pragma` = "no-cache",
     `Accept-Encoding` = "gzip, deflate, br",
@@ -12,5 +12,5 @@ request("http://localhost:28139/cookies") |>
     `Connection` = "keep-alive",
     `Cache-Control` = "no-cache",
     `Sec-Metadata` = "destination=empty, site=same-origin"
-  ) |> 
+  ) |>
   req_perform()

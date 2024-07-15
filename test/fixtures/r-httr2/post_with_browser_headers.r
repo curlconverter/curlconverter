@@ -1,7 +1,7 @@
 library(httr2)
 
-request("http://localhost:28139/ajax/demo_post.asp") |> 
-  req_method("POST") |> 
+request("http://localhost:28139/ajax/demo_post.asp") |>
+  req_method("POST") |>
   req_headers(
     `Origin` = "http://www.w3schools.com",
     `Accept-Encoding` = "gzip, deflate",
@@ -12,5 +12,5 @@ request("http://localhost:28139/ajax/demo_post.asp") |>
     `Cookie` = "_gat=1; ASPSESSIONIDACCRDTDC=MCMDKFMBLLLHGKCGNMKNGPKI; _ga=GA1.2.1424920226.1419478126",
     `Connection` = "keep-alive",
     `Content-Length` = "0"
-  ) |> 
+  ) |>
   req_perform()

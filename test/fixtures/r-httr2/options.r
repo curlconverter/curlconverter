@@ -1,7 +1,7 @@
 library(httr2)
 
-request("http://localhost:28139/api/tunein/queue-and-play") |> 
-  req_method("OPTIONS") |> 
+request("http://localhost:28139/api/tunein/queue-and-play") |>
+  req_method("OPTIONS") |>
   req_url_query(
     `deviceSerialNumber` = "xxx",
     `deviceType` = "xxx",
@@ -9,7 +9,7 @@ request("http://localhost:28139/api/tunein/queue-and-play") |>
     `contentType` = "station",
     `callSign` = "",
     `mediaOwnerCustomerId` = "xxx"
-  ) |> 
+  ) |>
   req_headers(
     `Pragma` = "no-cache",
     `Access-Control-Request-Method` = "POST",
@@ -23,5 +23,5 @@ request("http://localhost:28139/api/tunein/queue-and-play") |>
     `Connection` = "keep-alive",
     `DNT` = "1",
     `Access-Control-Request-Headers` = "content-type,csrf"
-  ) |> 
+  ) |>
   req_perform()

@@ -1,7 +1,7 @@
 library(httr2)
 
-request("http://localhost:28139/echo/html/") |> 
-  req_method("POST") |> 
+request("http://localhost:28139/echo/html/") |>
+  req_method("POST") |>
   req_headers(
     `Origin` = "http://fiddle.jshell.net",
     `Accept-Encoding` = "gzip, deflate",
@@ -11,9 +11,9 @@ request("http://localhost:28139/echo/html/") |>
     `Referer` = "http://fiddle.jshell.net/_display/",
     `X-Requested-With` = "XMLHttpRequest",
     `Connection` = "keep-alive"
-  ) |> 
+  ) |>
   req_body_form(
     `msg1` = "wow",
     `msg2` = "such"
-  ) |> 
+  ) |>
   req_perform()

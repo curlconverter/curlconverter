@@ -1,7 +1,7 @@
 library(httr2)
 
-request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feedback") |> 
-  req_method("POST") |> 
+request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feedback") |>
+  req_method("POST") |>
   req_headers(
     `authority` = "sgg.ae",
     `accept` = "application/json, text/javascript, */*; q=0.01",
@@ -17,7 +17,7 @@ request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feed
     `sec-fetch-site` = "same-origin",
     `user-agent` = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36",
     `x-requested-with` = "XMLHttpRequest"
-  ) |> 
+  ) |>
   req_body_multipart(
     `_wpcf7` = "295",
     `_wpcf7_version` = "5.1.4",
@@ -29,5 +29,5 @@ request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feed
     `your-subject` = "test",
     `your-message` = "test",
     `send_c[]` = "Send copy to yourself"
-  ) |> 
+  ) |>
   req_perform()

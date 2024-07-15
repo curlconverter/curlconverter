@@ -1,7 +1,7 @@
 library(httr2)
 
-request("http://localhost:28139/api/Listing.svc/PropertySearch_Post") |> 
-  req_method("POST") |> 
+request("http://localhost:28139/api/Listing.svc/PropertySearch_Post") |>
+  req_method("POST") |>
   req_headers(
     `Origin` = "http://www.realtor.ca",
     `Accept-Encoding` = "gzip, deflate",
@@ -10,7 +10,7 @@ request("http://localhost:28139/api/Listing.svc/PropertySearch_Post") |>
     `Accept` = "*/*",
     `Referer` = "http://www.realtor.ca/Residential/Map.aspx",
     `Connection` = "keep-alive"
-  ) |> 
+  ) |>
   req_body_form(
     `CultureId` = "1",
     `ApplicationId` = "1",
@@ -33,5 +33,5 @@ request("http://localhost:28139/api/Listing.svc/PropertySearch_Post") |>
     `Latitude` = "43.6552047278685",
     `ZoomLevel` = "13",
     `CurrentPage` = "1"
-  ) |> 
+  ) |>
   req_perform()

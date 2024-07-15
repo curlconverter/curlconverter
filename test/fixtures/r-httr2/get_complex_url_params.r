@@ -1,6 +1,6 @@
 library(httr2)
 
-request("http://localhost:28139/house-sitting/") |> 
+request("http://localhost:28139/house-sitting/") |>
   req_url_query(
     `page` = "1",
     `available` = "",
@@ -43,5 +43,5 @@ request("http://localhost:28139/house-sitting/") |>
     `duration` = "",
     `isfd` = "",
     `stopover` = ""
-  ) |> 
+  ) |>
   req_perform()
