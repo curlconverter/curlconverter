@@ -14,6 +14,29 @@ export const supportedArgs = new Set([
   "no-insecure",
 ]);
 
+const RESERVED_WORDS = new Set([
+  "if",
+  "else",
+  "repeat",
+  "while",
+  "function",
+  "for",
+  "in",
+  "next",
+  "break",
+  "TRUE",
+  "FALSE",
+  "NULL",
+  "Inf",
+  "NaN",
+  "NA",
+  "NA_integer_",
+  "NA_real_",
+  "NA_complex_",
+  "NA_character_",
+]);
+
+// backtick quote names
 const regexBacktickEscape = /`|\\|\p{C}|[^ \P{Z}]/gu;
 export function reprBacktick(s: Word | string): string {
   if (s instanceof Word) {
@@ -24,7 +47,14 @@ export function reprBacktick(s: Word | string): string {
     s = s.toString();
   }
 
-  // back-tick quote names
+  if (
+    (s.match(/^[a-zA-Z][a-zA-Z0-9._]*$/) ||
+      s.match(/^\.[a-zA-Z][a-zA-Z0-9._]*$/)) &&
+    !RESERVED_WORDS.has(s)
+  ) {
+    return s;
+  }
+
   return (
     "`" +
     s.replace(regexBacktickEscape, (c: string): string => {
@@ -83,6 +113,17 @@ export function repr(w: Word): string {
     return args[0];
   }
   return "paste0(" + args.join(", ") + ")";
+}
+
+export function toNumeric(w: Word): string {
+  if (w.isString()) {
+    const s = w.toString();
+    // TODO: better check
+    if (parseFloat(s).toString() === s) {
+      return s;
+    }
+  }
+  return "as.numeric(" + repr(w) + ")";
 }
 
 function getCookieDict(request: Request): string | null {

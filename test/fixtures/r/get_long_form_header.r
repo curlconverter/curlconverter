@@ -1,7 +1,7 @@
 library(httr)
 
 headers = c(
-  `Accept` = "application/json",
+  Accept = "application/json",
   `user-token` = "75d7ce4350c7d6239347bf23d3a3e668"
 )
 

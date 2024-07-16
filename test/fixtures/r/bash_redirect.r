@@ -6,11 +6,11 @@ headers = c(
 )
 
 params = list(
-  `action` = "create",
-  `title` = "UnixRecord",
-  `username` = "root",
-  `password` = "abc123",
-  `ips` = "10.10.10.10"
+  action = "create",
+  title = "UnixRecord",
+  username = "root",
+  password = "abc123",
+  ips = "10.10.10.10"
 )
 
 data = upload_file("add_params.xml")

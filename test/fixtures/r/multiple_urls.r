@@ -5,7 +5,7 @@ headers = c(
 )
 
 data = list(
-  `fooo` = "blah"
+  fooo = "blah"
 )
 
 res <- httr::PUT(url = "http://localhost:28139/file.txt", httr::add_headers(.headers=headers), body = data, encode = "form")

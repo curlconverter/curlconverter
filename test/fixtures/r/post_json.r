@@ -2,7 +2,7 @@ library(httr)
 
 headers = c(
   `Content-Type` = "application/json",
-  `Accept` = "application/json"
+  Accept = "application/json"
 )
 
 data = '{ "drink": "coffe" }'

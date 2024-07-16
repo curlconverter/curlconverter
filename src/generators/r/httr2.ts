@@ -1,10 +1,26 @@
 import { Word, eq } from "../../shell/Word.js";
-import { parse, getFirst } from "../../parse.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { wordDecodeURIComponent, parseQueryString } from "../../Query.js";
 
-import { reprBacktick, reprStr, repr, supportedArgs } from "./httr.js";
-export { supportedArgs };
+import { reprBacktick, reprStr, repr, toNumeric } from "./httr.js";
+
+export const supportedArgs = new Set([
+  ...COMMON_SUPPORTED_ARGS,
+  "form",
+  "form-string",
+  "insecure",
+  "no-insecure",
+  "oauth2-bearer",
+
+  "max-redirs",
+
+  "max-time",
+  "connect-timeout",
+
+  "retry",
+  "retry-max-time",
+]);
 
 type NamedArg = [Word | string, Word | string];
 
@@ -153,14 +169,15 @@ export function _toRHttr2(
 
   const contentType = request.headers.getContentType();
   request.headers.delete("Content-Type");
+  if (request.oauth2Bearer && request.authType === "bearer") {
+    request.headers.delete("Authorization");
+  }
   const headerList = getHeaderList(request);
 
   const url = request.urls[0].queryList
     ? request.urls[0].urlWithoutQueryList
     : request.urls[0].url;
 
-  // httr TODO: GET() and HEAD() don't support sending data, detect and use VERB() instead
-  // -> is this still relevant for httr2?
   const method = request.urls[0].method;
   if (!eq(method, method.toUpperCase())) {
     warnings.push([
@@ -176,40 +193,56 @@ export function _toRHttr2(
 
   steps = addCurlStep(steps, "req_url_query", [], queryList);
   steps = addCurlStep(steps, "req_headers", [], headerList);
-  // TODO use `req_cookie_set()` once it is added
+  // TODO: use `req_cookie_set()` once it is added
   // https://github.com/r-lib/httr2/issues/369
   // steps = addCurlStep(steps, "req_headers", [], cookieList);
-  // TODO support cookies from file?
+  // TODO: support cookies from file?
 
   steps = addBodyStep(steps, request, contentType);
 
-  if (request.urls[0].auth) {
+  if (request.urls[0].auth && request.authType === "basic") {
     const [user, password] = request.urls[0].auth;
     steps = addCurlStep(steps, "req_auth_basic", [repr(user), repr(password)]);
+  } else if (request.oauth2Bearer && request.authType === "bearer") {
+    steps = addCurlStep(steps, "req_auth_bearer", [repr(request.oauth2Bearer)]);
   }
+  // TODO: req_oauth_auth_code
 
   if (request.proxy) {
     const url = request.proxy.toString();
     addCurlStep(steps, "req_proxy", [url]);
   }
 
-  const timeout = request.timeout || request.connectTimeout;
-  if (timeout) {
-    // TODO special handling if both are defined
-    steps = addCurlStep(steps, "req_timeout", [timeout.toString()]);
+  if (request.timeout) {
+    // TODO: parse float/int
+    steps = addCurlStep(steps, "req_timeout", [toNumeric(request.timeout)]);
   }
 
+  // TODO: all curl options could be supported here, like in the C generator
   const curlOptions: Array<NamedArg> = [];
   if (request.insecure) {
     curlOptions.push(["ssl_verifypeer", "0"]);
   }
   if (request.maxRedirects !== undefined) {
-    curlOptions.push(["maxredirs", request.maxRedirects]);
+    curlOptions.push(["maxredirs", toNumeric(request.maxRedirects)]);
+  }
+  if (request.connectTimeout) {
+    // TODO: parse float/int
+    curlOptions.push(["connecttimeout", toNumeric(request.connectTimeout)]);
   }
   steps = addCurlStep(steps, "req_options", [], curlOptions);
 
+  const retryOptions: Array<NamedArg> = [];
+  if (request.retry) {
+    retryOptions.push(["max_tries", toNumeric(request.retry)]);
+  }
+  if (request.retryMaxTime) {
+    retryOptions.push(["max_seconds", toNumeric(request.retryMaxTime)]);
+  }
+  steps = addCurlStep(steps, "req_retry", [], retryOptions);
+
   const performArgs: Array<[string, string]> = [];
-  // TODO add test
+  // TODO: add test
   if (request.verbose) {
     performArgs.push(["verbosity", "1"]);
   }

@@ -2,7 +2,7 @@ library(httr)
 
 headers = c(
   `'Accept'` = "'application/json'",
-  `Authorization` = "Bearer 000000000000000-0000",
+  Authorization = "Bearer 000000000000000-0000",
   `Content-Type` = "application/json"
 )
 

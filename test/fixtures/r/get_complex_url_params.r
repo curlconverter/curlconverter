@@ -1,10 +1,10 @@
 library(httr)
 
 params = list(
-  `page` = "1",
-  `available` = "",
-  `available` = "1",
-  `location` = "0",
+  page = "1",
+  available = "",
+  available = "1",
+  location = "0",
   `city[id]` = "0",
   `city[locality]` = "",
   `city[locality_text]` = "",
@@ -31,17 +31,17 @@ params = list(
   `region[longitude]` = "",
   `region[zoom]` = "",
   `region[name]` = "",
-  `country` = "",
-  `environment` = "",
-  `population` = "",
-  `period` = "0",
-  `date` = "2017-03-03",
-  `datestart` = "2017-03-03",
-  `dateend` = "2017-06-24",
-  `season` = "",
-  `duration` = "",
-  `isfd` = "",
-  `stopover` = ""
+  country = "",
+  environment = "",
+  population = "",
+  period = "0",
+  date = "2017-03-03",
+  datestart = "2017-03-03",
+  dateend = "2017-06-24",
+  season = "",
+  duration = "",
+  isfd = "",
+  stopover = ""
 )
 
 res <- httr::GET(url = "http://localhost:28139/house-sitting/", query = params)

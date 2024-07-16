@@ -3,12 +3,12 @@ library(httr2)
 request("http://localhost:28139/wp-json/contact-form-7/v1/contact-forms/295/feedback") |>
   req_method("POST") |>
   req_headers(
-    `authority` = "sgg.ae",
-    `accept` = "application/json, text/javascript, */*; q=0.01",
+    authority = "sgg.ae",
+    accept = "application/json, text/javascript, */*; q=0.01",
     `accept-language` = "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-    `cookie` = "pll_language=en",
-    `origin` = "https://sgg.ae",
-    `referer` = "https://sgg.ae/contact-us/",
+    cookie = "pll_language=en",
+    origin = "https://sgg.ae",
+    referer = "https://sgg.ae/contact-us/",
     `sec-ch-ua` = '"Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"',
     `sec-ch-ua-mobile` = "?0",
     `sec-ch-ua-platform` = '"Windows"',

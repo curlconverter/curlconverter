@@ -2,10 +2,10 @@ library(httr2)
 
 request("http://localhost:28139/house-sitting/") |>
   req_url_query(
-    `page` = "1",
-    `available` = "",
-    `available` = "1",
-    `location` = "0",
+    page = "1",
+    available = "",
+    available = "1",
+    location = "0",
     `city[id]` = "0",
     `city[locality]` = "",
     `city[locality_text]` = "",
@@ -32,16 +32,16 @@ request("http://localhost:28139/house-sitting/") |>
     `region[longitude]` = "",
     `region[zoom]` = "",
     `region[name]` = "",
-    `country` = "",
-    `environment` = "",
-    `population` = "",
-    `period` = "0",
-    `date` = "2017-03-03",
-    `datestart` = "2017-03-03",
-    `dateend` = "2017-06-24",
-    `season` = "",
-    `duration` = "",
-    `isfd` = "",
-    `stopover` = ""
+    country = "",
+    environment = "",
+    population = "",
+    period = "0",
+    date = "2017-03-03",
+    datestart = "2017-03-03",
+    dateend = "2017-06-24",
+    season = "",
+    duration = "",
+    isfd = "",
+    stopover = ""
   ) |>
   req_perform()

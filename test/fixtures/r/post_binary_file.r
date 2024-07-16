@@ -2,7 +2,7 @@ library(httr)
 
 headers = c(
   `Content-type` = "application/sparql-query",
-  `Accept` = "application/sparql-results+json"
+  Accept = "application/sparql-results+json"
 )
 
 data = upload_file("./sample.sparql")

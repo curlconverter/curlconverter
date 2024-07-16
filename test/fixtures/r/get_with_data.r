@@ -5,9 +5,9 @@ headers = c(
 )
 
 params = list(
-  `test` = "2",
-  `limit` = "100",
-  `w` = "4"
+  test = "2",
+  limit = "100",
+  w = "4"
 )
 
 res <- httr::GET(url = "http://localhost:28139/synthetics/api/v3/monitors", httr::add_headers(.headers=headers), query = params)

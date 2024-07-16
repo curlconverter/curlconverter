@@ -1,13 +1,13 @@
 library(httr)
 
 cookies = c(
-  `x` = "1'",
-  `y` = '2"'
+  x = "1'",
+  y = '2"'
 )
 
 headers = c(
-  `A` = "''a'",
-  `B` = '"',
+  A = "''a'",
+  B = '"',
   `Content-Type` = "application/x-www-form-urlencoded"
 )
 
