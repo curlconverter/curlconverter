@@ -1,7 +1,7 @@
 library(httr)
 
 headers = c(
-  `Accept` = "application/vnd.go.cd.v4+json",
+  Accept = "application/vnd.go.cd.v4+json",
   `Content-Type` = "application/json"
 )
 

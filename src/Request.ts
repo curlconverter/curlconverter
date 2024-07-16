@@ -257,7 +257,8 @@ export interface Request {
   ftpSkipPasvIp?: boolean;
 
   fail?: boolean;
-  retry?: Word; // an integer
+  retry?: Word; // an integer, how many times to retry
+  retryMaxTime?: Word; // an integer, seconds
 
   keepAlive?: boolean;
   keepAliveTime?: Word; // an integer, seconds
@@ -1526,6 +1527,9 @@ function buildRequest(
 
   if (config.retry) {
     request.retry = config.retry;
+  }
+  if (config["retry-max-time"]) {
+    request.retryMaxTime = config["retry-max-time"];
   }
 
   if (Object.prototype.hasOwnProperty.call(config, "ftp-skip-pasv-ip")) {

@@ -289,6 +289,9 @@ var $ = jQueryInit(window);
   r: {
     exec: "r < <file> --no-save",
   },
+  "r-httr2": {
+    exec: "r < <file> --no-save",
+  },
   ruby: {
     exec: "ruby <file>",
   },

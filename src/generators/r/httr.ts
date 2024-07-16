@@ -1,10 +1,10 @@
-import { Word, eq } from "../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { wordDecodeURIComponent, parseQueryString } from "../Query.js";
-import type { QueryList } from "../Query.js";
+import { Word, eq } from "../../shell/Word.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { wordDecodeURIComponent, parseQueryString } from "../../Query.js";
+import type { QueryList } from "../../Query.js";
 
-import { reprStr as pyrepr } from "./python/python.js";
+import { reprStr as pyrepr } from "../python/python.js";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -14,15 +14,50 @@ export const supportedArgs = new Set([
   "no-insecure",
 ]);
 
+const RESERVED_WORDS = new Set([
+  "if",
+  "else",
+  "repeat",
+  "while",
+  "function",
+  "for",
+  "in",
+  "next",
+  "break",
+  "TRUE",
+  "FALSE",
+  "NULL",
+  "Inf",
+  "NaN",
+  "NA",
+  "NA_integer_",
+  "NA_real_",
+  "NA_complex_",
+  "NA_character_",
+]);
+
+// backtick quote names
 const regexBacktickEscape = /`|\\|\p{C}|[^ \P{Z}]/gu;
-function reprBacktick(s: Word): string {
-  if (!s.isString()) {
-    // TODO: warn
+export function reprBacktick(s: Word | string): string {
+  if (s instanceof Word) {
+    if (!s.isString()) {
+      // TODO: warn
+    }
+
+    s = s.toString();
   }
-  // back-tick quote names
+
+  if (
+    (s.match(/^[a-zA-Z][a-zA-Z0-9._]*$/) ||
+      s.match(/^\.[a-zA-Z][a-zA-Z0-9._]*$/)) &&
+    !RESERVED_WORDS.has(s)
+  ) {
+    return s;
+  }
+
   return (
     "`" +
-    s.toString().replace(regexBacktickEscape, (c: string): string => {
+    s.replace(regexBacktickEscape, (c: string): string => {
       switch (c) {
         case "\x07":
           return "\\a";
@@ -57,7 +92,7 @@ function reprBacktick(s: Word): string {
 }
 
 // https://stat.ethz.ch/R-manual/R-devel/doc/manual/R-lang.html#Literal-constants
-function reprStr(s: string): string {
+export function reprStr(s: string): string {
   // R prefers double quotes
   const quote = s.includes('"') && !s.includes("'") ? "'" : '"';
   return pyrepr(s, quote);
@@ -77,7 +112,18 @@ export function repr(w: Word): string {
   if (args.length === 1) {
     return args[0];
   }
-  return "paste(" + args.join(", ") + ', sep = "")';
+  return "paste0(" + args.join(", ") + ")";
+}
+
+export function toNumeric(w: Word): string {
+  if (w.isString()) {
+    const s = w.toString();
+    // TODO: better check
+    if (parseFloat(s).toString() === s) {
+      return s;
+    }
+  }
+  return "as.numeric(" + repr(w) + ")";
 }
 
 function getCookieDict(request: Request): string | null {
