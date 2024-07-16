@@ -113,6 +113,7 @@ function addBodyStep(
       );
     }
   }
+  // TODO: json
 
   return steps;
 }
@@ -126,18 +127,17 @@ function addCurlStep(
 ) {
   const dotArgs = dots.map((dot) => {
     let [name, value] = dot;
-    if (name instanceof Word) {
-      name = name.toString();
-    }
     if (value instanceof Word) {
       value = repr(value);
     }
-
-    if (name == "") {
+    if (name === "" || (name instanceof Word && name.isEmpty())) {
       return value;
-    } else {
-      return `${reprBacktick(name)} = ${value}`;
     }
+
+    if (name instanceof Word) {
+      name = reprBacktick(name);
+    }
+    return `${name} = ${value}`;
   });
 
   const args = mainArgs.concat(...dotArgs);
