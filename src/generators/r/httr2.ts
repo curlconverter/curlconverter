@@ -220,7 +220,7 @@ export function _toRHttr2(
 
   return rstatsCode + "\n";
 }
-export function toRWarnHttr2(
+export function toRHttr2Warn(
   curlCommand: string | string[],
   warnings: Warnings = [],
 ): [string, Warnings] {
@@ -229,5 +229,5 @@ export function toRWarnHttr2(
   return [rHttr, warnings];
 }
 export function toRHttr2(curlCommand: string | string[]): string {
-  return toRWarnHttr2(curlCommand)[0];
+  return toRHttr2Warn(curlCommand)[0];
 }
