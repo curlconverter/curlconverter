@@ -204,7 +204,9 @@ export function _toRHttr2(
     const [user, password] = request.urls[0].auth;
     steps = addCurlStep(steps, "req_auth_basic", [repr(user), repr(password)]);
   } else if (request.oauth2Bearer && request.authType === "bearer") {
-    steps = addCurlStep(steps, "req_auth_bearer", [repr(request.oauth2Bearer)]);
+    steps = addCurlStep(steps, "req_auth_bearer_token", [
+      repr(request.oauth2Bearer),
+    ]);
   }
   // TODO: req_oauth_auth_code
 

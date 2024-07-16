@@ -107,11 +107,14 @@ for (const inPath of inPaths) {
       continue;
     }
 
+    const orig = fs.existsSync(outPath) ? fs.readFileSync(outPath, "utf8") : "";
     fs.writeFileSync(outPath, code);
-    if (printEachFile) {
-      console.error("wrote to " + path.relative(fixturesDir, outPath));
-    } else {
-      total += 1;
+    if (orig !== code) {
+      if (printEachFile) {
+        console.error("wrote to " + path.relative(fixturesDir, outPath));
+      } else {
+        total += 1;
+      }
     }
   }
 }
