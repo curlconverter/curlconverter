@@ -16,6 +16,7 @@ export {
 } from "./generators/java/httpurlconnection.js";
 export { toJavaJsoup, toJavaJsoupWarn } from "./generators/java/jsoup.js";
 export { toJavaOkHttp, toJavaOkHttpWarn } from "./generators/java/okhttp.js";
+export { toJavaUnirest, toJavaUnirestWarn } from "./generators/java/unirest.js";
 export {
   toJavaScript,
   toJavaScriptWarn,

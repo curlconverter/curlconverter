@@ -127,6 +127,32 @@ const executables = {
     },
     exec: "cd /tmp/curlconverter/java-jsoup && mvn compile && mvn exec:java -Dexec.mainClass=com.mycompany.app.Main",
   },
+  "java-unirest": {
+    // todo something wrong whit the setup code,I don't know how to fixit right now
+    // setup:`
+    //   if [ ! -d /tmp/curlconverter/java-unirest ]; then
+    //     cd /tmp/curlconverter
+    //     mvn archetype:generate -DgroupId=com.mycompany.app -DartifactId=java-unirest -DarchetypeArtifactId=maven-archetype-quickstart -DarchetypeVersion=1.4 -DinteractiveMode=false
+    //     cd /tmp/curlconverter/java-unirest
+    //     dependency="<dependency>
+    //         <groupId>com.konghq</groupId>
+    //         <artifactId>unirest-java</artifactId>
+    //         <version>3.14.5</version>
+    //     </dependency>"
+    //
+    //     sed -i "/<\\/dependency>/a dependency" pom.xml
+    //   fi
+    // `,
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/java-unirest/src/main/java/com/mycompany/app/Main.java",
+        `package com.mycompany.app;\n\n` +
+          contents.replace("class Main", "public class Main"),
+        "utf8"
+      );
+    },
+    exec: "cd /tmp/curlconverter/java-unirest && mvn compile && mvn exec:java -Dexec.mainClass=com.mycompany.app.Main",
+  },
   // mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp && curl https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/4.11.0/okhttp-4.11.0.jar > okhttp-4.11.0.jar
   // "java-okhttp": {
   //   setup: "mkdir -p /tmp/curlconverter/java-okhttp && cd /tmp/curlconverter/java-okhttp",
