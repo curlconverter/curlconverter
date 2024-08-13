@@ -228,7 +228,12 @@ import {
   _toRuby,
   toRubyWarn,
   supportedArgs as supportedArgsRuby,
-} from "./generators/ruby.js";
+} from "./generators/ruby/ruby.js";
+import {
+  _toRubyHttparty,
+  toRubyWarnHttparty,
+  supportedArgs as supportedArgsRubyHttparty,
+} from "./generators/ruby/httparty.js";
 import {
   _toRust,
   toRustWarn,
@@ -334,6 +339,7 @@ const translate: {
   "r-httr": [_toR, toRWarn, supportedArgsR], // undocumented alias
   "r-httr2": [_toRHttr2, toRHttr2Warn, supportedArgsRHttr2],
   ruby: [_toRuby, toRubyWarn, supportedArgsRuby],
+  "ruby-httparty": [_toRubyHttparty, toRubyWarnHttparty, supportedArgsRubyHttparty],
   rust: [_toRust, toRustWarn, supportedArgsRust],
   swift: [_toSwift, toSwiftWarn, supportedArgsSwift],
   wget: [_toWget, toWgetWarn, supportedArgsWget],
@@ -384,6 +390,7 @@ language: the language to convert the curl command to. The choices are
   r
   r-httr2
   ruby
+  ruby-httparty
   rust
   swift
   wget
