@@ -1,9 +1,9 @@
-import { CCError, has } from "../utils.js";
-import { warnIfPartsIgnored } from "../Warnings.js";
-import { Word, eq } from "../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { parseQueryString, type QueryDict } from "../Query.js";
+import { CCError, has } from "../../utils.js";
+import { warnIfPartsIgnored } from "../../Warnings.js";
+import { Word, eq } from "../../shell/Word.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString, type QueryDict } from "../../Query.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
@@ -101,7 +101,7 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
   );
 }
 
-function repr(w: Word): string {
+export function repr(w: Word): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
@@ -184,7 +184,7 @@ function queryToRubyDict(q: QueryDict, indent = 0) {
   return s;
 }
 
-function getDataString(request: Request): [string, boolean] {
+export function getDataString(request: Request): [string, boolean] {
   if (!request.data) {
     return ["", false];
   }
@@ -264,7 +264,7 @@ function getDataString(request: Request): [string, boolean] {
   return ["req.body = " + repr(request.data) + "\n", false];
 }
 
-function getFilesString(request: Request): string {
+export function getFilesString(request: Request): string {
   if (!request.multipartUploads) {
     return "";
   }
