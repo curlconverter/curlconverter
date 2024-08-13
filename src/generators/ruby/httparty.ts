@@ -4,7 +4,13 @@ import { Word, eq } from "../../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString, type QueryDict } from "../../Query.js";
-import { repr, reprStr, getDataString, getFilesString } from "./ruby.js";
+import {
+  repr,
+  reprStr,
+  getFilesString,
+  objToRuby,
+  queryToRubyDict,
+} from "./ruby.js";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -21,6 +27,86 @@ export const supportedArgs = new Set([
   "upload-file",
   "next",
 ]);
+
+function getDataString(request: Request): [string, boolean] {
+  if (!request.data) {
+    return ["", false];
+  }
+
+  if (
+    request.dataArray &&
+    request.dataArray.length === 1 &&
+    !(request.dataArray[0] instanceof Word) &&
+    !request.dataArray[0].name
+  ) {
+    const { filetype, filename } = request.dataArray[0];
+
+    if (eq(filename, "-")) {
+      if (filetype === "binary") {
+        // TODO: read stdin in binary
+        // https://ruby-doc.org/core-2.3.0/IO.html#method-i-binmode
+        // TODO: .delete("\\r\\n") ?
+        return ['body = STDIN.read.delete("\\n")\n', false];
+      } else {
+        return ['body = STDIN.read.delete("\\n")\n', false];
+      }
+    }
+
+    switch (filetype) {
+      case "binary":
+        return [
+          // TODO: What's the difference between binread() and read()?
+          // TODO: .delete("\\r\\n") ?
+          "body = File.binread(" + repr(filename) + ').delete("\\n")\n',
+          false,
+        ];
+      case "data":
+      case "json":
+        return [
+          "body = File.read(" + repr(filename) + ').delete("\\n")\n',
+          false,
+        ];
+      case "urlencode":
+        // TODO: urlencode
+        return [
+          "body = File.read(" + repr(filename) + ').delete("\\n")\n',
+          false,
+        ];
+    }
+  }
+
+  const contentTypeHeader = request.headers.get("content-type");
+  const isJson =
+    contentTypeHeader &&
+    eq(contentTypeHeader.split(";")[0].trim(), "application/json");
+  if (isJson && request.data.isString()) {
+    try {
+      const dataAsStr = request.data.toString();
+      const dataAsJson = JSON.parse(dataAsStr);
+      if (typeof dataAsJson === "object" && dataAsJson !== null) {
+        // TODO: we actually want to know how it's serialized by Ruby's builtin
+        // JSON formatter but this is hopefully good enough.
+        const roundtrips = JSON.stringify(dataAsJson) === dataAsStr;
+        let code = "";
+        if (!roundtrips) {
+          code += "# The object won't be serialized exactly like this\n";
+          code += "# body = " + repr(request.data) + "\n";
+        }
+        code += "body = " + objToRuby(dataAsJson) + ".to_json\n";
+        return [code, true];
+      }
+    } catch {}
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, queryAsDict] = parseQueryString(request.data);
+  if (!request.isDataBinary && queryAsDict) {
+    // If the original request contained %20, Ruby will encode them as "+"
+    return ["body = " + queryToRubyDict(queryAsDict) + "\n", false];
+  }
+
+  return ["body = " + repr(request.data) + "\n", false];
+}
 
 function requestToRubyHttparty(
   request: Request,
@@ -84,9 +170,9 @@ function requestToRubyHttparty(
   if (request.urls[0].auth && request.authType === "basic") {
     partyCode += ", basic_auth: basic_auth";
     code +=
-      "basic_auth = {" +
+      "basic_auth = { username: " +
       repr(request.urls[0].auth[0]) +
-      ", " +
+      ", password: " +
       repr(request.urls[0].auth[1]) +
       "}\n";
   }
@@ -101,9 +187,6 @@ function requestToRubyHttparty(
     } else {
       reqBody = "body = File.read(" + repr(request.urls[0].uploadFile) + ")\n";
     }
-  } else if (request.multipartUploads) {
-    reqBody = getFilesString(request);
-    request.headers.delete("content-type");
   } else if (request.data) {
     let importJson = false;
     [reqBody, importJson] = getDataString(request);
@@ -136,7 +219,21 @@ function requestToRubyHttparty(
 
   if (reqBody) {
     code += reqBody;
-    partyCode += ", body: body";
+    if (
+      request.dataArray &&
+      request.dataArray.length === 1 &&
+      !(request.dataArray[0] instanceof Word) &&
+      !request.dataArray[0].name
+    ) {
+      const { filetype, filename } = request.dataArray[0];
+      if (filetype === "binary") {
+        partyCode += ", body_stream: body";
+      } else {
+        partyCode += ", body: body";
+      }
+    } else {
+      partyCode += ", body: body";
+    }
   }
 
   if (request.insecure) {

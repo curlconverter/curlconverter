@@ -115,7 +115,7 @@ export function repr(w: Word): string {
   return args.join(" + ");
 }
 
-function objToRuby(
+export function objToRuby(
   obj: Word | Word[] | string | number | boolean | object | null,
   indent = 0,
 ): string {
@@ -170,7 +170,7 @@ function objToRuby(
   }
 }
 
-function queryToRubyDict(q: QueryDict, indent = 0) {
+export function queryToRubyDict(q: QueryDict, indent = 0) {
   if (q.length === 0) {
     return "{}";
   }
