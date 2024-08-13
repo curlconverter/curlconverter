@@ -1,6 +1,6 @@
 # [curlconverter](https://curlconverter.com)
 
-Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C, C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Julia, Kotlin, Lua, MATLAB, Objective-C, OCaml, Perl, PHP, PowerShell, Python, R, Ruby, Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
+Transpile [`curl`](https://en.wikipedia.org/wiki/CURL) commands into C, C#, ColdFusion, Clojure, Dart, Elixir, Go, HTTPie, Java, JavaScript, Julia, Kotlin, Lua, MATLAB, Objective-C, OCaml, Perl, PHP, PowerShell, Python, R, Ruby (Net/HTTP & HTTParty), Rust, Swift, Wget, Ansible, HAR, HTTP or JSON.
 
 Try it on [curlconverter.com](https://curlconverter.com) or as a drop-in `curl` replacement:
 
