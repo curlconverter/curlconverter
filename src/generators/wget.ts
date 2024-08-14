@@ -85,7 +85,7 @@ const regexDoubleEscape = /\$|`|"|\\|!/gu;
 const unprintableChars = /\p{C}|[^ \P{Z}]/gu; // TODO: there's probably more
 const regexAnsiCEscape = /\p{C}|[^ \P{Z}]|\\|'/gu;
 // https://unix.stackexchange.com/questions/270977/
-const shellChars = /[\002-\011\013-\032\\#?`(){}[\]^*<=>~|; "!$&'\202-\377]/;
+const shellChars = /[\x02-\x09\x0b-\x1a\\#?`(){}[\]^*<=>~|; "!$&'\x82-\xff]/;
 export function reprStr(s: string, mustQuote = false): string {
   const containsUnprintableChars = unprintableChars.test(s);
   if (containsUnprintableChars) {
