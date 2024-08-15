@@ -152,7 +152,11 @@ function requestToRubyHttparty(
   if (method.isString() && has(methods, method.toString())) {
     partyCode += "res = HTTParty." + methods[method.toString()] + "(url";
   } else {
-    partyCode += `# Generic HTTP method not supported: ${method}\nres = HTTParty.get(url`;
+    warnings.push([
+      "unsupported-method",
+      "unsupported HTTP method: " + method.toString(),
+    ]);
+    partyCode += `res = HTTParty.get(url`;
   }
 
   if (request.urls[0].auth && request.authType === "basic") {
