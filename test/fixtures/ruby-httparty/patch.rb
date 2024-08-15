@@ -21,4 +21,3 @@ body = {
   ]
 }.to_json
 res = HTTParty.patch(url, basic_auth: basic_auth, headers: headers, body: body)
-

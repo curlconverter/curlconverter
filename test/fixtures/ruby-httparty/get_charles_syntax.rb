@@ -8,4 +8,3 @@ headers = {
   'Accept-Language': 'en-CN;q=1, zh-Hans-CN;q=0.9',
 }
 res = HTTParty.get(url, headers: headers)
-

@@ -8,10 +8,8 @@ headers = {
 res = HTTParty.post(url, headers: headers)
 
 
-
 url = 'http://localhost:28139/cgi-bin/luci/admin/network/network/wan'
 res = HTTParty.post(url)
-
 
 
 url = 'http://localhost:28139/files/upload/ztaaInstaller/0.4.0+0.5.0+ssdf/darwin/arm64/FILE.txt'
@@ -21,12 +19,9 @@ headers = {
 res = HTTParty.post(url, headers: headers)
 
 
-
 url = 'http://localhost:28139/api/v1/files/upload'
 res = HTTParty.post(url)
 
 
-
 url = 'http://localhost:28139'
 res = HTTParty.post(url)
-

@@ -6,4 +6,3 @@ headers = {
   'key': 'abcdefg',
 }
 res = HTTParty.post(url, headers: headers)
-

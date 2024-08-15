@@ -6,4 +6,3 @@ headers = {
   'user-agent': 'Mozilla Android6.1',
 }
 res = HTTParty.get(url, headers: headers)
-

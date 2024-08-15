@@ -6,4 +6,3 @@ headers = {
 }
 body = '{"keywords":"php","page":1,"searchMode":1}'
 res = HTTParty.post(url, headers: headers, body: body)
-

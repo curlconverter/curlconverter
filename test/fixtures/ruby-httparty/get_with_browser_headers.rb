@@ -11,4 +11,3 @@ headers = {
   'Connection': 'keep-alive',
 }
 res = HTTParty.get(url, headers: headers)
-

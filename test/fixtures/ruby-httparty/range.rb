@@ -5,4 +5,3 @@ headers = {
   'Range': 'bytes=600-',
 }
 res = HTTParty.get(url, headers: headers)
-

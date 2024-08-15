@@ -6,4 +6,3 @@ headers = {
   'getWorkOrderCancel': '',
 }
 res = HTTParty.get(url, headers: headers)
-

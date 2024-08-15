@@ -14,4 +14,3 @@ body = {
   'authLoginDomain' => 'local'
 }.to_json
 res = HTTParty.post(url, headers: headers, body: body, verify: false)
-

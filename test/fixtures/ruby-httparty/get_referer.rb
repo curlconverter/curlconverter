@@ -7,4 +7,3 @@ headers = {
   'Referer': 'https://website.com',
 }
 res = HTTParty.get(url, headers: headers)
-

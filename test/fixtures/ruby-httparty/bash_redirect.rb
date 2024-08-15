@@ -8,4 +8,3 @@ headers = {
 }
 body = File.binread('add_params.xml').delete("\n")
 res = HTTParty.post(url, basic_auth: basic_auth, headers: headers, body_stream: body)
-

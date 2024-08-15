@@ -8,4 +8,3 @@ headers = {
 }
 body = "{\"server_id\": \"00000000000\",\n                   \"shared_server\": {\"library_section_ids\": 00000000000,\n                                     \"invited_id\": 00000000000}\n                   }\n"
 res = HTTParty.post(url, headers: headers, body: body)
-

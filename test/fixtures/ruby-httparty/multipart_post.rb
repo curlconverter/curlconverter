@@ -5,4 +5,3 @@ headers = {
   'Authorization': 'Bearer ACCESS_TOKEN',
 }
 res = HTTParty.post(url, headers: headers)
-

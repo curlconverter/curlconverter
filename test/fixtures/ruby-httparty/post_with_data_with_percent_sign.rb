@@ -6,4 +6,3 @@ headers = {
 }
 body = 'secret=*%5*!'
 res = HTTParty.post(url, headers: headers, body: body)
-

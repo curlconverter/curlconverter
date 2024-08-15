@@ -10,4 +10,3 @@ body = {
   'msg2' => 'value2'
 }
 res = HTTParty.get(url, headers: headers, body: body)
-

@@ -6,4 +6,3 @@ headers = {
   'Authorization': 'Bearer ' + ENV['DO_API_TOKEN'],
 }
 res = HTTParty.get(url, headers: headers)
-

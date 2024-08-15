@@ -17,4 +17,3 @@ body = {
   'msg2' => 'such'
 }
 res = HTTParty.post(url, headers: headers, body: body)
-

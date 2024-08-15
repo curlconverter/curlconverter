@@ -7,4 +7,3 @@ headers = {
 }
 body = File.binread('./sample.sparql').delete("\n")
 res = HTTParty.post(url, headers: headers, body_stream: body)
-

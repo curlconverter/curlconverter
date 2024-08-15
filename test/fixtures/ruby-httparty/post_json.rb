@@ -12,4 +12,3 @@ body = {
   'drink' => 'coffe'
 }.to_json
 res = HTTParty.post(url, headers: headers, body: body)
-

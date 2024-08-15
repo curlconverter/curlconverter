@@ -6,4 +6,3 @@ headers = {
   'Cookie': 'mysamplecookie=someValue; emptycookie=; otherCookie=2',
 }
 res = HTTParty.get(url, headers: headers)
-

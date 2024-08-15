@@ -6,4 +6,3 @@ headers = {
   'Content-Type': 'application/json',
 }
 res = HTTParty.put(url, headers: headers)
-

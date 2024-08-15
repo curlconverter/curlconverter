@@ -1,16 +1,10 @@
-import { CCError, has } from "../../utils.js";
+import { has } from "../../utils.js";
 import { warnIfPartsIgnored } from "../../Warnings.js";
 import { Word, eq } from "../../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
-import { parseQueryString, type QueryDict } from "../../Query.js";
-import {
-  repr,
-  reprStr,
-  getFilesString,
-  objToRuby,
-  queryToRubyDict,
-} from "./ruby.js";
+import { parseQueryString } from "../../Query.js";
+import { repr, objToRuby, queryToRubyDict } from "./ruby.js";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
@@ -152,12 +146,6 @@ function requestToRubyHttparty(
     TRACE: "trace",
   };
 
-  // https://gist.github.com/misfo/1072693 but simplified
-  function validSymbol(s: Word): boolean {
-    // TODO: can also start with @ $ and end with ! = ? are those special?
-    return s.isString() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s.toString());
-  }
-
   code += "url = " + repr(request.urls[0].url) + "\n";
 
   const method = request.urls[0].method;
@@ -225,7 +213,7 @@ function requestToRubyHttparty(
       !(request.dataArray[0] instanceof Word) &&
       !request.dataArray[0].name
     ) {
-      const { filetype, filename } = request.dataArray[0];
+      const { filetype } = request.dataArray[0];
       if (filetype === "binary") {
         partyCode += ", body_stream: body";
       } else {
@@ -245,13 +233,13 @@ function requestToRubyHttparty(
 
   if (request.urls[0].output && !eq(request.urls[0].output, "/dev/null")) {
     if (eq(request.urls[0].output, "-")) {
-      code += "\nputs res.body";
+      code += "\nputs res.body\n";
     } else {
-      code += "\nFile.write(" + repr(request.urls[0].output) + ", res.body)";
+      code += "\nFile.write(" + repr(request.urls[0].output) + ", res.body)\n";
     }
   }
 
-  return code + "\n";
+  return code;
 }
 
 export function _toRubyHttparty(

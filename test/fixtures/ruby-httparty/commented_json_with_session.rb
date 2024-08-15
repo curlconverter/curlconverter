@@ -10,4 +10,3 @@ headers = {
 # body = '{   }'
 body = {}.to_json
 res = HTTParty.post(url, headers: headers, body: body)
-

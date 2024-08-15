@@ -16,4 +16,3 @@ headers = {
   'Access-Control-Request-Headers': 'content-type,csrf',
 }
 res = HTTParty.options(url, headers: headers)
-

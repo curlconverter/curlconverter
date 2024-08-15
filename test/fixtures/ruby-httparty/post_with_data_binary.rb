@@ -6,4 +6,3 @@ headers = {
 }
 body = '{"title":"china1"}'
 res = HTTParty.post(url, headers: headers, body: body)
-

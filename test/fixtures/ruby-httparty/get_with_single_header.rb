@@ -5,4 +5,3 @@ headers = {
   'foo': 'bar',
 }
 res = HTTParty.get(url, headers: headers)
-

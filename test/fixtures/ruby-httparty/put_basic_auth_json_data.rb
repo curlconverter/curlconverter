@@ -7,4 +7,3 @@ headers = {
 }
 body = '{"admins":{"names":[], "roles":[]}, "readers":{"names":["joe"],"roles":[]}}'
 res = HTTParty.put(url, basic_auth: basic_auth, headers: headers, body: body)
-

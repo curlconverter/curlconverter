@@ -15,4 +15,3 @@ body = {
   }
 }.to_json
 res = HTTParty.put(url, headers: headers, body: body)
-

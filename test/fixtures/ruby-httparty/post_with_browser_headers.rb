@@ -13,4 +13,3 @@ headers = {
 #   'Content-Length': '0',
 }
 res = HTTParty.post(url, headers: headers)
-

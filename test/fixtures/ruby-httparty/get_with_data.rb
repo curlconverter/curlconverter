@@ -5,4 +5,3 @@ headers = {
   'X-Api-Key': '123456789',
 }
 res = HTTParty.get(url, headers: headers)
-

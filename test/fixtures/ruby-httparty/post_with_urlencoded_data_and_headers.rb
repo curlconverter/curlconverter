@@ -35,4 +35,3 @@ body = {
   'CurrentPage' => '1'
 }
 res = HTTParty.post(url, headers: headers, body: body)
-

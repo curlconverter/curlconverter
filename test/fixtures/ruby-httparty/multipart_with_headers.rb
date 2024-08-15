@@ -6,4 +6,3 @@ headers = {
   'X-Nice': 'Header',
 }
 res = HTTParty.post(url, headers: headers)
-

@@ -8,7 +8,6 @@ body = File.read('file.txt')
 res = HTTParty.put(url, headers: headers, body: body)
 
 
-
 url = 'http://localhost:28139'
 headers = {
   'Content-Type': 'application/x-www-form-urlencoded',
@@ -18,4 +17,3 @@ body = {
   'time' => 'now'
 }
 res = HTTParty.post(url, headers: headers, body: body)
-

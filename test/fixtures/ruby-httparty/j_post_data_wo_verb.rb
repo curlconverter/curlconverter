@@ -10,4 +10,3 @@ body = {
   'data3' => 'data3'
 }
 res = HTTParty.post(url, headers: headers, body: body)
-

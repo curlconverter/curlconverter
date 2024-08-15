@@ -6,4 +6,3 @@ headers = {
 }
 body = 'item[]=1&item[]=2&item[]=3'
 res = HTTParty.patch(url, headers: headers, body: body)
-

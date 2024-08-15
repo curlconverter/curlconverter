@@ -8,4 +8,3 @@ body = {
   'field' => "don't you like quotes"
 }
 res = HTTParty.post(url, headers: headers, body: body)
-

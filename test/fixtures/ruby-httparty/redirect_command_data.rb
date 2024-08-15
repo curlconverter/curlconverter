@@ -6,4 +6,3 @@ headers = {
 }
 body = 'foo&@' + %x{echo myfile.jg}
 res = HTTParty.post(url, headers: headers, body: body)
-

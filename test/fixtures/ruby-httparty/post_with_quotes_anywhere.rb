@@ -10,4 +10,3 @@ headers = {
 }
 body = 'a=b&c="&d=\''
 res = HTTParty.post(url, basic_auth: basic_auth, headers: headers, body: body)
-

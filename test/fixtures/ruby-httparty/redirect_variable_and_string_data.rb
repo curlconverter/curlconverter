@@ -6,4 +6,3 @@ headers = {
 }
 body = 'foo&@start' + ENV['FILENAME'] + '$end'
 res = HTTParty.post(url, headers: headers, body: body)
-

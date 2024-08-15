@@ -6,4 +6,3 @@ headers = {
   'Content-Type': 'multipart/form-data',
 }
 res = HTTParty.post(url, headers: headers)
-

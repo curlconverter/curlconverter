@@ -5,4 +5,3 @@ headers = {
   'Authorization': 'Bearer AAAAAAAAAAAA',
 }
 res = HTTParty.get(url, headers: headers)
-

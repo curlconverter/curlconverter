@@ -6,4 +6,3 @@ headers = {
 }
 body = '123'
 res = HTTParty.post(url, headers: headers, body: body)
-

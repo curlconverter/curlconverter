@@ -14,4 +14,3 @@ headers = {
   'Sec-Metadata': 'destination=empty, site=same-origin',
 }
 res = HTTParty.get(url, headers: headers)
-

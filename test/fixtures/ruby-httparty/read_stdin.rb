@@ -6,4 +6,3 @@ headers = {
 }
 body = STDIN.read.delete("\n")
 res = HTTParty.post(url, headers: headers, body: body)
-

@@ -6,4 +6,3 @@ headers = {
 }
 body = File.read('my_file.txt')
 res = HTTParty.put(url, headers: headers, body: body)
-

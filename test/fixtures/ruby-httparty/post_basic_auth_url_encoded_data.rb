@@ -9,4 +9,3 @@ body = {
   'grant_type' => 'client_credentials'
 }
 res = HTTParty.post(url, basic_auth: basic_auth, headers: headers, body: body)
-
