@@ -263,7 +263,7 @@ export function _toRubyHttparty(
   return prelude + "\n" + code;
 }
 
-export function toRubyWarnHttparty(
+export function toRubyHttpartyWarn(
   curlCommand: string | string[],
   warnings: Warnings = [],
 ): [string, Warnings] {
@@ -273,5 +273,5 @@ export function toRubyWarnHttparty(
 }
 
 export function toRubyHttparty(curlCommand: string | string[]): string {
-  return toRubyWarnHttparty(curlCommand)[0];
+  return toRubyHttpartyWarn(curlCommand)[0];
 }

@@ -231,7 +231,7 @@ import {
 } from "./generators/ruby/ruby.js";
 import {
   _toRubyHttparty,
-  toRubyWarnHttparty,
+  toRubyHttpartyWarn,
   supportedArgs as supportedArgsRubyHttparty,
 } from "./generators/ruby/httparty.js";
 import {
@@ -339,7 +339,7 @@ const translate: {
   "r-httr": [_toR, toRWarn, supportedArgsR], // undocumented alias
   "r-httr2": [_toRHttr2, toRHttr2Warn, supportedArgsRHttr2],
   ruby: [_toRuby, toRubyWarn, supportedArgsRuby],
-  "ruby-httparty": [_toRubyHttparty, toRubyWarnHttparty, supportedArgsRubyHttparty],
+  "ruby-httparty": [_toRubyHttparty, toRubyHttpartyWarn, supportedArgsRubyHttparty],
   rust: [_toRust, toRustWarn, supportedArgsRust],
   swift: [_toSwift, toSwiftWarn, supportedArgsSwift],
   wget: [_toWget, toWgetWarn, supportedArgsWget],

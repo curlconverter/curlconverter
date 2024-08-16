@@ -67,7 +67,7 @@ export { toRHttr2, toRHttr2Warn } from "./generators/r/httr2.js";
 export { toRuby, toRubyWarn } from "./generators/ruby/ruby.js";
 export {
   toRubyHttparty,
-  toRubyWarnHttparty,
+  toRubyHttpartyWarn,
 } from "./generators/ruby/httparty.js";
 export { toRust, toRustWarn } from "./generators/rust.js";
 export { toSwift, toSwiftWarn } from "./generators/swift.js";
