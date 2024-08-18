@@ -295,6 +295,9 @@ var $ = jQueryInit(window);
   ruby: {
     exec: "ruby <file>",
   },
+  "ruby-httparty": {
+    exec: "ruby <file>",
+  },
   rust: {
     setup:
       "cd /tmp && cargo init --vcs none /tmp/curlconverter/rust && cd /tmp/curlconverter/rust && cargo add reqwest --features reqwest/blocking,reqwest/json",
