@@ -235,6 +235,11 @@ const converters = {
     extension: ".rb",
     converter: curlconverter.toRuby,
   },
+  "ruby-httparty": {
+    name: "Ruby HTTParty",
+    extension: ".rb",
+    converter: curlconverter.toRubyHttparty,
+  },
   rust: {
     name: "Rust",
     extension: ".rs",

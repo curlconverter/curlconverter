@@ -106,7 +106,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `powershell`, `powershell-webrequest`
 - `python` (the default), `python-http`
 - `r`, `r-httr2`
-- `ruby`
+- `ruby`, `ruby-httparty`
 - `rust`
 - `swift`
 - `wget`

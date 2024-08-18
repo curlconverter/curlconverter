@@ -1,9 +1,9 @@
-import { CCError, has } from "../utils.js";
-import { warnIfPartsIgnored } from "../Warnings.js";
-import { Word, eq } from "../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { parseQueryString, type QueryDict } from "../Query.js";
+import { CCError, has } from "../../utils.js";
+import { warnIfPartsIgnored } from "../../Warnings.js";
+import { Word, eq } from "../../shell/Word.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
+import type { Request, Warnings } from "../../parse.js";
+import { parseQueryString, type QueryDict } from "../../Query.js";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net
@@ -101,7 +101,7 @@ export function reprStr(s: string, quote?: "'" | '"' | "{}"): string {
   );
 }
 
-function repr(w: Word): string {
+export function repr(w: Word): string {
   const args: string[] = [];
   for (const t of w.tokens) {
     if (typeof t === "string") {
@@ -115,7 +115,20 @@ function repr(w: Word): string {
   return args.join(" + ");
 }
 
-function objToRuby(
+// https://gist.github.com/misfo/1072693 but simplified
+function validSymbol(s: Word): boolean {
+  // TODO: can also start with @ $ and end with ! = ? are those special?
+  return s.isString() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s.toString());
+}
+
+export function reprSymbol(s: Word): string {
+  if (!validSymbol(s)) {
+    return repr(s);
+  }
+  return s.toString();
+}
+
+export function objToRuby(
   obj: Word | Word[] | string | number | boolean | object | null,
   indent = 0,
 ): string {
@@ -170,7 +183,7 @@ function objToRuby(
   }
 }
 
-function queryToRubyDict(q: QueryDict, indent = 0) {
+export function queryToRubyDict(q: QueryDict, indent = 0) {
   if (q.length === 0) {
     return "{}";
   }
@@ -184,7 +197,7 @@ function queryToRubyDict(q: QueryDict, indent = 0) {
   return s;
 }
 
-function getDataString(request: Request): [string, boolean] {
+export function getDataString(request: Request): [string, boolean] {
   if (!request.data) {
     return ["", false];
   }
@@ -264,7 +277,7 @@ function getDataString(request: Request): [string, boolean] {
   return ["req.body = " + repr(request.data) + "\n", false];
 }
 
-function getFilesString(request: Request): string {
+export function getFilesString(request: Request): string {
   if (!request.multipartUploads) {
     return "";
   }
@@ -372,11 +385,6 @@ function requestToRuby(
     TRACE: "Trace",
   };
 
-  // https://gist.github.com/misfo/1072693 but simplified
-  function validSymbol(s: Word): boolean {
-    // TODO: can also start with @ $ and end with ! = ? are those special?
-    return s.isString() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s.toString());
-  }
   if (
     request.urls[0].queryDict &&
     request.urls[0].queryDict.every((q) => validSymbol(q[0]))
