@@ -115,6 +115,19 @@ export function repr(w: Word): string {
   return args.join(" + ");
 }
 
+// https://gist.github.com/misfo/1072693 but simplified
+function validSymbol(s: Word): boolean {
+  // TODO: can also start with @ $ and end with ! = ? are those special?
+  return s.isString() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s.toString());
+}
+
+export function reprSymbol(s: Word): string {
+  if (!validSymbol(s)) {
+    return repr(s);
+  }
+  return s.toString();
+}
+
 export function objToRuby(
   obj: Word | Word[] | string | number | boolean | object | null,
   indent = 0,
@@ -372,11 +385,6 @@ function requestToRuby(
     TRACE: "Trace",
   };
 
-  // https://gist.github.com/misfo/1072693 but simplified
-  function validSymbol(s: Word): boolean {
-    // TODO: can also start with @ $ and end with ! = ? are those special?
-    return s.isString() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s.toString());
-  }
   if (
     request.urls[0].queryDict &&
     request.urls[0].queryDict.every((q) => validSymbol(q[0]))

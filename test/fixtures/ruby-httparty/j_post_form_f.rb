@@ -1,4 +1,8 @@
 require 'httparty'
 
 url = 'http://localhost:28139/post'
-res = HTTParty.post(url)
+body = {
+  d1: 'data1'
+  d2: 'data'
+}
+res = HTTParty.post(url, multipart: true, body: body)

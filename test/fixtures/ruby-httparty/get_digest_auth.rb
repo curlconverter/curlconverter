@@ -1,4 +1,5 @@
 require 'httparty'
 
 url = 'http://localhost:28139/'
-res = HTTParty.get(url)
+auth = { username: 'some_username', password: 'some_password'}
+res = HTTParty.get(url, digest_auth: auth)

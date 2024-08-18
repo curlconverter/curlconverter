@@ -2,7 +2,7 @@ require 'httparty'
 require 'json'
 
 url = 'http://localhost:28139/go/api/agents/adb9540a-b954-4571-9d9b-2f330739d4da'
-basic_auth = { username: 'username', password: 'password'}
+auth = { username: 'username', password: 'password'}
 headers = {
   'Accept': 'application/vnd.go.cd.v4+json',
   'Content-Type': 'application/json',
@@ -20,4 +20,4 @@ body = {
     'Dev'
   ]
 }.to_json
-res = HTTParty.patch(url, basic_auth: basic_auth, headers: headers, body: body)
+res = HTTParty.patch(url, basic_auth: auth, headers: headers, body: body)

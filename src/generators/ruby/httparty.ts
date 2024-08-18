@@ -4,19 +4,18 @@ import { Word, eq } from "../../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
 import type { Request, Warnings } from "../../parse.js";
 import { parseQueryString } from "../../Query.js";
-import { repr, objToRuby, queryToRubyDict } from "./ruby.js";
+import { repr, reprSymbol, objToRuby, queryToRubyDict } from "./ruby.js";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,
+  "digest",
+  "no-digest",
   "form",
   "form-string",
   "http0.9",
   "http1.0",
   "http1.1",
   "insecure",
-  "no-digest",
-  "no-http0.9",
-  "no-insecure",
   "output",
   "upload-file",
   "next",
@@ -102,6 +101,56 @@ function getDataString(request: Request): [string, boolean] {
   return ["body = " + repr(request.data) + "\n", false];
 }
 
+export function getFilesString(
+  request: Request,
+  warnings: Warnings,
+): [string, boolean] {
+  if (!request.multipartUploads) {
+    return ["", false];
+  }
+
+  // If body contains an open file, HTTParty will send the entire request as a
+  // multipart form
+  let explicitMultipart = true;
+  let body = "body = {\n";
+
+  for (const m of request.multipartUploads) {
+    body += "  " + reprSymbol(m.name) + ": ";
+    if ("filename" in m && m.filename && repr(m.filename)) {
+      warnings.push([
+        "multipart-filename",
+        "Ruby's HTTParty does not support custom filenames for multipart uploads: " +
+          JSON.stringify(m.filename.toString()),
+      ]);
+    }
+    if ("contentFile" in m) {
+      if (eq(m.contentFile, "-")) {
+        if (request.stdinFile) {
+          body += "File.open(" + repr(request.stdinFile) + ")";
+          explicitMultipart = false;
+        } else if (request.stdin) {
+          body += repr(request.stdin);
+        }
+        // TODO: does this work?
+        body += "STDIN";
+        // explicitMultipart = false;
+      } else if (m.contentFile === m.filename) {
+        // TODO: curl will look at the file extension to determine each content-type
+        body += "File.open(" + repr(m.contentFile) + ")";
+        explicitMultipart = false;
+      } else {
+        body += "File.open(" + repr(m.contentFile) + ")";
+        explicitMultipart = false;
+      }
+    } else {
+      body += repr(m.content);
+    }
+    body += "\n";
+  }
+  body += "}\n";
+  return [body, explicitMultipart];
+}
+
 function requestToRubyHttparty(
   request: Request,
   warnings: Warnings,
@@ -128,41 +177,52 @@ function requestToRubyHttparty(
   let code = "";
   let partyCode = "";
 
-  const methods = {
-    GET: "get",
-    HEAD: "head",
-    POST: "post",
-    PATCH: "patch",
-    PUT: "put",
-    PROPPATCH: "proppatch",
-    LOCK: "lock",
-    UNLOCK: "unlock",
-    OPTIONS: "options",
-    PROPFIND: "propfind",
-    DELETE: "delete",
-    MOVE: "move",
-    COPY: "copy",
-    MKCOL: "mkcol",
-    TRACE: "trace",
-  };
+  const methods = [
+    "GET",
+    "HEAD",
+    "POST",
+    "PATCH",
+    "PUT",
+    "PROPPATCH",
+    "LOCK",
+    "UNLOCK",
+    "OPTIONS",
+    "PROPFIND",
+    "DELETE",
+    "MOVE",
+    "COPY",
+    "MKCOL",
+    "TRACE",
+  ];
 
   code += "url = " + repr(request.urls[0].url) + "\n";
 
   const method = request.urls[0].method;
-  if (method.isString() && has(methods, method.toString())) {
-    partyCode += "res = HTTParty." + methods[method.toString()] + "(url";
+  const methodStr = method.toString();
+  if (method.isString() && methods.includes(methodStr.toUpperCase())) {
+    partyCode += "res = HTTParty." + methodStr.toLowerCase() + "(url";
+    if (methodStr !== methodStr.toUpperCase()) {
+      warnings.push([
+        "method-case",
+        "HTTP method will be uppercased: " + methodStr,
+      ]);
+    }
   } else {
     warnings.push([
       "unsupported-method",
-      "unsupported HTTP method: " + method.toString(),
+      "unsupported HTTP method: " + methodStr,
     ]);
     partyCode += `res = HTTParty.get(url`;
   }
 
-  if (request.urls[0].auth && request.authType === "basic") {
-    partyCode += ", basic_auth: basic_auth";
+  if (request.urls[0].auth && ["basic", "digest"].includes(request.authType)) {
+    if (request.authType === "basic") {
+      partyCode += ", basic_auth: auth";
+    } else if (request.authType === "digest") {
+      partyCode += ", digest_auth: auth";
+    }
     code +=
-      "basic_auth = { username: " +
+      "auth = { username: " +
       repr(request.urls[0].auth[0]) +
       ", password: " +
       repr(request.urls[0].auth[1]) +
@@ -170,6 +230,7 @@ function requestToRubyHttparty(
   }
 
   let reqBody;
+  let explicitMultipart = false;
   if (request.urls[0].uploadFile) {
     if (
       eq(request.urls[0].uploadFile, "-") ||
@@ -184,6 +245,17 @@ function requestToRubyHttparty(
     [reqBody, importJson] = getDataString(request);
     if (importJson) {
       imports.add("json");
+    }
+  } else if (request.multipartUploads) {
+    [reqBody, explicitMultipart] = getFilesString(request, warnings);
+    const contentType = request.headers.get("content-type");
+    if (
+      explicitMultipart &&
+      contentType &&
+      contentType.isString() &&
+      contentType.toString() === "multipart/form-data"
+    ) {
+      request.headers.delete("content-type");
     }
   }
 
@@ -211,6 +283,9 @@ function requestToRubyHttparty(
 
   if (reqBody) {
     code += reqBody;
+    if (explicitMultipart) {
+      partyCode += ", multipart: true";
+    }
     if (
       request.dataArray &&
       request.dataArray.length === 1 &&

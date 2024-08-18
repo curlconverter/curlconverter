@@ -1,4 +1,7 @@
 require 'httparty'
 
 url = 'http://localhost:28139/targetservice'
-res = HTTParty.post(url)
+body = {
+  image: File.open('image.jpg')
+}
+res = HTTParty.post(url, body: body)
