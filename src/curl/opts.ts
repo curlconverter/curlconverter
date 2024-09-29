@@ -963,14 +963,14 @@ export interface GlobalConfig {
 }
 
 function checkSupported(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   lookup: string,
   longArg: LongShort,
   supportedOpts?: Set<string>,
 ) {
   if (supportedOpts && !supportedOpts.has(longArg.name)) {
     // TODO: better message. include generator name?
-    warnf(global, [
+    warnf(global_, [
       longArg.name,
       lookup +
         " is not a supported option" +
@@ -992,7 +992,7 @@ export function pushProp<Type>(
 }
 
 function pushArgValue(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   config: OperationConfig,
   argName: string,
   value: Word,
@@ -1057,11 +1057,11 @@ function pushArgValue(
     case "libcurl":
     case "config":
     case "parallel-max":
-      global[argName] = value;
+      global_[argName] = value;
       break;
 
     case "language": // --language is a curlconverter specific option
-      global[argName] = value.toString();
+      global_[argName] = value.toString();
       return;
   }
 
@@ -1070,7 +1070,7 @@ function pushArgValue(
 
 // Might create a new config
 function setArgValue(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   config: OperationConfig,
   argName: string,
   toggle: boolean,
@@ -1203,7 +1203,7 @@ function setArgValue(
     case "parallel":
     case "parallel-immediate":
     case "stdin": // --stdin or - is a curlconverter specific option
-      global[argName] = toggle;
+      global_[argName] = toggle;
       break;
     case "next":
       // curl ignores --next if the last url node doesn't have a url
@@ -1215,7 +1215,7 @@ function setArgValue(
         config.url.length >= (config.output || []).length
       ) {
         config = { authtype: CURLAUTH_BASIC, proxyauthtype: CURLAUTH_BASIC };
-        global.configs.push(config);
+        global_.configs.push(config);
       }
       break;
     default:
@@ -1236,7 +1236,7 @@ export function parseArgs(
     authtype: CURLAUTH_BASIC,
     proxyauthtype: CURLAUTH_BASIC,
   };
-  const global: GlobalConfig = { configs: [config], warnings };
+  const global_: GlobalConfig = { configs: [config], warnings };
   const seen: [string, string][] = [];
 
   for (let i = 1, stillflags = true; i < args.length; i++) {
@@ -1281,17 +1281,17 @@ export function parseArgs(
           if (i >= args.length) {
             throw new CCError("option " + argStr + ": requires parameter");
           }
-          pushArgValue(global, config, longArg.name, args[i]);
+          pushArgValue(global_, config, longArg.name, args[i]);
         } else {
           config = setArgValue(
-            global,
+            global_,
             config,
             longArg.name,
             toBoolean(argStr.slice(2)),
           ); // TODO: all shortened args work correctly?
         }
 
-        checkSupported(global, argStr, longArg, supportedOpts);
+        checkSupported(global_, argStr, longArg, supportedOpts);
         seen.push([longArg.name, argStr]);
       } else {
         // Short option. These can look like
@@ -1313,7 +1313,7 @@ export function parseArgs(
               throw new CCError("option -: is unknown");
             }
             config = setArgValue(
-              global,
+              global_,
               config,
               longArg.name,
               toBoolean(shortFor),
@@ -1367,19 +1367,19 @@ export function parseArgs(
                 "option " + arg.toString() + ": requires parameter",
               );
             }
-            pushArgValue(global, config, longArg.name, val);
+            pushArgValue(global_, config, longArg.name, val);
           } else {
             // Use shortFor because -N is short for --no-buffer
             // and we want to end up with {buffer: false}
             config = setArgValue(
-              global,
+              global_,
               config,
               longArg.name,
               toBoolean(shortFor),
             );
           }
           if (lookup) {
-            checkSupported(global, "-" + lookup, longArg, supportedOpts);
+            checkSupported(global_, "-" + lookup, longArg, supportedOpts);
             seen.push([longArg.name, "-" + lookup]);
           }
         }
@@ -1401,17 +1401,17 @@ export function parseArgs(
             underlineNode(arg.tokens[0].syntaxNode),
         ]);
       }
-      pushArgValue(global, config, "url", arg);
+      pushArgValue(global_, config, "url", arg);
       seen.push(["url", "--url"]);
     }
   }
 
-  for (const cfg of global.configs) {
+  for (const cfg of global_.configs) {
     for (const [arg, values] of Object.entries(cfg)) {
       if (Array.isArray(values) && !canBeList.has(arg)) {
         cfg[arg] = values[values.length - 1];
       }
     }
   }
-  return [global, seen];
+  return [global_, seen];
 }

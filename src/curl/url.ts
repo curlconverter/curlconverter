@@ -31,7 +31,7 @@ function isIpv6(glob: string): boolean {
   return !glob.includes("-");
 }
 
-function warnAboutGlobs(global: GlobalConfig, url: string) {
+function warnAboutGlobs(global_: GlobalConfig, url: string) {
   // Find any glob expressions in the URL and underline them
   let prev = "";
   for (let i = 0; i < url.length; i++) {
@@ -45,7 +45,7 @@ function warnAboutGlobs(global: GlobalConfig, url: string) {
         const glob = url.slice(i, j + 1);
         // could be ipv6 address
         if (!isIpv6(glob)) {
-          warnf(global, [
+          warnf(global_, [
             "glob-in-url",
             `globs in the URL are not supported:\n` +
               `${url}\n` +
@@ -56,7 +56,7 @@ function warnAboutGlobs(global: GlobalConfig, url: string) {
         prev = "";
       } else {
         // No closing bracket
-        warnf(global, [
+        warnf(global_, [
           "unbalanced-glob",
           "bracket doesn't have a closing bracket:\n" +
             `${url}\n` +
@@ -71,7 +71,7 @@ function warnAboutGlobs(global: GlobalConfig, url: string) {
       }
       if (j < url.length && url[j] === "}") {
         const glob = url.slice(i, j + 1);
-        warnf(global, [
+        warnf(global_, [
           "glob-in-url",
           `globs in the URL are not supported:\n` +
             `${url}\n` +
@@ -81,7 +81,7 @@ function warnAboutGlobs(global: GlobalConfig, url: string) {
         prev = "";
       } else {
         // No closing bracket
-        warnf(global, [
+        warnf(global_, [
           "unbalanced-glob",
           "bracket doesn't have a closing bracket:\n" +
             `${url}\n` +
@@ -96,7 +96,7 @@ function warnAboutGlobs(global: GlobalConfig, url: string) {
 }
 
 export function parseurl(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   config: OperationConfig,
   url: Word,
 ): Curl_URL {
@@ -118,7 +118,7 @@ export function parseurl(
   // https://github.com/curl/curl/blob/curl-7_87_0/src/tool_urlglob.c#L395-L398
   if (!config.globoff) {
     if (url.isString()) {
-      warnAboutGlobs(global, url.toString());
+      warnAboutGlobs(global_, url.toString());
     }
     url = url.replace(/\\([[\]{}])/g, "$1");
   }
@@ -145,7 +145,7 @@ export function parseurl(
     u.scheme = config["proto-default"] ?? new Word("http");
   }
   if (!eq(u.scheme, "http") && !eq(u.scheme, "https")) {
-    warnf(global, ["bad-scheme", `Protocol "${u.scheme}" not supported`]);
+    warnf(global_, ["bad-scheme", `Protocol "${u.scheme}" not supported`]);
   }
 
   // https://github.com/curl/curl/blob/curl-7_85_0/lib/urlapi.c#L992
@@ -191,7 +191,7 @@ export function parseurl(
       }
     } else {
       // Curl will exit if this is the case, but we just remove it from the URL
-      warnf(global, [
+      warnf(global_, [
         "login-denied",
         `Found auth in URL but --disallow-username-in-url was passed: ${auth.toString()}`,
       ]);
@@ -202,13 +202,13 @@ export function parseurl(
   // hostname_check()
   // https://github.com/curl/curl/blob/curl-7_86_0/lib/urlapi.c#L572
   // if (!u.host) {
-  //   warnf(global, [
+  //   warnf(global_, [
   //     "no-host",
   //     "Found empty host in URL: " + JSON.stringify(url),
   //   ]);
   // } else if (u.host.startsWith("[")) {
   //   if (!u.host.endsWith("]")) {
-  //     warnf(global, [
+  //     warnf(global_, [
   //       "bad-host",
   //       "Found invalid IPv6 address in URL: " + JSON.stringify(url),
   //     ]);
@@ -216,7 +216,7 @@ export function parseurl(
   //     const firstWeirdCharacter = u.host.match(/[^0123456789abcdefABCDEF:.]/);
   //     // %zone_id
   //     if (firstWeirdCharacter && firstWeirdCharacter[0] !== "%") {
-  //       warnf(global, [
+  //       warnf(global_, [
   //         "bad-host",
   //         "Found invalid IPv6 address in URL: " + JSON.stringify(url),
   //       ]);
@@ -227,7 +227,7 @@ export function parseurl(
   //     /[\r\n\t/:#?!@{}[\]\\$'"^`*<>=;,]/
   //   );
   //   if (firstInvalidCharacter) {
-  //     warnf(global, [
+  //     warnf(global_, [
   //       "bad-host",
   //       "Found invalid character " +
   //         JSON.stringify(firstInvalidCharacter[0]) +

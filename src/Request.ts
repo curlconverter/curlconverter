@@ -294,7 +294,7 @@ export interface Request {
 }
 
 function buildURL(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   config: OperationConfig,
   url: Word,
   uploadFile?: Word,
@@ -303,7 +303,7 @@ function buildURL(
   stdinFile?: Word,
 ): RequestUrl {
   const originalUrl = url;
-  const u = parseurl(global, config, url);
+  const u = parseurl(global_, config, url);
 
   // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operate.c#L1124
   // https://github.com/curl/curl/blob/curl-7_85_0/src/tool_operhlp.c#L76
@@ -316,7 +316,7 @@ function buildURL(
     }
 
     if (config.get) {
-      warnf(global, [
+      warnf(global_, [
         "data-ignored",
         "curl doesn't let you pass --get and --upload-file together",
       ]);
@@ -486,7 +486,7 @@ function buildURL(
       if (stdinFile) {
         requestUrl.uploadFile = stdinFile;
       } else if (stdin) {
-        warnf(global, [
+        warnf(global_, [
           "upload-file-with-stdin-content",
           "--upload-file with stdin content is not supported",
         ]);
@@ -498,7 +498,7 @@ function buildURL(
         // if (config.url && config.url.length === 1) {
         //   config.data = [["raw", stdin]];
         // } else {
-        //   warnf(global, [
+        //   warnf(global_, [
         //     "upload-file-with-stdin-content-and-multiple-urls",
         //     "--upload-file with stdin content and multiple URLs is not supported",
         //   ]);
@@ -780,7 +780,7 @@ function parseRawForm(
 }
 
 function buildRequest(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   config: OperationConfig,
   stdin?: Word,
   stdinFile?: Word,
@@ -790,10 +790,10 @@ function buildRequest(
     throw new CCError("no URL specified!");
   }
 
-  const headers = new Headers(config.header, global.warnings);
+  const headers = new Headers(config.header, global_.warnings);
   const proxyHeaders = new Headers(
     config["proxy-header"],
-    global.warnings,
+    global_.warnings,
     "--proxy-header",
   );
 
@@ -898,7 +898,7 @@ function buildRequest(
   for (const [i, url] of config.url.entries()) {
     urls.push(
       buildURL(
-        global,
+        global_,
         config,
         url,
         uploadFiles[i],
@@ -914,7 +914,7 @@ function buildRequest(
   }
 
   if ((config["upload-file"] || []).length > config.url.length) {
-    warnf(global, [
+    warnf(global_, [
       "too-many-upload-files",
       "Got more --upload-file/-T options than URLs: " +
         config["upload-file"]
@@ -923,7 +923,7 @@ function buildRequest(
     ]);
   }
   if ((config.output || []).length > config.url.length) {
-    warnf(global, [
+    warnf(global_, [
       "too-many-ouptut-files",
       "Got more --output/-o options than URLs: " +
         config.output?.map((f) => JSON.stringify(f.toString())).join(", "),
@@ -991,7 +991,7 @@ function buildRequest(
   } else if (config.form) {
     // TODO: warn when details (;filename=, etc.) are not supported
     // by each converter.
-    request.multipartUploads = parseForm(config.form, global.warnings);
+    request.multipartUploads = parseForm(config.form, global_.warnings);
     //headers.setIfMissing("Content-Type", "multipart/form-data");
   }
   const contentType = headers.getContentType();
@@ -1166,7 +1166,7 @@ function buildRequest(
       certType.isString() &&
       !["PEM", "DER", "ENG", "P12"].includes(certType.toString().toUpperCase())
     ) {
-      warnf(global, [
+      warnf(global_, [
         "cert-type-unknown",
         "not supported file type " +
           JSON.stringify(certType.toString()) +
@@ -1367,7 +1367,7 @@ function buildRequest(
       request.proxyTlsauthtype.isString() &&
       !eq(request.proxyTlsauthtype, "SRP")
     ) {
-      warnf(global, [
+      warnf(global_, [
         "proxy-tlsauthtype",
         "proxy-tlsauthtype is not supported: " + request.proxyTlsauthtype,
       ]);
@@ -1432,7 +1432,7 @@ function buildRequest(
       // TODO: parseFloat() like curl
       isNaN(parseFloat(config["max-time"].toString()))
     ) {
-      warnf(global, [
+      warnf(global_, [
         "max-time-not-number",
         "option --max-time: expected a proper numerical parameter: " +
           JSON.stringify(config["max-time"].toString()),
@@ -1445,7 +1445,7 @@ function buildRequest(
       config["connect-timeout"].isString() &&
       isNaN(parseFloat(config["connect-timeout"].toString()))
     ) {
-      warnf(global, [
+      warnf(global_, [
         "connect-timeout-not-number",
         "option --connect-timeout: expected a proper numerical parameter: " +
           JSON.stringify(config["connect-timeout"].toString()),
@@ -1458,7 +1458,7 @@ function buildRequest(
       config["expect100-timeout"].isString() &&
       isNaN(parseFloat(config["expect100-timeout"].toString()))
     ) {
-      warnf(global, [
+      warnf(global_, [
         "expect100-timeout-not-number",
         "option --expect100-timeout: expected a proper numerical parameter: " +
           JSON.stringify(config["expect100-timeout"].toString()),
@@ -1504,7 +1504,7 @@ function buildRequest(
       config["max-redirs"].isString() &&
       !isInt(config["max-redirs"].toString())
     ) {
-      warnf(global, [
+      warnf(global_, [
         "max-redirs-not-int",
         "option --max-redirs: expected a proper numerical parameter: " +
           JSON.stringify(config["max-redirs"].toString()),
@@ -1598,27 +1598,27 @@ function buildRequest(
   }
 
   // Global options
-  if (Object.prototype.hasOwnProperty.call(global, "verbose")) {
-    request.verbose = global.verbose;
+  if (Object.prototype.hasOwnProperty.call(global_, "verbose")) {
+    request.verbose = global_.verbose;
   }
-  if (Object.prototype.hasOwnProperty.call(global, "silent")) {
-    request.silent = global.silent;
+  if (Object.prototype.hasOwnProperty.call(global_, "silent")) {
+    request.silent = global_.silent;
   }
 
   return request;
 }
 
 export function buildRequests(
-  global: GlobalConfig,
+  global_: GlobalConfig,
   stdin?: Word,
   stdinFile?: Word,
 ): Request[] {
-  if (!global.configs.length) {
+  if (!global_.configs.length) {
     // shouldn't happen
-    warnf(global, ["no-configs", "got empty config object"]);
+    warnf(global_, ["no-configs", "got empty config object"]);
   }
-  return global.configs.map((config) =>
-    buildRequest(global, config, stdin, stdinFile),
+  return global_.configs.map((config) =>
+    buildRequest(global_, config, stdin, stdinFile),
   );
 }
 
