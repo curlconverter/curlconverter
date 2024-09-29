@@ -4,8 +4,8 @@ import type { Request } from "./Request.js";
 
 export type Warnings = [string, string][];
 
-export function warnf(global: GlobalConfig, warning: [string, string]) {
-  global.warnings.push(warning);
+export function warnf(global_: GlobalConfig, warning: [string, string]) {
+  global_.warnings.push(warning);
 }
 
 function underline(

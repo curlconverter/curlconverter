@@ -445,10 +445,10 @@ function exitWithError(error: unknown, verbose = false): never {
 // argv is ['node', 'cli.js', ...]
 // parseArgs() ignores the first argument but we need to remove "node"
 const argv = process.argv.slice(1).map((arg) => new Word(arg));
-let global, seenArgs;
+let global_, seenArgs;
 let warnings: Warnings = [];
 try {
-  [global, seenArgs] = parseArgs(
+  [global_, seenArgs] = parseArgs(
     argv,
     curlconverterLongOpts,
     curlLongOptsShortened,
@@ -459,17 +459,17 @@ try {
 } catch (e) {
   exitWithError(e);
 }
-if (global.help) {
+if (global_.help) {
   console.log(USAGE.trim());
   process.exit(0);
 }
-if (global.version) {
+if (global_.version) {
   console.log("curlconverter " + VERSION);
   process.exit(0);
 }
-const verbose = !!global.verbose;
-const commandFromStdin = global.stdin;
-const language = global.language || defaultLanguage;
+const verbose = !!global_.verbose;
+const commandFromStdin = global_.stdin;
+const language = global_.language || defaultLanguage;
 if (!has(translate, language)) {
   exitWithError(
     new CCError(
@@ -537,7 +537,7 @@ if (commandFromStdin) {
   }
   let requests;
   try {
-    requests = buildRequests(global, stdin);
+    requests = buildRequests(global_, stdin);
   } catch (e) {
     exitWithError(e, verbose);
   }
