@@ -48,7 +48,7 @@ type JSONOutput = {
   // `| any` because of JSON
   data?: { [key: string]: string } | string | any;
   // raw_data?: string[],
-  files?: { [key: string]: string };
+  files?: { [key: string]: string | string[] };
   // raw_files: string[],
   insecure?: boolean;
   compressed?: boolean;
@@ -102,16 +102,17 @@ function getDataString(
   return request.data.toString();
 }
 
-function getFilesString(
-  request: Request,
-):
-  | { files?: { [key: string]: string }; data?: { [key: string]: string } }
+function getFilesString(request: Request):
+  | {
+      files?: { [key: string]: string | string[] };
+      data?: { [key: string]: string };
+    }
   | undefined {
   if (!request.multipartUploads) {
     return undefined;
   }
   const data: {
-    files: { [key: string]: string };
+    files: { [key: string]: string | string[] };
     data: { [key: string]: string };
   } = {
     files: {},
@@ -121,7 +122,17 @@ function getFilesString(
   // TODO: this isn't great.
   for (const m of request.multipartUploads) {
     if ("contentFile" in m) {
-      data.files[m.name.toString()] = m.contentFile.toString();
+      const key = m.name.toString();
+      let value = m.contentFile.toString();
+
+      if (data.files[key]) {
+        if (!Array.isArray(data.files[key])) {
+          data.files[key] = [data.files[key] as string];
+        }
+        (data.files[key] as string[]).push(value);
+      } else {
+        data.files[key] = value;
+      }
     } else {
       data.data[m.name.toString()] = m.content.toString();
     }
