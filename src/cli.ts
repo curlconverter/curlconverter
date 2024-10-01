@@ -245,11 +245,15 @@ import {
   supportedArgs as supportedArgsSwift,
 } from "./generators/swift.js";
 import {
+  _toJavaUnirest,
+  toJavaUnirestWarn,
+  supportedArgs as supportedArgsJavaUnirest,
+} from "./generators/java/unirest.js";
+import {
   _toWget,
   toWgetWarn,
   supportedArgs as supportedArgsWget,
 } from "./generators/wget.js";
-
 import fs from "fs";
 
 // This line is updated by extract_curl_args.py
@@ -286,6 +290,7 @@ const translate: {
   "java-httpurlconnection": [_toJavaHttpUrlConnection, toJavaHttpUrlConnectionWarn, supportedArgsJavaHttpUrlConnection],
   "java-jsoup": [_toJavaJsoup, toJavaJsoupWarn, supportedArgsJavaJsoup],
   "java-okhttp": [_toJavaOkHttp, toJavaOkHttpWarn, supportedArgsJavaOkHttp],
+  "java-unirest": [_toJavaUnirest, toJavaUnirestWarn, supportedArgsJavaUnirest],
   javascript: [_toJavaScript, toJavaScriptWarn, supportedArgsJavaScript],
   "javascript-axios": [_toNodeAxios, toNodeAxiosWarn, supportedArgsNodeAxios], // undocumented alias
   "javascript-fetch": [_toJavaScript, toJavaScriptWarn, supportedArgsJavaScript], // undocumented alias
@@ -363,6 +368,7 @@ language: the language to convert the curl command to. The choices are
   java-httpurlconnection
   java-jsoup
   java-okhttp
+  java-unirest
   javascript
   javascript-jquery
   javascript-xhr
