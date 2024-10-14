@@ -243,7 +243,6 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
       s += "  final res = await http.Response.fromStream(stream);\n";
     }
 
-    /* eslint-disable no-template-curly-in-string */
     s +=
       "  final status = res.statusCode;\n" +
       "  if (status != 200) throw Exception('http.send" +
@@ -262,7 +261,6 @@ export function _toDart(requests: Request[], warnings: Warnings = []): string {
     if (hasData) s += ", body: data";
     s += ");\n";
 
-    /* eslint-disable no-template-curly-in-string */
     s +=
       "  final status = res.statusCode;\n" +
       "  if (status != 200) throw Exception('http." +

@@ -718,7 +718,7 @@ function parseRawForm(
         break;
       }
       const [name, value] = lines[i].split(": ", 2);
-      if (!name === undefined || !value === undefined) {
+      if (name === undefined || value === undefined) {
         return null;
       }
       if (name.toLowerCase() === "content-disposition") {

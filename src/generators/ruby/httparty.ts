@@ -1,4 +1,3 @@
-import { has } from "../../utils.js";
 import { warnIfPartsIgnored } from "../../Warnings.js";
 import { Word, eq } from "../../shell/Word.js";
 import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";

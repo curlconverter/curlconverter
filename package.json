@@ -32,6 +32,8 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.1.0",
+    "@eslint/js": "^9.12.0",
     "@types/diff": "^5.2.3",
     "@types/har-format": "^1.2.16",
     "@types/jsesc": "^3.0.3",
@@ -63,10 +65,10 @@
     "test": "cross-env NODE_OPTIONS=\"--enable-source-maps --unhandled-rejections=strict\" npx tape dist/test/test.js",
     "coverage": "c8 --check-coverage npm run test",
     "prelint": "npm run compile",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src",
     "format": "prettier --write .",
     "prefix": "npm run compile",
-    "fix": "eslint src --ext ts --fix",
+    "fix": "eslint src --fix",
     "prepare": "npx husky && npm run compile && npx tree-sitter build --wasm node_modules/tree-sitter-bash --output dist/tree-sitter-bash.wasm",
     "pregen-test": "npm run compile",
     "gen-test": "node --enable-source-maps ./dist/tools/gen-test.js",
