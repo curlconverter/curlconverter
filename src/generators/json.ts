@@ -59,6 +59,7 @@ type JSONOutput = {
   delegation?: string;
 
   follow_redirects?: boolean; // --location
+  max_redirects?: number;
 
   timeout?: number; // --max-time
   connect_timeout?: number;
@@ -218,6 +219,9 @@ export function _toJsonString(
 
   if (Object.prototype.hasOwnProperty.call(request, "followRedirects")) {
     requestJson.follow_redirects = request.followRedirects;
+    if (request.maxRedirects?.length) {
+      requestJson.max_redirects = parseInt(request.maxRedirects.toString(), 10);
+    }
   }
 
   if (request.timeout) {
