@@ -40,8 +40,7 @@ export const supportedArgs = new Set([
   "no-ntlm-wb",
 ]);
 
-// TODO: export this or Request
-type JSONOutput = {
+export type JSONOutput = {
   url: string;
   raw_url: string;
   method: string;
