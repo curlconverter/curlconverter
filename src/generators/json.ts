@@ -20,6 +20,7 @@ export const supportedArgs = new Set([
   "no-location-trusted",
 
   "output",
+  "include",
 
   "max-time",
   "connect-timeout",
@@ -55,6 +56,7 @@ type JSONOutput = {
   insecure?: boolean;
   compressed?: boolean;
 
+  include?: boolean;
   auth?: { user: string; password: string };
   auth_type?: AuthType;
   aws_sigv4?: string;
@@ -205,6 +207,10 @@ export function _toJsonString(
   if (request.insecure) {
     // TODO: rename to verify? insecure=false doesn't make sense
     requestJson.insecure = false;
+  }
+
+  if (request.include) {
+    requestJson.include = true;
   }
 
   if (requestUrl.auth) {
