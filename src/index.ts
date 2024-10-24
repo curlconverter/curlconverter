@@ -29,6 +29,8 @@ export {
   toJavaScriptXHRWarn,
 } from "./generators/javascript/xhr.js";
 export {
+  toJsonObject,
+  toJsonObjectWarn,
   toJsonString,
   toJsonStringWarn,
   type JSONOutput,

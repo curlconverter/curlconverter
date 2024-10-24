@@ -141,10 +141,10 @@ function getFilesString(
   };
 }
 
-export function _toJsonString(
+export function _toJsonObject(
   requests: Request[],
   warnings: Warnings = [],
-): string {
+): JSONOutput {
   const request = getFirst(requests, warnings);
   const requestUrl = request.urls[0];
 
@@ -251,6 +251,25 @@ export function _toJsonString(
     requestJson.output = requestUrl.output.toString();
   }
 
+  return requestJson;
+}
+export function toJsonObjectWarn(
+  curlCommand: string | string[],
+  warnings: Warnings = [],
+): [JSONOutput, Warnings] {
+  const requests = parse(curlCommand, supportedArgs, warnings);
+  const json = _toJsonObject(requests, warnings);
+  return [json, warnings];
+}
+export function toJsonObject(curlCommand: string | string[]): JSONOutput {
+  return toJsonObjectWarn(curlCommand)[0];
+}
+
+export function _toJsonString(
+  requests: Request[],
+  warnings: Warnings = [],
+): string {
+  const requestJson = _toJsonObject(requests, warnings);
   return (
     JSON.stringify(
       Object.keys(requestJson).length ? requestJson : "{}",
