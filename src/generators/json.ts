@@ -61,6 +61,8 @@ type JSONOutput = {
   follow_redirects?: boolean; // --location
   max_redirects?: number;
 
+  proxy?: string;
+
   timeout?: number; // --max-time
   connect_timeout?: number;
 };
@@ -222,6 +224,10 @@ export function _toJsonString(
     if (request.maxRedirects?.length) {
       requestJson.max_redirects = parseInt(request.maxRedirects.toString(), 10);
     }
+  }
+
+  if (request.proxy?.length) {
+    requestJson.proxy = request.proxy.toString();
   }
 
   if (request.timeout) {
