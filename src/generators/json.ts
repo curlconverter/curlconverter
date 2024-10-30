@@ -18,10 +18,12 @@ export const supportedArgs = new Set([
   "no-location",
   "location-trusted",
   "no-location-trusted",
+  "max-redirs",
 
   "output",
   "include",
 
+  "proxy",
   "max-time",
   "connect-timeout",
 
