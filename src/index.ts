@@ -28,7 +28,13 @@ export {
   toJavaScriptXHR,
   toJavaScriptXHRWarn,
 } from "./generators/javascript/xhr.js";
-export { toJsonString, toJsonStringWarn } from "./generators/json.js";
+export {
+  toJsonObject,
+  toJsonObjectWarn,
+  toJsonString,
+  toJsonStringWarn,
+  type JSONOutput,
+} from "./generators/json.js";
 export { toJulia, toJuliaWarn } from "./generators/julia.js";
 export { toKotlin, toKotlinWarn } from "./generators/kotlin.js";
 export { toLua, toLuaWarn } from "./generators/lua.js";

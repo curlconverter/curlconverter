@@ -123,6 +123,8 @@ export interface Request {
   compressed?: boolean;
   transferEncoding?: boolean;
 
+  include?: boolean;
+
   multipartUploads?: FormParam[];
   // When multipartUploads comes from parsing a string in --data
   // this can be set to true to say that sending the original data
@@ -924,7 +926,7 @@ function buildRequest(
   }
   if ((config.output || []).length > config.url.length) {
     warnf(global_, [
-      "too-many-ouptut-files",
+      "too-many-output-files",
       "Got more --output/-o options than URLs: " +
         config.output?.map((f) => JSON.stringify(f.toString())).join(", "),
     ]);
@@ -981,6 +983,10 @@ function buildRequest(
   }
   if (Object.prototype.hasOwnProperty.call(config, "tr-encoding")) {
     request.transferEncoding = config["tr-encoding"];
+  }
+
+  if (config.include) {
+    request.include = true;
   }
 
   if (config.json) {

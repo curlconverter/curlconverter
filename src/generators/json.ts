@@ -18,7 +18,12 @@ export const supportedArgs = new Set([
   "no-location",
   "location-trusted",
   "no-location-trusted",
+  "max-redirs",
 
+  "output",
+  "include",
+
+  "proxy",
   "max-time",
   "connect-timeout",
 
@@ -37,8 +42,7 @@ export const supportedArgs = new Set([
   "no-ntlm-wb",
 ]);
 
-// TODO: export this or Request
-type JSONOutput = {
+export type JSONOutput = {
   url: string;
   raw_url: string;
   method: string;
@@ -53,15 +57,21 @@ type JSONOutput = {
   insecure?: boolean;
   compressed?: boolean;
 
+  include?: boolean;
   auth?: { user: string; password: string };
   auth_type?: AuthType;
   aws_sigv4?: string;
   delegation?: string;
 
   follow_redirects?: boolean; // --location
+  max_redirects?: number;
+
+  proxy?: string;
 
   timeout?: number; // --max-time
   connect_timeout?: number;
+
+  output?: string;
 };
 
 function getDataString(
@@ -133,23 +143,24 @@ function getFilesString(
   };
 }
 
-export function _toJsonString(
+export function _toJsonObject(
   requests: Request[],
   warnings: Warnings = [],
-): string {
+): JSONOutput {
   const request = getFirst(requests, warnings);
+  const requestUrl = request.urls[0];
 
   const requestJson: JSONOutput = {
-    url: (request.urls[0].queryDict
-      ? request.urls[0].urlWithoutQueryList
-      : request.urls[0].url
+    url: (requestUrl.queryDict
+      ? requestUrl.urlWithoutQueryList
+      : requestUrl.url
     )
       .toString()
       .replace(/\/$/, ""),
     // url: request.queryDict ? request.urlWithoutQueryList : request.url,
-    raw_url: request.urls[0].url.toString(),
+    raw_url: requestUrl.url.toString(),
     // TODO: move this after .query?
-    method: request.urls[0].method.toLowerCase().toString(), // lowercase for backwards compatibility
+    method: requestUrl.method.toLowerCase().toString(), // lowercase for backwards compatibility
   };
   // if (request.queryDict) {
   //   requestJson.query = request.queryDict
@@ -174,10 +185,10 @@ export function _toJsonString(
     requestJson.headers = Object.fromEntries(headers);
   }
 
-  if (request.urls[0].queryDict) {
+  if (requestUrl.queryDict) {
     // TODO: rename
     requestJson.queries = Object.fromEntries(
-      request.urls[0].queryDict.map((q) => [
+      requestUrl.queryDict.map((q) => [
         q[0].toString(),
         Array.isArray(q[1]) ? q[1].map((qq) => qq.toString()) : q[1].toString(),
       ]),
@@ -199,8 +210,12 @@ export function _toJsonString(
     requestJson.insecure = false;
   }
 
-  if (request.urls[0].auth) {
-    const [user, password] = request.urls[0].auth;
+  if (request.include) {
+    requestJson.include = true;
+  }
+
+  if (requestUrl.auth) {
+    const [user, password] = requestUrl.auth;
     requestJson.auth = {
       user: user.toString(),
       password: password.toString(),
@@ -218,6 +233,13 @@ export function _toJsonString(
 
   if (Object.prototype.hasOwnProperty.call(request, "followRedirects")) {
     requestJson.follow_redirects = request.followRedirects;
+    if (request.maxRedirects) {
+      requestJson.max_redirects = parseInt(request.maxRedirects.toString(), 10);
+    }
+  }
+
+  if (request.proxy) {
+    requestJson.proxy = request.proxy.toString();
   }
 
   if (request.timeout) {
@@ -227,6 +249,29 @@ export function _toJsonString(
     requestJson.connect_timeout = parseFloat(request.connectTimeout.toString());
   }
 
+  if (requestUrl.output) {
+    requestJson.output = requestUrl.output.toString();
+  }
+
+  return requestJson;
+}
+export function toJsonObjectWarn(
+  curlCommand: string | string[],
+  warnings: Warnings = [],
+): [JSONOutput, Warnings] {
+  const requests = parse(curlCommand, supportedArgs, warnings);
+  const json = _toJsonObject(requests, warnings);
+  return [json, warnings];
+}
+export function toJsonObject(curlCommand: string | string[]): JSONOutput {
+  return toJsonObjectWarn(curlCommand)[0];
+}
+
+export function _toJsonString(
+  requests: Request[],
+  warnings: Warnings = [],
+): string {
+  const requestJson = _toJsonObject(requests, warnings);
   return (
     JSON.stringify(
       Object.keys(requestJson).length ? requestJson : "{}",
