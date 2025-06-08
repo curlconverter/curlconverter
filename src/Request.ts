@@ -9,7 +9,7 @@ import type {
   SrcDataParam,
 } from "./curl/opts.js";
 
-import { Headers, parseCookies, parseCookiesStrict } from "./Headers.js";
+import { Headers, parseCookies } from "./Headers.js";
 import type { Cookies } from "./Headers.js";
 
 import { pickAuth, type AuthType } from "./curl/auth.js";
@@ -803,7 +803,7 @@ function buildRequest(
   const cookieFiles: Word[] = [];
   const cookieHeader = headers.get("cookie");
   if (cookieHeader) {
-    const parsedCookies = parseCookiesStrict(cookieHeader);
+    const parsedCookies = parseCookies(cookieHeader);
     if (parsedCookies) {
       cookies = parsedCookies;
     }

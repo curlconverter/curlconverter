@@ -301,7 +301,7 @@ export class Headers implements Iterable<[Word, Word | null]> {
 export type Cookie = [Word, Word];
 export type Cookies = Array<Cookie>;
 
-export function parseCookiesStrict(cookieString: Word): Cookies | null {
+export function parseCookies(cookieString: Word): Cookies | null {
   const cookies: Cookies = [];
   for (let cookie of cookieString.split(";")) {
     cookie = cookie.replace(/^ /, "");
@@ -310,22 +310,6 @@ export function parseCookiesStrict(cookieString: Word): Cookies | null {
       return null;
     }
     cookies.push([name, value]);
-  }
-  if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
-    return null;
-  }
-  return cookies;
-}
-
-export function parseCookies(cookieString: Word): Cookies | null {
-  const cookies: Cookies = [];
-  for (let cookie of cookieString.split(";")) {
-    cookie = cookie.trim();
-    if (!cookie) {
-      continue;
-    }
-    const [name, value] = cookie.split("=", 2);
-    cookies.push([name.trim(), (value || "").trim()]);
   }
   if (new Set(cookies.map((c) => c[0])).size !== cookies.length) {
     return null;
