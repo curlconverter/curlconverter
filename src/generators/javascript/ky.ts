@@ -202,7 +202,8 @@ function requestToKy(
     if (urlObj.queryList) {
       optionsCode +=
         "searchParams: " +
-        toDictOrURLSearchParams([urlObj.queryList, urlObj.queryDict], imports);
+        toDictOrURLSearchParams([urlObj.queryList, urlObj.queryDict], imports) +
+        ",\n";
     }
     if (urlObj.queryReadsFile) {
       warnings.push([
