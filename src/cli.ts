@@ -347,7 +347,7 @@ const translate: {
 
 const USAGE = `Usage: curlconverter [--language <language>] [-] [curl_options...]
 
-language: the language to convert the curl command to. The choices are 
+language: the language to convert the curl command to. The choices are
   ansible
   c
   cfml
@@ -372,8 +372,8 @@ language: the language to convert the curl command to. The choices are
   lua
   matlab
   node
-  node-http
   node-axios
+  node-http
   node-got
   node-ky
   node-request
