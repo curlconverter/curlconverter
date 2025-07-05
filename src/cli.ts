@@ -387,6 +387,7 @@ language: the language to convert the curl command to. The choices are
   powershell
   powershell-webrequest
   python (the default)
+  python-http
   r
   r-httr2
   ruby
