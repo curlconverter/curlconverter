@@ -201,7 +201,7 @@ function requestToKy(
 
     if (urlObj.queryList) {
       optionsCode +=
-        "searchParams: " +
+        "  searchParams: " +
         toDictOrURLSearchParams([urlObj.queryList, urlObj.queryDict], imports) +
         ",\n";
     }
