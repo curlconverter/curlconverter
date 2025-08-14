@@ -176,6 +176,20 @@ var $ = jQueryInit(window);
     },
     exec: "cd /tmp/curlconverter/kotlin && kotlin script.main.kts",
   },
+  "kotlin-ktor": {
+    copy: function (contents: string) {
+      fs.writeFileSync(
+        "/tmp/curlconverter/kotlin-ktor/script.main.kts",
+        '@file:DependsOn("io.ktor:ktor-client-core-jvm:3.2.3")\n' +
+          '@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.2.3")\n' +
+          '@file:DependsOn("io.ktor:ktor-client-auth-jvm:3.2.3")\n' +
+          '@file:DependsOn("io.ktor:ktor-client-content-negotiation-jvm:3.2.3")\n\n' +
+          contents,
+        "utf8",
+      );
+    },
+    exec: "cd /tmp/curlconverter/kotlin-ktor && kotlin script.main.kts",
+  },
   lua: {
     exec: "lua <file>",
   },
