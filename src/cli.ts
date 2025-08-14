@@ -118,7 +118,12 @@ import {
   _toKotlin,
   toKotlinWarn,
   supportedArgs as supportedArgsKotlin,
-} from "./generators/kotlin.js";
+} from "./generators/kotlin/kotlin.js";
+import {
+  _toKotlinKtor,
+  toKotlinKtorWarn,
+  supportedArgs as supportedArgsKotlinKtor,
+} from "./generators/kotlin/ktor.js";
 import {
   _toLua,
   toLuaWarn,
@@ -298,6 +303,7 @@ const translate: {
   json: [_toJsonString, toJsonStringWarn, supportedArgsJsonString],
   julia: [_toJulia, toJuliaWarn, supportedArgsJulia],
   kotlin: [_toKotlin, toKotlinWarn, supportedArgsKotlin],
+  "kotlin-ktor": [_toKotlinKtor, toKotlinKtorWarn, supportedArgsKotlinKtor],
   lua: [_toLua, toLuaWarn, supportedArgsLua],
   matlab: [_toMATLAB, toMATLABWarn, supportedArgsMATLAB],
   node: [_toNode, toNodeWarn, supportedArgsNode],
@@ -369,6 +375,7 @@ language: the language to convert the curl command to. The choices are
   json
   julia
   kotlin
+  kotlin-ktor
   lua
   matlab
   node

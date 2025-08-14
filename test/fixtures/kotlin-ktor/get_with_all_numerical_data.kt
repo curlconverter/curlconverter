@@ -1,0 +1,20 @@
+import io.ktor.client.HttpClient
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
+import kotlinx.coroutines.runBlocking
+
+val client = HttpClient()
+
+runBlocking {
+    val response = client.post("http://localhost:28139/CurlToNode") {
+        setBody("18233982904")
+        header("Content-Type", "application/json")
+        header("Accept", "application/json")
+    }
+    if (!response.status.isSuccess()) throw Exception("Request failed with status code ${response.status}")
+
+    println(response.bodyAsText())
+}

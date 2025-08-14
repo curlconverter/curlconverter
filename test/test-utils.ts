@@ -140,6 +140,11 @@ const converters = {
     extension: ".kt",
     converter: curlconverter.toKotlin,
   },
+  "kotlin-ktor": {
+    name: "Kotlin + Ktor",
+    extension: ".kt",
+    converter: curlconverter.toKotlinKtor,
+  },
   lua: {
     name: "Lua",
     extension: ".lua",

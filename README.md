@@ -95,7 +95,7 @@ Choose the output language by passing `--language <language>`. The options are
 - `javascript`, `javascript-jquery`, `javascript-xhr`
 - `json`
 - `julia`
-- `kotlin`
+- `kotlin`, `kotlin-ktor`
 - `lua`
 - `matlab`
 - `node`, `node-http`, `node-axios`, `node-got`, `node-ky`, `node-request`, `node-superagent`

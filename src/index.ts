@@ -36,7 +36,8 @@ export {
   type JSONOutput,
 } from "./generators/json.js";
 export { toJulia, toJuliaWarn } from "./generators/julia.js";
-export { toKotlin, toKotlinWarn } from "./generators/kotlin.js";
+export { toKotlin, toKotlinWarn } from "./generators/kotlin/kotlin.js";
+export { toKotlinKtor, toKotlinKtorWarn } from "./generators/kotlin/ktor.js";
 export { toLua, toLuaWarn } from "./generators/lua.js";
 export { toMATLAB, toMATLABWarn } from "./generators/matlab/matlab.js";
 export { toNode, toNodeWarn } from "./generators/javascript/javascript.js";
