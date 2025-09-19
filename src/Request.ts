@@ -398,10 +398,11 @@ function buildURL(
 
     // TODO: check the curl source code
     // TODO: curl localhost:8888/?
-    // will request /?
+    // will request /
     // but
     // curl localhost:8888/? --url-query ''
-    // (or --get --data '') will request /
+    // curl localhost:8888/? --get --data ''
+    // will request /
     u.query = new Word();
     if (queryStr && queryStr.toBool()) {
       u.query = queryStr.prepend("?");

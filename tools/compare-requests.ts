@@ -284,7 +284,7 @@ var $ = jQueryInit(window);
     exec: "cd /tmp/curlconverter/powershell && pwsh main.ps1",
   },
   python: {
-    exec: "python3 <file>",
+    exec: "python <file>",
   },
   r: {
     exec: "r < <file> --no-save",
