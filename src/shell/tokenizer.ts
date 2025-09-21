@@ -1,12 +1,12 @@
-import { Word, Token, firstShellToken } from "./Word.js";
+import { Word, type Token, firstShellToken } from "./Word.ts";
 
-import { CCError } from "../utils.js";
-import { clip } from "../parse.js";
+import { CCError } from "../utils.ts";
+import { clip } from "../parse.ts";
 
-import parser from "./Parser.js";
-import type { Parser } from "./Parser.js";
+import parser from "./Parser.ts";
+import type { Parser } from "./Parser.ts";
 
-import { underlineNode, underlineCursor, type Warnings } from "../Warnings.js";
+import { underlineNode, underlineCursor, type Warnings } from "../Warnings.ts";
 
 const BACKSLASHES = /\\./gs;
 function removeBackslash(m: string) {

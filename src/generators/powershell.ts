@@ -1,8 +1,8 @@
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import { warnIfPartsIgnored } from "../Warnings.js";
-import { Word, eq } from "../shell/Word.js";
-import type { Request, RequestUrl, Warnings } from "../parse.js";
-import { parseQueryString } from "../Query.js";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import { warnIfPartsIgnored } from "../Warnings.ts";
+import { Word, eq } from "../shell/Word.ts";
+import type { Request, RequestUrl, Warnings } from "../parse.ts";
+import { parseQueryString } from "../Query.ts";
 
 // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_quoting_rules
 // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_special_characters

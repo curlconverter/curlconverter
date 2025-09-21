@@ -1,5 +1,5 @@
-import { Word } from "../../shell/Word.js";
-import type { Request, Warnings } from "../../parse.js";
+import { Word } from "../../shell/Word.ts";
+import type { Request, Warnings } from "../../parse.ts";
 
 import {
   reprStr,
@@ -10,7 +10,7 @@ import {
   containsBody,
   prepareQueryString,
   prepareCookies,
-} from "./common.js";
+} from "./common.ts";
 
 function prepareHeaders(request: Request): string | null {
   if (!request.headers.length) {

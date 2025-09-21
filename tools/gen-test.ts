@@ -6,8 +6,8 @@ import path from "path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { fixturesDir, converters } from "../test/test-utils.js";
-import type { Converter } from "../test/test-utils.js";
+import { fixturesDir, converters } from "../test/test-utils.ts";
+import type { Converter } from "../test/test-utils.ts";
 
 const curlCommandDir = path.resolve(fixturesDir, "curl_commands");
 

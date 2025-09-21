@@ -1,6 +1,6 @@
-import * as curlconverter from "../src/index.js";
-import { Word } from "../src/shell/Word.js";
-import { parse } from "../src/parse.js";
+import * as curlconverter from "../src/index.ts";
+import { Word } from "../src/shell/Word.ts";
+import { parse } from "../src/parse.ts";
 
 import fs from "fs";
 import path from "path";

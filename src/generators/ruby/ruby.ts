@@ -1,9 +1,9 @@
-import { CCError, has } from "../../utils.js";
-import { warnIfPartsIgnored } from "../../Warnings.js";
-import { Word, eq } from "../../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
-import type { Request, Warnings } from "../../parse.js";
-import { parseQueryString, type QueryDict } from "../../Query.js";
+import { CCError, has } from "../../utils.ts";
+import { warnIfPartsIgnored } from "../../Warnings.ts";
+import { Word, eq } from "../../shell/Word.ts";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.ts";
+import type { Request, Warnings } from "../../parse.ts";
+import { parseQueryString, type QueryDict } from "../../Query.ts";
 
 // https://ruby-doc.org/stdlib-2.7.0/libdoc/net/http/rdoc/Net/HTTP.html
 // https://github.com/ruby/net-http/tree/master/lib/net

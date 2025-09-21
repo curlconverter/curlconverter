@@ -1,16 +1,16 @@
-import { CCError } from "../utils.js";
-import { Word, eq } from "../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import type { QueryList, QueryDict } from "../Query.js";
-import { Headers } from "../Headers.js";
-import type { DataParam } from "../Request.js";
-import type { FormParam } from "../curl/form.js";
-import { parseQueryString } from "../Query.js";
+import { CCError } from "../utils.ts";
+import { Word, eq } from "../shell/Word.ts";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, Warnings } from "../parse.ts";
+import type { QueryList, QueryDict } from "../Query.ts";
+import { Headers } from "../Headers.ts";
+import type { DataParam } from "../Request.ts";
+import type { FormParam } from "../curl/form.ts";
+import { parseQueryString } from "../Query.ts";
 
 // "Clojure strings are Java Strings."
 // https://clojure.org/reference/data_structures#Strings
-import { reprStr } from "./java/java.js";
+import { reprStr } from "./java/java.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

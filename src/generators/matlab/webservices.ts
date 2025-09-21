@@ -1,5 +1,5 @@
-import { Word, joinWords } from "../../shell/Word.js";
-import type { Request, Warnings } from "../../parse.js";
+import { Word, joinWords } from "../../shell/Word.ts";
+import type { Request, Warnings } from "../../parse.ts";
 
 import {
   reprStr,
@@ -13,7 +13,7 @@ import {
   prepareCookies,
   cookieString,
   paramsString,
-} from "./common.js";
+} from "./common.ts";
 
 function isSupportedByWebServices(request: Request): boolean {
   return (

@@ -1,9 +1,9 @@
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
-import { eq } from "../../shell/Word.js";
-import type { Request, Warnings } from "../../parse.js";
-import { parseQueryString } from "../../Query.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.ts";
+import { eq } from "../../shell/Word.ts";
+import type { Request, Warnings } from "../../parse.ts";
+import { parseQueryString } from "../../Query.ts";
 
-import { reprStr, repr } from "./php.js";
+import { reprStr, repr } from "./php.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

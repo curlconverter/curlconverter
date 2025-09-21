@@ -1,254 +1,254 @@
 #!/usr/bin/env node
 
-import { CCError, has } from "./utils.js";
-import type { Warnings } from "./Warnings.js";
-import { Word } from "./shell/Word.js";
+import { CCError, has } from "./utils.ts";
+import type { Warnings } from "./Warnings.ts";
+import { Word } from "./shell/Word.ts";
 import {
   parseArgs,
   curlLongOpts,
   curlLongOptsShortened,
   curlShortOpts,
-} from "./curl/opts.js";
-import type { LongOpts, ShortOpts } from "./curl/opts.js";
+} from "./curl/opts.ts";
+import type { LongOpts, ShortOpts } from "./curl/opts.ts";
 
-import { buildRequests } from "./Request.js";
-import type { Request } from "./Request.js";
+import { buildRequests } from "./Request.ts";
+import type { Request } from "./Request.ts";
 
 import {
   _toAnsible,
   toAnsibleWarn,
   supportedArgs as supportedArgsAnsible,
-} from "./generators/ansible.js";
+} from "./generators/ansible.ts";
 import {
   _toC,
   toCWarn,
   supportedArgs as supportedArgsC,
-} from "./generators/c.js";
+} from "./generators/c.ts";
 import {
   _toCFML,
   toCFMLWarn,
   supportedArgs as supportedArgsCFML,
-} from "./generators/cfml.js";
+} from "./generators/cfml.ts";
 import {
   _toClojure,
   toClojureWarn,
   supportedArgs as supportedArgsClojure,
-} from "./generators/clojure.js";
+} from "./generators/clojure.ts";
 import {
   _toCSharp,
   toCSharpWarn,
   supportedArgs as supportedArgsCSharp,
-} from "./generators/csharp.js";
+} from "./generators/csharp.ts";
 import {
   _toDart,
   toDartWarn,
   supportedArgs as supportedArgsDart,
-} from "./generators/dart.js";
+} from "./generators/dart.ts";
 import {
   _toElixir,
   toElixirWarn,
   supportedArgs as supportedArgsElixir,
-} from "./generators/elixir.js";
+} from "./generators/elixir.ts";
 import {
   _toGo,
   toGoWarn,
   supportedArgs as supportedArgsGo,
-} from "./generators/go.js";
+} from "./generators/go.ts";
 import {
   _toHarString,
   toHarStringWarn,
   supportedArgs as supportedArgsHarString,
-} from "./generators/har.js";
+} from "./generators/har.ts";
 import {
   _toHTTP,
   toHTTPWarn,
   supportedArgs as supportedArgsHTTP,
-} from "./generators/http.js";
+} from "./generators/http.ts";
 import {
   _toHttpie,
   toHttpieWarn,
   supportedArgs as supportedArgsHttpie,
-} from "./generators/httpie.js";
+} from "./generators/httpie.ts";
 import {
   _toJava,
   toJavaWarn,
   supportedArgs as supportedArgsJava,
-} from "./generators/java/java.js";
+} from "./generators/java/java.ts";
 import {
   _toJavaHttpUrlConnection,
   toJavaHttpUrlConnectionWarn,
   supportedArgs as supportedArgsJavaHttpUrlConnection,
-} from "./generators/java/httpurlconnection.js";
+} from "./generators/java/httpurlconnection.ts";
 import {
   _toJavaJsoup,
   toJavaJsoupWarn,
   supportedArgs as supportedArgsJavaJsoup,
-} from "./generators/java/jsoup.js";
+} from "./generators/java/jsoup.ts";
 import {
   _toJavaOkHttp,
   toJavaOkHttpWarn,
   supportedArgs as supportedArgsJavaOkHttp,
-} from "./generators/java/okhttp.js";
+} from "./generators/java/okhttp.ts";
 import {
   _toJavaScript,
   toJavaScriptWarn,
   javaScriptSupportedArgs as supportedArgsJavaScript,
-} from "./generators/javascript/javascript.js";
+} from "./generators/javascript/javascript.ts";
 import {
   _toJavaScriptJquery,
   toJavaScriptJqueryWarn,
   supportedArgs as supportedArgsJavaScriptJquery,
-} from "./generators/javascript/jquery.js";
+} from "./generators/javascript/jquery.ts";
 import {
   _toJavaScriptXHR,
   toJavaScriptXHRWarn,
   supportedArgs as supportedArgsJavaScriptXHR,
-} from "./generators/javascript/xhr.js";
+} from "./generators/javascript/xhr.ts";
 import {
   _toJsonString,
   toJsonStringWarn,
   supportedArgs as supportedArgsJsonString,
-} from "./generators/json.js";
+} from "./generators/json.ts";
 import {
   _toJulia,
   toJuliaWarn,
   supportedArgs as supportedArgsJulia,
-} from "./generators/julia.js";
+} from "./generators/julia.ts";
 import {
   _toKotlin,
   toKotlinWarn,
   supportedArgs as supportedArgsKotlin,
-} from "./generators/kotlin.js";
+} from "./generators/kotlin.ts";
 import {
   _toLua,
   toLuaWarn,
   supportedArgs as supportedArgsLua,
-} from "./generators/lua.js";
+} from "./generators/lua.ts";
 import {
   _toMATLAB,
   toMATLABWarn,
   supportedArgs as supportedArgsMATLAB,
-} from "./generators/matlab/matlab.js";
+} from "./generators/matlab/matlab.ts";
 import {
   _toNode,
   toNodeWarn,
   nodeSupportedArgs as supportedArgsNode,
-} from "./generators/javascript/javascript.js";
+} from "./generators/javascript/javascript.ts";
 import {
   _toNodeAxios,
   toNodeAxiosWarn,
   supportedArgs as supportedArgsNodeAxios,
-} from "./generators/javascript/axios.js";
+} from "./generators/javascript/axios.ts";
 import {
   _toNodeGot,
   toNodeGotWarn,
   supportedArgs as supportedArgsNodeGot,
-} from "./generators/javascript/got.js";
+} from "./generators/javascript/got.ts";
 import {
   _toNodeHttp,
   toNodeHttpWarn,
   supportedArgs as supportedArgsNodeHttp,
-} from "./generators/javascript/http.js";
+} from "./generators/javascript/http.ts";
 import {
   _toNodeKy,
   toNodeKyWarn,
   supportedArgs as supportedArgsNodeKy,
-} from "./generators/javascript/ky.js";
+} from "./generators/javascript/ky.ts";
 import {
   _toNodeRequest,
   toNodeRequestWarn,
   supportedArgs as supportedArgsNodeRequest,
-} from "./generators/javascript/request.js";
+} from "./generators/javascript/request.ts";
 import {
   _toNodeSuperAgent,
   toNodeSuperAgentWarn,
   supportedArgs as supportedArgsNodeSuperAgent,
-} from "./generators/javascript/superagent.js";
+} from "./generators/javascript/superagent.ts";
 import {
   _toOCaml,
   toOCamlWarn,
   supportedArgs as supportedArgsOCaml,
-} from "./generators/ocaml.js";
+} from "./generators/ocaml.ts";
 import {
   _toObjectiveC,
   toObjectiveCWarn,
   supportedArgs as supportedArgsObjectiveC,
-} from "./generators/objectivec.js";
+} from "./generators/objectivec.ts";
 import {
   _toPerl,
   toPerlWarn,
   supportedArgs as supportedArgsPerl,
-} from "./generators/perl.js";
+} from "./generators/perl.ts";
 import {
   _toPhp,
   toPhpWarn,
   supportedArgs as supportedArgsPhp,
-} from "./generators/php/php.js";
+} from "./generators/php/php.ts";
 import {
   _toPhpGuzzle,
   toPhpGuzzleWarn,
   supportedArgs as supportedArgsPhpGuzzle,
-} from "./generators/php/guzzle.js";
+} from "./generators/php/guzzle.ts";
 import {
   _toPhpRequests,
   toPhpRequestsWarn,
   supportedArgs as supportedArgsPhpRequests,
-} from "./generators/php/requests.js";
+} from "./generators/php/requests.ts";
 import {
   _toPowershellRestMethod,
   toPowershellRestMethodWarn,
   supportedArgs as supportedArgsPowershellRestMethod,
-} from "./generators/powershell.js";
+} from "./generators/powershell.ts";
 import {
   _toPowershellWebRequest,
   toPowershellWebRequestWarn,
   supportedArgs as supportedArgsPowershellWebRequest,
-} from "./generators/powershell.js";
+} from "./generators/powershell.ts";
 import {
   _toPython,
   toPythonWarn,
   supportedArgs as supportedArgsPython,
-} from "./generators/python/python.js";
+} from "./generators/python/python.ts";
 import {
   _toPythonHttp,
   toPythonHttpWarn,
   supportedArgs as supportedArgsPythonHttp,
-} from "./generators/python/http.js";
+} from "./generators/python/http.ts";
 import {
   _toR,
   toRWarn,
   supportedArgs as supportedArgsR,
-} from "./generators/r/httr.js";
+} from "./generators/r/httr.ts";
 import {
   _toRHttr2,
   toRHttr2Warn,
   supportedArgs as supportedArgsRHttr2,
-} from "./generators/r/httr2.js";
+} from "./generators/r/httr2.ts";
 import {
   _toRuby,
   toRubyWarn,
   supportedArgs as supportedArgsRuby,
-} from "./generators/ruby/ruby.js";
+} from "./generators/ruby/ruby.ts";
 import {
   _toRubyHttparty,
   toRubyHttpartyWarn,
   supportedArgs as supportedArgsRubyHttparty,
-} from "./generators/ruby/httparty.js";
+} from "./generators/ruby/httparty.ts";
 import {
   _toRust,
   toRustWarn,
   supportedArgs as supportedArgsRust,
-} from "./generators/rust.js";
+} from "./generators/rust.ts";
 import {
   _toSwift,
   toSwiftWarn,
   supportedArgs as supportedArgsSwift,
-} from "./generators/swift.js";
+} from "./generators/swift.ts";
 import {
   _toWget,
   toWgetWarn,
   supportedArgs as supportedArgsWget,
-} from "./generators/wget.js";
+} from "./generators/wget.ts";
 
 import fs from "fs";
 

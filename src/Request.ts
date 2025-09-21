@@ -1,27 +1,27 @@
-import { Word, eq, mergeWords, joinWords } from "./shell/Word.js";
+import { Word, eq, mergeWords, joinWords } from "./shell/Word.ts";
 
-import { CCError, has, isInt } from "./utils.js";
-import { warnf, warnIfPartsIgnored } from "./Warnings.js";
-import type { Warnings, Support } from "./Warnings.js";
+import { CCError, has, isInt } from "./utils.ts";
+import { warnf, warnIfPartsIgnored } from "./Warnings.ts";
+import type { Warnings, Support } from "./Warnings.ts";
 import type {
   GlobalConfig,
   OperationConfig,
   SrcDataParam,
-} from "./curl/opts.js";
+} from "./curl/opts.ts";
 
-import { Headers, parseCookies } from "./Headers.js";
-import type { Cookies } from "./Headers.js";
+import { Headers, parseCookies } from "./Headers.ts";
+import type { Cookies } from "./Headers.ts";
 
-import { pickAuth, type AuthType } from "./curl/auth.js";
-export { AuthType } from "./curl/auth.js";
+import { pickAuth, type AuthType } from "./curl/auth.ts";
+export type { AuthType } from "./curl/auth.ts";
 
-import { parseurl, type Curl_URL } from "./curl/url.js";
+import { parseurl, type Curl_URL } from "./curl/url.ts";
 
-import { parseQueryString, percentEncodePlus } from "./Query.js";
-import type { QueryList, QueryDict } from "./Query.js";
+import { parseQueryString, percentEncodePlus } from "./Query.ts";
+import type { QueryList, QueryDict } from "./Query.ts";
 
-import { parseForm } from "./curl/form.js";
-import type { FormParam } from "./curl/form.js";
+import { parseForm } from "./curl/form.ts";
+import type { FormParam } from "./curl/form.ts";
 
 export type FileParamType = "data" | "binary" | "urlencode" | "json";
 export type DataType = FileParamType | "raw";

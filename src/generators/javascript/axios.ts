@@ -1,8 +1,8 @@
-import { isInt } from "../../utils.js";
-import { Word, eq } from "../../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
-import type { Request, Warnings } from "../../parse.js";
-import { parseQueryString } from "../../Query.js";
+import { isInt } from "../../utils.ts";
+import { Word, eq } from "../../shell/Word.ts";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.ts";
+import type { Request, Warnings } from "../../parse.ts";
+import { parseQueryString } from "../../Query.ts";
 
 import {
   reprStr,
@@ -14,7 +14,7 @@ import {
   type JSImports,
   addImport,
   reprImports,
-} from "./javascript.js";
+} from "./javascript.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

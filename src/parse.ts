@@ -1,18 +1,18 @@
-import { CCError } from "./utils.js";
-import { Word } from "./shell/Word.js";
-import { tokenize } from "./shell/tokenizer.js";
-import * as curl from "./curl/opts.js";
+import { CCError } from "./utils.ts";
+import { Word } from "./shell/Word.ts";
+import { tokenize } from "./shell/tokenizer.ts";
+import * as curl from "./curl/opts.ts";
 import {
   curlLongOpts,
   curlLongOptsShortened,
   curlShortOpts,
-} from "./curl/opts.js";
-import { buildRequests } from "./Request.js";
-import type { Request, RequestUrl } from "./Request.js";
-import type { Warnings } from "./Warnings.js";
+} from "./curl/opts.ts";
+import { buildRequests } from "./Request.ts";
+import type { Request, RequestUrl } from "./Request.ts";
+import type { Warnings } from "./Warnings.ts";
 
-export { COMMON_SUPPORTED_ARGS } from "./curl/opts.js";
-export { getFirst } from "./Request.js";
+export { COMMON_SUPPORTED_ARGS } from "./curl/opts.ts";
+export { getFirst } from "./Request.ts";
 
 export type { Request, RequestUrl, Warnings };
 

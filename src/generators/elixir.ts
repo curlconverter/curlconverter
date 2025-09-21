@@ -1,8 +1,8 @@
-import { warnIfPartsIgnored } from "../Warnings.js";
-import { Word, joinWords } from "../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { parseQueryString } from "../Query.js";
+import { warnIfPartsIgnored } from "../Warnings.ts";
+import { Word, joinWords } from "../shell/Word.ts";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, Warnings } from "../parse.ts";
+import { parseQueryString } from "../Query.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

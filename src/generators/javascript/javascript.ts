@@ -1,10 +1,10 @@
-import { warnIfPartsIgnored } from "../../Warnings.js";
-import { Word, eq, joinWords } from "../../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
-import type { Request, Warnings } from "../../parse.js";
-import { parseQueryString } from "../../Query.js";
-import type { QueryList, QueryDict } from "../../Query.js";
-import type { FormParam } from "../../curl/form.js";
+import { warnIfPartsIgnored } from "../../Warnings.ts";
+import { Word, eq, joinWords } from "../../shell/Word.ts";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.ts";
+import type { Request, Warnings } from "../../parse.ts";
+import { parseQueryString } from "../../Query.ts";
+import type { QueryList, QueryDict } from "../../Query.ts";
+import type { FormParam } from "../../curl/form.ts";
 
 import jsescObj from "jsesc";
 

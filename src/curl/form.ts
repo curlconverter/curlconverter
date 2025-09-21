@@ -1,7 +1,7 @@
-import { CCError } from "../utils.js";
-import type { Warnings } from "../Warnings.js";
-import { Token, Word, eq } from "../shell/Word.js";
-import { SrcFormParam } from "../curl/opts.js";
+import { CCError } from "../utils.ts";
+import type { Warnings } from "../Warnings.ts";
+import { type Token, Word, eq } from "../shell/Word.ts";
+import type { SrcFormParam } from "../curl/opts.ts";
 
 // contentFile is the actual file to read from
 export type Details = {

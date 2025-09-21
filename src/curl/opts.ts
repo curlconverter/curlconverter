@@ -1,6 +1,6 @@
-import { CCError, has } from "../utils.js";
-import { Word, eq, firstShellToken } from "../shell/Word.js";
-import { warnf, underlineNode, type Warnings } from "../Warnings.js";
+import { CCError, has } from "../utils.ts";
+import { Word, eq, firstShellToken } from "../shell/Word.ts";
+import { warnf, underlineNode, type Warnings } from "../Warnings.ts";
 import {
   CURLAUTH_BASIC,
   CURLAUTH_DIGEST,
@@ -10,8 +10,8 @@ import {
   CURLAUTH_BEARER,
   CURLAUTH_AWS_SIGV4,
   CURLAUTH_ANY,
-} from "./auth.js";
-import type { DataType } from "../Request.js";
+} from "./auth.ts";
+import type { DataType } from "../Request.ts";
 
 export type FormType = "string" | "form";
 

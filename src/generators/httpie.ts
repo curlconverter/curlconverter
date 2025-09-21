@@ -1,12 +1,12 @@
-import { CCError } from "../utils.js";
-import { warnIfPartsIgnored } from "../Warnings.js";
-import { Word, eq, mergeWords } from "../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, RequestUrl, Warnings } from "../parse.js";
-import { Headers } from "../Headers.js";
-import { parseQueryString } from "../Query.js";
+import { CCError } from "../utils.ts";
+import { warnIfPartsIgnored } from "../Warnings.ts";
+import { Word, eq, mergeWords } from "../shell/Word.ts";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, RequestUrl, Warnings } from "../parse.ts";
+import { Headers } from "../Headers.ts";
+import { parseQueryString } from "../Query.ts";
 
-import { repr, reprStr } from "./wget.js";
+import { repr, reprStr } from "./wget.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

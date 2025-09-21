@@ -1,8 +1,8 @@
-import { btoa } from "../utils.js";
-import { warnIfPartsIgnored } from "../Warnings.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, RequestUrl, Warnings } from "../parse.js";
-import { parseQueryString } from "../Query.js";
+import { btoa } from "../utils.ts";
+import { warnIfPartsIgnored } from "../Warnings.ts";
+import { parse, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, RequestUrl, Warnings } from "../parse.ts";
+import { parseQueryString } from "../Query.ts";
 import type { Request as HARRequest, PostData as PostData } from "har-format";
 
 export const supportedArgs = new Set([

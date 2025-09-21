@@ -1,7 +1,7 @@
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import type { AuthType } from "../Request.js";
-import { parseQueryString } from "../Query.js";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, Warnings } from "../parse.ts";
+import type { AuthType } from "../Request.ts";
+import { parseQueryString } from "../Query.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

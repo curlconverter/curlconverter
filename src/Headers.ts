@@ -1,5 +1,5 @@
-import { Word, eq, joinWords } from "./shell/Word.js";
-import type { Warnings } from "./Warnings.js";
+import { Word, eq, joinWords } from "./shell/Word.ts";
+import type { Warnings } from "./Warnings.ts";
 
 // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Standard_request_fields
 // and then searched for "#" in the RFCs that define each header

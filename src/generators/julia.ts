@@ -1,8 +1,8 @@
-import { CCError } from "../utils.js";
-import { Word, eq, mergeWords } from "../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import { parseQueryString } from "../Query.js";
+import { CCError } from "../utils.ts";
+import { Word, eq, mergeWords } from "../shell/Word.ts";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, Warnings } from "../parse.ts";
+import { parseQueryString } from "../Query.ts";
 
 import {
   parse as jsonParseLossless,

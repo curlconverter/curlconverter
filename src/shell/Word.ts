@@ -4,8 +4,8 @@
 // ["foobar", {type: "variable", value: "baz", text: "$baz"}, "qux"]
 // Except for the empty string [""], there should be no empty strings in the array.
 
-import type { Parser } from "./Parser.js";
-import { CCError } from "../utils.js";
+import type { Parser } from "./Parser.ts";
+import { CCError } from "../utils.ts";
 
 export interface ShellToken {
   type: "variable" | "command";

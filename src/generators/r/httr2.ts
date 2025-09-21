@@ -1,9 +1,9 @@
-import { Word, eq } from "../../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.js";
-import type { Request, Warnings } from "../../parse.js";
-import { wordDecodeURIComponent, parseQueryString } from "../../Query.js";
+import { Word, eq } from "../../shell/Word.ts";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../../parse.ts";
+import type { Request, Warnings } from "../../parse.ts";
+import { wordDecodeURIComponent, parseQueryString } from "../../Query.ts";
 
-import { reprBacktick, reprStr, repr, toNumeric } from "./httr.js";
+import { reprBacktick, reprStr, repr, toNumeric } from "./httr.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

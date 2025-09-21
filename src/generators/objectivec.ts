@@ -1,7 +1,7 @@
-import { Word, eq, mergeWords } from "../shell/Word.js";
-import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.js";
-import type { Request, Warnings } from "../parse.js";
-import type { DataParam } from "../Request.js";
+import { Word, eq, mergeWords } from "../shell/Word.ts";
+import { parse, getFirst, COMMON_SUPPORTED_ARGS } from "../parse.ts";
+import type { Request, Warnings } from "../parse.ts";
+import type { DataParam } from "../Request.ts";
 
 export const supportedArgs = new Set([
   ...COMMON_SUPPORTED_ARGS,

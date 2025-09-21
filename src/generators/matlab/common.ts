@@ -1,6 +1,6 @@
-import { CCError } from "../../utils.js";
-import { Word } from "../../shell/Word.js";
-import type { Request } from "../../parse.js";
+import { CCError } from "../../utils.ts";
+import { Word } from "../../shell/Word.ts";
+import type { Request } from "../../parse.ts";
 
 // Wrap in brakets so that splitting keeps the characters to escape
 const regexEscape = /(\p{C}|[^ \P{Z}])/gu;

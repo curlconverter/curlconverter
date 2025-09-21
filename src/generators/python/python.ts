@@ -1,10 +1,10 @@
-import { CCError, has, UTF8encoder } from "../../utils.js";
-import { Word, eq } from "../../shell/Word.js";
-import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.js";
-import type { Request, Warnings } from "../../parse.js";
-import { Headers } from "../../Headers.js";
-import { wordDecodeURIComponent, percentEncode } from "../../Query.js";
-import { DataParam } from "../../Request.js";
+import { CCError, has, UTF8encoder } from "../../utils.ts";
+import { Word, eq } from "../../shell/Word.ts";
+import { parse, COMMON_SUPPORTED_ARGS } from "../../parse.ts";
+import type { Request, Warnings } from "../../parse.ts";
+import { Headers } from "../../Headers.ts";
+import { wordDecodeURIComponent, percentEncode } from "../../Query.ts";
+import type { DataParam } from "../../Request.ts";
 
 import {
   parse as jsonParseLossless,

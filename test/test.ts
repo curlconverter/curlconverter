@@ -5,8 +5,8 @@ import test from "tape";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { fixturesDir, converters } from "./test-utils.js";
-import type { Converter } from "./test-utils.js";
+import { fixturesDir, converters } from "./test-utils.ts";
+import type { Converter } from "./test-utils.ts";
 
 // The curl_commands/ directory contains input files
 // The file name is a description of the command.

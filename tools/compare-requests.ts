@@ -11,8 +11,8 @@ import { diffLines } from "diff";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { parse } from "../src/parse.js";
-import { fixturesDir, converters } from "../test/test-utils.js";
+import { parse } from "../src/parse.ts";
+import { fixturesDir, converters } from "../test/test-utils.ts";
 
 const awaitableExec = promisify(exec);
 

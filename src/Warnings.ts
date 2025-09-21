@@ -1,6 +1,6 @@
-import type { Parser } from "./shell/Parser.js";
-import type { GlobalConfig } from "./curl/opts.js";
-import type { Request } from "./Request.js";
+import type { Parser } from "./shell/Parser.ts";
+import type { GlobalConfig } from "./curl/opts.ts";
+import type { Request } from "./Request.ts";
 
 export type Warnings = [string, string][];
 
