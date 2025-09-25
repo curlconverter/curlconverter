@@ -58,14 +58,13 @@ export const _toJavaJsoup = (
       if (eq(headerName.toLowerCase(), "user-agent")) {
         javaCode +=
           "\t\t\t.userAgent" + "(" + repr(headerValue, imports) + ")\n";
-      } else if (eq(headerName.toLowerCase(), "cookie")) {
-        const cookieValues = headerValue.split(";");
-        for (const index in cookieValues) {
+      } else if (eq(headerName.toLowerCase(), "cookie") && request.cookies) {
+        for (const [name, value] of request.cookies) {
           javaCode +=
             "\t\t\t.cookie(" +
-            repr(cookieValues[index].split("=")[0].trim(), imports) +
+            repr(name, imports) +
             ", " +
-            repr(cookieValues[index].split("=")[1].trim(), imports) +
+            repr(value, imports) +
             ")\n";
         }
       } else {
