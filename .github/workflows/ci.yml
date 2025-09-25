@@ -10,11 +10,13 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: "18"
-      - run: npm ci
+          node-version: "24"
+      - env: # TODO: remove this
+          CXXFLAGS: -std=c++20
+        run: npm ci
       - run: npm run lint
       - run: npx prettier --check .
 
@@ -26,17 +28,34 @@ jobs:
         # Tests fail to run on Windows, see
         # https://github.com/curlconverter/curlconverter/pull/310
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node-version: [16, 18, 20]
+        node-version: [20, 22, 24]
+        exclude:
+          # TODO: remove this
+          # https://github.com/tree-sitter/node-tree-sitter/issues/238
+          - os: windows-latest
+            node-version: 24
+
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
       - uses: mymindstorm/setup-emsdk@v14
-      - run: npm ci
+
+      # TODO: remove this if
+      # https://github.com/tree-sitter/node-tree-sitter/issues/238
+      - name: Install dependencies (Node 24)
+        if: matrix.node-version == 24
+        env:
+          CXXFLAGS: -std=c++20
+        run: npm ci
+      - name: Install dependencies
+        if: matrix.node-version != 24
+        run: npm ci
+
       - run: npm test
 
   deploy:
@@ -45,7 +64,7 @@ jobs:
     if: github.event_name == 'push' && github.repository_owner == 'curlconverter'
     steps:
       - name: Deploy demo site
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           repository: curlconverter/curlconverter.github.io

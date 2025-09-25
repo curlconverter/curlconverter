@@ -54,8 +54,6 @@ Install the JavaScript library for use in your own projects with
 npm install curlconverter
 ```
 
-curlconverter requires Node 12+.
-
 ## Usage
 
 ### Usage from the command line

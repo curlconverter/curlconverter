@@ -6,9 +6,9 @@
 
 ### Setup
 
-Building curlconverter requires **Node.js 16+** and Emscripten 3.
+- [ ] Building curlconverter requires **Node.js 20+** and Emscripten 3.
 
-On Ubuntu 22.10 you can install Node.js 18, npm and Emscripten 3.1.6 with
+On Ubuntu you can install Node.js, npm and Emscripten with
 
 ```sh
 sudo apt update

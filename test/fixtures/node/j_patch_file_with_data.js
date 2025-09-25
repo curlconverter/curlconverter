@@ -1,4 +1,4 @@
-import fetch, { FormData, fileFromSync } from 'node-fetch';
+import fetch, { fileFromSync } from 'node-fetch';
 
 const form = new FormData();
 form.append('file1', fileFromSync('./test/fixtures/curl_commands/delete.sh'));

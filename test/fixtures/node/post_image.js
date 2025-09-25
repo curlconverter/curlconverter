@@ -1,4 +1,4 @@
-import fetch, { FormData, fileFromSync } from 'node-fetch';
+import fetch, { fileFromSync } from 'node-fetch';
 
 const form = new FormData();
 form.append('image', fileFromSync('image.jpg'));

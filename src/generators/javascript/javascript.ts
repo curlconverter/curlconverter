@@ -562,10 +562,6 @@ function requestToJavaScriptOrNode(
   let code = "";
 
   if (request.multipartUploads) {
-    if (isNode) {
-      // TODO: remove once Node 16 is EOL'd on 2023-09-11
-      fetchImports.add("FormData");
-    }
     code +=
       "const form = " +
       toFormData(

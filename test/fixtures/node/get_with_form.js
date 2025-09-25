@@ -1,4 +1,4 @@
-import fetch, { FormData } from 'node-fetch';
+import fetch from 'node-fetch';
 
 const form = new FormData();
 form.append('from', 'test@tester.com');

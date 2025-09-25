@@ -1,4 +1,4 @@
-import fetch, { FormData, fileFromSync } from 'node-fetch';
+import fetch, { fileFromSync } from 'node-fetch';
 
 const form = new FormData();
 form.append('attributes', '{"name":"tigers.jpeg", "parent":{"id":"11446498"}}');
