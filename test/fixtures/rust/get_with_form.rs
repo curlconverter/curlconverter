@@ -9,8 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = reqwest::blocking::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
+        .build()?;
     let res = client.post("http://localhost:28139/v3")
         .basic_auth("test", Some(""))
         .multipart(form)

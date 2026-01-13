@@ -86,10 +86,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
       if (headerValue !== null) {
         lines.push(
           indent(
-            `headers.insert(${name}, ${repr(
-              headerValue,
-              imports,
-            )}.parse().unwrap());`,
+            `headers.insert(${name}, ${repr(headerValue, imports)}.parse()?);`,
           ),
         );
       }
@@ -118,8 +115,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
   if (!request.followRedirects) {
     lines.push(indent("let client = reqwest::blocking::Client::builder()"));
     lines.push(indent(".redirect(reqwest::redirect::Policy::none())", 2));
-    lines.push(indent(".build()", 2));
-    lines.push(indent(".unwrap();", 2));
+    lines.push(indent(".build()?;", 2));
   } else if (typeof request.maxRedirects === "undefined") {
     // Curl's default is following 50 redirects, reqwest's is 10
     lines.push(indent("let client = reqwest::blocking::Client::new();"));
@@ -143,8 +139,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
         ),
       );
     }
-    lines.push(indent(".build()", 2));
-    lines.push(indent(".unwrap();", 2));
+    lines.push(indent(".build()?;", 2));
   }
 
   const reqwestMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
