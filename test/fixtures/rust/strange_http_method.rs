@@ -1,5 +1,3 @@
-extern crate reqwest;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::blocking::Client::builder()
         .redirect(reqwest::redirect::Policy::none())

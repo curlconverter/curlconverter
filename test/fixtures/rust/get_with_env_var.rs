@@ -1,4 +1,3 @@
-extern crate reqwest;
 use reqwest::header;
 use std::env;
 

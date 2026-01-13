@@ -1,4 +1,3 @@
-extern crate reqwest;
 use reqwest::header;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

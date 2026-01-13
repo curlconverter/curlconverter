@@ -1,4 +1,3 @@
-extern crate reqwest;
 use reqwest::{header, blocking::multipart};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

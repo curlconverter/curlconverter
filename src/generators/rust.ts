@@ -73,8 +73,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
   const request = getFirst(requests, warnings);
 
   const imports = new Set<string>();
-  const lines: string[] = [];
-  lines.push("", "fn main() -> Result<(), Box<dyn std::error::Error>> {");
+  const lines = ["fn main() -> Result<(), Box<dyn std::error::Error>> {"];
 
   if (request.headers.length) {
     lines.push(indent("let mut headers = header::HeaderMap::new();"));
@@ -208,7 +207,7 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
     "}",
   );
 
-  const preambleLines = ["extern crate reqwest;"];
+  const preambleLines = [];
   {
     // Generate imports.
     const imports = [
@@ -225,7 +224,11 @@ export function _toRust(requests: Request[], warnings: Warnings = []): string {
     }
   }
   for (const imp of Array.from(imports).sort()) {
-    preambleLines.push("use " + imp + ";");
+    preambleLines.push(`use ${imp};`);
+  }
+
+  if (preambleLines.length) {
+    preambleLines.push("");
   }
 
   return [...preambleLines, ...lines].join("\n") + "\n";
