@@ -456,7 +456,9 @@ function buildURL(
   } else if (uploadFile && uploadFile.toBool()) {
     // --upload-file '' doesn't do anything.
     method = new Word("PUT");
-  } else if (!config.get && (has(config, "data") || has(config, "form"))) {
+  } else if (has(config, "form") || (!config.get && has(config, "data"))) {
+    // --get only moves --data into the query string, --form is still sent as a
+    // multipart POST
     method = new Word("POST");
   }
 

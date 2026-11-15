@@ -1,0 +1,38 @@
+[
+  {
+    "urls": [
+      {
+        "originalUrl": "http://localhost:28139/upload",
+        "urlWithoutQueryList": "http://localhost:28139/upload",
+        "url": "http://localhost:28139/upload",
+        "urlObj": {
+          "scheme": "http",
+          "host": "localhost:28139",
+          "port": "",
+          "path": "/upload",
+          "query": "",
+          "fragment": ""
+        },
+        "urlWithOriginalQuery": "http://localhost:28139/upload",
+        "urlWithoutQueryArray": "http://localhost:28139/upload",
+        "method": "POST"
+      }
+    ],
+    "authType": "basic",
+    "proxyAuthType": "basic",
+    "headers": {
+      "headers": [],
+      "lowercase": false
+    },
+    "proxyHeaders": {
+      "headers": [],
+      "lowercase": false
+    },
+    "multipartUploads": [
+      {
+        "name": "name",
+        "content": "value"
+      }
+    ]
+  }
+]
