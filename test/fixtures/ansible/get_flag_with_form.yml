@@ -1,0 +1,10 @@
+-
+  name: 'http://localhost:28139/upload'
+  uri:
+    url: 'http://localhost:28139/upload'
+    method: POST
+    body:
+      name:
+        content: value
+    body_format: form-multipart
+  register: result
